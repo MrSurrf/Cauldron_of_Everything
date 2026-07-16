@@ -1,14 +1,15 @@
 @font-face {
   font-family: 'Gilroy';
-  src: url('/fonts/Gilroy-Regular.woff2') format('woff2');
+  src: url('/fonts/Gilroy-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'GothicRus';
-  src: url('/fonts/GothicRus.ttf') format('truetype');
+  font-family: 'GothicRusWeb';
+  src: url('/fonts/GothicRus.woff2?v=2') format('woff2'),
+       url('/fonts/GothicRus.ttf?v=3') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;

@@ -25,16 +25,22 @@ class QuestionListView(generics.ListAPIView):
     queryset = Question.objects.filter(is_active=True).prefetch_related("choices")
 
 
-class SurveySubmissionCreateView(generics.CreateAPIView):
+class SurveySubmissionListCreateView(generics.ListCreateAPIView):
     """
+    GET  /api/submissions/ — список результатов прохождения анкеты.
     POST /api/submissions/ — сохранить результат прохождения анкеты целиком.
-    Принимает {"survey_id": "...", "player_name": "...", "answers": {"question_id": value}}.
+    Тело: {
+        "survey_id": "...",
+        "player_name": "...",
+        "character_name": "...",
+        "answers": {"question_id": значение, ...}
+    }.
     Пока без авторизации: фронтенд идентифицирует участника по имени.
     """
 
     serializer_class = SurveySubmissionSerializer
     permission_classes = [AllowAny]
-    queryset = SurveySubmission.objects.none()
+    queryset = SurveySubmission.objects.all().order_by("-created_at")
 
 
 class AnswerListCreateView(generics.ListCreateAPIView):

@@ -31,10 +31,22 @@ class AnswerAdmin(admin.ModelAdmin):
 
 @admin.register(SurveySubmission)
 class SurveySubmissionAdmin(admin.ModelAdmin):
-    list_display = ("player_name", "survey_id", "created_at", "answers_preview")
+    list_display = (
+        "player_name",
+        "character_name",
+        "survey_id",
+        "created_at",
+        "answers_preview",
+    )
     list_filter = ("survey_id",)
-    search_fields = ("player_name",)
-    readonly_fields = ("survey_id", "player_name", "answers", "created_at")
+    search_fields = ("player_name", "character_name")
+    readonly_fields = (
+        "survey_id",
+        "player_name",
+        "character_name",
+        "answers",
+        "created_at",
+    )
 
     @admin.display(description="Ответы")
     def answers_preview(self, obj):

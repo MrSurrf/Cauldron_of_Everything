@@ -8,13 +8,19 @@ import GmResultsPage from './pages/GmResultsPage'
 
 function App() {
   const [playerName, setPlayerName] = useState<string | null>(null)
+  const [characterName, setCharacterName] = useState<string>('')
   const [result, setResult] = useState<SurveyResult | null>(null)
-  const isGmResultsPage =
-  window.location.hash === '#/gm'
 
-if (isGmResultsPage) {
-  return <GmResultsPage />
-}
+  const isGmResultsPage = window.location.hash === '#/gm'
+
+  if (isGmResultsPage) {
+    return <GmResultsPage />
+  }
+
+  function handleStart(name: string, character: string) {
+    setPlayerName(name)
+    setCharacterName(character)
+  }
 
   function handleComplete(surveyResult: SurveyResult) {
     setResult(surveyResult)
@@ -24,7 +30,7 @@ if (isGmResultsPage) {
   }
 
   if (!playerName) {
-    return <StartPage onStart={setPlayerName} />
+    return <StartPage onStart={handleStart} />
   }
 
   if (result) {
@@ -33,6 +39,10 @@ if (isGmResultsPage) {
         <h1>Опрос завершён</h1>
 
         <p>Участник: {result.playerName}</p>
+
+        {result.characterName && (
+          <p>Персонаж: {result.characterName}</p>
+        )}
 
         {zeroSessionSurvey.questions.map((question) => (
           <section key={question.id}>
@@ -49,6 +59,7 @@ if (isGmResultsPage) {
   return (
     <SurveyPage
       playerName={playerName}
+      characterName={characterName}
       config={zeroSessionSurvey}
       onComplete={handleComplete}
     />

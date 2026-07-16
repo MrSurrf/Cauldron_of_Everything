@@ -5,7 +5,7 @@
     sans-serif;
 
   --survey-title-font:
-    GothicRus,
+    GothicRusWeb,
     Georgia,
     serif;
 
@@ -612,7 +612,7 @@
 
   color: #ffffff;
 
-  font-family: 'GothicRus', Georgia, serif;
+  font-family: 'GothicRusWeb', Georgia, serif;
   font-size:
     clamp(
       20px,
@@ -662,7 +662,7 @@
   background: transparent;
   color: #ffffff;
 
-  font-family: 'GothicRus', Georgia, serif;
+  font-family: 'GothicRusWeb', Georgia, serif;
   font-size:
     clamp(
       20px,
@@ -838,7 +838,7 @@
 
   opacity: 0.6;
 
-  font-family: 'GothicRus', Georgia, serif;
+  font-family: 'GothicRusWeb', Georgia, serif;
   font-weight: 400;
   line-height: 1;
 

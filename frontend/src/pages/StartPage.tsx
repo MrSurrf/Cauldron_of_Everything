@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react'
 import './StartPage.css'
 
 type StartPageProps = {
-  onStart: (name: string) => void
+  onStart: (playerName: string, characterName: string) => void
 }
 
 function StartPage({ onStart }: StartPageProps) {
   const [name, setName] = useState('')
+  const [characterName, setCharacterName] = useState('')
 
   const preparedName = name.trim()
 
@@ -17,7 +18,7 @@ function StartPage({ onStart }: StartPageProps) {
       return
     }
 
-    onStart(preparedName)
+    onStart(preparedName, characterName.trim())
   }
 
   return (
@@ -66,6 +67,26 @@ function StartPage({ onStart }: StartPageProps) {
               autoComplete="name"
               maxLength={50}
               autoFocus
+            />
+          </div>
+
+          <label
+            className="start-page__label"
+            htmlFor="character-name"
+          >
+            Имя персонажа
+          </label>
+
+          <div className="start-page__input-frame">
+            <input
+              id="character-name"
+              className="start-page__input"
+              type="text"
+              value={characterName}
+              onChange={(event) => setCharacterName(event.target.value)}
+              placeholder="Персонаж"
+              autoComplete="off"
+              maxLength={100}
             />
           </div>
 

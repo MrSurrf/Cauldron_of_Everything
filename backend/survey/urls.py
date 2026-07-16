@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     AnswerListCreateView,
     QuestionListView,
-    SurveySubmissionCreateView,
+    SurveySubmissionListCreateView,
 )
 
 urlpatterns = [
@@ -11,7 +11,7 @@ urlpatterns = [
     path("answers/", AnswerListCreateView.as_view(), name="answer-list-create"),
     path(
         "submissions/",
-        SurveySubmissionCreateView.as_view(),
-        name="submission-create",
+        SurveySubmissionListCreateView.as_view(),
+        name="submission-list-create",
     ),
 ]

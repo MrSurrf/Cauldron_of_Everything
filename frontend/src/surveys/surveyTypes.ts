@@ -30,5 +30,6 @@ export type SurveyAnswers = Record<string, number>
 export type SurveyResult = {
   surveyId: string
   playerName: string
+  characterName: string
   answers: SurveyAnswers
 }

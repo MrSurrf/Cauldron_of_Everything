@@ -1,16 +1,22 @@
 import {
+  useEffect,
   useMemo,
   useState,
   type FormEvent,
 } from 'react'
 
 import {
-  mockPlayerResults,
   resultCategories,
-  type MockPlayerResult,
 } from '../results/mockSurveyResults'
+import { fetchSubmissions, type Submission } from '../api'
 
 import './GmResultsPage.css'
+
+type LoadState =
+  | { status: 'unauthorized' }
+  | { status: 'loading' }
+  | { status: 'success'; data: PlayerResult[] }
+  | { status: 'error'; error: string }
 
 const GM_DEMO_PASSWORD = 'gm-demo'
 
@@ -62,6 +68,26 @@ function formatCompletedAt(
   ).format(new Date(value))
 }
 
+type PlayerResult = {
+  id: string
+  playerName: string
+  characterName: string
+  completedAt: string
+  answers: Record<string, number>
+}
+
+function mapSubmissionToPlayerResult(
+  submission: Submission,
+): PlayerResult {
+  return {
+    id: String(submission.id),
+    playerName: submission.player_name,
+    characterName: submission.character_name,
+    completedAt: submission.created_at,
+    answers: submission.answers,
+  }
+}
+
 function GmResultsPage() {
   const [isAuthorized, setIsAuthorized] =
     useState(
@@ -77,18 +103,69 @@ function GmResultsPage() {
   const [loginError, setLoginError] =
     useState('')
 
-  const [selectedPlayerId, setSelectedPlayerId] =
-    useState(
-      mockPlayerResults[0]?.id ?? '',
+  const [loadState, setLoadState] =
+    useState<LoadState>(() =>
+      sessionStorage.getItem(
+        'gm-demo-authorized',
+      ) === 'true'
+        ? { status: 'loading' }
+        : { status: 'unauthorized' },
     )
+
+  const [selectedPlayerId, setSelectedPlayerId] =
+    useState('')
+
+  useEffect(() => {
+    if (loadState.status !== 'loading') {
+      return
+    }
+
+    let cancelled = false
+
+    fetchSubmissions()
+      .then((data) => {
+        if (cancelled) {
+          return
+        }
+
+        const mapped = data.map(mapSubmissionToPlayerResult)
+        setLoadState({ status: 'success', data: mapped })
+        setSelectedPlayerId(mapped[0]?.id ?? '')
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return
+        }
+
+        setLoadState({
+          status: 'error',
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Не удалось загрузить результаты',
+        })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [loadState.status])
+
+  const submissions = useMemo(
+    () =>
+      loadState.status === 'success'
+        ? loadState.data
+        : [],
+    [loadState],
+  )
 
   const selectedPlayer = useMemo(
     () =>
-      mockPlayerResults.find(
+      submissions.find(
         (player) =>
           player.id === selectedPlayerId,
-      ) ?? mockPlayerResults[0],
-    [selectedPlayerId],
+      ) ?? submissions[0],
+    [submissions, selectedPlayerId],
   )
 
   function handleLogin(
@@ -108,6 +185,7 @@ function GmResultsPage() {
 
     setLoginError('')
     setIsAuthorized(true)
+    setLoadState({ status: 'loading' })
   }
 
   function handleLogout() {
@@ -117,6 +195,7 @@ function GmResultsPage() {
 
     setPassword('')
     setIsAuthorized(false)
+    setLoadState({ status: 'unauthorized' })
   }
 
   if (!isAuthorized) {
@@ -192,10 +271,38 @@ function GmResultsPage() {
     )
   }
 
+  if (loadState.status === 'loading') {
+    return (
+      <main className="gm-results-page">
+        <div className="gm-results-page__overlay" />
+
+        <div className="gm-results-layout">
+          <p>Загрузка результатов…</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (loadState.status === 'error') {
+    return (
+      <main className="gm-results-page">
+        <div className="gm-results-page__overlay" />
+
+        <div className="gm-results-layout">
+          <p>Ошибка: {loadState.error}</p>
+        </div>
+      </main>
+    )
+  }
+
   if (!selectedPlayer) {
     return (
       <main className="gm-results-page">
-        <p>Результаты игроков отсутствуют.</p>
+        <div className="gm-results-page__overlay" />
+
+        <div className="gm-results-layout">
+          <p>Результаты игроков отсутствуют.</p>
+        </div>
       </main>
     )
   }
@@ -219,7 +326,7 @@ function GmResultsPage() {
               <p className="gm-results-header__character">
                 Персонаж:{' '}
                 <span>
-                  {selectedPlayer.characterName}
+                  {selectedPlayer.characterName || '—'}
                 </span>
               </p>
             </div>
@@ -331,7 +438,7 @@ function GmResultsPage() {
               <p>Игроки</p>
 
               <span>
-                {mockPlayerResults.length}{' '}
+                {submissions.length}{' '}
                 ответов
               </span>
             </div>
@@ -345,9 +452,9 @@ function GmResultsPage() {
           </div>
 
           <div className="gm-player-list">
-            {mockPlayerResults.map(
+            {submissions.map(
               (
-                player: MockPlayerResult,
+                player: PlayerResult,
                 index,
               ) => {
                 const isSelected =
@@ -386,7 +493,7 @@ function GmResultsPage() {
                       </strong>
 
                       <small>
-                        {player.characterName}
+                        {player.characterName || 'Без персонажа'}
                       </small>
                     </span>
 

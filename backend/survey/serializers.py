@@ -64,7 +64,14 @@ class SurveySubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SurveySubmission
-        fields = ("id", "survey_id", "player_name", "answers", "created_at")
+        fields = (
+            "id",
+            "survey_id",
+            "player_name",
+            "character_name",
+            "answers",
+            "created_at",
+        )
         read_only_fields = ("created_at",)
 
     def validate_answers(self, value):

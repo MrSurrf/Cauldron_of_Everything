@@ -98,7 +98,11 @@ Cauldron_of_Everything/
 │   │   │   ├── StartPage.tsx
 │   │   │   ├── StartPage.css
 │   │   │   ├── SurveyPage.tsx
-│   │   │   └── SurveyPage.css
+│   │   │   ├── SurveyPage.css
+│   │   │   ├── GmResultsPage.tsx
+│   │   │   └── GmResultsPage.css
+│   │   ├── results/
+│   │   │   └── mockSurveyResults.ts
 │   │   └── surveys/
 │   │       ├── surveyTypes.ts
 │   │       └── zeroSessionSurvey.ts
@@ -137,7 +141,7 @@ Cauldron_of_Everything/
 | `Question` | Вопрос анкеты | `text`, `image`, `order`, `is_active` |
 | `Choice` | Вариант ответа | FK `question` (related_name `choices`), `text`, `image`, `order` |
 | `Answer` | Ответ авторизованного пользователя | FK `user`, FK `question`, FK `choice`, `created_at`, `updated_at` |
-| `SurveySubmission` | Результат прохождения от фронтенда | `survey_id`, `player_name`, `answers` (JSON), `created_at` |
+| `SurveySubmission` | Результат прохождения от фронтенда | `survey_id`, `player_name`, `character_name`, `answers` (JSON), `created_at` |
 
 - `Question` и `Choice` упорядочены по `order`, затем `id`.
 - У `Answer` есть unique-констрейнт на пару `(user, question)` — повторный ответ перезаписывается.
@@ -155,6 +159,7 @@ Cauldron_of_Everything/
 | GET | `/api/questions/` | JWT | Список активных вопросов с вариантами |
 | GET | `/api/answers/` | JWT | Ответы текущего пользователя |
 | POST | `/api/answers/` | JWT | Сохранить/перезаписать ответ `{"question", "choice"}` |
+| GET | `/api/submissions/` | нет | Список результатов прохождения анкеты |
 | POST | `/api/submissions/` | нет | Сохранить результат целиком от фронтенда |
 | GET | `/api/schema/` | нет | OpenAPI-схема |
 | GET | `/api/docs/` | нет | Swagger UI |
@@ -225,7 +230,7 @@ Cauldron_of_Everything/
 
 ### 5.3. Взаимодействие с бэкендом
 
-- Единственный используемый эндпоинт: `POST /api/submissions/`.
+- Используемые эндпоинты: `POST /api/submissions/` (сохранение) и `GET /api/submissions/` (список результатов).
 - Адрес бэкенда захардкожен в `frontend/src/api.ts`:
   ```ts
   const API_BASE_URL = 'http://127.0.0.1:8000'
@@ -235,15 +240,17 @@ Cauldron_of_Everything/
   {
     "survey_id": "zero-session",
     "player_name": "Имя участника",
+    "character_name": "Имя персонажа",
     "answers": { "engagement": 3, "mechanic": -2, ... }
   }
   ```
+- Страница результатов мастера (`#/gm`) загружает список через `GET /api/submissions/`.
 - Ошибки сохранения логируются в консоль, UI всё равно показывает завершение.
 
 ### 5.4. Стили и ресурсы
 
 - Глобальные стили: `frontend/src/index.css` (шрифты, сброс, тёмный фон).
-- Компонентные стили: `StartPage.css`, `SurveyPage.css`.
+- Компонентные стили: `StartPage.css`, `SurveyPage.css`, `GmResultsPage.css`.
 - `App.css` не импортируется в `App.tsx` — остаток от шаблона Vite.
 - Изображения и шрифты лежат в `frontend/public/` и доступны по абсолютным путям (`/start/...`, `/survey/...`, `/fonts/...`).
 - `frontend/assets/` зарезервирована под будущие ресурсы, сейчас пуста.
@@ -357,7 +364,7 @@ npm run dev
 3. **CORS** настроен только на dev-адреса `localhost`/`127.0.0.1`.
 4. **База данных** — SQLite, подходит только для разработки.
 5. **Медиафайлы** в dev раздаются Django (`static()` в `urls.py`). В продакшене нужен nginx/CDN.
-6. **`SurveySubmissionCreateView` доступен без авторизации** — это осознанный выбор для текущего флоу, но при включении авторизации нужно будет пересмотреть.
+6. **`SurveySubmissionListCreateView` доступен без авторизации** — это осознанный выбор для текущего флоу, но при включении авторизации нужно будет пересмотреть.
 
 ### Развёртывание
 
@@ -369,18 +376,13 @@ npm run dev
 
 Эти моменты стоит знать перед правками:
 
-1. **Дублирование классов**:
-   - `SurveySubmissionSerializer` определён дважды в `backend/survey/serializers.py` (строки 62 и 78).
-   - `SurveySubmissionCreateView` определён дважды в `backend/survey/views.py` (строки 28 и 69).
-   В Python второе определение перекрывает первое, но это мёртвый/избыточный код, который стоит убрать.
+1. **Фронтенд не использует JWT-эндпоинты**: регистрация, логин, `/api/questions/`, `/api/answers/` реализованы на бэкенде, но фронтенд шлёт результат напрямую в `/api/submissions/` без авторизации.
 
-2. **Фронтенд не использует JWT-эндпоинты**: регистрация, логин, `/api/questions/`, `/api/answers/` реализованы на бэкенде, но фронтенд шлёт результат напрямую в `/api/submissions/` без авторизации.
+2. **Артефакты в корне `backend/`**: `test_resp2.json` и `test_resp3.json` — это, по-видимому, остатки ручных тестовых запросов, не часть приложения.
 
-3. **Артефакты в корне `backend/`**: `test_resp2.json` и `test_resp3.json` — это, по-видимому, остатки ручных тестовых запросов, не часть приложения.
+3. **`App.css` не используется** в `App.tsx`.
 
-4. **`App.css` не используется** в `App.tsx`.
-
-5. **`<title>` в `frontend/index.html`** — стандартный `frontend`, не переименован под проект.
+4. **`<title>` в `frontend/index.html`** — стандартный `frontend`, не переименован под проект.
 
 ---
 

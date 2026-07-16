@@ -88,6 +88,9 @@ class SurveySubmission(models.Model):
 
     survey_id = models.CharField("ID анкеты", max_length=50)
     player_name = models.CharField("Имя участника", max_length=50)
+    character_name = models.CharField(
+        "Имя персонажа", max_length=100, blank=True, default=""
+    )
     answers = models.JSONField("Ответы")  # {"question_id": значение}
     created_at = models.DateTimeField("Пройдена", auto_now_add=True)
 

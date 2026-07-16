@@ -13,6 +13,7 @@ import './SurveyPage.css'
 
 type SurveyPageProps = {
   playerName: string
+  characterName: string
   config: SurveyConfig
   onComplete: (result: SurveyResult) => void
 }
@@ -63,6 +64,7 @@ function getScaleTone(
 
 function SurveyPage({
   playerName,
+  characterName,
   config,
   onComplete,
 }: SurveyPageProps) {
@@ -162,6 +164,7 @@ function SurveyPage({
       onComplete({
         surveyId: config.id,
         playerName,
+        characterName,
         answers,
       })
 
