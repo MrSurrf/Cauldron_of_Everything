@@ -1,3 +1,4 @@
+
 # Logs
 logs
 *.log
@@ -22,3 +23,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Django
+db.sqlite3
+*.log
+
+# Загруженные картинки анкеты (кроме примера)
+media/
+!media/survey/
+media/survey/*
+!media/survey/example.png
+
+# Фронтенд-сборка и зависимости
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
