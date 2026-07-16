@@ -190,28 +190,15 @@ function SurveyPage({
           </span>
         </div>
 
-        <header className="survey-heading">
-          <div
-            className="survey-ornament"
-            aria-hidden="true"
-          >
-            <span className="survey-ornament__line" />
+<header className="survey-heading">
+  <h1 className="survey-heading__title">
+    {currentQuestion.title}
+  </h1>
 
-            <span className="survey-ornament__diamond">
-              <span>✦</span>
-            </span>
-
-            <span className="survey-ornament__line" />
-          </div>
-
-          <h1 className="survey-heading__title">
-            {currentQuestion.title}
-          </h1>
-
-          <p className="survey-heading__subtitle">
-            {currentQuestion.subtitle}
-          </p>
-        </header>
+  <p className="survey-heading__subtitle">
+    {currentQuestion.subtitle}
+  </p>
+</header>
 
         {illustrations.length > 0 && (
           <div

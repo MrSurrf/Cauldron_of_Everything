@@ -56,8 +56,9 @@
   min-height: 100svh;
 
   margin: 0 auto;
+
   padding:
-    clamp(24px, 4vh, 46px)
+    clamp(64px, 8vh, 96px)
     0
     30px;
 
@@ -80,94 +81,9 @@
 }
 
 /* Заголовок */
-
 .survey-heading {
   width: 100%;
   text-align: center;
-}
-
-.survey-ornament {
-  display: flex;
-
-  width:
-    min(
-      640px,
-      72vw
-    );
-
-  margin: 0 auto 10px;
-
-  align-items: center;
-  gap: 14px;
-}
-
-.survey-ornament__line {
-  height: 2px;
-  flex: 1;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      #9c57eb
-    );
-
-  box-shadow:
-    0 0 8px
-    rgba(134, 67, 230, 0.7);
-}
-
-.survey-ornament__line:last-child {
-  background:
-    linear-gradient(
-      90deg,
-      #9c57eb,
-      transparent
-    );
-}
-
-.survey-ornament__diamond {
-  position: relative;
-
-  display: grid;
-
-  width: 54px;
-  height: 54px;
-
-  place-items: center;
-
-  border: 4px solid #8740d2;
-
-  transform: rotate(45deg);
-
-  box-shadow:
-    0 0 8px
-    rgba(144, 72, 240, 0.8),
-    inset 0 0 8px
-    rgba(144, 72, 240, 0.35);
-}
-
-.survey-ornament__diamond::before {
-  content: '';
-
-  position: absolute;
-  inset: 7px;
-
-  border: 2px solid
-    rgba(255, 255, 255, 0.88);
-}
-
-.survey-ornament__diamond span {
-  color: #ffffff;
-
-  font-size: 28px;
-  line-height: 1;
-
-  transform: rotate(-45deg);
-
-  text-shadow:
-    0 0 5px #ffffff,
-    0 0 14px #a760ff;
 }
 
 .survey-heading__title {
@@ -451,7 +367,7 @@
     18px
     34px
     18px
-    72px;
+    82px;
 
   overflow: hidden;
 
@@ -490,7 +406,7 @@
   content: '“';
 
   position: absolute;
-  left: 28px;
+  left: 25px;
   top: 50%;
 
   color: #bc8cff;
@@ -773,8 +689,6 @@
 
 /*
   Маска применяется только к визуальным слоям.
-  На саму кнопку маска больше не накладывается,
-  поэтому свечение не обрезается.
 */
 
 .survey-scale__button::before,
@@ -942,9 +856,23 @@
   Она становится полностью непрозрачной,
   но сохраняет спокойное свечение.
 */
+/*
+  Наведённая или последняя просмотренная кнопка.
 
-.survey-scale__button--selected {
+  Теперь здесь используется прежний спокойный
+  стиль выбранного варианта: без двойной рамки,
+  со слабым белым свечением.
+*/
+
+.survey-scale__button:hover:not(
+  .survey-scale__button--selected
+),
+.survey-scale__button--hovered:not(
+  .survey-scale__button--selected
+) {
   opacity: 1;
+
+  transform: none;
 
   filter:
     drop-shadow(
@@ -957,7 +885,13 @@
     );
 }
 
-.survey-scale__button--selected
+.survey-scale__button:hover:not(
+  .survey-scale__button--selected
+)
+  .survey-scale__value,
+.survey-scale__button--hovered:not(
+  .survey-scale__button--selected
+)
   .survey-scale__value {
   opacity: 1;
 
@@ -967,13 +901,13 @@
 }
 
 /*
-  Наведение и последнее просмотренное значение.
-  Этот блок расположен после selected,
-  поэтому сильное свечение не перебивается.
+  Выбранная кнопка.
+
+  Теперь она получает прежний стиль наведения:
+  подъём, яркое белое свечение и двойную рамку.
 */
 
-.survey-scale__button:hover,
-.survey-scale__button--hovered {
+.survey-scale__button--selected {
   opacity: 1;
 
   transform:
@@ -994,33 +928,27 @@
     );
 }
 
-.survey-scale__button:hover::after,
-.survey-scale__button--hovered::after,
-.survey-scale__button:hover
-  .survey-scale__inner-frame,
-.survey-scale__button--hovered
+/* Показываем тёмный промежуток и вторую рамку */
+
+.survey-scale__button--selected::after,
+.survey-scale__button--selected
   .survey-scale__inner-frame {
   opacity: 1;
 }
 
 /*
-  При наведении поверхность уходит глубже.
-  Освободившееся место формирует:
-  внешнюю рамку, промежуток, внутреннюю рамку.
+  Уводим цветную поверхность глубже,
+  освобождая место для двойного обрамления.
 */
 
-.survey-scale__button:hover
-  .survey-scale__surface,
-.survey-scale__button--hovered
+.survey-scale__button--selected
   .survey-scale__surface {
   --cut: 2px;
 
   inset: 8px;
 }
 
-.survey-scale__button:hover
-  .survey-scale__value,
-.survey-scale__button--hovered
+.survey-scale__button--selected
   .survey-scale__value {
   opacity: 1;
 
@@ -1176,15 +1104,6 @@
     display: none;
   }
 
-  .survey-ornament {
-    width: 82vw;
-  }
-
-  .survey-ornament__diamond {
-    width: 42px;
-    height: 42px;
-  }
-
   .survey-heading__subtitle {
     margin-bottom: 20px;
   }
@@ -1219,7 +1138,7 @@
   }
 
   .survey-description::before {
-    left: 18px;
+    left: 5px;
     font-size: 58px;
   }
 
@@ -1255,16 +1174,6 @@
   .survey-shell {
     padding-top: 18px;
   }
-
-  .survey-ornament {
-    margin-bottom: 6px;
-  }
-
-  .survey-ornament__diamond {
-    width: 42px;
-    height: 42px;
-  }
-
   .survey-heading__title {
     font-size: 38px;
   }

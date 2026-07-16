@@ -4,10 +4,17 @@ import SurveyPage from './pages/SurveyPage'
 import { zeroSessionSurvey } from './surveys/zeroSessionSurvey'
 import { sendSurveyResult } from './api'
 import type { SurveyResult } from './surveys/surveyTypes'
+import GmResultsPage from './pages/GmResultsPage'
 
 function App() {
   const [playerName, setPlayerName] = useState<string | null>(null)
   const [result, setResult] = useState<SurveyResult | null>(null)
+  const isGmResultsPage =
+  window.location.hash === '#/gm'
+
+if (isGmResultsPage) {
+  return <GmResultsPage />
+}
 
   function handleComplete(surveyResult: SurveyResult) {
     setResult(surveyResult)
