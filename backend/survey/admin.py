@@ -1,6 +1,8 @@
+import json
+
 from django.contrib import admin
 
-from .models import Answer, Choice, Question
+from .models import Answer, Choice, Question, SurveySubmission
 
 
 class ChoiceInline(admin.TabularInline):
@@ -25,3 +27,16 @@ class AnswerAdmin(admin.ModelAdmin):
     list_display = ("user", "question", "choice", "updated_at")
     list_filter = ("question",)
     search_fields = ("user__username",)
+
+
+@admin.register(SurveySubmission)
+class SurveySubmissionAdmin(admin.ModelAdmin):
+    list_display = ("player_name", "survey_id", "created_at", "answers_preview")
+    list_filter = ("survey_id",)
+    search_fields = ("player_name",)
+    readonly_fields = ("survey_id", "player_name", "answers", "created_at")
+
+    @admin.display(description="Ответы")
+    def answers_preview(self, obj):
+        text = json.dumps(obj.answers, ensure_ascii=False)
+        return text[:80] + ("…" if len(text) > 80 else "")

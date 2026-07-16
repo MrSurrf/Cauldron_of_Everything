@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Answer, Choice, Question
+from .models import Answer, Choice, Question, SurveySubmission
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -57,3 +57,20 @@ class AnswerSerializer(serializers.ModelSerializer):
                 {"choice": "Этот вариант ответа не относится к выбранному вопросу."}
             )
         return attrs
+
+
+class SurveySubmissionSerializer(serializers.ModelSerializer):
+    """Результат прохождения анкеты от фронтенда."""
+
+    class Meta:
+        model = SurveySubmission
+        fields = ("id", "survey_id", "player_name", "answers", "created_at")
+        read_only_fields = ("created_at",)
+
+    def validate_answers(self, value):
+        if not isinstance(value, dict) or not value:
+            raise serializers.ValidationError(
+                "Ожидается непустой объект вида {\"question_id\": значение}."
+            )
+        return value
+

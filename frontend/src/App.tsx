@@ -2,11 +2,19 @@ import { useState } from 'react'
 import StartPage from './pages/StartPage'
 import SurveyPage from './pages/SurveyPage'
 import { zeroSessionSurvey } from './surveys/zeroSessionSurvey'
+import { sendSurveyResult } from './api'
 import type { SurveyResult } from './surveys/surveyTypes'
 
 function App() {
   const [playerName, setPlayerName] = useState<string | null>(null)
   const [result, setResult] = useState<SurveyResult | null>(null)
+
+  function handleComplete(surveyResult: SurveyResult) {
+    setResult(surveyResult)
+    sendSurveyResult(surveyResult).catch((error) => {
+      console.error('Не удалось сохранить результат', error)
+    })
+  }
 
   if (!playerName) {
     return <StartPage onStart={setPlayerName} />
@@ -35,7 +43,7 @@ function App() {
     <SurveyPage
       playerName={playerName}
       config={zeroSessionSurvey}
-      onComplete={setResult}
+      onComplete={handleComplete}
     />
   )
 }

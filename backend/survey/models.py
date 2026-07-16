@@ -81,3 +81,20 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.question} → {self.choice}"
+
+
+class SurveySubmission(models.Model):
+    """Результат прохождения анкеты целиком (сырой формат от фронтенда)."""
+
+    survey_id = models.CharField("ID анкеты", max_length=50)
+    player_name = models.CharField("Имя участника", max_length=50)
+    answers = models.JSONField("Ответы")  # {"question_id": значение}
+    created_at = models.DateTimeField("Пройдена", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Результат анкеты"
+        verbose_name_plural = "Результаты анкет"
+
+    def __str__(self):
+        return f"{self.player_name} — {self.survey_id} ({self.created_at:%d.%m.%Y %H:%M})"

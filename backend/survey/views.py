@@ -2,8 +2,13 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Answer, Question
-from .serializers import AnswerSerializer, QuestionSerializer, RegisterSerializer
+from .models import Answer, Question, SurveySubmission
+from .serializers import (
+    AnswerSerializer,
+    QuestionSerializer,
+    RegisterSerializer,
+    SurveySubmissionSerializer,
+)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -18,6 +23,18 @@ class QuestionListView(generics.ListAPIView):
 
     serializer_class = QuestionSerializer
     queryset = Question.objects.filter(is_active=True).prefetch_related("choices")
+
+
+class SurveySubmissionCreateView(generics.CreateAPIView):
+    """
+    POST /api/submissions/ — сохранить результат прохождения анкеты целиком.
+    Принимает {"survey_id": "...", "player_name": "...", "answers": {"question_id": value}}.
+    Пока без авторизации: фронтенд идентифицирует участника по имени.
+    """
+
+    serializer_class = SurveySubmissionSerializer
+    permission_classes = [AllowAny]
+    queryset = SurveySubmission.objects.none()
 
 
 class AnswerListCreateView(generics.ListCreateAPIView):
@@ -47,3 +64,4 @@ class AnswerListCreateView(generics.ListCreateAPIView):
             output.data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
