@@ -1,0 +1,1306 @@
+.survey-page {
+  --survey-font:
+    'Gilroy',
+    Arial,
+    sans-serif;
+
+  --survey-title-font:
+    GothicRus,
+    Georgia,
+    serif;
+
+  position: relative;
+
+  width: 100%;
+  min-width: 320px;
+  min-height: 100svh;
+
+  overflow-x: hidden;
+
+  background:
+    #05040d
+    url('/survey/common/background.png')
+    center / cover
+    no-repeat;
+
+  color: #ffffff;
+  font-family: var(--survey-font);
+}
+
+.survey-page__overlay {
+  position: fixed;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(2, 2, 10, 0.18),
+      rgba(4, 3, 13, 0.34)
+    );
+
+  pointer-events: none;
+}
+
+.survey-shell {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+
+  width:
+    min(
+      1120px,
+      calc(100vw - 48px)
+    );
+
+  min-height: 100svh;
+
+  margin: 0 auto;
+  padding:
+    clamp(24px, 4vh, 46px)
+    0
+    30px;
+
+  flex-direction: column;
+  align-items: center;
+}
+
+.survey-meta {
+  position: absolute;
+  top: 18px;
+  right: 0;
+
+  display: flex;
+  gap: 18px;
+
+  color: rgba(226, 216, 243, 0.55);
+
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* Заголовок */
+
+.survey-heading {
+  width: 100%;
+  text-align: center;
+}
+
+.survey-ornament {
+  display: flex;
+
+  width:
+    min(
+      640px,
+      72vw
+    );
+
+  margin: 0 auto 10px;
+
+  align-items: center;
+  gap: 14px;
+}
+
+.survey-ornament__line {
+  height: 2px;
+  flex: 1;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #9c57eb
+    );
+
+  box-shadow:
+    0 0 8px
+    rgba(134, 67, 230, 0.7);
+}
+
+.survey-ornament__line:last-child {
+  background:
+    linear-gradient(
+      90deg,
+      #9c57eb,
+      transparent
+    );
+}
+
+.survey-ornament__diamond {
+  position: relative;
+
+  display: grid;
+
+  width: 54px;
+  height: 54px;
+
+  place-items: center;
+
+  border: 4px solid #8740d2;
+
+  transform: rotate(45deg);
+
+  box-shadow:
+    0 0 8px
+    rgba(144, 72, 240, 0.8),
+    inset 0 0 8px
+    rgba(144, 72, 240, 0.35);
+}
+
+.survey-ornament__diamond::before {
+  content: '';
+
+  position: absolute;
+  inset: 7px;
+
+  border: 2px solid
+    rgba(255, 255, 255, 0.88);
+}
+
+.survey-ornament__diamond span {
+  color: #ffffff;
+
+  font-size: 28px;
+  line-height: 1;
+
+  transform: rotate(-45deg);
+
+  text-shadow:
+    0 0 5px #ffffff,
+    0 0 14px #a760ff;
+}
+
+.survey-heading__title {
+  margin: 0;
+
+  font-family:
+    var(--survey-title-font);
+
+  font-size:
+    clamp(
+      34px,
+      4.2vw,
+      56px
+    );
+
+  font-weight: 400;
+  line-height: 1;
+
+  text-shadow:
+    0 0 4px
+    rgba(255, 255, 255, 0.75),
+    0 0 16px
+    rgba(130, 72, 225, 0.55);
+}
+
+.survey-heading__subtitle {
+  margin:
+    10px
+    auto
+    clamp(24px, 3.4vh, 38px);
+
+  color:
+    rgba(245, 240, 250, 0.86);
+
+  font-size:
+    clamp(
+      14px,
+      1.45vw,
+      18px
+    );
+
+  line-height: 1.4;
+}
+
+/* Общие цвета */
+
+[data-tone='idle'] {
+  --tone-rgb: 148, 119, 188;
+  --tone-light: #d8cce5;
+  --tone-dark: #373040;
+}
+
+[data-tone='negative-strong'] {
+  --tone-rgb: 0, 192, 126;
+  --tone-light: #38d49d;
+  --tone-dark: #07533d;
+}
+
+[data-tone='negative'] {
+  --tone-rgb: 83, 204, 166;
+  --tone-light: #82dfc0;
+  --tone-dark: #316f5e;
+}
+
+[data-tone='negative-soft'] {
+  --tone-rgb: 149, 220, 194;
+  --tone-light: #b8ebd8;
+  --tone-dark: #648f80;
+}
+
+[data-tone='neutral'] {
+  --tone-rgb: 255, 140, 56;
+  --tone-light: #ffb067;
+  --tone-dark: #8e491e;
+}
+
+[data-tone='positive-soft'] {
+  --tone-rgb: 218, 128, 222;
+  --tone-light: #e7a8e9;
+  --tone-dark: #814b85;
+}
+
+[data-tone='positive'] {
+  --tone-rgb: 190, 56, 207;
+  --tone-light: #d965e8;
+  --tone-dark: #70217d;
+}
+
+[data-tone='positive-strong'] {
+  --tone-rgb: 238, 0, 210;
+  --tone-light: #ff4ae7;
+  --tone-dark: #770066;
+}
+
+/* Панель с иллюстрациями */
+
+.survey-illustration-panel {
+  position: relative;
+
+  width: 100%;
+
+  padding:
+    clamp(18px, 2.4vw, 32px)
+    clamp(18px, 3vw, 42px);
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgba(218, 181, 106, 0.9);
+
+  clip-path:
+    polygon(
+      18px 0,
+      calc(100% - 18px) 0,
+      100% 18px,
+      100% calc(100% - 18px),
+      calc(100% - 18px) 100%,
+      18px 100%,
+      0 calc(100% - 18px),
+      0 18px
+    );
+
+  background:
+    radial-gradient(
+      circle at
+      var(--active-position)
+      50%,
+      rgba(
+        var(--tone-rgb),
+        0.28
+      ),
+      transparent 22%
+    ),
+    radial-gradient(
+      ellipse at center,
+      rgba(
+        255,
+        255,
+        255,
+        0.82
+      ),
+      transparent 78%
+    ),
+    linear-gradient(
+      180deg,
+      #eeecef,
+      #d4d1d8
+    );
+
+  box-shadow:
+    inset 0 0 28px
+    rgba(65, 57, 75, 0.16),
+    0 12px 34px
+    rgba(0, 0, 0, 0.32);
+
+  transition:
+    background 220ms ease;
+}
+
+.survey-illustration-panel::before,
+.survey-illustration-panel::after {
+  content: '';
+
+  position: absolute;
+
+  width: 16px;
+  height: 16px;
+
+  border-color:
+    rgba(224, 187, 111, 0.95);
+
+  pointer-events: none;
+}
+
+.survey-illustration-panel::before {
+  top: 7px;
+  left: 7px;
+
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.survey-illustration-panel::after {
+  right: 7px;
+  bottom: 7px;
+
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+}
+
+.survey-illustrations {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+
+  align-items: center;
+  gap:
+    clamp(
+      8px,
+      2vw,
+      30px
+    );
+}
+
+.survey-illustration {
+  display: grid;
+
+  min-width: 0;
+
+  place-items: center;
+
+  opacity: 0.22;
+
+  transform: scale(0.94);
+
+  filter:
+    grayscale(1)
+    contrast(0.72);
+
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease,
+    filter 200ms ease;
+}
+
+.survey-illustration img {
+  display: block;
+
+  width: 100%;
+  max-width: 160px;
+  height: auto;
+
+  pointer-events: none;
+  user-select: none;
+}
+
+.survey-illustration--active {
+  opacity: 1;
+
+  transform:
+    translateY(-3px)
+    scale(1.035);
+
+  filter:
+    grayscale(0)
+    contrast(1)
+    drop-shadow(
+      0 0 4px
+      rgba(
+        var(--tone-rgb),
+        0.42
+      )
+    );
+}
+
+/* Описание */
+
+.survey-description {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: min(760px, 76%);
+  height: 140px;
+
+  margin:
+    clamp(28px, 4vh, 42px)
+    auto
+    clamp(24px, 3.4vh, 38px);
+
+  padding:
+    18px
+    34px
+    18px
+    72px;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgba(218, 202, 171, 0.85);
+
+  clip-path:
+    polygon(
+      14px 0,
+      calc(100% - 14px) 0,
+      100% 14px,
+      100% calc(100% - 14px),
+      calc(100% - 14px) 100%,
+      14px 100%,
+      0 calc(100% - 14px),
+      0 14px
+    );
+
+  background:
+    radial-gradient(
+      circle at 16% 50%,
+      rgba(var(--tone-rgb), 0.15),
+      transparent 42%
+    ),
+    rgba(12, 10, 29, 0.86);
+
+  box-shadow:
+    inset 0 0 26px
+    rgba(112, 73, 175, 0.18),
+    0 8px 26px
+    rgba(0, 0, 0, 0.28);
+}
+
+.survey-description::before {
+  content: '“';
+
+  position: absolute;
+  left: 28px;
+  top: 50%;
+
+  color: #bc8cff;
+
+  font-family: Georgia, serif;
+  font-size: 70px;
+  font-weight: 700;
+  line-height: 1;
+
+  transform: translateY(-31%);
+
+  text-shadow:
+    0 0 12px
+    rgba(160, 91, 255, 0.72);
+
+  pointer-events: none;
+}
+
+.survey-description p {
+  width: 100%;
+  max-height: 85px;
+
+  margin: 0;
+  padding-right: 10px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  color:
+    rgba(244, 238, 252, 0.92);
+
+  font-size:
+    clamp(
+      14px,
+      1.4vw,
+      18px
+    );
+
+  line-height: 1.35;
+
+  scrollbar-width: thin;
+  scrollbar-color:
+    rgba(178, 123, 241, 0.5)
+    transparent;
+}
+
+.survey-description p::-webkit-scrollbar {
+  width: 4px;
+}
+
+.survey-description p::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.survey-description p::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background:
+    rgba(178, 123, 241, 0.5);
+}
+
+/* Шкала */
+
+.survey-scale {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+
+  gap:
+    clamp(
+      8px,
+      1vw,
+      14px
+    );
+}
+
+/*
+  Зелёные варианты.
+  У всех одна бледно-зелёная обводка.
+*/
+
+.survey-scale__button[data-value='-5'] {
+  --button-center: #15956f;
+  --button-middle: #0b7457;
+  --button-edge: #064434;
+  --button-border: #a8d9c7;
+}
+
+.survey-scale__button[data-value='-4'] {
+  --button-center: #35aa85;
+  --button-middle: #25866a;
+  --button-edge: #10513f;
+  --button-border: #a8d9c7;
+}
+
+.survey-scale__button[data-value='-3'] {
+  --button-center: #59b89a;
+  --button-middle: #418f78;
+  --button-edge: #285c4e;
+  --button-border: #a8d9c7;
+}
+
+.survey-scale__button[data-value='-2'] {
+  --button-center: #7cc7ae;
+  --button-middle: #609d89;
+  --button-edge: #3d695b;
+  --button-border: #a8d9c7;
+}
+
+.survey-scale__button[data-value='-1'] {
+  --button-center: #a1d3c1;
+  --button-middle: #80a999;
+  --button-edge: #58766b;
+  --button-border: #a8d9c7;
+}
+
+/*
+  Оранжевый вариант.
+*/
+
+.survey-scale__button[data-value='0'] {
+  --button-center: #df782e;
+  --button-middle: #bd591c;
+  --button-edge: #7f350c;
+  --button-border: #e7c58f;
+}
+
+/*
+  Фиолетовые варианты.
+  У всех одна бледно-фиолетовая обводка.
+*/
+
+.survey-scale__button[data-value='1'] {
+  --button-center: #c982ca;
+  --button-middle: #a15fa3;
+  --button-edge: #68406a;
+  --button-border: #d2b4da;
+}
+
+.survey-scale__button[data-value='2'] {
+  --button-center: #c15dc4;
+  --button-middle: #99409e;
+  --button-edge: #622a67;
+  --button-border: #d2b4da;
+}
+
+.survey-scale__button[data-value='3'] {
+  --button-center: #b936c0;
+  --button-middle: #902395;
+  --button-edge: #5b155f;
+  --button-border: #d2b4da;
+}
+
+.survey-scale__button[data-value='4'] {
+  --button-center: #ae1bb8;
+  --button-middle: #850e8d;
+  --button-edge: #520859;
+  --button-border: #d2b4da;
+}
+
+.survey-scale__button[data-value='5'] {
+  --button-center: #cf18c6;
+  --button-middle: #a10099;
+  --button-edge: #61005c;
+  --button-border: #d2b4da;
+}
+
+.survey-scale__button {
+  --button-fill:
+    radial-gradient(
+      circle at 50% 50%,
+      var(--button-center) 0%,
+      var(--button-middle) 55%,
+      var(--button-edge) 100%
+    );
+
+  --cut: 5px;
+
+  position: relative;
+
+  display: grid;
+
+  width:
+    clamp(
+      58px,
+      5.7vw,
+      74px
+    );
+
+  aspect-ratio: 1;
+
+  flex: 0 0 auto;
+  place-items: center;
+
+  padding: 0;
+  border: 0;
+  outline: 0;
+
+  background:color-mix(
+    in srgb,
+    var(--button-border) 85%,
+    transparent
+  );
+
+  color: #ffffff;
+
+  font-family: 'GothicRus', Georgia, serif;
+  font-size:
+    clamp(
+      20px,
+      2.1vw,
+      28px
+    );
+
+  font-weight: 400;
+
+  cursor: pointer;
+  isolation: isolate;
+
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.survey-scale__button {
+  --button-fill:
+    radial-gradient(
+      circle at 50% 50%,
+      var(--button-center) 0%,
+      var(--button-middle) 55%,
+      var(--button-edge) 100%
+    );
+
+  position: relative;
+
+  display: grid;
+
+  width:
+    clamp(
+      58px,
+      5.7vw,
+      74px
+    );
+
+  aspect-ratio: 1;
+
+  flex: 0 0 auto;
+  place-items: center;
+
+  padding: 0;
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: #ffffff;
+
+  font-family: 'GothicRus', Georgia, serif;
+  font-size:
+    clamp(
+      20px,
+      2.1vw,
+      28px
+    );
+
+  font-weight: 400;
+
+  cursor: pointer;
+  isolation: isolate;
+
+  /*
+    Общая прозрачность обычной кнопки.
+    При наведении и выборе возвращается 1.
+  */
+  opacity: 0.85;
+
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+/*
+  Маска применяется только к визуальным слоям.
+  На саму кнопку маска больше не накладывается,
+  поэтому свечение не обрезается.
+*/
+
+.survey-scale__button::before,
+.survey-scale__button::after,
+.survey-scale__inner-frame,
+.survey-scale__surface {
+  -webkit-mask:
+    radial-gradient(
+      circle at 0 0,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    top left / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 100% 0,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    top right / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 100% 100%,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    bottom right / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 0 100%,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    bottom left / 51% 51% no-repeat;
+
+  mask:
+    radial-gradient(
+      circle at 0 0,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    top left / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 100% 0,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    top right / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 100% 100%,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    bottom right / 51% 51% no-repeat,
+
+    radial-gradient(
+      circle at 0 100%,
+      transparent 0 var(--cut),
+      #000 calc(var(--cut) + 0.7px)
+    )
+    bottom left / 51% 51% no-repeat;
+
+  pointer-events: none;
+}
+
+/* Внешняя рамка */
+
+.survey-scale__button::before {
+  content: '';
+
+  --cut: 5px;
+
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  background: var(--button-border);
+}
+
+/*
+  Тёмный промежуток между рамками.
+  Появляется только у просматриваемой кнопки.
+*/
+
+.survey-scale__button::after {
+  content: '';
+
+  --cut: 4px;
+
+  position: absolute;
+  inset: 3px;
+  z-index: 1;
+
+  background: rgba(6, 6, 11, 0.88);
+
+  opacity: 0;
+
+  transition:
+    opacity 150ms ease;
+}
+
+/* Вторая внутренняя рамка */
+
+.survey-scale__inner-frame {
+  --cut: 3px;
+
+  position: absolute;
+  inset: 6px;
+  z-index: 2;
+
+  background: var(--button-border);
+
+  opacity: 0;
+
+  transition:
+    opacity 150ms ease;
+}
+
+/*
+  Цветная поверхность.
+  В обычном состоянии начинается сразу
+  после внешней рамки.
+*/
+
+.survey-scale__surface {
+  --cut: 4px;
+
+  position: absolute;
+  inset: 3px;
+  z-index: 3;
+
+  background: var(--button-fill);
+
+  pointer-events: none;
+
+  transition:
+    inset 150ms ease;
+}
+
+/* Текст */
+
+.survey-scale__value {
+  position: relative;
+  z-index: 4;
+
+  opacity: 0.6;
+
+  font-family: 'GothicRus', Georgia, serif;
+  font-weight: 400;
+  line-height: 1;
+
+  text-shadow:
+    0 0 3px
+    rgba(255, 255, 255, 0.3);
+
+  transition:
+    opacity 150ms ease,
+    text-shadow 150ms ease;
+}
+
+/*
+  Выбранная кнопка.
+  Она становится полностью непрозрачной,
+  но сохраняет спокойное свечение.
+*/
+
+.survey-scale__button--selected {
+  opacity: 1;
+
+  filter:
+    drop-shadow(
+      0 0 2px
+      rgba(255, 255, 255, 0.42)
+    )
+    drop-shadow(
+      0 0 5px
+      rgba(255, 255, 255, 0.14)
+    );
+}
+
+.survey-scale__button--selected
+  .survey-scale__value {
+  opacity: 1;
+
+  text-shadow:
+    0 0 4px
+    rgba(255, 255, 255, 0.58);
+}
+
+/*
+  Наведение и последнее просмотренное значение.
+  Этот блок расположен после selected,
+  поэтому сильное свечение не перебивается.
+*/
+
+.survey-scale__button:hover,
+.survey-scale__button--hovered {
+  opacity: 1;
+
+  transform:
+    translateY(-2px);
+
+  filter:
+    drop-shadow(
+      0 0 2px
+      rgba(255, 255, 255, 1)
+    )
+    drop-shadow(
+      0 0 6px
+      rgba(255, 255, 255, 0.58)
+    )
+    drop-shadow(
+      0 0 13px
+      rgba(255, 255, 255, 0.26)
+    );
+}
+
+.survey-scale__button:hover::after,
+.survey-scale__button--hovered::after,
+.survey-scale__button:hover
+  .survey-scale__inner-frame,
+.survey-scale__button--hovered
+  .survey-scale__inner-frame {
+  opacity: 1;
+}
+
+/*
+  При наведении поверхность уходит глубже.
+  Освободившееся место формирует:
+  внешнюю рамку, промежуток, внутреннюю рамку.
+*/
+
+.survey-scale__button:hover
+  .survey-scale__surface,
+.survey-scale__button--hovered
+  .survey-scale__surface {
+  --cut: 2px;
+
+  inset: 8px;
+}
+
+.survey-scale__button:hover
+  .survey-scale__value,
+.survey-scale__button--hovered
+  .survey-scale__value {
+  opacity: 1;
+
+  text-shadow:
+    0 0 4px
+    rgba(255, 255, 255, 0.72);
+}
+
+/* Нажатие */
+
+.survey-scale__button:active {
+  opacity: 1;
+
+  transform:
+    translateY(0)
+    scale(0.98);
+
+  filter:
+    drop-shadow(
+      0 0 3px
+      rgba(255, 255, 255, 0.5)
+    );
+
+  transition-duration: 70ms;
+}
+
+.survey-scale__button:focus-visible {
+  opacity: 1;
+
+  outline:
+    1px solid
+    rgba(255, 255, 255, 0.72);
+
+  outline-offset: 4px;
+}
+
+.survey-scale__button:focus-visible {
+  outline:
+    1px solid
+    rgba(255, 255, 255, 0.7);
+
+  outline-offset: 4px;
+}
+
+/* Навигация */
+
+.survey-navigation {
+  display: flex;
+
+  width:
+    min(
+      760px,
+      100%
+    );
+
+  margin-top: 22px;
+
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.survey-navigation__button {
+  min-width: 116px;
+
+  padding:
+    10px
+    22px;
+
+  border:
+    1px solid
+    rgba(169, 113, 235, 0.62);
+
+  background:
+    rgba(12, 9, 25, 0.78);
+
+  color:
+    rgba(242, 235, 250, 0.88);
+
+  font-family: inherit;
+  font-size: 15px;
+
+  cursor: pointer;
+
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.survey-navigation__button:hover:not(
+  :disabled
+) {
+  border-color: #c799ff;
+
+  box-shadow:
+    0 0 12px
+    rgba(142, 73, 226, 0.45);
+}
+
+.survey-navigation__button--primary {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(91, 35, 141, 0.9),
+      rgba(36, 15, 61, 0.92)
+    );
+}
+
+.survey-navigation__button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* Адаптив */
+
+@media (max-width: 900px) {
+  .survey-shell {
+    width:
+      calc(100vw - 28px);
+  }
+
+  .survey-description {
+    width: 86%;
+  }
+
+  .survey-scale {
+    gap: 7px;
+  }
+
+  .survey-scale__button {
+    width:
+      clamp(
+        50px,
+        7vw,
+        64px
+      );
+  }
+}
+
+@media (max-width: 680px) {
+  .survey-page {
+    background-position: center;
+  }
+
+  .survey-shell {
+    width:
+      calc(100vw - 20px);
+
+    padding-top: 26px;
+  }
+
+  .survey-meta {
+    display: none;
+  }
+
+  .survey-ornament {
+    width: 82vw;
+  }
+
+  .survey-ornament__diamond {
+    width: 42px;
+    height: 42px;
+  }
+
+  .survey-heading__subtitle {
+    margin-bottom: 20px;
+  }
+
+  .survey-illustration-panel {
+    padding:
+      18px
+      10px;
+  }
+
+  .survey-illustrations {
+    gap: 4px;
+  }
+
+  .survey-illustration img {
+    max-width: 110px;
+  }
+
+  .survey-description {
+    width: 100%;
+
+    min-height: 140px;
+
+    margin:
+      24px 0;
+
+    padding:
+      18px
+      20px
+      18px
+      58px;
+  }
+
+  .survey-description::before {
+    left: 18px;
+    font-size: 58px;
+  }
+
+  .survey-scale {
+    width: 100%;
+
+    justify-content: flex-start;
+
+    padding:
+      5px
+      3px
+      14px;
+
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+  }
+
+  .survey-scale__button {
+    width: 58px;
+  }
+
+  .survey-navigation {
+    margin-top: 12px;
+  }
+}
+
+@media (
+  max-height: 760px
+) and (
+  min-width: 681px
+) {
+  .survey-shell {
+    padding-top: 18px;
+  }
+
+  .survey-ornament {
+    margin-bottom: 6px;
+  }
+
+  .survey-ornament__diamond {
+    width: 42px;
+    height: 42px;
+  }
+
+  .survey-heading__title {
+    font-size: 38px;
+  }
+
+  .survey-heading__subtitle {
+    margin-bottom: 18px;
+  }
+
+  .survey-illustration-panel {
+    padding:
+      14px
+      28px;
+  }
+
+  .survey-illustration img {
+    max-width: 120px;
+  }
+
+  .survey-description {
+    min-height: 70px;
+
+    margin:
+      18px auto;
+
+    padding:
+      14px
+      30px
+      14px
+      64px;
+  }
+
+  .survey-scale__button {
+    width: 55px;
+  }
+
+  .survey-navigation {
+    margin-top: 12px;
+  }
+}
