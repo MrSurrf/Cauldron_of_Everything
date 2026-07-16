@@ -3,10 +3,17 @@ import StartPage from './pages/StartPage'
 import SurveyPage from './pages/SurveyPage'
 import { zeroSessionSurvey } from './surveys/zeroSessionSurvey'
 import type { SurveyResult } from './surveys/surveyTypes'
+import GmResultsPage from './pages/GmResultsPage'
 
 function App() {
   const [playerName, setPlayerName] = useState<string | null>(null)
   const [result, setResult] = useState<SurveyResult | null>(null)
+  const isGmResultsPage =
+  window.location.hash === '#/gm'
+
+if (isGmResultsPage) {
+  return <GmResultsPage />
+}
 
   if (!playerName) {
     return <StartPage onStart={setPlayerName} />
