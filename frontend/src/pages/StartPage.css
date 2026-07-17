@@ -12,18 +12,69 @@
 }
 
 .start-page__scene {
+  /*
+    Текущее положение фона.
+    Эти значения обновляются из StartPage.tsx.
+  */
+  --parallax-x: 0px;
+  --parallax-y: 0px;
+
+  /*
+    НАСТРОЙКИ ПАРАЛЛАКСА В CSS
+  */
+  --parallax-scale: 1.06;
+  --parallax-inset: 0;
+
   position: relative;
 
-  width: min(100vw, calc(100svh * 16 / 9));
-  height: min(100svh, calc(100vw * 9 / 16));
+  width:
+    min(
+      100vw,
+      calc(100svh * 16 / 9)
+    );
+
+  height:
+    min(
+      100svh,
+      calc(100vw * 9 / 16)
+    );
+
   aspect-ratio: 16 / 9;
 
   overflow: hidden;
+  isolation: isolate;
+
+  background: #020108;
+}
+
+.start-page__background {
+  position: absolute;
+  inset: var(--parallax-inset);
+
+  z-index: 0;
 
   background:
     url('/start/background.png')
-    center center / 100% 100%
+    center / cover
     no-repeat;
+
+  transform:
+    translate3d(
+      var(--parallax-x),
+      var(--parallax-y),
+      0
+    )
+    scale(
+      var(--parallax-scale)
+    );
+
+  transform-origin: center;
+
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+
+  transition: none;
 }
 
 /* Голова и руки */
@@ -280,8 +331,8 @@
     height: 100svh;
     aspect-ratio: auto;
 
-    background-size: cover;
-    background-position: center;
+    /* background-size: cover;
+    background-position: center; */
   }
 
   .start-page__head {
@@ -339,5 +390,13 @@
   .start-page__head,
   .start-page__hand {
     animation: none;
+  }
+
+  .start-page__background {
+    transform: scale(
+      var(--parallax-scale)
+    );
+
+    transition: none;
   }
 }
