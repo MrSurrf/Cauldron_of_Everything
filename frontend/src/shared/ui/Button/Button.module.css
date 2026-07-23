@@ -1,0 +1,318 @@
+.button {
+  --button-border: var(--palette-gray-700);
+  --button-inner-border: var(--palette-gray-700);
+  --button-text: var(--palette-gray-300);
+  --button-glow: var(--palette-black);
+  --button-surface-start: var(--palette-gray-900);
+  --button-surface-end: var(--palette-black);
+  --button-corner-size: 0.4rem;
+
+  position: relative;
+  isolation: isolate;
+
+  display: inline-flex;
+  min-height: 5.5rem;
+  max-width: 100%;
+  padding: 0 2.75rem;
+
+  align-items: center;
+  justify-content: center;
+  gap: 1.9rem;
+
+  border: 0;
+  outline: 0;
+
+  background: var(--button-border);
+  clip-path:
+    polygon(
+      var(--button-corner-size) 0,
+      calc(100% - var(--button-corner-size)) 0,
+      100% var(--button-corner-size),
+      100% calc(100% - var(--button-corner-size)),
+      calc(100% - var(--button-corner-size)) 100%,
+      var(--button-corner-size) 100%,
+      0 calc(100% - var(--button-corner-size)),
+      0 var(--button-corner-size)
+    );
+
+  color: var(--button-text);
+  font-family: var(--font-family-body);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  cursor: pointer;
+  filter:
+    drop-shadow(
+      0 0 0.35rem
+      color-mix(
+        in srgb,
+        var(--button-glow) 46%,
+        transparent
+      )
+    );
+  user-select: none;
+
+  transition:
+    color var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    filter var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    opacity var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    transform var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
+.button::before {
+  content: '';
+
+  position: absolute;
+  z-index: -1;
+  inset: 0.125rem;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--button-surface-start),
+      var(--button-surface-end)
+    );
+
+  clip-path:
+    polygon(
+      calc(var(--button-corner-size) - 0.125rem) 0,
+      calc(
+        100% -
+        var(--button-corner-size) +
+        0.125rem
+      ) 0,
+      100%
+      calc(var(--button-corner-size) - 0.125rem),
+      100%
+      calc(
+        100% -
+        var(--button-corner-size) +
+        0.125rem
+      ),
+      calc(
+        100% -
+        var(--button-corner-size) +
+        0.125rem
+      ) 100%,
+      calc(var(--button-corner-size) - 0.125rem)
+      100%,
+      0
+      calc(
+        100% -
+        var(--button-corner-size) +
+        0.125rem
+      ),
+      0
+      calc(var(--button-corner-size) - 0.125rem)
+    );
+}
+
+.button::after {
+  content: '';
+
+  position: absolute;
+  z-index: -1;
+  inset: 0.42rem;
+
+  border: var(--border-width-default) solid
+    var(--button-inner-border);
+
+  clip-path:
+    polygon(
+      0.2rem 0,
+      calc(100% - 0.2rem) 0,
+      100% 0.2rem,
+      100% calc(100% - 0.2rem),
+      calc(100% - 0.2rem) 100%,
+      0.2rem 100%,
+      0 calc(100% - 0.2rem),
+      0 0.2rem
+    );
+
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.button[data-variant='primary'] {
+  --button-border: var(--palette-purple-700);
+  --button-inner-border:
+    color-mix(
+      in srgb,
+      var(--palette-purple-300) 52%,
+      var(--palette-purple-700)
+    );
+  --button-text: var(--palette-purple-300);
+  --button-glow: var(--palette-purple-700);
+  --button-surface-start:
+    color-mix(
+      in srgb,
+      var(--palette-purple-700) 32%,
+      var(--palette-gray-900)
+    );
+  --button-surface-end:
+    color-mix(
+      in srgb,
+      var(--palette-purple-700) 46%,
+      var(--palette-gray-900)
+    );
+
+  text-shadow:
+    0 0 0.45rem
+    color-mix(
+      in srgb,
+      var(--palette-purple-300) 58%,
+      transparent
+    );
+}
+
+.button[data-variant='secondary'] {
+  --button-border: var(--palette-gray-700);
+  --button-inner-border:
+    color-mix(
+      in srgb,
+      var(--palette-gray-300) 34%,
+      var(--palette-gray-900)
+    );
+  --button-text: var(--palette-gray-300);
+  --button-glow: var(--palette-black);
+  --button-surface-start: var(--palette-gray-900);
+  --button-surface-end: var(--palette-black);
+}
+
+.button:hover:not(:disabled) {
+  filter:
+    brightness(1.12)
+    drop-shadow(
+      0 0 0.58rem
+      color-mix(
+        in srgb,
+        var(--button-glow) 62%,
+        transparent
+      )
+    );
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0.125rem);
+  filter:
+    brightness(0.94)
+    drop-shadow(
+      0 0 0.25rem
+      color-mix(
+        in srgb,
+        var(--button-glow) 38%,
+        transparent
+      )
+    );
+}
+
+.button:focus-visible {
+  filter:
+    drop-shadow(
+      0 0 0.12rem
+      var(--palette-white)
+    )
+    drop-shadow(
+      0 0 0.62rem
+      var(--palette-purple-500)
+    );
+}
+
+.button:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  filter: none;
+}
+
+.label,
+.arrow {
+  position: relative;
+  z-index: 1;
+}
+
+.arrow {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 1.75rem;
+  color: var(--button-text);
+  filter:
+    drop-shadow(
+      0 0 0.32rem
+      color-mix(
+        in srgb,
+        var(--palette-purple-300) 58%,
+        transparent
+      )
+    );
+}
+
+.arrow::before,
+.arrow::after {
+  content: '';
+
+  position: absolute;
+  top: 50%;
+
+  background: currentColor;
+}
+
+.arrow::before {
+  right: 0.12rem;
+  left: 0.1rem;
+
+  height: 0.14rem;
+
+  transform: translateY(-50%);
+}
+
+.arrow::after {
+  right: 0.1rem;
+
+  width: 0.72rem;
+  height: 0.72rem;
+
+  background: transparent;
+  border-top: 0.14rem solid currentColor;
+  border-right: 0.14rem solid currentColor;
+
+  transform:
+    translateY(-50%)
+    rotate(45deg);
+  transform-origin: center;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .button {
+    min-height: 4.25rem;
+    padding: 0 var(--space-5);
+    gap: var(--space-4);
+
+    font-size: 1.05rem;
+    white-space: normal;
+  }
+
+  .arrow {
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-basis: 1.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}

@@ -41,23 +41,16 @@ Cauldron_of_Everything/
 ├── frontend/                   # React-приложение
 │   ├── public/                 # статика (шрифты, картинки, favicon)
 │   │   ├── fonts/              # шрифты Gilroy и GothicRus
-│   │   ├── start/              # картинки стартовой страницы
-│   │   └── survey/             # иллюстрации вопросов
+│   │   └── tools/survey/       # изображения рабочего опросника
 │   ├── src/                    # исходный код
 │   │   ├── main.tsx            # точка входа
-│   │   ├── App.tsx             # главный компонент, переключает экраны
-│   │   ├── api.ts              # функции для общения с бэкендом
-│   │   ├── index.css           # глобальные стили + @font-face
-│   │   ├── pages/              # страницы приложения
-│   │   │   ├── StartPage.tsx
-│   │   │   ├── SurveyPage.tsx
-│   │   │   ├── GmResultsPage.tsx
-│   │   │   └── *.css           # стили рядом с компонентами
-│   │   ├── surveys/            # конфигурации анкет
-│   │   │   ├── surveyTypes.ts
-│   │   │   └── zeroSessionSurvey.ts
-│   │   └── results/            # вспомогательные данные для результатов
-│   │       └── mockSurveyResults.ts
+│   │   ├── app/                # оболочка и глобальные стили
+│   │   ├── pages/              # тонкие точки входа URL
+│   │   ├── workspace/          # контракты плиточной платформы
+│   │   ├── tools/survey/       # рабочий опросник целиком
+│   │   ├── entities/           # общие предметные сущности
+│   │   ├── shared/             # дизайн-токены и общий UI
+│   │   └── ARCHITECTURE.md     # правила границ и зависимостей
 │   ├── index.html              # HTML-шаблон
 │   ├── package.json            # зависимости и скрипты npm
 │   └── vite.config.ts          # настройки Vite
@@ -113,34 +106,39 @@ npm run lint         # проверить код линтером
 
 ## 4. Архитектура фронтенда
 
-### Точка входа
+### Точка входа и оболочка
 
-Файл `frontend/src/main.tsx` рендерит `App` и подключает глобальные стили `index.css`.
+Файл `frontend/src/main.tsx` рендерит `frontend/src/app/App.tsx`, подключает
+дизайн-токены и глобальные стили из `frontend/src/app/styles/global.css`.
 
-### Главный компонент
+Фронтенд развивается как модульный монолит:
 
-`frontend/src/App.tsx` управляет состоянием приложения:
+- `app/` — корневая оболочка;
+- `pages/` — тонкие точки входа URL;
+- `workspace/` — будущая плиточная платформа;
+- `tools/` — автономные сложные инструменты;
+- `entities/` — общие предметные сущности;
+- `shared/` — универсальный UI и инфраструктура.
 
-- Показывает `StartPage`, пока не введено имя.
-- Показывает `SurveyPage` для прохождения опроса.
-- Показывает экран завершения после опроса.
-- Если URL содержит `#/gm`, показывает `GmResultsPage`.
+Подробные правила описаны в `frontend/src/ARCHITECTURE.md`.
 
-Переключение экранов реализовано через `useState`, а не через роутер.
+### Текущий опросник
 
-### Страницы
+Рабочий сценарий изолирован в `frontend/src/tools/survey/`. Пока новый workspace
+не реализован, корневая оболочка запускает его через публичный
+`tools/survey/index.ts`.
 
-Каждая страница — отдельный компонент в `frontend/src/pages/`:
+- `tools/survey/App.tsx` управляет текущим сценарием и `#/gm`;
+- `tools/survey/pages/` содержит экраны и стили;
+- `tools/survey/surveys/` содержит типы и конфигурацию;
+- `tools/survey/results/` содержит данные экрана результатов;
+- `tools/survey/api.ts` содержит backend-интеграцию.
 
-- `StartPage.tsx` — стартовый экран с вводом имени и персонажа.
-- `SurveyPage.tsx` — прохождение анкеты.
-- `GmResultsPage.tsx` — страница результатов для мастера.
+Внутренние файлы инструмента не следует импортировать снаружи напрямую.
 
-Каждая страница имеет свой CSS-файл рядом.
+### API опросника
 
-### API
-
-Все запросы к бэкенду собраны в `frontend/src/api.ts`:
+Запросы опросника к бэкенду собраны в `frontend/src/tools/survey/api.ts`:
 
 - `sendSurveyResult(result)` — отправляет результат опроса.
 - `fetchSubmissions()` — получает список результатов для `#/gm`.
@@ -151,7 +149,7 @@ npm run lint         # проверить код линтером
 const API_BASE_URL = 'http://127.0.0.1:8000'
 ```
 
-Если бэкенд переедет на другой адрес — меняй здесь.
+Если бэкенд переедет на другой адрес — меняй его в этом файле.
 
 ---
 
@@ -181,99 +179,40 @@ const API_BASE_URL = 'http://127.0.0.1:8000'
 
 ---
 
-## 6. Как добавить новую страницу
+## 6. Как добавить новый экран или инструмент
 
-### Шаг 1. Создать компонент страницы
+Если компонент соответствует самостоятельному URL, создай тонкую страницу в
+`frontend/src/pages/`. Страница отвечает за маршрут, доступ и композицию, но не
+содержит бизнес-логику инструмента.
 
-Создай файл `frontend/src/pages/MyNewPage.tsx`:
+Если добавляется самостоятельный сложный инструмент, создай каталог:
 
-```tsx
-import './MyNewPage.css'
-
-type MyNewPageProps = {
-  onBack: () => void
-}
-
-function MyNewPage({ onBack }: MyNewPageProps) {
-  return (
-    <main className="my-new-page">
-      <h1>Новая страница</h1>
-      <button onClick={onBack}>Назад</button>
-    </main>
-  )
-}
-
-export default MyNewPage
+```text
+frontend/src/tools/<tool-id>/
+├── index.ts
+├── model/
+├── api/
+├── ui/
+└── assets/
 ```
 
-### Шаг 2. Добавить стили
+Уникальные компоненты, модель, API и ресурсы инструмента остаются внутри него.
+Другие слои подключают инструмент только через публичный `index.ts`.
 
-Создай файл `frontend/src/pages/MyNewPage.css`:
-
-```css
-.my-new-page {
-  padding: 40px;
-  color: #ffffff;
-}
-```
-
-### Шаг 3. Подключить страницу в App.tsx
-
-```tsx
-import { useState } from 'react'
-import StartPage from './pages/StartPage'
-import SurveyPage from './pages/SurveyPage'
-import GmResultsPage from './pages/GmResultsPage'
-import MyNewPage from './pages/MyNewPage'
-
-function App() {
-  const [screen, setScreen] = useState<'start' | 'survey' | 'results' | 'new'>('start')
-
-  if (window.location.hash === '#/gm') {
-    return <GmResultsPage />
-  }
-
-  if (screen === 'new') {
-    return <MyNewPage onBack={() => setScreen('start')} />
-  }
-
-  if (screen === 'survey') {
-    return <SurveyPage ... />
-  }
-
-  return <StartPage onStart={() => setScreen('survey')} />
-}
-```
+Общие UI-примитивы размещаются в `frontend/src/shared/ui/`, а оболочка и
+поведение плиток — в `frontend/src/workspace/ui/`.
 
 ---
 
-## 7. Как добавить кнопку, открывающую другую страницу
+## 7. Как добавить переход между экранами
 
-Если кнопка находится внутри `App.tsx`:
+Навигацию следует добавлять в слой `app`/`pages`, не изменяя
+`tools/survey/App.tsx`. До появления полноценного роутера текущий опросник
+сохраняет собственный маршрут `#/gm`; новые маршруты должны регистрироваться в
+будущем `app/router`.
 
-```tsx
-<button onClick={() => setScreen('new')}>
-  Открыть новую страницу
-</button>
-```
-
-Если кнопка находится в дочернем компоненте, передай функцию через props:
-
-```tsx
-// MyComponent.tsx
-type MyComponentProps = {
-  onOpenNewPage: () => void
-}
-
-function MyComponent({ onOpenNewPage }: MyComponentProps) {
-  return <button onClick={onOpenNewPage}>Перейти</button>
-}
-```
-
-```tsx
-// App.tsx
-<MyComponent onOpenNewPage={() => setScreen('new')} />
-```
+Компоненты инструментов получают команды перехода через публичные props или
+application-сервисы и не должны напрямую управлять глобальным URL.
 
 ---
 
@@ -311,7 +250,8 @@ path('my-models/', MyModelListCreateView.as_view(), name='my-model-list-create')
 
 ### Шаг 4. Использовать на фронтенде
 
-В `frontend/src/api.ts`:
+В API-модуле соответствующего инструмента, например
+`frontend/src/tools/survey/api.ts`:
 
 ```ts
 export async function fetchMyModels(): Promise<MyModel[]> {

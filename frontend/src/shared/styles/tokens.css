@@ -1,0 +1,103 @@
+:root {
+  /* Базовая палитра */
+  --palette-black: #020108;
+  --palette-white: #f7f2ff;
+  --palette-purple-300: #c983ff;
+  --palette-purple-500: #aa3bff;
+  --palette-purple-700: #7e14ff;
+  --palette-gray-300: #bdb6c9;
+  --palette-gray-700: #393241;
+  --palette-gray-900: #0d0914;
+  --palette-red-500: #d84b63;
+  --palette-green-500: #42b883;
+  --palette-yellow-500: #d7a83d;
+
+  /* Семантические цвета */
+  --color-background: var(--palette-black);
+  --color-surface-default: var(--palette-gray-900);
+  --color-surface-muted: #08060d;
+  --color-surface-accent: #1b0d29;
+  --color-text-primary: var(--palette-white);
+  --color-text-secondary: var(--palette-gray-300);
+  --color-text-disabled: #756d80;
+  --color-border-default: var(--palette-gray-700);
+  --color-border-accent: var(--palette-purple-500);
+  --color-action-primary: var(--palette-purple-500);
+  --color-status-danger: var(--palette-red-500);
+  --color-status-success: var(--palette-green-500);
+  --color-status-warning: var(--palette-yellow-500);
+
+  /* Типографика */
+  --font-family-body: 'Gilroy', Arial, sans-serif;
+  --font-family-heading: 'GothicRusWeb', Georgia, serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+
+  /* Шаги размеров и отступов */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-round: 999px;
+
+  --border-width-default: 1px;
+  --border-width-strong: 2px;
+
+  /* Контролы */
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 3rem;
+  --icon-size-sm: 1rem;
+  --icon-size-md: 1.25rem;
+  --icon-size-lg: 1.5rem;
+  --focus-ring: 0 0 0 3px rgb(170 59 255 / 35%);
+  --disabled-opacity: 0.48;
+
+  /* Эффекты и движение */
+  --shadow-panel: 0 1rem 3rem rgb(0 0 0 / 45%);
+  --shadow-overlay: 0 1.5rem 5rem rgb(0 0 0 / 65%);
+  --glow-accent: 0 0 1.75rem rgb(170 59 255 / 35%);
+  --motion-duration-fast: 160ms;
+  --motion-duration-normal: 240ms;
+  --motion-easing-standard: ease;
+
+  /* Слои */
+  --z-index-base: 0;
+  --z-index-tile-selected: 10;
+  --z-index-dropdown: 100;
+  --z-index-overlay: 200;
+  --z-index-tooltip: 300;
+
+  /* Плитки workspace */
+  --tile-surface: var(--color-surface-default);
+  --tile-border: var(--color-border-default);
+  --tile-border-hover: var(--color-border-accent);
+  --tile-border-selected: var(--color-action-primary);
+  --tile-radius: var(--radius-lg);
+  --tile-header-height: 3rem;
+  --tile-padding: var(--space-4);
+  --tile-gap: var(--space-3);
+  --tile-shadow: var(--shadow-panel);
+  --tile-shadow-dragging: var(--shadow-overlay);
+  --tile-resize-handle-size: 1rem;
+  --tile-dragging-opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 1ms;
+    --motion-duration-normal: 1ms;
+  }
+}

@@ -44,27 +44,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/engagement/engagement-minus-5.svg',
+          src: '/tools/survey/illustrations/engagement/engagement-minus-5.svg',
           alt: 'Минимальная вовлечённость',
         },
         {
           values: [-3, -2],
-          src: '/survey/engagement/engagement-minus-3.svg',
+          src: '/tools/survey/illustrations/engagement/engagement-minus-3.svg',
           alt: 'Низкая вовлечённость',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/engagement/engagement-zero.svg',
+          src: '/tools/survey/illustrations/engagement/engagement-zero.svg',
           alt: 'Средняя вовлечённость',
         },
         {
           values: [2, 3],
-          src: '/survey/engagement/engagement-plus-3.svg',
+          src: '/tools/survey/illustrations/engagement/engagement-plus-3.svg',
           alt: 'Высокая вовлечённость',
         },
         {
           values: [4, 5],
-          src: '/survey/engagement/engagement-plus-5.svg',
+          src: '/tools/survey/illustrations/engagement/engagement-plus-5.svg',
           alt: 'Максимальная вовлечённость',
         },
       ],
@@ -93,27 +93,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/mechanic/mechanic-minus-5.svg',
+          src: '/tools/survey/illustrations/mechanic/mechanic-minus-5.svg',
           alt: 'Только механики',
         },
         {
           values: [-3, -2],
-          src: '/survey/mechanic/mechanic-minus-3.svg',
+          src: '/tools/survey/illustrations/mechanic/mechanic-minus-3.svg',
           alt: 'Преимущественно механики',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/mechanic/mechanic-zero.svg',
+          src: '/tools/survey/illustrations/mechanic/mechanic-zero.svg',
           alt: 'Баланс механик и ролеплея',
         },
         {
           values: [2, 3],
-          src: '/survey/mechanic/mechanic-plus-3.svg',
+          src: '/tools/survey/illustrations/mechanic/mechanic-plus-3.svg',
           alt: 'Преимущественно ролеплей',
         },
         {
           values: [4, 5],
-          src: '/survey/mechanic/mechanic-plus-5.svg',
+          src: '/tools/survey/illustrations/mechanic/mechanic-plus-5.svg',
           alt: 'Только ролеплей',
         },
       ],
@@ -142,27 +142,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/seriousness/seriousness-minus-5.svg',
+          src: '/tools/survey/illustrations/seriousness/seriousness-minus-5.svg',
           alt: 'Максимально несерьёзная игра',
         },
         {
           values: [-3, -2],
-          src: '/survey/seriousness/seriousness-minus-3.svg',
+          src: '/tools/survey/illustrations/seriousness/seriousness-minus-3.svg',
           alt: 'Лёгкая и шуточная игра',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/seriousness/seriousness-zero.svg',
+          src: '/tools/survey/illustrations/seriousness/seriousness-zero.svg',
           alt: 'Баланс юмора и серьёзности',
         },
         {
           values: [2, 3],
-          src: '/survey/seriousness/seriousness-plus-3.svg',
+          src: '/tools/survey/illustrations/seriousness/seriousness-plus-3.svg',
           alt: 'Преимущественно серьёзная игра',
         },
         {
           values: [4, 5],
-          src: '/survey/seriousness/seriousness-plus-5.svg',
+          src: '/tools/survey/illustrations/seriousness/seriousness-plus-5.svg',
           alt: 'Максимально серьёзная игра',
         },
       ],
@@ -191,27 +191,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/romance/romance-minus-5.svg',
+          src: '/tools/survey/illustrations/romance/romance-minus-5.svg',
           alt: 'Без романтики и сексуального контента',
         },
         {
           values: [-3, -2],
-          src: '/survey/romance/romance-minus-3.svg',
+          src: '/tools/survey/illustrations/romance/romance-minus-3.svg',
           alt: 'Минимум романтики',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/romance/romance-zero.svg',
+          src: '/tools/survey/illustrations/romance/romance-zero.svg',
           alt: 'Умеренная романтика',
         },
         {
           values: [2, 3],
-          src: '/survey/romance/romance-plus-3.svg',
+          src: '/tools/survey/illustrations/romance/romance-plus-3.svg',
           alt: 'Много романтики',
         },
         {
           values: [4, 5],
-          src: '/survey/romance/romance-plus-5.svg',
+          src: '/tools/survey/illustrations/romance/romance-plus-5.svg',
           alt: 'Максимум романтики и сексуального контента',
         },
       ],
@@ -240,27 +240,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/violence/violence-minus-5.svg',
+          src: '/tools/survey/illustrations/violence/violence-minus-5.svg',
           alt: 'Без жестокости',
         },
         {
           values: [-3, -2],
-          src: '/survey/violence/violence-minus-3.svg',
+          src: '/tools/survey/illustrations/violence/violence-minus-3.svg',
           alt: 'Низкий уровень жестокости',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/violence/violence-zero.svg',
+          src: '/tools/survey/illustrations/violence/violence-zero.svg',
           alt: 'Умеренный уровень жестокости',
         },
         {
           values: [2, 3],
-          src: '/survey/violence/violence-plus-3.svg',
+          src: '/tools/survey/illustrations/violence/violence-plus-3.svg',
           alt: 'Высокий уровень жестокости',
         },
         {
           values: [4, 5],
-          src: '/survey/violence/violence-plus-5.svg',
+          src: '/tools/survey/illustrations/violence/violence-plus-5.svg',
           alt: 'Максимальный уровень жестокости',
         },
       ],
@@ -289,27 +289,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/lore/lore-minus-5.svg',
+          src: '/tools/survey/illustrations/lore/lore-minus-5.svg',
           alt: 'Минимальный объём лора',
         },
         {
           values: [-3, -2],
-          src: '/survey/lore/lore-minus-3.svg',
+          src: '/tools/survey/illustrations/lore/lore-minus-3.svg',
           alt: 'Небольшой объём лора',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/lore/lore-zero.svg',
+          src: '/tools/survey/illustrations/lore/lore-zero.svg',
           alt: 'Умеренный объём лора',
         },
         {
           values: [2, 3],
-          src: '/survey/lore/lore-plus-3.svg',
+          src: '/tools/survey/illustrations/lore/lore-plus-3.svg',
           alt: 'Большой объём лора',
         },
         {
           values: [4, 5],
-          src: '/survey/lore/lore-plus-5.svg',
+          src: '/tools/survey/illustrations/lore/lore-plus-5.svg',
           alt: 'Максимальное погружение в лор',
         },
       ],
@@ -338,27 +338,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/sandbox/sandbox-minus-5.svg',
+          src: '/tools/survey/illustrations/sandbox/sandbox-minus-5.svg',
           alt: 'Полностью линейный сюжет',
         },
         {
           values: [-3, -2],
-          src: '/survey/sandbox/sandbox-minus-3.svg',
+          src: '/tools/survey/illustrations/sandbox/sandbox-minus-3.svg',
           alt: 'Преимущественно линейный сюжет',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/sandbox/sandbox-zero.svg',
+          src: '/tools/survey/illustrations/sandbox/sandbox-zero.svg',
           alt: 'Баланс сюжета и песочницы',
         },
         {
           values: [2, 3],
-          src: '/survey/sandbox/sandbox-plus-3.svg',
+          src: '/tools/survey/illustrations/sandbox/sandbox-plus-3.svg',
           alt: 'Преимущественно свободная игра',
         },
         {
           values: [4, 5],
-          src: '/survey/sandbox/sandbox-plus-5.svg',
+          src: '/tools/survey/illustrations/sandbox/sandbox-plus-5.svg',
           alt: 'Полная песочница',
         },
       ],
@@ -387,27 +387,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/horror/horror-minus-5.svg',
+          src: '/tools/survey/illustrations/horror/horror-minus-5.svg',
           alt: 'Без хоррора',
         },
         {
           values: [-3, -2],
-          src: '/survey/horror/horror-minus-3.svg',
+          src: '/tools/survey/illustrations/horror/horror-minus-3.svg',
           alt: 'Лёгкий хоррор',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/horror/horror-zero.svg',
+          src: '/tools/survey/illustrations/horror/horror-zero.svg',
           alt: 'Умеренный хоррор',
         },
         {
           values: [2, 3],
-          src: '/survey/horror/horror-plus-3.svg',
+          src: '/tools/survey/illustrations/horror/horror-plus-3.svg',
           alt: 'Тяжёлый хоррор',
         },
         {
           values: [4, 5],
-          src: '/survey/horror/horror-plus-5.svg',
+          src: '/tools/survey/illustrations/horror/horror-plus-5.svg',
           alt: 'Максимальный уровень хоррора',
         },
       ],
@@ -436,27 +436,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/partyConflict/partyConflict-minus-5.svg',
+          src: '/tools/survey/illustrations/partyConflict/partyConflict-minus-5.svg',
           alt: 'Без конфликтов внутри партии',
         },
         {
           values: [-3, -2],
-          src: '/survey/partyConflict/partyConflict-minus-3.svg',
+          src: '/tools/survey/illustrations/partyConflict/partyConflict-minus-3.svg',
           alt: 'Незначительные конфликты',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/partyConflict/partyConflict-zero.svg',
+          src: '/tools/survey/illustrations/partyConflict/partyConflict-zero.svg',
           alt: 'Умеренные конфликты',
         },
         {
           values: [2, 3],
-          src: '/survey/partyConflict/partyConflict-plus-3.svg',
+          src: '/tools/survey/illustrations/partyConflict/partyConflict-plus-3.svg',
           alt: 'Серьёзные конфликты',
         },
         {
           values: [4, 5],
-          src: '/survey/partyConflict/partyConflict-plus-5.svg',
+          src: '/tools/survey/illustrations/partyConflict/partyConflict-plus-5.svg',
           alt: 'Предательства внутри партии',
         },
       ],
@@ -485,27 +485,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/characterDeath/characterDeath-minus-5.svg',
+          src: '/tools/survey/illustrations/characterDeath/characterDeath-minus-5.svg',
           alt: 'Без риска смерти персонажа',
         },
         {
           values: [-3, -2],
-          src: '/survey/characterDeath/characterDeath-minus-3.svg',
+          src: '/tools/survey/illustrations/characterDeath/characterDeath-minus-3.svg',
           alt: 'Низкий риск тяжёлых последствий',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/characterDeath/characterDeath-zero.svg',
+          src: '/tools/survey/illustrations/characterDeath/characterDeath-zero.svg',
           alt: 'Умеренный риск смерти персонажа',
         },
         {
           values: [2, 3],
-          src: '/survey/characterDeath/characterDeath-plus-3.svg',
+          src: '/tools/survey/illustrations/characterDeath/characterDeath-plus-3.svg',
           alt: 'Высокий риск смерти персонажа',
         },
         {
           values: [4, 5],
-          src: '/survey/characterDeath/characterDeath-plus-5.svg',
+          src: '/tools/survey/illustrations/characterDeath/characterDeath-plus-5.svg',
           alt: 'Максимальная готовность к смерти персонажа',
         },
       ],
@@ -534,27 +534,27 @@ export const zeroSessionSurvey: SurveyConfig = {
       illustrations: [
         {
           values: [-5, -4],
-          src: '/survey/discrimination/discrimination-minus-5.svg',
+          src: '/tools/survey/illustrations/discrimination/discrimination-minus-5.svg',
           alt: 'Без дискриминации в игровом мире',
         },
         {
           values: [-3, -2],
-          src: '/survey/discrimination/discrimination-minus-3.svg',
+          src: '/tools/survey/illustrations/discrimination/discrimination-minus-3.svg',
           alt: 'Фоновая дискриминация',
         },
         {
           values: [-1, 0, 1],
-          src: '/survey/discrimination/discrimination-zero.svg',
+          src: '/tools/survey/illustrations/discrimination/discrimination-zero.svg',
           alt: 'Умеренное влияние дискриминации',
         },
         {
           values: [2, 3],
-          src: '/survey/discrimination/discrimination-plus-3.svg',
+          src: '/tools/survey/illustrations/discrimination/discrimination-plus-3.svg',
           alt: 'Тяжёлые темы угнетения',
         },
         {
           values: [4, 5],
-          src: '/survey/discrimination/discrimination-plus-5.svg',
+          src: '/tools/survey/illustrations/discrimination/discrimination-plus-5.svg',
           alt: 'Максимальный уровень системного угнетения',
         },
       ],

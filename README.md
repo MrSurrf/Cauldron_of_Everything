@@ -52,7 +52,7 @@ npm run dev                         # http://localhost:5173
 **Дать ссылку другому человеку в той же Wi-Fi сети:**
 1. `npm run dev -- --host` — фронт станет доступен по адресу вида `http://192.168.x.x:5173`;
 2. `python manage.py runserver 0.0.0.0:8000` — бэкенд слушает сеть;
-3. в `frontend/src/api.ts` поменять `API_BASE_URL` на `http://192.168.x.x:8000`;
+3. в `frontend/src/tools/survey/api.ts` поменять `API_BASE_URL` на `http://192.168.x.x:8000`;
 4. в `backend/core/settings.py` в `CORS_ALLOWED_ORIGINS` добавить `http://192.168.x.x:5173`.
 
 ## Быстрый старт: бэкенд
@@ -77,7 +77,8 @@ python manage.py runserver        # http://127.0.0.1:8000
 ## Быстрый старт: фронтенд
 
 Стянул репозиторий → работаешь в папке `frontend/`, больше ничего не нужно.
-Свои ресурсы (иконки, фоны, шрифты) клади в `frontend/assets/`.
+Общие ресурсы размещай в `frontend/src/shared/`, а ресурсы отдельного инструмента
+— внутри `frontend/src/tools/<tool-id>/` или его каталога в `frontend/public/tools/`.
 API бэкенда: см. Swagger http://127.0.0.1:8000/api/docs/ (попроси бэкендера запустить сервер).
 
 ## Анкета из JSON-конфига (без правок кода)
