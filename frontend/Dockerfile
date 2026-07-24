@@ -2,6 +2,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+# Build context — корень репозитория (docker build -f frontend/Dockerfile .)
 COPY frontend/package*.json ./
 RUN npm ci
 
