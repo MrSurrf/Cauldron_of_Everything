@@ -1,8 +1,8 @@
 import type { SurveyResult } from './surveys/surveyTypes'
 
-// Адрес бэкенда. Если бэкенд на другой машине — поменяй здесь
-// и добавь адрес фронтенда в CORS_ALLOWED_ORIGINS на бэке.
-const API_BASE_URL = 'http://127.0.0.1:8000'
+// Адрес бэкенда. В продакшене задаётся через VITE_API_BASE_URL
+// при сборке (например, в Dokploy). Для локальной разработки — localhost:8000.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
 export type Submission = {
   id: number

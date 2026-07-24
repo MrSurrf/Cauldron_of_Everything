@@ -2,9 +2,12 @@ asgiref==3.12.1
 attrs==26.1.0
 Django==5.2.16
 django-cors-headers==4.9.0
+django-environ==0.12.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.30.0
+gunicorn==23.0.0
+psycopg2-binary==2.9.10
 inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1

@@ -12,24 +12,37 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+import environ
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 PROJECT_ROOT = BASE_DIR.parent                     # корень репозитория
 
-# Папка с JSON-конфигами анкет (load_survey берёт их отсюда)
-SURVEY_CONFIG_DIR = PROJECT_ROOT / 'config'
+env = environ.Env()
+# Загружаем переменные окружения из .env в корне репозитория (для локальной разработки).
+# В контейнере/Dokploy переменные передаются напрямую, этот вызов безопасен.
+environ.Env.read_env(PROJECT_ROOT / '.env')
+
+# Папка с JSON-конфигами анкет (load_survey берёт их отсюда).
+# В Docker образе перезаписывается через env, чтобы config/ лежал вне backend/.
+SURVEY_CONFIG_DIR = Path(env('SURVEY_CONFIG_DIR', default=str(PROJECT_ROOT / 'config')))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#)-e40@xtl8$85n=(jpgs*smkwekic1aaqo*ms7siekfq=iu(^'
+# В продакшене обязательно задай через переменную окружения.
+# Fallback ниже — только для локальной разработки.
+SECRET_KEY = env(
+    'SECRET_KEY',
+    default='django-insecure-#)-e40@xtl8$85n=(jpgs*smkwekic1aaqo*ms7siekfq=iu(^',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 
 # Application definition
@@ -83,11 +96,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# PostgreSQL в продакшене (DATABASE_URL из env), SQLite — fallback для локальной разработки.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db(
+        'DATABASE_URL',
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+    )
 }
 
 
@@ -126,6 +140,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Загружаемые файлы (картинки вопросов/вариантов)
 MEDIA_URL = 'media/'
@@ -150,13 +165,17 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
-# Адреса, с которых фронтенд может обращаться к API (dev)
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
+# Адреса, с которых фронтенд может обращаться к API.
+# В продакшене передаётся через CORS_ALLOWED_ORIGINS (через запятую).
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=[
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+)
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Cauldron of Everything API',
