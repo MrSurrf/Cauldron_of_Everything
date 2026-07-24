@@ -1,5 +1,6 @@
 import { forwardRef } from 'react'
 
+import { PlaceholderIcon } from '../icons/PlaceholderIcon'
 import type { ButtonProps } from './Button.types'
 import styles from './Button.module.css'
 
@@ -9,15 +10,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       className,
       fullWidth = false,
-      showArrow,
+      icon,
       type = 'button',
       variant = 'primary',
       ...buttonProps
     },
     ref,
   ) {
-    const hasArrow =
-      variant === 'primary' && (showArrow ?? true)
+    const renderedIcon =
+      icon === undefined && variant === 'primary'
+        ? <PlaceholderIcon />
+        : icon
 
     const buttonClassName = [
       styles.button,
@@ -35,16 +38,35 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         data-variant={variant}
         type={type}
       >
-        <span className={styles.label}>
-          {children}
+        <span
+          className={styles.innerFrame}
+          aria-hidden={true}
+        />
+
+        <span
+          className={styles.cornerShapes}
+          aria-hidden={true}
+        >
+          <span className={styles.cornerShape} />
+          <span className={styles.cornerShape} />
+          <span className={styles.cornerShape} />
+          <span className={styles.cornerShape} />
         </span>
 
-        {hasArrow && (
-          <span
-            className={styles.arrow}
-            aria-hidden="true"
-          />
-        )}
+        <span className={styles.content}>
+          <span className={styles.label}>
+            {children}
+          </span>
+
+          {renderedIcon && (
+            <span
+              className={styles.icon}
+              aria-hidden={true}
+            >
+              {renderedIcon}
+            </span>
+          )}
+        </span>
       </button>
     )
   },
