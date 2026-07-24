@@ -60,5 +60,10 @@ jobs:
 
       - name: Trigger Dokploy deploy
         run: |
-          curl -fsSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}"
-          curl -fsSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}"
+          # Dokploy иногда возвращает 400 с телом {"message":"Application deployed successfully"},
+          # поэтому -f убран, чтобы workflow не падал по HTTP-коду.
+          echo "Trigger backend"
+          curl -sSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}" || true
+          echo ""
+          echo "Trigger frontend"
+          curl -sSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}" || true
