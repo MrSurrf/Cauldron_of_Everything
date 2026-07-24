@@ -437,7 +437,290 @@ npm run lint
 
 ---
 
-## 12. Кому что трогать
+## 12. Как выложить сервис в интернет
+
+Чтобы другие люди могли пройти анкету по ссылке, нужно развернуть бэкенд и фронтенд на сервере с доступом в интернет.
+
+### Общая схема
+
+```
+Пользователь → Домен (https://your-site.com)
+                ↓
+            Nginx
+        ┌──────┴──────┐
+   Фронтенд (статика)  Бэкенд (Django + Gunicorn)
+        ↓                    ↓
+      dist/            PostgreSQL
+```
+
+Есть два подхода: **ручной деплой** (быстрее настроить один раз) и **Docker** (удобнее поддерживать долгосрочно).
+
+---
+
+### Вариант А. Ручной деплой без Docker
+
+#### Шаг 1. Арендовать сервер
+
+Подойдёт любой VPS с Ubuntu, например:
+
+- Hetzner Cloud
+- Timeweb Cloud
+- Selectel
+- Yandex Cloud
+- Beget / Reg.ru
+
+Минимальные требования: 1 CPU, 1–2 GB RAM, 10–20 GB SSD.
+
+#### Шаг 2. Купить домен и настроить DNS
+
+1. Купить домен у регистратора.
+2. В панели управления DNS добавить A-запись:
+   - Имя: `@`
+   - Значение: IP-адрес сервера
+3. Дождаться обновления DNS (обычно от нескольких минут до нескольких часов).
+
+#### Шаг 3. Подготовить бэкенд к продакшену
+
+В `backend/core/settings.py` нужно внести изменения:
+
+1. **SECRET_KEY** вынести в переменную окружения:
+   ```python
+   import os
+   SECRET_KEY = os.environ.get('SECRET_KEY')
+   ```
+2. **DEBUG = False**
+3. **ALLOWED_HOSTS** указать свой домен:
+   ```python
+   ALLOWED_HOSTS = ['your-site.com', 'www.your-site.com']
+   ```
+4. **CORS** заменить dev-адреса на продакшеновый домен:
+   ```python
+   CORS_ALLOWED_ORIGINS = ['https://your-site.com']
+   ```
+5. **База данных** перейти с SQLite на PostgreSQL:
+   ```python
+   DATABASES = {
+       'default': {
+           'ENGINE': 'django.db.backends.postgresql',
+           'NAME': 'cauldron_db',
+           'USER': 'cauldron_user',
+           'PASSWORD': os.environ.get('DB_PASSWORD'),
+           'HOST': 'localhost',
+           'PORT': '5432',
+       }
+   }
+   ```
+6. **Статика и медиа** настроить пути:
+   ```python
+   STATIC_ROOT = BASE_DIR / 'staticfiles'
+   MEDIA_ROOT = BASE_DIR / 'media'
+   ```
+7. Установить дополнительные зависимости:
+   ```bash
+   pip install gunicorn psycopg2-binary
+   ```
+8. Выполнить на сервере:
+   ```bash
+   python manage.py migrate
+   python manage.py collectstatic --noinput
+   python manage.py load_survey
+   python manage.py createsuperuser
+   ```
+9. Запустить бэкенд через Gunicorn:
+   ```bash
+   gunicorn core.wsgi:application --bind 127.0.0.1:8000 --workers 3
+   ```
+
+Для надёжности Gunicorn стоит запускать через `systemd` или `supervisor`.
+
+#### Шаг 4. Подготовить фронтенд
+
+1. В `frontend/src/api.ts` заменить локальный адрес бэкенда на продакшеновый:
+   ```ts
+   const API_BASE_URL = 'https://your-site.com'
+   ```
+   Лучше вынести адрес в переменную окружения:
+   ```bash
+   # frontend/.env.production
+   VITE_API_BASE_URL=https://your-site.com
+   ```
+   ```ts
+   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+   ```
+2. Собрать production-версию:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   ```
+   Результат появится в папке `frontend/dist/`.
+
+#### Шаг 5. Установить и настроить Nginx
+
+Пример конфигурации `/etc/nginx/sites-available/your-site`:
+
+```nginx
+server {
+    listen 80;
+    server_name your-site.com www.your-site.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-site.com www.your-site.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        root /var/www/cauldron/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /media/ {
+        alias /var/www/cauldron/backend/media/;
+    }
+
+    location /static/ {
+        alias /var/www/cauldron/backend/staticfiles/;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /admin/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Важно: `try_files $uri $uri/ /index.html;` нужен, потому что фронтенд — SPA, и все маршруты должны возвращать `index.html`.
+
+#### Шаг 6. Получить SSL-сертификат
+
+Бесплатные сертификаты Let's Encrypt:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d your-site.com -d www.your-site.com
+```
+
+#### Шаг 7. Перенести файлы на сервер
+
+```bash
+rsync -avz --exclude=node_modules --exclude=venv --exclude=.git ./ user@server:/var/www/cauldron/
+```
+
+После переноса выполнить шаги 3 и 4 на сервере.
+
+---
+
+### Вариант Б. Деплой через Docker (рекомендуется)
+
+Docker упрощает поддержку: одинаковое окружение на локальном компьютере и сервере, простые обновления и откаты.
+
+#### Необходимые файлы
+
+Для Docker-развёртывания понадобится создать:
+
+- `backend/Dockerfile`
+- `backend/.dockerignore`
+- `backend/entrypoint.sh`
+- `frontend/Dockerfile`
+- `frontend/.dockerignore`
+- `nginx/nginx.conf`
+- `docker-compose.yml` (для разработки)
+- `docker-compose.prod.yml` (для продакшена)
+- `.env` (с секретами и паролями)
+
+#### Порядок действий
+
+1. Установить Docker и Docker Compose на сервер:
+   ```bash
+   sudo apt update
+   sudo apt install docker.io docker-compose-plugin
+   ```
+2. Создать `.env` с настройками:
+   ```bash
+   SECRET_KEY=your-super-secret-key
+   DEBUG=False
+   POSTGRES_DB=cauldron_db
+   POSTGRES_USER=cauldron_user
+   POSTGRES_PASSWORD=your-db-password
+   DATABASE_URL=postgres://cauldron_user:your-db-password@db:5432/cauldron_db
+   ```
+3. Собрать и запустить контейнеры:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   ```
+4. Выполнить первоначальную настройку:
+   ```bash
+   docker compose -f docker-compose.prod.yml exec backend python manage.py migrate
+   docker compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
+   docker compose -f docker-compose.prod.yml exec backend python manage.py load_survey
+   docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+   ```
+
+Данные PostgreSQL и загруженные медиафайлы должны храниться в volumes, чтобы не теряться при пересоздании контейнеров.
+
+---
+
+### Обновление после выкладки
+
+#### Ручной деплой
+
+```bash
+# На сервере
+cd /var/www/cauldron
+git pull
+
+cd frontend
+npm install
+npm run build
+
+cd ../backend
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py load_survey --replace
+# Перезапустить Gunicorn
+```
+
+#### Docker
+
+```bash
+cd /var/www/cauldron
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+---
+
+### Чек-лист безопасности перед выкладкой
+
+- [ ] SECRET_KEY вынесен в переменную окружения и является сложным случайным значением.
+- [ ] DEBUG = False.
+- [ ] ALLOWED_HOSTS заполнен реальным доменом.
+- [ ] CORS настроен только на продакшеновый фронтенд.
+- [ ] Используется PostgreSQL вместо SQLite.
+- [ ] Настроен HTTPS (SSL-сертификат).
+- [ ] Админка `/admin/` защищена сложным паролем суперпользователя.
+- [ ] Понимаешь, что `/api/submissions/` сейчас открыт без авторизации. Любой, у кого есть ссылка, может увидеть все результаты. Если это неприемлемо, нужно либо оставить доступ к странице `/gm` только через фронтенд-пароль (как сейчас), либо перенести авторизацию на бэкенд.
+
+---
+
+## 13. Кому что трогать
 
 - **Ты (владелец проекта / менеджер):** смотришь результат в браузере, даёшь задачи, смотришь данные в админке.
 - **Фронтенд-разработчик:** работает только в `frontend/`.
