@@ -85,7 +85,9 @@ export const Scrollable: Story = {
 
     textarea.scrollTop = 0
     fireEvent.scroll(textarea)
-    await expect(scrollBar).toHaveValue('0')
+    await waitFor(() => {
+      expect(scrollBar).toHaveValue('0')
+    })
   },
 }
 

@@ -3,6 +3,15 @@ export type {
   ButtonProps,
   ButtonVariant,
 } from './Button'
+export { FormField } from './FormField'
+export type {
+  FormFieldComponent,
+  FormFieldInputProps,
+  FormFieldProps,
+  FormFieldTextAreaProps,
+} from './FormField'
+export { IconFrame } from './IconFrame'
+export type { IconFrameProps } from './IconFrame'
 export { MenuButton } from './MenuButton'
 export type { MenuButtonProps } from './MenuButton'
 export { ScrollBar } from './ScrollBar'

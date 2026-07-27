@@ -1,0 +1,555 @@
+.field {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+
+.controlShell {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+}
+
+.formFrame {
+  position: relative;
+  z-index: 0;
+}
+
+.field[data-has-label='true']
+  .formFrame {
+  --text-field-extra-block-start:
+    var(--space-3);
+}
+
+.field[data-has-counter='true']:not(
+    [data-multiline='true']
+  )
+  .formFrame {
+  --text-field-extra-inline-end:
+    var(--form-field-counter-reserve);
+}
+
+.field[data-multiline='true'][data-has-counter='true']
+  .formFrame {
+  --text-field-extra-block-end:
+    calc(
+      var(--space-4) +
+      var(--font-size-xs)
+    );
+}
+
+.field:focus-within .formFrame {
+  --input-border:
+    var(--color-border-accent);
+}
+
+.field:is(
+    [data-feedback='danger'],
+    [data-feedback='shaking-danger']
+  ):not([data-disabled='true'])
+  .formFrame {
+  --input-border:
+    var(--color-status-danger);
+
+  filter:
+    drop-shadow(
+      0 0 0.35rem
+      color-mix(
+        in srgb,
+        var(--color-status-danger) 46%,
+        transparent
+      )
+    );
+}
+
+.field:is(
+    [data-feedback='danger'],
+    [data-feedback='shaking-danger']
+  ):not([data-disabled='true']):focus-within
+  .formFrame {
+  filter:
+    drop-shadow(
+      0 0 0.12rem
+      var(--palette-white)
+    )
+    drop-shadow(
+      0 0 0.62rem
+      var(--color-status-danger)
+    );
+}
+
+.field[data-feedback='shaking']
+  .formFrame {
+  --input-border:
+    var(--color-border-default);
+
+  filter: none;
+}
+
+.field[data-feedback='shaking']:focus-within
+  .formFrame {
+  --input-border:
+    var(--color-border-accent);
+}
+
+@media (hover: hover) {
+  .field[data-feedback='idle']:not(
+      [data-disabled='true']
+    ):not(
+      [data-readonly='true']
+    ):not(
+      [data-invalid='true']
+    ):not(
+      :focus-within
+    )
+    .controlShell:hover
+    .formFrame {
+    --input-border:
+      color-mix(
+        in srgb,
+        var(--color-border-default) 54%,
+        var(--color-border-accent)
+      );
+  }
+}
+
+.field[data-feedback='idle'].forceHover:not(
+    [data-disabled='true']
+  ):not(
+    [data-readonly='true']
+  ):not(
+    [data-invalid='true']
+  )
+  .formFrame {
+  --input-border:
+    color-mix(
+      in srgb,
+      var(--color-border-default) 54%,
+      var(--color-border-accent)
+    );
+}
+
+.field:not([data-disabled='true']):not(
+    [data-readonly='true']
+  ):is(
+    [data-feedback='shaking'],
+    [data-feedback='shaking-danger']
+  )
+  .controlShell {
+  will-change: transform;
+
+  animation:
+    form-field-angry-shake
+    calc(
+      var(--motion-duration-normal) +
+      var(--motion-duration-fast)
+    )
+    var(--motion-easing-standard);
+}
+
+.formControl {
+  transition:
+    padding var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
+.field[data-has-label='true']
+  .formControl::placeholder {
+  opacity: 0;
+}
+
+.label {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left:
+    calc(
+      var(--space-5) -
+      var(--space-1)
+    );
+  right: var(--space-5);
+
+  display: flex;
+
+  width: max-content;
+  min-width: 0;
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-5)
+    );
+  padding-inline: var(--space-1);
+
+  align-items: baseline;
+  gap: var(--space-1);
+
+  overflow: hidden;
+
+  background: transparent;
+  color: var(--color-text-secondary);
+
+  font-size: var(--font-size-md);
+  font-weight: 400;
+  line-height: var(--line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  cursor: text;
+
+  transform: translateY(-50%);
+  transform-origin: left center;
+
+  transition:
+    top var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    transform var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    font-size var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    color var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    background-color
+      var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
+.labelText {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field[data-has-icon='true']:not(
+    [data-has-counter='true']
+  )
+  .label {
+  right:
+    calc(
+      var(--space-5) +
+      var(--icon-size-lg) +
+      var(--space-3)
+    );
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-5) -
+      var(--icon-size-lg) -
+      var(--space-3)
+    );
+}
+
+.field[data-has-counter='true']:not(
+    [data-has-icon='true']
+  ):not(
+    [data-multiline='true']
+  )
+  .label {
+  right:
+    calc(
+      var(--space-5) +
+      var(--form-field-counter-reserve)
+    );
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-5) -
+      var(--form-field-counter-reserve)
+    );
+}
+
+.field[data-has-icon='true'][data-has-counter='true']:not(
+    [data-multiline='true']
+  )
+  .label {
+  right:
+    calc(
+      var(--space-5) +
+      var(--icon-size-lg) +
+      var(--space-3) +
+      var(--form-field-counter-reserve)
+    );
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-5) -
+      var(--icon-size-lg) -
+      var(--space-3) -
+      var(--form-field-counter-reserve)
+    );
+}
+
+.field[data-multiline='true'] .label {
+  top: var(--space-4);
+  right:
+    calc(
+      var(--space-4) +
+      var(--icon-size-lg)
+    );
+
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-4) -
+      var(--icon-size-lg)
+    );
+
+  transform: none;
+}
+
+.field[data-multiline='true'][data-has-icon='true']
+  .label {
+  right:
+    calc(
+      var(--space-4) +
+      var(--icon-size-lg) +
+      var(--space-3) +
+      var(--icon-size-lg)
+    );
+  max-width:
+    calc(
+      100% -
+      var(--space-5) -
+      var(--space-4) -
+      var(--icon-size-lg) -
+      var(--space-3) -
+      var(--icon-size-lg)
+    );
+}
+
+.field:focus-within .label,
+.field[data-filled='true'] .label,
+.field[data-invalid='true'] .label,
+.field[data-has-label='true']:has(
+    .formControl:not(:placeholder-shown)
+  )
+  .label,
+.field[data-has-label='true']:has(
+    .formControl:-webkit-autofill
+  )
+  .label {
+  top: var(--space-1);
+
+  background:
+    var(--color-surface-default);
+  color: var(--color-text-primary);
+
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+
+  transform: none;
+}
+
+.field:is(
+    [data-feedback='danger'],
+    [data-feedback='shaking-danger']
+  ):not([data-disabled='true'])
+  .label {
+  color: var(--color-status-danger);
+}
+
+.requiredMarker {
+  flex: 0 0 auto;
+
+  color: var(--color-status-danger);
+}
+
+.supportingRow {
+  min-width: 0;
+  margin-top: var(--space-1);
+  padding-inline: var(--space-3);
+
+  color: var(--color-text-secondary);
+
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.message {
+  min-width: 0;
+  margin: 0;
+
+  overflow-wrap: anywhere;
+}
+
+.error {
+  color: var(--color-status-danger);
+}
+
+.counter {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: var(--space-5);
+
+  flex: 0 0 auto;
+  max-width: 40%;
+  padding-inline: var(--space-1);
+
+  overflow: hidden;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--color-surface-default) 88%,
+      transparent
+    );
+  color: var(--color-text-secondary);
+
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  transform: translateY(-50%);
+
+  pointer-events: none;
+}
+
+.field[data-has-icon='true']:not(
+    [data-multiline='true']
+  )
+  .counter {
+  right:
+    calc(
+      var(--space-5) +
+      var(--icon-size-lg) +
+      var(--space-3)
+    );
+}
+
+.field[data-multiline='true'] .counter {
+  top: auto;
+  right:
+    calc(
+      var(--space-2) +
+      var(--icon-size-lg) +
+      var(--space-2)
+    );
+  bottom: var(--space-3);
+  max-width:
+    calc(
+      100% -
+      var(--space-3) -
+      var(--space-2) -
+      var(--icon-size-lg) -
+      var(--space-2)
+    );
+
+  transform: none;
+}
+
+.field[data-disabled='true'] .label,
+.field[data-disabled='true'] .supportingRow {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.field[data-disabled='true'] .counter {
+  color: var(--color-text-disabled);
+}
+
+.field:is(
+    [data-feedback='danger'],
+    [data-feedback='shaking-danger']
+  ):not([data-disabled='true'])
+  .counter {
+  color: var(--color-status-danger);
+}
+
+.field[data-disabled='true'] .requiredMarker {
+  color: var(--color-text-disabled);
+}
+
+.visuallyHidden {
+  position: absolute;
+
+  width: var(--border-width-default);
+  height: var(--border-width-default);
+  margin:
+    calc(
+      0px -
+      var(--border-width-default)
+    );
+  padding: 0;
+
+  overflow: hidden;
+
+  border: 0;
+  clip-path: inset(50%);
+
+  white-space: nowrap;
+}
+
+@keyframes form-field-angry-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  15%,
+  45%,
+  75% {
+    transform:
+      translateX(
+        calc(0px - var(--space-1))
+      );
+  }
+
+  30%,
+  60% {
+    transform: translateX(var(--space-1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label,
+  .formControl {
+    transition: none;
+  }
+
+  .field:is(
+      [data-feedback='shaking'],
+      [data-feedback='shaking-danger']
+    )
+    .controlShell {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .field,
+  .label,
+  .supportingRow,
+  .counter {
+    color: CanvasText;
+  }
+
+  .error,
+  .requiredMarker {
+    color: Mark;
+  }
+
+  .label,
+  .counter {
+    background: Canvas;
+  }
+
+  .field[data-disabled='true'] .label,
+  .field[data-disabled='true'] .supportingRow,
+  .field[data-disabled='true'] .requiredMarker {
+    color: GrayText;
+  }
+}

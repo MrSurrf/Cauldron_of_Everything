@@ -1,7 +1,8 @@
 import type {
   InputHTMLAttributes,
-  ReactNode,
 } from 'react'
+
+import type { TextFieldControlProps } from '../TextField/TextField.types'
 
 export type TextInputType =
   | 'text'
@@ -15,7 +16,5 @@ export type TextInputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'children' | 'type'
 > & {
-  icon?: ReactNode
-  rootClassName?: string
   type?: TextInputType
-}
+} & TextFieldControlProps

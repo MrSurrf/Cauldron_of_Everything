@@ -1,0 +1,66 @@
+<svg
+  width="1121"
+  height="1135"
+  viewBox="0 0 1121 1135"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <path
+      id="icon-frame-outer-shape"
+      d="M50.001 631.669L48.3301 629.154L11.6494 573.932L48.8018 505.061L50.001 502.838V168.423L174.363 40H497.633L499.625 39.0811L560.5 11.0107L621.376 39.0811L623.369 40H946.639L1071 168.423V503.063L1072.41 505.428L1109.36 567.5L1072.41 629.572L1071 631.937V966.576L946.639 1095H623.369L621.376 1095.92L560.5 1123.99L499.625 1095.92L497.633 1095H174.363L50.001 966.576V631.669Z"
+    />
+    <circle
+      id="icon-frame-circle"
+      cx="560"
+      cy="568"
+      r="505"
+    />
+    <path
+      id="icon-frame-corner-top-left"
+      d="M249 73H205.5L163 115.5V156.5H122.5L85 194V245"
+    />
+    <path
+      id="icon-frame-corner-top-right"
+      d="M872 73H915.5L958 115.5V156.5H998.5L1036 194V245"
+    />
+    <path
+      id="icon-frame-corner-bottom-right"
+      d="M872 1062H915.5L958 1019.5V978.5H998.5L1036 941V890"
+    />
+    <path
+      id="icon-frame-corner-bottom-left"
+      d="M249 1062H205.5L163 1019.5V978.5H122.5L85 941V890"
+    />
+  </defs>
+
+  <g
+    fill="none"
+    stroke="currentColor"
+  >
+    <use
+      href="#icon-frame-outer-shape"
+      stroke-width="20"
+    />
+    <use
+      href="#icon-frame-circle"
+      stroke-width="10"
+    />
+    <use
+      href="#icon-frame-corner-top-left"
+      stroke-width="10"
+    />
+    <use
+      href="#icon-frame-corner-top-right"
+      stroke-width="10"
+    />
+    <use
+      href="#icon-frame-corner-bottom-right"
+      stroke-width="10"
+    />
+    <use
+      href="#icon-frame-corner-bottom-left"
+      stroke-width="10"
+    />
+  </g>
+</svg>

@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -10,6 +11,7 @@ import {
 } from 'react'
 
 import { ScrollBar } from '../ScrollBar'
+import { isAriaInvalid } from '../TextField/aria'
 import { TextFieldFrame } from '../TextField/TextFieldFrame'
 import styles from '../TextField/TextFieldFrame.module.css'
 import type { TextAreaProps } from './TextArea.types'
@@ -56,8 +58,10 @@ export const TextArea = forwardRef<
   TextAreaProps
 >(function TextArea(
   {
+    'aria-invalid': ariaInvalid,
     className,
     disabled = false,
+    form,
     icon,
     id,
     onInput,
@@ -65,6 +69,7 @@ export const TextArea = forwardRef<
     placeholder = 'Ваш текст...',
     rootClassName,
     rows = 6,
+    value,
     wrap = 'soft',
     ...textareaProps
   },
@@ -138,6 +143,42 @@ export const TextArea = forwardRef<
     }
   }, [updateScrollMetrics])
 
+  useEffect(() => {
+    const node = textareaRef.current
+    const ownerForm = node?.form
+
+    if (!node || !ownerForm) {
+      return
+    }
+
+    let resetTimer:
+      | ReturnType<typeof setTimeout>
+      | undefined
+
+    function handleReset() {
+      if (resetTimer !== undefined) {
+        clearTimeout(resetTimer)
+      }
+
+      resetTimer = setTimeout(() => {
+        updateScrollMetrics(node)
+      }, 0)
+    }
+
+    ownerForm.addEventListener('reset', handleReset)
+
+    return () => {
+      ownerForm.removeEventListener(
+        'reset',
+        handleReset,
+      )
+
+      if (resetTimer !== undefined) {
+        clearTimeout(resetTimer)
+      }
+    }
+  }, [form, updateScrollMetrics])
+
   function handleInput(
     event: ReactInputEvent<HTMLTextAreaElement>,
   ) {
@@ -167,6 +208,7 @@ export const TextArea = forwardRef<
     <TextFieldFrame
       disabled={disabled}
       icon={icon}
+      invalid={isAriaInvalid(ariaInvalid)}
       multiline={true}
       rootClassName={rootClassName}
     >
@@ -174,12 +216,15 @@ export const TextArea = forwardRef<
         {...textareaProps}
         ref={setTextareaRef}
         id={textareaId}
+        aria-invalid={ariaInvalid}
         className={textareaClassName}
         disabled={disabled}
+        form={form}
         onInput={handleInput}
         onScroll={handleScroll}
         placeholder={placeholder}
         rows={rows}
+        value={value}
         wrap={wrap}
       />
 
@@ -189,6 +234,7 @@ export const TextArea = forwardRef<
           aria-label={'Прокрутка текстового поля'}
           className={styles.multilineScrollBar}
           decrementLabel={'Прокрутить текст вверх'}
+          disabled={disabled}
           incrementLabel={'Прокрутить текст вниз'}
           max={scrollMetrics.max}
           min={0}
