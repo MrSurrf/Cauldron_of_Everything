@@ -2,7 +2,10 @@ import type {
   Meta,
   StoryObj,
 } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import {
+  expect,
+  fireEvent,
+} from 'storybook/test'
 
 import GmResultsPage from './GmResultsPage'
 
@@ -38,7 +41,11 @@ export const RejectsWrongPassword: Story = {
 }
 
 export const LoadsResults: Story = {
-  play: async ({ canvas, userEvent }) => {
+  play: async ({
+    canvas,
+    canvasElement,
+    userEvent,
+  }) => {
     await userEvent.type(
       canvas.getByLabelText('Пароль'),
       'gm-demo',
@@ -60,5 +67,33 @@ export const LoadsResults: Story = {
         name: /Анна Лиара/,
       }),
     ).toHaveAttribute('aria-pressed', 'true')
+
+    const resultsScrollBar =
+      canvas.getByRole('slider', {
+        name: 'Прокрутка результатов нулевой сессии',
+      })
+    const resultsList =
+      canvasElement.querySelector<HTMLDivElement>(
+        '.gm-results-list',
+      )
+
+    await expect(
+      resultsScrollBar,
+    ).toBeEnabled()
+    fireEvent.change(resultsScrollBar, {
+      target: {
+        value:
+          resultsScrollBar.getAttribute(
+            'max',
+          ),
+      },
+    })
+
+    await expect(
+      resultsScrollBar,
+    ).not.toHaveValue('0')
+    await expect(
+      resultsList?.scrollTop,
+    ).toBeGreaterThan(0)
   },
 }
