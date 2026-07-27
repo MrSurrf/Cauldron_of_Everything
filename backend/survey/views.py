@@ -9,7 +9,7 @@ from .serializers import (
     RegisterSerializer,
     SurveySubmissionSerializer,
 )
-from .telegram import send_submission_notification
+from .notifications import send_submission_notification
 
 
 class RegisterView(generics.CreateAPIView):
