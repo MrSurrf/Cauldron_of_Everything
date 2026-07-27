@@ -9,6 +9,7 @@ from .serializers import (
     RegisterSerializer,
     SurveySubmissionSerializer,
 )
+from .telegram import send_submission_notification
 
 
 class RegisterView(generics.CreateAPIView):
@@ -41,6 +42,13 @@ class SurveySubmissionListCreateView(generics.ListCreateAPIView):
     serializer_class = SurveySubmissionSerializer
     permission_classes = [AllowAny]
     queryset = SurveySubmission.objects.all().order_by("-created_at")
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        submission = serializer.save()
+        send_submission_notification(submission)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class AnswerListCreateView(generics.ListCreateAPIView):

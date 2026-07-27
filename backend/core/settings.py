@@ -183,6 +183,11 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
+# Telegram-уведомления о новых прохождениях анкеты.
+# Если не заданы — уведомления просто не отправляются.
+TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default=None)
+TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID', default=None)
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
