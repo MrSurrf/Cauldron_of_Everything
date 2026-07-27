@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import StartPage from './pages/StartPage'
 import SurveyPage from './pages/SurveyPage'
+import FinalPage from './pages/FinalPage'
 import { zeroSessionSurvey } from './surveys/zeroSessionSurvey'
 import { sendSurveyResult } from './api'
 import type { SurveyResult } from './surveys/surveyTypes'
@@ -34,26 +35,7 @@ function App() {
   }
 
   if (result) {
-    return (
-      <main>
-        <h1>Опрос завершён</h1>
-
-        <p>Участник: {result.playerName}</p>
-
-        {result.characterName && (
-          <p>Персонаж: {result.characterName}</p>
-        )}
-
-        {zeroSessionSurvey.questions.map((question) => (
-          <section key={question.id}>
-            <h2>{question.title}</h2>
-            <p>
-              Выбранное значение: {result.answers[question.id]}
-            </p>
-          </section>
-        ))}
-      </main>
-    )
+    return <FinalPage />
   }
 
   return (
