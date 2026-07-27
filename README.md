@@ -1,180 +1,267 @@
-# Cauldron_of_Everything
+# Cauldron of Everything
 
-Сервис анкетирования: регистрация/авторизация (JWT), экраны вопросов с вариантами
-ответов, сохранение результатов. Монорепозиторий: бэкенд + фронтенд + конфиги.
+Монорепозиторий веб-сервиса для настольных ролевых игр. Сейчас реализован первый
+модуль — опросник «Zero Session», который собирает предпочтения игроков перед
+началом кампании.
 
-**Стек бэкенда:** Python 3.10, Django 5.2, DRF, SimpleJWT, drf-spectacular (Swagger), SQLite (dev).
+**Стек:**
 
-## Структура репозитория — куда что класть
+- Backend: Python 3.10, Django 5.2, Django REST Framework, SimpleJWT, PostgreSQL
+- Frontend: React 19, TypeScript, Vite
+- DevOps: Docker, GitHub Actions, GHCR, Dokploy
+- Конфигурация анкет: JSON-файлы в `config/`
+
+---
+
+## Структура репозитория
 
 ```
 Cauldron_of_Everything/
-├── backend/                 # БЭКЕНД (Django) — зона бэкенд-разработчика
-│   ├── core/                # настройки и роутинг проекта
+├── backend/                 # Django + DRF
+│   ├── core/                # настройки проекта
 │   ├── survey/              # приложение анкеты (модели, API, админка)
-│   ├── media/survey/        # КАРТИНКИ ДЛЯ АНКЕТЫ (вопросов/вариантов)
+│   ├── media/               # загружаемые файлы (картинки анкеты)
+│   ├── Dockerfile           # образ бэкенда
 │   ├── requirements.txt
 │   └── manage.py
-├── frontend/                # ФРОНТЕНД — зона фронтенд-разработчика
-│   └── assets/              # его иконки, фоны, шрифты и прочие ресурсы
-├── config/                  # КОНФИГИ — JSON-файлы анкет
-│   └── survey.json          # вопросы, варианты, картинки
-└── README.md
+├── frontend/                # React + TypeScript + Vite
+│   ├── src/
+│   ├── public/
+│   ├── Dockerfile           # образ фронтенда
+│   ├── nginx.conf
+│   └── package.json
+├── config/                  # JSON-конфиги анкет
+│   └── survey.json
+├── docker-compose.yml       # локальный запуск всего стека
+├── .github/workflows/       # CI/CD
+│   └── deploy.yml
+├── .env.example             # пример переменных окружения
+├── AGENTS.md                # справка для AI-агента
+├── PROJECT_GUIDE.md         # путеводитель по проекту
+└── README.md                # этот файл
 ```
 
-**Правило простое:**
-- фронтендер кладёт **всё своё** (код, иконки, фоны, шрифты) в `frontend/` — эта папка полностью его, бэкенд её не трогает;
-- тексты вопросов и варианты — в `config/*.json`;
-- картинки, на которые ссылается анкета, — в `backend/media/survey/`.
+### Правила зон ответственности
 
-## Запуск всего проекта (сценарий «пользователь по ссылке»)
+- **Бэкенд-разработчик** работает в `backend/`.
+- **Фронтенд-разработчик** работает в `frontend/`.
+- **Конфиги анкет** — в `config/*.json`.
+- **Картинки анкеты** — в `backend/media/survey/`.
 
-Полный флоу: пользователь открывает сайт → вводит имя → проходит анкету →
-результат сохраняется в базе под введённым именем. Нужны два запущенных сервера:
+---
+
+## Быстрый старт (локально)
+
+Локально проект запускается через Docker Compose — поднимается PostgreSQL,
+бэкенд и фронтенд.
 
 ```bash
-# Терминал 1 — бэкенд
-cd backend
-source venv/Scripts/activate
-python manage.py runserver          # http://127.0.0.1:8000
+# 1. Скопируй пример переменных окружения
+cp .env.example .env
 
-# Терминал 2 — фронтенд (нужен Node.js)
-cd frontend
-npm install                         # один раз
-npm run dev                         # http://localhost:5173
+# 2. Отредактируй .env (минимум SECRET_KEY и VITE_API_BASE_URL)
+
+# 3. Запусти стек
+docker-compose up --build
 ```
 
-Открыть в браузере: **http://localhost:5173**
+После запуска:
 
-Результаты прохождений — в админке: http://127.0.0.1:8000/admin/ →
-«Результаты анкет» (имя участника, анкета, дата, все ответы).
+- Фронтенд: http://localhost
+- Бэкенд API: http://localhost:8000/api/
+- Админка: http://localhost:8000/admin/
+- Swagger: http://localhost:8000/api/docs/
 
-**Дать ссылку другому человеку в той же Wi-Fi сети:**
-1. `npm run dev -- --host` — фронт станет доступен по адресу вида `http://192.168.x.x:5173`;
-2. `python manage.py runserver 0.0.0.0:8000` — бэкенд слушает сеть;
-3. в `frontend/src/tools/survey/api.ts` поменять `API_BASE_URL` на `http://192.168.x.x:8000`;
-4. в `backend/core/settings.py` в `CORS_ALLOWED_ORIGINS` добавить `http://192.168.x.x:5173`.
-
-## Быстрый старт: бэкенд
+### Создание суперпользователя
 
 ```bash
-cd backend
-python -m venv venv
-source venv/Scripts/activate      # Windows (Git Bash)
-# venv\Scripts\activate           # Windows (cmd)
-# source venv/bin/activate        # Linux/macOS
-
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py load_survey      # загрузит ВСЕ *.json из папки config/
-python manage.py createsuperuser  # создать админа (один раз)
-python manage.py runserver        # http://127.0.0.1:8000
+docker-compose exec backend python manage.py createsuperuser
 ```
 
-- Админка: http://127.0.0.1:8000/admin/ — вопросы, ответы пользователей
-- Swagger (документация API): http://127.0.0.1:8000/api/docs/
-
-## Быстрый старт: фронтенд
-
-Стянул репозиторий → работаешь в папке `frontend/`, больше ничего не нужно.
-Общие ресурсы размещай в `frontend/src/shared/`, а ресурсы отдельного инструмента
-— внутри `frontend/src/tools/<tool-id>/` или его каталога в `frontend/public/tools/`.
-API бэкенда: см. Swagger http://127.0.0.1:8000/api/docs/ (попроси бэкендера запустить сервер).
-
-## Анкета из JSON-конфига (без правок кода)
-
-Все вопросы лежат в `config/survey.json`. Изменил файл → применил команду:
+### Загрузка анкеты из JSON
 
 ```bash
-cd backend
-python manage.py load_survey             # все *.json из config/
-python manage.py load_survey survey.json # конкретный файл
-python manage.py load_survey --replace   # + скрыть вопросы, которых нет в файлах
+docker-compose exec backend python manage.py load_survey
 ```
 
-Формат:
+---
+
+## Деплой (Dokploy + GitHub Actions)
+
+Проект собирается в GitHub Actions и деплоится в Dokploy из GHCR.
+
+### Архитектура деплоя
+
+```
+GitHub → GitHub Actions → GHCR → Dokploy → контейнеры
+                                      ├── backend (Django + Gunicorn)
+                                      ├── frontend (nginx + статика)
+                                      └── PostgreSQL (managed DB в Dokploy)
+```
+
+### Настройка
+
+1. **GitHub Secrets / Variables:**
+   - `VITE_API_BASE_URL` (Variable) — публичный URL бэкенда, например
+     `https://api.cauldronofeverything.ru`
+
+2. **Dokploy — backend:**
+   - Provider: Docker
+   - Image: `ghcr.io/<user>/cauldron_of_everything-backend:latest`
+   - Port: `8000`
+   - Env: `SECRET_KEY`, `DEBUG=False`, `DATABASE_URL`, `ALLOWED_HOSTS`,
+     `CORS_ALLOWED_ORIGINS`, `EMAIL_HOST`, `EMAIL_PORT`,
+     `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `NOTIFICATION_EMAIL`
+   - Volume: `/app/backend/media` — для загружаемых файлов
+   - Domain: `api.cauldronofeverything.ru`
+
+3. **Dokploy — frontend:**
+   - Provider: Docker
+   - Image: `ghcr.io/<user>/cauldron_of_everything-frontend:latest`
+   - Port: `80`
+   - Domain: `cauldronofeverything.ru`
+
+4. **DNS:**
+   - `A @ → IP сервера`
+   - `A api → IP сервера`
+
+Подробные инструкции по каждому шагу — в `PROJECT_GUIDE.md`.
+
+---
+
+## Переменные окружения
+
+```env
+# Django
+SECRET_KEY=               # случайный ключ, минимум 50 символов
+DEBUG=False               # в продакшене всегда False
+ALLOWED_HOSTS=api.cauldronofeverything.ru
+
+# База данных
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+# CORS
+CORS_ALLOWED_ORIGINS=https://cauldronofeverything.ru
+
+# Email-уведомления о прохождении анкеты
+EMAIL_HOST=smtp.yandex.ru
+EMAIL_PORT=465
+EMAIL_HOST_USER=your@yandex.ru
+EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_USE_TLS=False
+EMAIL_USE_SSL=True
+DEFAULT_FROM_EMAIL=your@yandex.ru
+NOTIFICATION_EMAIL=your@yandex.ru,another@example.com
+
+# Telegram-уведомления (опционально; могут не работать из-за блокировок)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+
+# Vite
+VITE_API_BASE_URL=https://api.cauldronofeverything.ru
+```
+
+Полный пример — в `.env.example`.
+
+---
+
+## API
+
+| Метод | URL | Описание |
+|---|---|---|
+| POST | `/api/auth/register/` | Регистрация |
+| POST | `/api/auth/token/` | Получить JWT access/refresh |
+| POST | `/api/auth/token/refresh/` | Обновить access |
+| GET | `/api/questions/` | Список активных вопросов |
+| GET | `/api/answers/` | Ответы текущего пользователя |
+| POST | `/api/answers/` | Сохранить/обновить ответ |
+| GET | `/api/submissions/` | Результаты прохождения анкеты |
+| POST | `/api/submissions/` | Сохранить результат целиком |
+| GET | `/api/docs/` | Swagger UI |
+
+### Сохранение результата анкеты
+
+```bash
+curl -X POST https://api.cauldronofeverything.ru/api/submissions/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "survey_id": "zero-session",
+    "player_name": "Алекс",
+    "character_name": "Торвин",
+    "answers": {"engagement": 3, "mechanic": -2}
+  }'
+```
+
+---
+
+## Конфигурация анкеты (config-as-code)
+
+Анкета определяется в `config/survey.json`. При деплое бэкенд автоматически
+синхронизирует этот файл с базой данных командой `load_survey`.
 
 ```json
 {
-  "title": "Анкета обратной связи",
+  "title": "Zero Session",
   "questions": [
     {
       "text": "Текст вопроса",
       "image": "survey/example.png",
       "choices": [
-        { "text": "Вариант 1" },
-        { "text": "Вариант 2", "image": "survey/choice2.png" }
+        {"text": "Вариант 1"},
+        {"text": "Вариант 2", "image": "survey/choice2.png"}
       ]
     }
   ]
 }
 ```
 
-- порядок вопросов на сайте = порядок в файле;
-- вариантов столько, сколько написано в `choices` (минимум 2);
-- `image` — необязательно и у вопроса, и у варианта; файл кладётся в `backend/media/survey/`, в конфиге пишется `survey/имя_файла.png`;
-- команда идемпотентна: повторный запуск обновляет существующее, дублей нет;
-- вопрос ищется по тексту: изменил формулировку → создастся новый вопрос, старый скрывай через `--replace`. Ответы пользователей не теряются;
-- можно держать несколько анкет: `config/survey.json`, `config/onboarding.json` и т.д. — `load_survey` без аргументов подхватит все.
+- `image` — опционально, путь относительно `backend/media/`.
+- Команда идемпотентна: существующие вопросы обновляются, дублей нет.
+- Вопрос ищется по полю `text`.
+- `--replace` деактивирует вопросы, отсутствующие в конфиге.
 
-## API
+---
 
-Все эндпоинты, кроме регистрации и логина, требуют `Authorization: Bearer <access_token>`.
+## Уведомления
 
-| Метод | URL | Описание |
-|---|---|---|
-| POST | `/api/auth/register/` | Регистрация: `{"username": "...", "password": "..."}` (пароль ≥ 8) |
-| POST | `/api/auth/token/` | Логин → `{"access": "...", "refresh": "..."}` |
-| POST | `/api/auth/token/refresh/` | Обновить access-токен: `{"refresh": "..."}` |
-| GET | `/api/questions/` | Вопросы с вариантами (по порядку) |
-| POST | `/api/answers/` | Ответ: `{"question": <id>, "choice": <id>}`, повтор перезаписывает |
-| GET | `/api/answers/` | Ответы текущего пользователя |
-| POST | `/api/submissions/` | **Без авторизации.** Сохранить результат прохождения анкеты целиком (формат фронтенда) |
+При каждом новом прохождении анкеты бэкенд отправляет email на адреса из
+`NOTIFICATION_EMAIL`.
 
-### Отправка результата анкеты (основной сценарий)
+Требования:
 
-Фронтенд проходит анкету по своему конфигу и в конце отправляет результат одним запросом:
+- Настроить SMTP (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
+  `EMAIL_HOST_PASSWORD`).
+- Для Yandex/Gmail использовать **пароль приложения**, а не основной пароль.
+- Telegram-уведомления реализованы, но могут не работать, если сервер
+  блокирует исходящие соединения к `api.telegram.org`.
 
-```ts
-fetch('http://127.0.0.1:8000/api/submissions/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    survey_id: result.surveyId,      // 'zero-session'
-    player_name: result.playerName,  // имя со стартового экрана
-    answers: result.answers,         // {engagement: 3, mechanic: -2, ...}
-  }),
-})
-```
+---
 
-Ответ `201` — сохранено, `400` — ошибка валидации (текст в теле ответа).
-Сохранённые результаты смотреть в админке: `/admin/` → «Результаты анкет».
+## Безопасность
 
-### Флоу для фронтенда (режим с авторизацией, Фаза 2)
+- `SECRET_KEY`, пароли и токены передаются только через env.
+- `DEBUG=False` в продакшене.
+- JWT-эндпоинты готовы; `/api/submissions/` пока открыт для удобства
+  анонимного прохождения.
+- Медиафайлы хранятся в volume Dokploy, при пересоздании контейнера
+  не теряются.
 
-1. Регистрация/логин → сохранить `access` + `refresh`;
-2. `GET /api/questions/` → экраны вопросов (по одному, в полученном порядке);
-3. Выбор варианта → `POST /api/answers/`;
-4. Результаты → `GET /api/answers/`;
-5. Access-токен истёк (60 мин) → `POST /api/auth/token/refresh/`.
+---
 
-### Пример: вопрос
+## Известные ограничения
 
-```json
-{
-  "id": 6,
-  "text": "Как часто вы пользуетесь нашим сервисом?",
-  "image": "http://127.0.0.1:8000/media/survey/example.png",
-  "choices": [
-    {"id": 21, "text": "Каждый день", "image": null},
-    {"id": 22, "text": "Несколько раз в неделю", "image": null}
-  ]
-}
-```
+- Фронтенд пока использует статическое определение анкеты из
+  `frontend/src/tools/survey/surveys/`. В будущем вопросы должны
+  загружаться с `/api/questions/`.
+- Уведомления отправляются синхронно при сохранении результата. При высокой
+  нагрузке лучше вынести в очередь (Celery).
+- Медиафайлы хранятся на локальном volume, не в S3.
+- Автотестов пока нет (`backend/survey/tests.py` пустой).
 
-`image` — готовый URL для `<img src>` либо `null`.
+---
 
-## CORS
+## Что почитать дальше
 
-В `backend/core/settings.py` в `CORS_ALLOWED_ORIGINS` разрешены `localhost:3000`
-и `localhost:5173`. Другой порт фронта — добавьте туда.
+- `PROJECT_GUIDE.md` — архитектура, добавление новых моделей/API, подготовка
+  бэкенда к масштабированию.
+- `AGENTS.md` — соглашения по коду и структуре.
