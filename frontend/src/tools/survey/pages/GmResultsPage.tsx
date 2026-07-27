@@ -1,10 +1,16 @@
 import {
+  useCallback,
   useEffect,
+  useId,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
+  type UIEvent,
 } from 'react'
 
+import { ScrollBar } from '../../../shared/ui/ScrollBar'
 import {
   resultCategories,
 } from '../results/mockSurveyResults'
@@ -38,6 +44,48 @@ type ScaleTone =
   | 'negative'
   | 'neutral'
   | 'positive'
+
+type ScrollMetrics = {
+  max: number
+  step: number
+  value: number
+}
+
+const EMPTY_SCROLL_METRICS: ScrollMetrics = {
+  max: 0,
+  step: 1,
+  value: 0,
+}
+
+function readScrollMetrics(
+  element: HTMLDivElement,
+): ScrollMetrics {
+  const max = Math.max(
+    0,
+    element.scrollHeight - element.clientHeight,
+  )
+  const value = Math.min(
+    Math.max(Math.round(element.scrollTop), 0),
+    max,
+  )
+  const firstRow =
+    element.querySelector<HTMLElement>(
+      '.gm-result-row',
+    )
+  const rowGap = Number.parseFloat(
+    getComputedStyle(element).rowGap,
+  )
+  const step = firstRow
+    ? firstRow.offsetHeight +
+      (Number.isFinite(rowGap) ? rowGap : 0)
+    : 1
+
+  return {
+    max,
+    step: Math.max(1, Math.round(step)),
+    value,
+  }
+}
 
 function getScaleTone(
   value: number,
@@ -115,6 +163,41 @@ function GmResultsPage() {
   const [selectedPlayerId, setSelectedPlayerId] =
     useState('')
 
+  const resultsListId = useId()
+  const resultsListRef =
+    useRef<HTMLDivElement>(null)
+  const [
+    resultsScrollMetrics,
+    setResultsScrollMetrics,
+  ] = useState<ScrollMetrics>(
+    EMPTY_SCROLL_METRICS,
+  )
+
+  const updateResultsScrollMetrics =
+    useCallback(
+      (
+        node =
+          resultsListRef.current,
+      ) => {
+        if (!node) {
+          return
+        }
+
+        const next =
+          readScrollMetrics(node)
+
+        setResultsScrollMetrics(
+          (current) =>
+            current.max === next.max &&
+            current.step === next.step &&
+            current.value === next.value
+              ? current
+              : next,
+        )
+      },
+      [],
+    )
+
   useEffect(() => {
     if (loadState.status !== 'loading') {
       return
@@ -167,6 +250,78 @@ function GmResultsPage() {
       ) ?? submissions[0],
     [submissions, selectedPlayerId],
   )
+
+  useLayoutEffect(() => {
+    const node = resultsListRef.current
+
+    if (!node) {
+      return
+    }
+
+    updateResultsScrollMetrics(node)
+
+    if (
+      typeof ResizeObserver ===
+      'undefined'
+    ) {
+      return
+    }
+
+    const observer = new ResizeObserver(
+      () => {
+        updateResultsScrollMetrics(node)
+      },
+    )
+
+    observer.observe(node)
+    Array.from(node.children).forEach(
+      (child) => {
+        observer.observe(child)
+      },
+    )
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [
+    selectedPlayer,
+    updateResultsScrollMetrics,
+  ])
+
+  useEffect(() => {
+    const node = resultsListRef.current
+
+    if (!node) {
+      return
+    }
+
+    node.scrollTop = 0
+    updateResultsScrollMetrics(node)
+  }, [
+    selectedPlayerId,
+    updateResultsScrollMetrics,
+  ])
+
+  function handleResultsScroll(
+    event: UIEvent<HTMLDivElement>,
+  ) {
+    updateResultsScrollMetrics(
+      event.currentTarget,
+    )
+  }
+
+  function handleResultsScrollBarChange(
+    value: number,
+  ) {
+    const node = resultsListRef.current
+
+    if (!node) {
+      return
+    }
+
+    node.scrollTop = value
+    updateResultsScrollMetrics(node)
+  }
 
   function handleLogin(
     event: FormEvent<HTMLFormElement>,
@@ -348,7 +503,12 @@ function GmResultsPage() {
             </div>
           </header>
 
-          <div className="gm-results-list">
+          <div
+            ref={resultsListRef}
+            id={resultsListId}
+            className="gm-results-list"
+            onScroll={handleResultsScroll}
+          >
             {resultCategories.map(
               (category) => {
                 const value =
@@ -430,6 +590,24 @@ function GmResultsPage() {
               },
             )}
           </div>
+
+          {resultsScrollMetrics.max > 0 && (
+            <ScrollBar
+              aria-controls={resultsListId}
+              aria-label="Прокрутка результатов нулевой сессии"
+              className="gm-results-list__scrollbar"
+              decrementLabel="Прокрутить результаты вверх"
+              incrementLabel="Прокрутить результаты вниз"
+              max={resultsScrollMetrics.max}
+              min={0}
+              onValueChange={
+                handleResultsScrollBarChange
+              }
+              orientation="vertical"
+              step={resultsScrollMetrics.step}
+              value={resultsScrollMetrics.value}
+            />
+          )}
         </section>
 
         <aside className="gm-player-sidebar">
