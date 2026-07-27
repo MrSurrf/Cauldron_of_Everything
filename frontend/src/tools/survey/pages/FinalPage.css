@@ -1,0 +1,104 @@
+.survey-final-page {
+  position: relative;
+
+  display: grid;
+
+  width: 100%;
+  min-width: 320px;
+  min-height: 100svh;
+
+  padding:
+    clamp(
+      24px,
+      6vw,
+      72px
+    );
+
+  overflow: hidden;
+  place-items: center;
+
+  background:
+    #05040d
+    url('/tools/survey/illustrations/common/background.png')
+    center / cover
+    fixed
+    no-repeat;
+
+  color: #ffffff;
+}
+
+.survey-final-page__overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(95, 45, 139, 0.08),
+      rgba(3, 2, 11, 0.48) 70%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(3, 2, 11, 0.24),
+      rgba(3, 2, 11, 0.58)
+    );
+
+  pointer-events: none;
+}
+
+.survey-final-page__content {
+  position: relative;
+  z-index: 1;
+
+  width:
+    min(
+      1100px,
+      100%
+    );
+
+  text-align: center;
+}
+
+.survey-final-page__title {
+  margin: 0;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  font-family:
+    'GothicRusWeb',
+    Georgia,
+    serif;
+
+  font-size:
+    clamp(
+      42px,
+      8vw,
+      104px
+    );
+
+  font-weight: 400;
+  line-height: 1.04;
+
+  text-shadow:
+    0 3px 18px
+    rgba(0, 0, 0, 0.72),
+    0 0 36px
+    rgba(127, 71, 179, 0.22);
+}
+
+@media (max-width: 520px) {
+  .survey-final-page__title {
+    font-size:
+      clamp(
+        38px,
+        13vw,
+        64px
+      );
+  }
+}
