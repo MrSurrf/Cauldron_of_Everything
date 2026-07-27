@@ -1,6 +1,7 @@
 # Путеводитель по проекту Cauldron of Everything
 
-Этот файл поможет тебе ориентироваться в проекте, понимать, откуда что запускается, и расширять функциональность.
+Этот файл помогает ориентироваться в архитектуре, запускать проект, добавлять
+новую функциональность и готовить бэкенд к росту.
 
 ---
 
@@ -8,62 +9,86 @@
 
 Проект — монорепозиторий из двух частей:
 
-- **backend/** — серверная часть на Django + Django REST Framework. Хранит данные, раздаёт API, есть админка.
-- **frontend/** — клиентская часть на React + TypeScript + Vite. То, что видит пользователь в браузере.
-- **config/** — JSON-файлы с вопросами для команды загрузки анкеты.
+- **backend/** — Django + Django REST Framework. Хранит данные, раздаёт API,
+  управляет админкой и конфигурациями анкет.
+- **frontend/** — React + TypeScript + Vite. Пользовательский интерфейс.
+- **config/** — JSON-файлы с вопросами для команды `load_survey`.
 
 Правило разделения зон:
 
 - **Фронтенд-разработчик** работает только в `frontend/`.
 - **Бэкенд-разработчик** работает только в `backend/`.
-- Тексты вопросов и картинки анкеты — в `config/` и `backend/media/survey/`.
+- **Конфигуратор/контент-менеджер** редактирует `config/*.json` и
+  `backend/media/survey/`.
 
 ---
 
-## 2. Структура папок
+## 2. Структура проекта
 
 ```
 Cauldron_of_Everything/
-├── backend/                    # Django-проект
-│   ├── core/                   # настройки Django (settings, urls)
+├── backend/
+│   ├── core/                   # настройки Django
 │   ├── survey/                 # приложение анкеты
 │   │   ├── models.py           # модели базы данных
 │   │   ├── views.py            # API-обработчики
+│   │   ├── serializers.py      # DRF-сериализаторы
 │   │   ├── urls.py             # маршруты API
-│   │   ├── serializers.py      # преобразование данных для API
-│   │   ├── admin.py            # настройка Django-админки
-│   │   └── migrations/         # миграции базы данных
-│   ├── media/survey/           # картинки анкеты
-│   ├── db.sqlite3              # файл базы данных
-│   ├── manage.py               # главная команда Django
-│   ├── requirements.txt        # Python-зависимости
-│   └── venv/                   # виртуальное окружение
-├── frontend/                   # React-приложение
-│   ├── public/                 # статика (шрифты, картинки, favicon)
-│   │   ├── fonts/              # шрифты Gilroy и GothicRus
-│   │   └── tools/survey/       # изображения рабочего опросника
-│   ├── src/                    # исходный код
-│   │   ├── main.tsx            # точка входа
-│   │   ├── app/                # оболочка и глобальные стили
-│   │   ├── pages/              # тонкие точки входа URL
-│   │   ├── workspace/          # контракты плиточной платформы
-│   │   ├── tools/survey/       # рабочий опросник целиком
-│   │   ├── entities/           # общие предметные сущности
-│   │   ├── shared/             # дизайн-токены и общий UI
-│   │   └── ARCHITECTURE.md     # правила границ и зависимостей
-│   ├── index.html              # HTML-шаблон
-│   ├── package.json            # зависимости и скрипты npm
-│   └── vite.config.ts          # настройки Vite
+│   │   ├── admin.py            # Django-админка
+│   │   ├── notifications.py    # email/Telegram уведомления
+│   │   └── migrations/         # миграции PostgreSQL
+│   ├── media/                  # загружаемые файлы (volume в Dokploy)
+│   ├── Dockerfile              # образ бэкенда
+│   ├── requirements.txt
+│   └── manage.py
+├── frontend/
+│   ├── public/                 # статика
+│   ├── src/                    # исходный код React
+│   ├── Dockerfile              # образ фронтенда
+│   ├── nginx.conf
+│   └── package.json
 ├── config/                     # JSON-конфиги анкет
 │   └── survey.json
-└── AGENTS.md                   # справка для AI-агента
+├── docker-compose.yml          # локальный стек
+├── .github/workflows/deploy.yml # CI/CD
+├── .env.example
+├── AGENTS.md
+├── README.md
+└── PROJECT_GUIDE.md            # этот файл
 ```
 
 ---
 
 ## 3. Как запускать проект
 
-### Бэкенд
+### Локально (Docker Compose)
+
+```bash
+cp .env.example .env
+# отредактируй .env
+
+docker-compose up --build
+```
+
+Поднимется:
+
+- PostgreSQL на `localhost:5432`
+- Django backend на `localhost:8000`
+- frontend (nginx) на `localhost:80`
+
+### Создание суперпользователя
+
+```bash
+docker-compose exec backend python manage.py createsuperuser
+```
+
+### Загрузка анкеты
+
+```bash
+docker-compose exec backend python manage.py load_survey
+```
+
+### Без Docker (только для разработки бэкенда)
 
 ```bash
 cd backend
@@ -71,320 +96,335 @@ source venv/Scripts/activate      # Windows Git Bash
 # venv\Scripts\activate           # Windows cmd
 # source venv/bin/activate        # Linux/macOS
 
-python manage.py runserver        # http://127.0.0.1:8000
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py load_survey
+python manage.py createsuperuser
+python manage.py runserver
 ```
-
-Полезные URL:
-
-- Админка: `http://127.0.0.1:8000/admin/` (логин `admin`, пароль `admin`)
-- API: `http://127.0.0.1:8000/api/`
-- Документация API: `http://127.0.0.1:8000/api/docs/`
-
-### Фронтенд
-
-```bash
-cd frontend
-npm install          # один раз
-npm run dev          # http://localhost:5173
-```
-
-Другие скрипты:
-
-```bash
-npm run build        # собрать production-версию в dist/
-npm run preview      # посмотреть собранную версию
-npm run lint         # проверить код линтером
-```
-
-### Запуск всего вместе
-
-1. Терминал 1: запусти бэкенд (`python manage.py runserver`).
-2. Терминал 2: запусти фронтенд (`npm run dev`).
-3. Открывай `http://localhost:5173`.
 
 ---
 
-## 4. Архитектура фронтенда
+## 4. Архитектура деплоя
 
-### Точка входа и оболочка
+### CI/CD
 
-Файл `frontend/src/main.tsx` рендерит `frontend/src/app/App.tsx`, подключает
-дизайн-токены и глобальные стили из `frontend/src/app/styles/global.css`.
+1. Разработчик пушит в `main`.
+2. GitHub Actions собирает два Docker-образа и пушит в GHCR:
+   - `ghcr.io/<user>/cauldron_of_everything-backend`
+   - `ghcr.io/<user>/cauldron_of_everything-frontend`
+3. Actions дергает вебхуки Dokploy.
+4. Dokploy стягивает `latest` и перезапускает контейнеры.
 
-Фронтенд развивается как модульный монолит:
+### Контейнеры в Dokploy
 
-- `app/` — корневая оболочка;
-- `pages/` — тонкие точки входа URL;
-- `workspace/` — будущая плиточная платформа;
-- `tools/` — автономные сложные инструменты;
-- `entities/` — общие предметные сущности;
-- `shared/` — универсальный UI и инфраструктура.
+- **backend**: Python 3.10 + Gunicorn, порт 8000.
+- **frontend**: nginx, раздаёт собранный Vite-бандл, порт 80.
+- **database**: managed PostgreSQL от Dokploy.
 
-Подробные правила описаны в `frontend/src/ARCHITECTURE.md`.
+### Важные env-переменные
 
-### Текущий опросник
+См. `.env.example` и `README.md`. Критичные для бэкенда:
 
-Рабочий сценарий изолирован в `frontend/src/tools/survey/`. Пока новый workspace
-не реализован, корневая оболочка запускает его через публичный
-`tools/survey/index.ts`.
-
-- `tools/survey/App.tsx` управляет текущим сценарием и `#/gm`;
-- `tools/survey/pages/` содержит экраны и стили;
-- `tools/survey/surveys/` содержит типы и конфигурацию;
-- `tools/survey/results/` содержит данные экрана результатов;
-- `tools/survey/api.ts` содержит backend-интеграцию.
-
-Внутренние файлы инструмента не следует импортировать снаружи напрямую.
-
-### API опросника
-
-Запросы опросника к бэкенду собраны в `frontend/src/tools/survey/api.ts`:
-
-- `sendSurveyResult(result)` — отправляет результат опроса.
-- `fetchSubmissions()` — получает список результатов для `#/gm`.
-
-Адрес бэкенда захардкожен:
-
-```ts
-const API_BASE_URL = 'http://127.0.0.1:8000'
-```
-
-Если бэкенд переедет на другой адрес — меняй его в этом файле.
+- `SECRET_KEY`
+- `DEBUG=False`
+- `DATABASE_URL`
+- `ALLOWED_HOSTS`
+- `CORS_ALLOWED_ORIGINS`
+- `EMAIL_*` и `NOTIFICATION_EMAIL`
 
 ---
 
 ## 5. Архитектура бэкенда
 
-### Модели
+### Модели (`backend/survey/models.py`)
 
-Все модели в `backend/survey/models.py`:
+| Модель | Назначение |
+|---|---|
+| `Question` | Вопрос анкеты |
+| `Choice` | Вариант ответа |
+| `Answer` | Ответ авторизованного пользователя |
+| `SurveySubmission` | Результат прохождения от фронтенда |
 
-- `Question` — вопрос анкеты.
-- `Choice` — вариант ответа.
-- `Answer` — ответ авторизованного пользователя.
-- `SurveySubmission` — результат прохождения от фронтенда.
+### API (`backend/survey/views.py`, `urls.py`)
 
-### API
+- `POST /api/submissions/` — сохранить результат целиком (открыт, без авторизации).
+- `GET /api/submissions/` — список результатов.
+- `GET /api/questions/` — активные вопросы с вариантами.
+- `POST /api/answers/` — сохранить ответ авторизованного пользователя.
+- `POST /api/auth/register/`, `POST /api/auth/token/` — регистрация и JWT-логин.
 
-Эндпоинты настроены в `backend/survey/urls.py` и `backend/core/urls.py`:
+### Уведомления (`backend/survey/notifications.py`)
 
-- `POST /api/submissions/` — сохранить результат.
-- `GET /api/submissions/` — получить список результатов.
-- `GET /api/questions/` — список вопросов (требует авторизации JWT).
-- `POST /api/auth/register/`, `POST /api/auth/token/` — регистрация и вход.
+При сохранении `SurveySubmission` бэкенд отправляет email на адреса из
+`NOTIFICATION_EMAIL`.
 
-### Админка
+Логика отправки синхронная. Для высокой нагрузки её стоит вынести в очередь
+(см. раздел «Масштабирование»).
 
-`backend/survey/admin.py` настраивает, как модели выглядят в админке.
+### Админка (`backend/survey/admin.py`)
+
+Через `/admin/` можно просматривать и редактировать вопросы, варианты, ответы
+и результаты прохождения анкеты.
 
 ---
 
-## 6. Как добавить новый экран или инструмент
+## 6. Конфигурация анкеты
 
-Если компонент соответствует самостоятельному URL, создай тонкую страницу в
-`frontend/src/pages/`. Страница отвечает за маршрут, доступ и композицию, но не
-содержит бизнес-логику инструмента.
+Анкета задаётся JSON-файлом в `config/`. При деплое бэкенд автоматически
+выполняет:
 
-Если добавляется самостоятельный сложный инструмент, создай каталог:
-
-```text
-frontend/src/tools/<tool-id>/
-├── index.ts
-├── model/
-├── api/
-├── ui/
-└── assets/
+```bash
+python manage.py load_survey
 ```
 
-Уникальные компоненты, модель, API и ресурсы инструмента остаются внутри него.
-Другие слои подключают инструмент только через публичный `index.ts`.
+Это значит, что для изменения вопросов не нужен деплой кода — достаточно
+изменить `config/survey.json` и запушить.
 
-Общие UI-примитивы размещаются в `frontend/src/shared/ui/`, а оболочка и
-поведение плиток — в `frontend/src/workspace/ui/`.
+### Принцип Config-as-Code
+
+- Единый источник истины — файл в git.
+- История изменений вопросов хранится в git.
+- Для обновления анкеты не нужна админка или CMS.
+
+### Когда понадобится CMS
+
+Если мастера сами захотят создавать анкеты без разработчика, `config/*.json`
+станет неудобен. Тогда стоит добавить:
+
+- UI для создания вопросов/вариантов;
+- API для CRUD анкет;
+- перенос canonical source из JSON в базу данных;
+- `load_survey` оставить как команду импорта, а не обязательный шаг деплоя.
 
 ---
 
-## 7. Как добавить переход между экранами
+## 7. Как добавить новый API-эндпоинт
 
-Навигацию следует добавлять в слой `app`/`pages`, не изменяя
-`tools/survey/App.tsx`. До появления полноценного роутера текущий опросник
-сохраняет собственный маршрут `#/gm`; новые маршруты должны регистрироваться в
-будущем `app/router`.
+### Шаг 1. Сериализатор
 
-Компоненты инструментов получают команды перехода через публичные props или
-application-сервисы и не должны напрямую управлять глобальным URL.
-
----
-
-## 8. Как добавить новый API-эндпоинт на бэкенде
-
-### Шаг 1. Добавить сериализатор (если нужно)
-
-В `backend/survey/serializers.py`:
+`backend/survey/serializers.py`:
 
 ```python
 class MyModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyModel
-        fields = ('id', 'name')
+        fields = ('id', 'name', 'created_at')
 ```
 
-### Шаг 2. Добавить view
+### Шаг 2. View
 
-В `backend/survey/views.py`:
+`backend/survey/views.py`:
 
 ```python
+from rest_framework.permissions import AllowAny
+
 class MyModelListCreateView(generics.ListCreateAPIView):
     queryset = MyModel.objects.all()
     serializer_class = MyModelSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # или IsAuthenticated
 ```
 
-### Шаг 3. Добавить маршрут
+### Шаг 3. URL
 
-В `backend/survey/urls.py`:
+`backend/survey/urls.py`:
 
 ```python
 path('my-models/', MyModelListCreateView.as_view(), name='my-model-list-create'),
 ```
 
-### Шаг 4. Использовать на фронтенде
-
-В API-модуле соответствующего инструмента, например
-`frontend/src/tools/survey/api.ts`:
-
-```ts
-export async function fetchMyModels(): Promise<MyModel[]> {
-  const response = await fetch(`${API_BASE_URL}/api/my-models/`)
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-  return response.json()
-}
-```
-
----
-
-## 9. Как добавить новую модель в базу данных
-
-### Шаг 1. Описать модель
-
-В `backend/survey/models.py`:
-
-```python
-class MyModel(models.Model):
-    name = models.CharField('Название', max_length=100)
-    created_at = models.DateTimeField('Создано', auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Моя модель'
-        verbose_name_plural = 'Мои модели'
-
-    def __str__(self):
-        return self.name
-```
-
-### Шаг 2. Создать и применить миграцию
+### Шаг 4. Миграции
 
 ```bash
 cd backend
-source venv/Scripts/activate
 python manage.py makemigrations survey
-python manage.py migrate survey
+python manage.py migrate
 ```
 
-### Шаг 3. Зарегистрировать в админке (опционально)
+### Шаг 5. Админка (опционально)
 
-В `backend/survey/admin.py`:
+`backend/survey/admin.py`:
 
 ```python
 @admin.register(MyModel)
 class MyModelAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_at')
+    list_display = ('id', 'name', 'created_at')
 ```
 
 ---
 
-## 10. Где хранятся данные
+## 8. Подготовка бэкенда к масштабированию
 
-База данных — SQLite, файл:
+Текущая реализация подходит для небольшого числа пользователей. Чтобы
+подготовиться к росту, стоит сделать следующее.
 
+### 8.1. Тесты
+
+Сейчас `backend/survey/tests.py` пустой. Добавьте тесты:
+
+- моделей и сериализаторов;
+- API-эндпоинтов (`/api/submissions/`, `/api/questions/`);
+- команды `load_survey`;
+- отправки уведомлений (с моком SMTP).
+
+Фреймворк: `django.test.TestCase` + DRF `APITestCase`.
+
+### 8.2. Асинхронные задачи
+
+Уведомления и другие побочные эффекты сейчас выполняются синхронно:
+
+```python
+# Плохо при нагрузке
+send_submission_notification(submission)
 ```
-backend/db.sqlite3
+
+Лучше вынести в очередь:
+
+```python
+# Хорошо
+send_submission_notification.delay(submission.id)
 ```
 
-Смотреть можно:
+Стек: **Celery + Redis** или **Django-Q**.
 
-1. В Django-админке: `http://127.0.0.1:8000/admin/`.
-2. В Django shell:
-   ```bash
-   cd backend
-   source venv/Scripts/activate
-   python manage.py shell
-   ```
-   ```python
-   from survey.models import SurveySubmission
-   for s in SurveySubmission.objects.all():
-       print(s.player_name, s.answers)
-   ```
-3. Через любой SQLite-viewer, открыв файл `backend/db.sqlite3`.
+### 8.3. Кэширование
+
+Добавьте Redis и кэшируйте:
+
+- список активных вопросов `/api/questions/`;
+- часто запрашиваемые справочники.
+
+### 8.4. Object Storage для медиа
+
+Сейчас картинки анкеты лежат в volume на сервере (`/app/backend/media`).
+При масштабировании за несколько инстансов это не работает.
+
+Решения:
+
+- **AWS S3** + `django-storages`
+- **Yandex Object Storage**
+- **MinIO** (self-hosted S3)
+
+### 8.5. Мониторинг и health checks
+
+Добавьте эндпоинт:
+
+```python
+# backend/core/urls.py
+path('health/', lambda r: JsonResponse({'status': 'ok'})),
+```
+
+И подключите:
+
+- логирование запросов;
+- метрики (Prometheus + Grafana);
+- алёртинг на ошибки деплоя и 5xx.
+
+### 8.6. Rate limiting
+
+Для открытых эндпоинтов (`/api/submissions/`) добавьте throttling:
+
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',
+    },
+}
+```
+
+### 8.7. Версионирование API
+
+Когда появятся внешние интеграции, добавьте префикс версии:
+
+```python
+# urls.py
+path('api/v1/', include('survey.urls')),
+```
+
+### 8.8. Аутентификация и авторизация
+
+Сейчас `/api/submissions/` открыт. Для настоящего продукта:
+
+- требовать авторизацию;
+- ограничивать доступ к результатам по правам (мастер/игрок);
+- добавить роли и группы.
+
+### 8.9. Резервное копирование
+
+Настроить бэкапы:
+
+- PostgreSQL (Dokploy имеет встроенные бэкапы или pg_dump по расписанию);
+- медиафайлов (если остаются на volume) или S3-версионирование.
+
+### 8.10. Подключение frontend к API вопросов
+
+Сейчас фронтенд использует статический конфиг анкеты из
+`frontend/src/tools/survey/surveys/`. Это дублирует данные в базе и JSON.
+
+Будущий шаг:
+
+- фронтенд при старте делает `GET /api/questions/`;
+- удалить статическое определение анкеты;
+- `/api/questions/` открыть без авторизации или с токеном сессии.
 
 ---
 
-## 11. Полезные команды
+## 9. Полезные команды
 
 ### Бэкенд
 
 ```bash
-# Запуск
-python manage.py runserver
-
 # Миграции
 python manage.py makemigrations survey
 python manage.py migrate
 
-# Создать суперпользователя
+# Суперпользователь
 python manage.py createsuperuser
 
-# Загрузить анкету из config/
+# Загрузить анкету
 python manage.py load_survey
 
-# Django shell
-python manage.py shell
-
-# Проверка
+# Проверка конфигурации
 python manage.py check
+
+# Shell
+python manage.py shell
 ```
 
 ### Фронтенд
 
 ```bash
-# Установка зависимостей
 npm install
-
-# Dev-сервер
 npm run dev
-
-# Сборка
 npm run build
-
-# Preview
-npm run preview
-
-# Линтер
 npm run lint
+```
+
+### Docker
+
+```bash
+# Локальный запуск
+docker-compose up --build
+
+# Выполнить команду внутри backend-контейнера
+docker-compose exec backend python manage.py shell
 ```
 
 ---
 
-## 12. Кому что трогать
+## 10. Кому что трогать
 
-- **Ты (владелец проекта / менеджер):** смотришь результат в браузере, даёшь задачи, смотришь данные в админке.
+- **Владелец/менеджер:** смотрит результат в браузере, даёт задачи, проверяет
+  данные в админке `/admin/`.
 - **Фронтенд-разработчик:** работает только в `frontend/`.
 - **Бэкенд-разработчик:** работает только в `backend/`.
-- **AI-агент (я):** могу править обе части, если ты явно просишь связать фронтенд и бэкенд.
+- **AI-агент:** правит обе части только по явному запросу или для связки
+  фронтенда с бэкендом.
 
 ---
 
-Если что-то непонятно — спрашивай. Лучше всего сразу говорить, какую страницу или действие ты хочешь добавить, и я покажу пошагово.
-test
+Если что-то непонятно или нужно добавить новый функционал — описывай страницу
+или действие, и мы разберём пошагово.

@@ -60,12 +60,50 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-      - name: Trigger Dokploy deploy
+      - name: Trigger Dokploy backend deploy
         run: |
-          # Dokploy иногда возвращает 400 с телом {"message":"Application deployed successfully"},
-          # поэтому -f убран, чтобы workflow не падал по HTTP-коду.
-          echo "Trigger backend"
-          curl -sSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}" || true
+          echo "Pushed images:"
+          echo "  Backend:  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
+          echo "  Frontend: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}"
           echo ""
-          echo "Trigger frontend"
-          curl -sSL -X POST "${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}" || true
+
+          WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}"
+          if [ -z "$WEBHOOK" ]; then
+            echo "⚠️  DOKPLOY_WEBHOOK_BACKEND is not set. Skipping backend redeploy."
+            echo "    Add the webhook URL in Settings → Secrets and variables → Actions."
+            exit 0
+          fi
+
+          echo "Triggering Dokploy backend deploy..."
+          HTTP_CODE=$(curl -sSL -o /tmp/dokploy_backend_response.txt -w "%{http_code}" -X POST "$WEBHOOK")
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response:"
+          cat /tmp/dokploy_backend_response.txt
+          echo ""
+
+      - name: Trigger Dokploy frontend deploy
+        run: |
+          WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}"
+          if [ -z "$WEBHOOK" ]; then
+            echo "⚠️  DOKPLOY_WEBHOOK_FRONTEND is not set. Skipping frontend redeploy."
+            echo "    Add the webhook URL in Settings → Secrets and variables → Actions."
+            echo ""
+            echo "How to get the webhook URL:"
+            echo "  1. Open Dokploy → select the frontend application."
+            echo "  2. Go to the section with webhooks / deploy hooks."
+            echo "  3. Copy the webhook URL and save it as DOKPLOY_WEBHOOK_FRONTEND."
+            exit 0
+          fi
+
+          echo "Triggering Dokploy frontend deploy..."
+          HTTP_CODE=$(curl -sSL -o /tmp/dokploy_frontend_response.txt -w "%{http_code}" -X POST "$WEBHOOK")
+          echo "HTTP status: $HTTP_CODE"
+          echo "Response:"
+          cat /tmp/dokploy_frontend_response.txt
+          echo ""
+
+          # Dokploy иногда возвращает 400 с телом {"message":"Application deployed successfully"},
+          # поэтому шаг не падает при нестандартных HTTP-кодах.
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
+            echo "⚠️  Dokploy webhook returned $HTTP_CODE. Check the webhook URL above."
+          fi
