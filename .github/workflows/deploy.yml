@@ -38,6 +38,7 @@ jobs:
           context: .
           file: backend/Dockerfile
           push: true
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
@@ -50,6 +51,7 @@ jobs:
           context: .
           file: frontend/Dockerfile
           push: true
+          provenance: false
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           tags: |
