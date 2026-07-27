@@ -47,5 +47,6 @@ def send_submission_notification(submission):
             recipient_list=notification_emails,
             fail_silently=False,
         )
+        logger.info("Email notification sent to %s", notification_emails)
     except Exception as exc:
         logger.exception("Failed to send email notification: %s", exc)
