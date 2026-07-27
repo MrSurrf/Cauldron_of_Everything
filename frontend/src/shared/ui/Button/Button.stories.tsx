@@ -14,6 +14,9 @@ const meta = {
     variant: 'primary',
   },
   argTypes: {
+    icon: {
+      control: false,
+    },
     variant: {
       control: 'radio',
       options: ['primary', 'secondary'],
@@ -34,9 +37,24 @@ export const Secondary: Story = {
   },
 }
 
-export const WithoutArrow: Story = {
+export const WithoutIcon: Story = {
   args: {
-    showArrow: false,
+    icon: null,
+  },
+}
+
+export const CustomIcon: Story = {
+  args: {
+    icon: (
+      <svg viewBox={'0 0 24 24'}>
+        <circle
+          cx={12}
+          cy={12}
+          r={7}
+          fill={'currentColor'}
+        />
+      </svg>
+    ),
   },
 }
 
