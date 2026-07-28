@@ -2,7 +2,7 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 env:
@@ -22,6 +22,17 @@ jobs:
       - name: Lowercase repository name
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY@L}" >> "$GITHUB_ENV"
 
+      - name: Set environment variables
+        id: meta
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "vite_api_base_url=${{ vars.VITE_API_BASE_URL }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=dev" >> "$GITHUB_OUTPUT"
+            echo "vite_api_base_url=${{ vars.VITE_API_BASE_URL_DEV }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -40,10 +51,10 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          cache-from: type=gha,scope=backend-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=backend-${{ github.ref_name }}
 
       - name: Build and push frontend
         uses: docker/build-push-action@v6
@@ -53,57 +64,60 @@ jobs:
           push: true
           provenance: false
           build-args: |
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+            VITE_API_BASE_URL=${{ steps.meta.outputs.vite_api_base_url }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=frontend-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ github.ref_name }}
 
       - name: Trigger Dokploy backend deploy
+        env:
+          WEBHOOK: ${{ github.ref_name == 'main' && secrets.DOKPLOY_WEBHOOK_BACKEND || secrets.DOKPLOY_WEBHOOK_BACKEND_DEV }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          echo "Pushed images:"
-          echo "  Backend:  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
-          echo "  Frontend: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}"
+          echo "Pushed images for branch '$BRANCH':"
+          echo "  Backend:  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta.outputs.tag }}"
+          echo "  Frontend: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta.outputs.tag }}"
           echo ""
 
-          WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_BACKEND }}"
           if [ -z "$WEBHOOK" ]; then
-            echo "⚠️  DOKPLOY_WEBHOOK_BACKEND is not set. Skipping backend redeploy."
-            echo "    Add the webhook URL in Settings → Secrets and variables → Actions."
+            echo "⚠️  Backend webhook is not set for branch '$BRANCH'. Skipping backend redeploy."
+            echo "    Add the webhook URL in GitHub Settings → Secrets and variables → Actions."
             exit 0
           fi
 
-          echo "Triggering Dokploy backend deploy..."
+          echo "Triggering Dokploy backend deploy for branch '$BRANCH'..."
           HTTP_CODE=$(curl -sSL -o /tmp/dokploy_backend_response.txt -w "%{http_code}" -X POST "$WEBHOOK")
           echo "HTTP status: $HTTP_CODE"
           echo "Response:"
           cat /tmp/dokploy_backend_response.txt
           echo ""
 
+          # Dokploy иногда возвращает 400 с телом {"message":"Application deployed successfully"},
+          # поэтому шаг не падает при нестандартных HTTP-кодах.
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
+            echo "⚠️  Dokploy backend webhook returned $HTTP_CODE. Check the webhook URL."
+          fi
+
       - name: Trigger Dokploy frontend deploy
+        env:
+          WEBHOOK: ${{ github.ref_name == 'main' && secrets.DOKPLOY_WEBHOOK_FRONTEND || secrets.DOKPLOY_WEBHOOK_FRONTEND_DEV }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          WEBHOOK="${{ secrets.DOKPLOY_WEBHOOK_FRONTEND }}"
           if [ -z "$WEBHOOK" ]; then
-            echo "⚠️  DOKPLOY_WEBHOOK_FRONTEND is not set. Skipping frontend redeploy."
-            echo "    Add the webhook URL in Settings → Secrets and variables → Actions."
-            echo ""
-            echo "How to get the webhook URL:"
-            echo "  1. Open Dokploy → select the frontend application."
-            echo "  2. Go to the section with webhooks / deploy hooks."
-            echo "  3. Copy the webhook URL and save it as DOKPLOY_WEBHOOK_FRONTEND."
+            echo "⚠️  Frontend webhook is not set for branch '$BRANCH'. Skipping frontend redeploy."
+            echo "    Add the webhook URL in GitHub Settings → Secrets and variables → Actions."
             exit 0
           fi
 
-          echo "Triggering Dokploy frontend deploy..."
+          echo "Triggering Dokploy frontend deploy for branch '$BRANCH'..."
           HTTP_CODE=$(curl -sSL -o /tmp/dokploy_frontend_response.txt -w "%{http_code}" -X POST "$WEBHOOK")
           echo "HTTP status: $HTTP_CODE"
           echo "Response:"
           cat /tmp/dokploy_frontend_response.txt
           echo ""
 
-          # Dokploy иногда возвращает 400 с телом {"message":"Application deployed successfully"},
-          # поэтому шаг не падает при нестандартных HTTP-кодах.
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 500 ]; then
-            echo "⚠️  Dokploy webhook returned $HTTP_CODE. Check the webhook URL above."
+            echo "⚠️  Dokploy frontend webhook returned $HTTP_CODE. Check the webhook URL."
           fi
