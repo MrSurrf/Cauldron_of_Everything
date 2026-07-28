@@ -18,6 +18,8 @@
       var(--panel-inner-frame-inset) +
       var(--border-width-default)
     );
+  --panel-content-block-start-clearance:
+    var(--panel-frame-clearance);
 
   --corner-cut: var(--panel-corner-cut);
   --panel-frame-clip:
@@ -52,6 +54,14 @@
 
 .panel[data-padding='compact'] {
   --panel-content-padding: var(--space-3);
+}
+
+.panel[data-variant='draggable'] {
+  --panel-content-block-start-clearance:
+    calc(
+      var(--panel-inner-frame-inset) +
+      var(--space-3)
+    );
 }
 
 .frame {
@@ -140,6 +150,66 @@
   clip-path: var(--panel-frame-clip);
 }
 
+.dragIndicator {
+  position: absolute;
+  z-index: 2;
+  top: var(--panel-inner-frame-inset);
+  left: 50%;
+
+  width:
+    clamp(
+      calc(
+        var(--space-7) +
+        var(--space-7)
+      ),
+      12%,
+      calc(
+        var(--space-7) +
+        var(--space-7) +
+        var(--space-7)
+      )
+    );
+  max-width:
+    calc(
+      100% -
+      var(--panel-corner-cut) -
+      var(--panel-corner-cut) -
+      var(--space-2)
+    );
+  height: var(--space-3);
+
+  overflow: visible;
+
+  color: var(--panel-border);
+
+  filter: none;
+  transform: translate(-50%, -50%);
+
+  transition:
+    color var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    filter var(--motion-duration-fast)
+      var(--motion-easing-standard);
+
+  pointer-events: none;
+}
+
+.dragIndicatorLine,
+.dragIndicatorCore {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--border-width-default);
+  vector-effect: non-scaling-stroke;
+}
+
+.dragIndicatorPoint {
+  fill: currentColor;
+}
+
+.dragIndicatorCore {
+  fill: var(--panel-surface-start);
+}
+
 .content {
   position: relative;
   z-index: 1;
@@ -149,8 +219,41 @@
   padding:
     max(
       var(--panel-content-padding),
+      var(--panel-content-block-start-clearance)
+    )
+    max(
+      var(--panel-content-padding),
+      var(--panel-frame-clearance)
+    )
+    max(
+      var(--panel-content-padding),
+      var(--panel-frame-clearance)
+    )
+    max(
+      var(--panel-content-padding),
       var(--panel-frame-clearance)
     );
+}
+
+@media (hover: hover) {
+  .panel[data-variant='draggable']:hover
+    .dragIndicator {
+    color:
+      color-mix(
+        in srgb,
+        var(--panel-border) 70%,
+        var(--color-border-accent)
+      );
+    filter:
+      drop-shadow(
+        0 0 var(--space-2)
+        color-mix(
+          in srgb,
+          var(--color-border-accent) 28%,
+          transparent
+        )
+      );
+  }
 }
 
 @supports (
@@ -208,6 +311,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .dragIndicator {
+    transition: none;
+  }
+}
+
 @media (forced-colors: active) {
   .panel {
     border:
@@ -220,5 +329,20 @@
 
   .frame {
     display: none;
+  }
+
+  .dragIndicator {
+    color: CanvasText;
+    filter: none;
+  }
+
+  .panel[data-variant='draggable']:hover
+    .dragIndicator {
+    color: Highlight;
+    filter: none;
+  }
+
+  .dragIndicatorCore {
+    fill: Canvas;
   }
 }

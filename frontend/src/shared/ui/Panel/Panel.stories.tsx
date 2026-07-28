@@ -59,6 +59,13 @@ const meta = {
         'normal',
       ],
     },
+    variant: {
+      control: 'inline-radio',
+      options: [
+        'default',
+        'draggable',
+      ],
+    },
   },
   decorators: [
     (Story) => (
@@ -81,6 +88,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const Draggable: Story = {
+  args: {
+    variant: 'draggable',
+  },
+}
 
 export const CompactPadding: Story = {
   args: {

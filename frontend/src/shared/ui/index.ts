@@ -18,6 +18,7 @@ export { Panel } from './Panel'
 export type {
   PanelPadding,
   PanelProps,
+  PanelVariant,
 } from './Panel'
 export { ScrollBar } from './ScrollBar'
 export type {

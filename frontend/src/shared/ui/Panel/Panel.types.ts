@@ -5,7 +5,12 @@ export type PanelPadding =
   | 'compact'
   | 'normal'
 
+export type PanelVariant =
+  | 'default'
+  | 'draggable'
+
 export type PanelProps =
   HTMLAttributes<HTMLDivElement> & {
     padding?: PanelPadding
+    variant?: PanelVariant
   }
