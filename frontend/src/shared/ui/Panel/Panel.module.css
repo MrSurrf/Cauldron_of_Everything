@@ -1,0 +1,224 @@
+.panel {
+  --panel-border: var(--color-content-border);
+  --panel-inner-border:
+    color-mix(
+      in srgb,
+      var(--panel-border) 40%,
+      var(--panel-surface-start)
+    );
+  --panel-surface-start:
+    var(--color-surface-default);
+  --panel-surface-end:
+    var(--color-background);
+  --panel-corner-cut: var(--radius-lg);
+  --panel-inner-frame-inset: 0.375rem;
+  --panel-content-padding: var(--space-5);
+  --panel-frame-clearance:
+    calc(
+      var(--panel-inner-frame-inset) +
+      var(--border-width-default)
+    );
+
+  --corner-cut: var(--panel-corner-cut);
+  --panel-frame-clip:
+    polygon(
+      var(--corner-cut) 0,
+      calc(100% - var(--corner-cut)) 0,
+      100% var(--corner-cut),
+      100% calc(100% - var(--corner-cut)),
+      calc(100% - var(--corner-cut)) 100%,
+      var(--corner-cut) 100%,
+      0 calc(100% - var(--corner-cut)),
+      0 var(--corner-cut)
+    );
+
+  position: relative;
+  isolation: isolate;
+
+  display: grid;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  line-height: var(--line-height-normal);
+}
+
+.panel[data-padding='none'] {
+  --panel-content-padding: 0;
+}
+
+.panel[data-padding='compact'] {
+  --panel-content-padding: var(--space-3);
+}
+
+.frame {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+
+  background: var(--panel-border);
+  clip-path: var(--panel-frame-clip);
+  filter:
+    drop-shadow(
+      0 var(--space-2) var(--space-5)
+      color-mix(
+        in srgb,
+        var(--palette-black) 68%,
+        transparent
+      )
+    );
+
+  pointer-events: none;
+}
+
+.frame::before {
+  content: '';
+
+  --corner-cut:
+    max(
+      0px,
+      calc(
+        var(--panel-corner-cut) -
+        var(--border-width-default)
+      )
+    );
+
+  position: absolute;
+  inset: var(--border-width-default);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--panel-surface-start),
+      var(--panel-surface-end)
+    );
+  clip-path: var(--panel-frame-clip);
+}
+
+.innerFrame {
+  --corner-cut:
+    max(
+      0px,
+      calc(
+        var(--panel-corner-cut) -
+        var(--panel-inner-frame-inset)
+      )
+    );
+
+  position: absolute;
+  inset: var(--panel-inner-frame-inset);
+
+  background: var(--panel-inner-border);
+  clip-path: var(--panel-frame-clip);
+}
+
+.innerFrame::before {
+  content: '';
+
+  --corner-cut:
+    max(
+      0px,
+      calc(
+        var(--panel-corner-cut) -
+        var(--panel-inner-frame-inset) -
+        var(--border-width-default)
+      )
+    );
+
+  position: absolute;
+  inset: var(--border-width-default);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--panel-surface-start),
+      var(--panel-surface-end)
+    );
+  clip-path: var(--panel-frame-clip);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+
+  min-width: 0;
+  min-height: 0;
+  padding:
+    max(
+      var(--panel-content-padding),
+      var(--panel-frame-clearance)
+    );
+}
+
+@supports (
+  clip-path:
+    shape(
+      from 0 0,
+      line to 100% 0,
+      close
+    )
+) {
+  .panel {
+    --corner-control:
+      calc(var(--corner-cut) * 0.5523);
+    --panel-frame-clip:
+      shape(
+        from var(--corner-cut) 0,
+        hline to calc(100% - var(--corner-cut)),
+        curve to
+          100% var(--corner-cut)
+          with
+            calc(100% - var(--corner-cut))
+            var(--corner-control)
+          /
+            calc(100% - var(--corner-control))
+            var(--corner-cut),
+        vline to calc(100% - var(--corner-cut)),
+        curve to
+          calc(100% - var(--corner-cut)) 100%
+          with
+            calc(100% - var(--corner-control))
+            calc(100% - var(--corner-cut))
+          /
+            calc(100% - var(--corner-cut))
+            calc(100% - var(--corner-control)),
+        hline to var(--corner-cut),
+        curve to
+          0 calc(100% - var(--corner-cut))
+          with
+            var(--corner-cut)
+            calc(100% - var(--corner-control))
+          /
+            var(--corner-control)
+            calc(100% - var(--corner-cut)),
+        vline to var(--corner-cut),
+        curve to
+          var(--corner-cut) 0
+          with
+            var(--corner-control)
+            var(--corner-cut)
+          /
+            var(--corner-cut)
+            var(--corner-control),
+        close
+      );
+  }
+}
+
+@media (forced-colors: active) {
+  .panel {
+    border:
+      var(--border-width-default) solid
+      CanvasText;
+
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .frame {
+    display: none;
+  }
+}

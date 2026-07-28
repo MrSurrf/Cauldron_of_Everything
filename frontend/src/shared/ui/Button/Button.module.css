@@ -115,12 +115,12 @@
   --corner-cut:
     calc(
       var(--button-corner-cut) -
-      var(--border-width-strong)
+      var(--border-width-button)
     );
 
   position: absolute;
   z-index: -1;
-  inset: var(--border-width-strong);
+  inset: var(--border-width-button);
 
   background:
     linear-gradient(

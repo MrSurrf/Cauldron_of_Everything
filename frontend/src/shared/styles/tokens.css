@@ -1,6 +1,7 @@
 :root {
   /* Базовая палитра */
   --palette-black: #020108;
+  --palette-navy-950: #0e0e1e;
   --palette-white: #f7f2ff;
   --palette-purple-300: #c983ff;
   --palette-purple-500: #aa3bff;
@@ -8,12 +9,16 @@
   --palette-gray-300: #bdb6c9;
   --palette-gray-700: #393241;
   --palette-gray-900: #0d0914;
+  --palette-slate-700: #2b2e31;
+  --palette-slate-800: #252734;
   --palette-red-500: #d84b63;
   --palette-green-500: #42b883;
   --palette-yellow-500: #d7a83d;
 
   /* Семантические цвета */
   --color-background: var(--palette-black);
+  --color-canvas-background: var(--palette-navy-950);
+  --color-content-border: var(--palette-slate-800);
   --color-surface-default: var(--palette-gray-900);
   --color-surface-muted: #08060d;
   --color-surface-accent: #1b0d29;
@@ -53,6 +58,7 @@
   --radius-round: 999px;
 
   --border-width-default: 1px;
+  --border-width-button: 1.35px;
   --border-width-strong: 2px;
 
   /* Контролы */
@@ -82,7 +88,7 @@
 
   /* Плитки workspace */
   --tile-surface: var(--color-surface-default);
-  --tile-border: var(--color-border-default);
+  --tile-border: var(--color-content-border);
   --tile-border-hover: var(--color-border-accent);
   --tile-border-selected: var(--color-action-primary);
   --tile-radius: var(--radius-lg);

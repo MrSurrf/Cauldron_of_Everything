@@ -14,6 +14,11 @@ export { IconFrame } from './IconFrame'
 export type { IconFrameProps } from './IconFrame'
 export { MenuButton } from './MenuButton'
 export type { MenuButtonProps } from './MenuButton'
+export { Panel } from './Panel'
+export type {
+  PanelPadding,
+  PanelProps,
+} from './Panel'
 export { ScrollBar } from './ScrollBar'
 export type {
   ScrollBarOrientation,
