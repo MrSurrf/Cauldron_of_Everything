@@ -81,8 +81,9 @@ export const BothOrientations: Story = {
 
 export const StepButtons: Story = {
   args: {
+    controlStep: 10,
     defaultValue: 40,
-    step: 10,
+    step: 1,
   },
   render: (args) => (
     <div style={{ width: '18rem' }}>
@@ -95,9 +96,9 @@ export const StepButtons: Story = {
       name: 'Прокрутить вправо',
     })
 
-    await expect(slider).toHaveValue(40)
+    await expect(slider).toHaveValue('40')
     await userEvent.click(increment)
-    await expect(slider).toHaveValue(50)
+    await expect(slider).toHaveValue('50')
   },
 }
 

@@ -31,6 +31,7 @@ export const ScrollBar = forwardRef<
   {
     'aria-label': ariaLabel,
     className,
+    controlStep,
     decrementLabel,
     defaultValue,
     disabled = false,
@@ -50,6 +51,12 @@ export const ScrollBar = forwardRef<
   const maximum = Math.max(min, max)
   const normalizedStep =
     Number.isFinite(step) && step > 0 ? step : 1
+  const normalizedControlStep =
+    controlStep !== undefined &&
+    Number.isFinite(controlStep) &&
+    controlStep > 0
+      ? controlStep
+      : normalizedStep
   const [internalValue, setInternalValue] = useState(
     () => clamp(defaultValue ?? minimum, minimum, maximum),
   )
@@ -127,7 +134,9 @@ export const ScrollBar = forwardRef<
         aria-label={startLabel}
         disabled={disabled || currentValue <= minimum}
         onClick={() => {
-          commitValue(currentValue - normalizedStep)
+          commitValue(
+            currentValue - normalizedControlStep,
+          )
         }}
       >
         <span
@@ -164,7 +173,9 @@ export const ScrollBar = forwardRef<
         aria-label={endLabel}
         disabled={disabled || currentValue >= maximum}
         onClick={() => {
-          commitValue(currentValue + normalizedStep)
+          commitValue(
+            currentValue + normalizedControlStep,
+          )
         }}
       >
         <span

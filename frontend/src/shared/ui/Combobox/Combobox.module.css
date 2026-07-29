@@ -1,0 +1,405 @@
+.field {
+  min-width: 0;
+}
+
+.frame {
+  cursor: text;
+}
+
+.open .frame {
+  --input-border:
+    var(--color-border-accent);
+
+  filter:
+    drop-shadow(
+      0 0 0.12rem
+      var(--palette-white)
+    )
+    drop-shadow(
+      0 0 0.62rem
+      var(--palette-purple-500)
+    );
+}
+
+.input {
+  padding-right:
+    calc(
+      var(--space-5) +
+      var(--icon-size-lg) +
+      var(--space-3)
+    );
+}
+
+.arrow {
+  width: var(--space-2);
+  height: var(--space-2);
+
+  border-right:
+    var(--border-width-default)
+    solid currentColor;
+  border-bottom:
+    var(--border-width-default)
+    solid currentColor;
+
+  transform:
+    translateY(calc(0px - var(--space-1) / 2))
+    rotate(45deg);
+
+  transition:
+    transform var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    color var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
+.arrow[data-open='true'] {
+  color: var(--palette-purple-300);
+  transform:
+    translateY(var(--space-1))
+    rotate(225deg);
+}
+
+.popup {
+  --combobox-corner-cut: var(--space-2);
+  --combobox-row-height:
+    calc(
+      var(--control-height-lg) +
+      var(--space-1)
+    );
+  --combobox-popup-clip:
+    polygon(
+      var(--combobox-corner-cut) 0,
+      calc(100% - var(--combobox-corner-cut)) 0,
+      100% var(--combobox-corner-cut),
+      100% calc(100% - var(--combobox-corner-cut)),
+      calc(100% - var(--combobox-corner-cut)) 100%,
+      var(--combobox-corner-cut) 100%,
+      0 calc(100% - var(--combobox-corner-cut)),
+      0 var(--combobox-corner-cut)
+    );
+
+  z-index: var(--z-index-dropdown);
+
+  height:
+    min(
+      calc(
+        var(--combobox-visible-options) *
+        var(--combobox-row-height) +
+        var(--space-2) +
+        var(--border-width-default) * 2
+      ),
+      18rem
+    );
+  padding: var(--border-width-default);
+
+  background: var(--color-content-border);
+  clip-path: var(--combobox-popup-clip);
+
+  filter:
+    drop-shadow(
+      0 0.75rem 1.5rem
+      color-mix(
+        in srgb,
+        var(--palette-black) 76%,
+        transparent
+      )
+    );
+
+  animation:
+    combobox-popup-appear
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.popupSurface {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-default),
+      var(--color-surface-muted)
+    );
+  clip-path: var(--combobox-popup-clip);
+}
+
+.scrollArea {
+  --scroll-area-control-size:
+    var(--icon-size-lg);
+
+  width: 100%;
+  height: 100%;
+}
+
+.listbox {
+  padding: var(--space-1);
+  outline: 0;
+}
+
+.listContent {
+  display: grid;
+  min-width: 100%;
+}
+
+.option,
+.empty {
+  min-width: 0;
+  min-height: var(--combobox-row-height);
+}
+
+.option {
+  position: relative;
+
+  display: grid;
+
+  width: 100%;
+  padding:
+    var(--space-2)
+    var(--space-3);
+
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: var(--space-3);
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: var(--color-text-secondary);
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: var(--line-height-tight);
+  text-align: start;
+
+  cursor: pointer;
+
+  transition:
+    background-color
+      var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    color var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    filter var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
+.option::before {
+  content: '';
+
+  position: absolute;
+  inset: 0;
+
+  border:
+    var(--border-width-default)
+    solid transparent;
+
+  clip-path:
+    polygon(
+      var(--space-1) 0,
+      calc(100% - var(--space-1)) 0,
+      100% var(--space-1),
+      100% calc(100% - var(--space-1)),
+      calc(100% - var(--space-1)) 100%,
+      var(--space-1) 100%,
+      0 calc(100% - var(--space-1)),
+      0 var(--space-1)
+    );
+
+  pointer-events: none;
+}
+
+.option[data-active='true'] {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 28%,
+        var(--color-surface-default)
+      ),
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 38%,
+        var(--color-surface-muted)
+      )
+    );
+  color: var(--palette-white);
+
+  filter:
+    drop-shadow(
+      0 0 0.3rem
+      color-mix(
+        in srgb,
+        var(--palette-purple-500) 26%,
+        transparent
+      )
+    );
+}
+
+.option[data-active='true']::before {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--palette-purple-700) 72%,
+      var(--color-content-border)
+    );
+}
+
+.option[aria-selected='true'] {
+  color: var(--palette-white);
+}
+
+.option:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.option:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  filter: none;
+}
+
+.optionIcon {
+  display: grid;
+
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+
+  place-items: center;
+  color: currentColor;
+  mix-blend-mode: screen;
+}
+
+.optionIcon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.optionCopy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.optionLabel,
+.optionDescription {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionDescription {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.selectionMark {
+  width: var(--space-2);
+  height: var(--space-2);
+
+  background: var(--palette-white);
+  clip-path:
+    polygon(
+      50% 0,
+      63% 37%,
+      100% 50%,
+      63% 63%,
+      50% 100%,
+      37% 63%,
+      0 50%,
+      37% 37%
+    );
+
+  filter:
+    drop-shadow(
+      0 0 0.2rem
+      color-mix(
+        in srgb,
+        var(--palette-white) 45%,
+        transparent
+      )
+    );
+}
+
+.empty {
+  display: grid;
+  padding:
+    var(--space-2)
+    var(--space-3);
+
+  place-items: center start;
+
+  color: var(--color-text-disabled);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+@keyframes combobox-popup-appear {
+  from {
+    opacity: 0;
+    transform: translateY(
+      calc(0px - var(--space-1))
+    );
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow {
+    transition: none;
+  }
+
+  .popup {
+    animation: none;
+  }
+
+  .option {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .popup {
+    border:
+      var(--border-width-default)
+      solid CanvasText;
+    background: Canvas;
+    clip-path: none;
+    filter: none;
+  }
+
+  .popupSurface {
+    background: Canvas;
+    clip-path: none;
+  }
+
+  .option {
+    color: CanvasText;
+  }
+
+  .option[data-active='true'],
+  .option[aria-selected='true'] {
+    background: Highlight;
+    color: HighlightText;
+    filter: none;
+  }
+
+  .selectionMark {
+    background: currentColor;
+    filter: none;
+  }
+}

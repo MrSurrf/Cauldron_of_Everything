@@ -1,10 +1,14 @@
-import type { ReactNode } from 'react'
+import {
+  forwardRef,
+  type ReactNode,
+} from 'react'
 
-import styles from './TextFieldFrame.module.css'
-import type { TextFieldControlProps } from './TextField.types'
+import styles from './FieldFrame.module.css'
+import type { FieldControlProps } from './field.types'
+import { hasRenderableContent } from '../react'
 
-type TextFieldFrameProps =
-  TextFieldControlProps & {
+type FieldFrameProps =
+  FieldControlProps & {
     children: ReactNode
     disabled: boolean
     invalid?: boolean
@@ -42,21 +46,28 @@ function MultilineContentGuard({
   )
 }
 
-export function TextFieldFrame({
-  children,
-  disabled,
-  icon,
-  invalid = false,
-  multiline = false,
-  rootClassName,
-}: TextFieldFrameProps) {
-  const hasIcon = icon !== undefined && icon !== null
+export const FieldFrame = forwardRef<
+  HTMLDivElement,
+  FieldFrameProps
+>(function FieldFrame(
+  {
+    children,
+    disabled,
+    icon,
+    invalid = false,
+    multiline = false,
+    rootClassName,
+  },
+  ref,
+) {
+  const hasIcon = hasRenderableContent(icon)
   const frameClassName = [styles.root, rootClassName]
     .filter(Boolean)
     .join(' ')
 
   return (
     <div
+      ref={ref}
       className={frameClassName}
       data-disabled={disabled || undefined}
       data-has-icon={hasIcon || undefined}
@@ -87,4 +98,4 @@ export function TextFieldFrame({
       )}
     </div>
   )
-}
+})

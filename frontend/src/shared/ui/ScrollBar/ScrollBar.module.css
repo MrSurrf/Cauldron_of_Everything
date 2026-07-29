@@ -274,6 +274,10 @@
   cursor: not-allowed;
 }
 
+.horizontal .range {
+  direction: ltr;
+}
+
 .rail:has(.range:focus-visible) {
   border-radius: var(--radius-round);
   box-shadow: var(--focus-ring);

@@ -22,7 +22,7 @@ export function mergeAriaIds(
       .filter(Boolean),
   )
 
-  return ids.size > 0
-    ? Array.from(ids).join(' ')
-    : undefined
+  return ids.size === 0
+    ? undefined
+    : Array.from(ids).join(' ')
 }

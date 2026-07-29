@@ -1,0 +1,95 @@
+.tooltip {
+  --tooltip-corner-cut: var(--space-2);
+  --tooltip-clip:
+    polygon(
+      var(--tooltip-corner-cut) 0,
+      calc(100% - var(--tooltip-corner-cut)) 0,
+      100% var(--tooltip-corner-cut),
+      100% calc(100% - var(--tooltip-corner-cut)),
+      calc(100% - var(--tooltip-corner-cut)) 100%,
+      var(--tooltip-corner-cut) 100%,
+      0 calc(100% - var(--tooltip-corner-cut)),
+      0 var(--tooltip-corner-cut)
+    );
+
+  z-index: var(--z-index-tooltip);
+
+  max-width: 20rem;
+  padding: var(--border-width-default);
+
+  background: var(--color-content-border);
+  clip-path: var(--tooltip-clip);
+  color: var(--color-text-primary);
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: var(--line-height-normal);
+
+  filter:
+    drop-shadow(
+      0 0.5rem 1rem
+      color-mix(
+        in srgb,
+        var(--palette-black) 72%,
+        transparent
+      )
+    );
+  pointer-events: none;
+
+  animation:
+    tooltip-appear
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.content {
+  display: block;
+  padding:
+    var(--space-2)
+    var(--space-3);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-default),
+      var(--color-surface-muted)
+    );
+  clip-path: var(--tooltip-clip);
+  overflow-wrap: anywhere;
+}
+
+@keyframes tooltip-appear {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .tooltip {
+    border:
+      var(--border-width-default)
+      solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    clip-path: none;
+    filter: none;
+  }
+
+  .content {
+    background: Canvas;
+    clip-path: none;
+  }
+}

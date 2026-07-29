@@ -1,3 +1,4 @@
+/* Shared visual and state shell for form controls. */
 .field {
   position: relative;
   width: 100%;
@@ -30,7 +31,7 @@
   )
   .formFrame {
   --text-field-extra-inline-end:
-    var(--form-field-counter-reserve);
+    var(--field-counter-reserve);
 }
 
 .field[data-multiline='true'][data-has-counter='true']
@@ -47,10 +48,9 @@
     var(--color-border-accent);
 }
 
-.field:is(
-    [data-feedback='danger'],
-    [data-feedback='shaking-danger']
-  ):not([data-disabled='true'])
+.field[data-invalid='true']:not(
+    [data-disabled='true']
+  )
   .formFrame {
   --input-border:
     var(--color-status-danger);
@@ -66,10 +66,9 @@
     );
 }
 
-.field:is(
-    [data-feedback='danger'],
-    [data-feedback='shaking-danger']
-  ):not([data-disabled='true']):focus-within
+.field[data-invalid='true']:not(
+    [data-disabled='true']
+  ):focus-within
   .formFrame {
   filter:
     drop-shadow(
@@ -80,75 +79,6 @@
       0 0 0.62rem
       var(--color-status-danger)
     );
-}
-
-.field[data-feedback='shaking']
-  .formFrame {
-  --input-border:
-    var(--color-border-default);
-
-  filter: none;
-}
-
-.field[data-feedback='shaking']:focus-within
-  .formFrame {
-  --input-border:
-    var(--color-border-accent);
-}
-
-@media (hover: hover) {
-  .field[data-feedback='idle']:not(
-      [data-disabled='true']
-    ):not(
-      [data-readonly='true']
-    ):not(
-      [data-invalid='true']
-    ):not(
-      :focus-within
-    )
-    .controlShell:hover
-    .formFrame {
-    --input-border:
-      color-mix(
-        in srgb,
-        var(--color-border-default) 54%,
-        var(--color-border-accent)
-      );
-  }
-}
-
-.field[data-feedback='idle'].forceHover:not(
-    [data-disabled='true']
-  ):not(
-    [data-readonly='true']
-  ):not(
-    [data-invalid='true']
-  )
-  .formFrame {
-  --input-border:
-    color-mix(
-      in srgb,
-      var(--color-border-default) 54%,
-      var(--color-border-accent)
-    );
-}
-
-.field:not([data-disabled='true']):not(
-    [data-readonly='true']
-  ):is(
-    [data-feedback='shaking'],
-    [data-feedback='shaking-danger']
-  )
-  .controlShell {
-  will-change: transform;
-
-  animation:
-    form-field-angry-shake
-    calc(
-      var(--motion-duration-normal) +
-      var(--motion-duration-fast)
-    )
-    var(--motion-easing-standard);
 }
 
 .formControl {
@@ -255,14 +185,14 @@
   right:
     calc(
       var(--space-5) +
-      var(--form-field-counter-reserve)
+      var(--field-counter-reserve)
     );
   max-width:
     calc(
       100% -
       var(--space-5) -
       var(--space-5) -
-      var(--form-field-counter-reserve)
+      var(--field-counter-reserve)
     );
 }
 
@@ -275,7 +205,7 @@
       var(--space-5) +
       var(--icon-size-lg) +
       var(--space-3) +
-      var(--form-field-counter-reserve)
+      var(--field-counter-reserve)
     );
   max-width:
     calc(
@@ -284,7 +214,7 @@
       var(--space-5) -
       var(--icon-size-lg) -
       var(--space-3) -
-      var(--form-field-counter-reserve)
+      var(--field-counter-reserve)
     );
 }
 
@@ -331,7 +261,9 @@
 .field[data-filled='true'] .label,
 .field[data-invalid='true'] .label,
 .field[data-has-label='true']:has(
-    .formControl:not(:placeholder-shown)
+    .formControl:is(input, textarea):not(
+        :placeholder-shown
+      )
   )
   .label,
 .field[data-has-label='true']:has(
@@ -350,10 +282,9 @@
   transform: none;
 }
 
-.field:is(
-    [data-feedback='danger'],
-    [data-feedback='shaking-danger']
-  ):not([data-disabled='true'])
+.field[data-invalid='true']:not(
+    [data-disabled='true']
+  )
   .label {
   color: var(--color-status-danger);
 }
@@ -460,10 +391,9 @@
   color: var(--color-text-disabled);
 }
 
-.field:is(
-    [data-feedback='danger'],
-    [data-feedback='shaking-danger']
-  ):not([data-disabled='true'])
+.field[data-invalid='true']:not(
+    [data-disabled='true']
+  )
   .counter {
   color: var(--color-status-danger);
 }
@@ -472,60 +402,10 @@
   color: var(--color-text-disabled);
 }
 
-.visuallyHidden {
-  position: absolute;
-
-  width: var(--border-width-default);
-  height: var(--border-width-default);
-  margin:
-    calc(
-      0px -
-      var(--border-width-default)
-    );
-  padding: 0;
-
-  overflow: hidden;
-
-  border: 0;
-  clip-path: inset(50%);
-
-  white-space: nowrap;
-}
-
-@keyframes form-field-angry-shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  15%,
-  45%,
-  75% {
-    transform:
-      translateX(
-        calc(0px - var(--space-1))
-      );
-  }
-
-  30%,
-  60% {
-    transform: translateX(var(--space-1));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .label,
   .formControl {
     transition: none;
-  }
-
-  .field:is(
-      [data-feedback='shaking'],
-      [data-feedback='shaking-danger']
-    )
-    .controlShell {
-    animation: none;
-    transform: none;
   }
 }
 

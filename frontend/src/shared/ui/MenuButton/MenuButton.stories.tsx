@@ -5,6 +5,7 @@ import type {
 import {
   expect,
   userEvent,
+  waitFor,
 } from 'storybook/test'
 
 import { MenuButton } from './MenuButton'
@@ -75,9 +76,11 @@ export const Expandable: Story = {
       'aria-expanded',
       'true',
     )
-    await expect(
-      canvas.getByRole('group'),
-    ).toBeVisible()
+    await waitFor(() => {
+      expect(
+        canvas.getByRole('group'),
+      ).toBeVisible()
+    })
     await expect(
       canvas.getByRole('button', {
         name: 'Генератор встреч',
