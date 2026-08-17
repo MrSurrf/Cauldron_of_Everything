@@ -64,6 +64,14 @@
     );
 }
 
+.panel[data-variant='draggable'] .innerFrame {
+  transition:
+    background-color var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    filter var(--motion-duration-fast)
+      var(--motion-easing-standard);
+}
+
 .frame {
   position: absolute;
   z-index: 0;
@@ -237,6 +245,25 @@
 
 @media (hover: hover) {
   .panel[data-variant='draggable']:hover
+    .innerFrame {
+    background:
+      color-mix(
+        in srgb,
+        var(--panel-inner-border) 65%,
+        var(--color-border-accent)
+      );
+    filter:
+      drop-shadow(
+        0 0 var(--space-1)
+        color-mix(
+          in srgb,
+          var(--color-border-accent) 28%,
+          transparent
+        )
+      );
+  }
+
+  .panel[data-variant='draggable']:hover
     .dragIndicator {
     color:
       color-mix(
@@ -312,6 +339,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .panel[data-variant='draggable'] .innerFrame,
   .dragIndicator {
     transition: none;
   }

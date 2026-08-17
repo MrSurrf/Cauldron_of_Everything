@@ -4,7 +4,7 @@ export type SurveyScaleOption = {
 }
 
 export type SurveyIllustration = {
-  values: number[]
+  values: [number, ...number[]]
   src: string
   alt: string
 }
