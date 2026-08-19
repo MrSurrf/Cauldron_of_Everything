@@ -62,6 +62,24 @@ function getScaleTone(
   return 'positive-strong'
 }
 
+function getIllustrationChoiceValue(
+  values: readonly [number, ...number[]],
+) {
+  if (values.includes(0)) {
+    return 0
+  }
+
+  const [firstValue, ...remainingValues] = values
+
+  return remainingValues.reduce(
+    (choiceValue, value) =>
+      Math.abs(value) > Math.abs(choiceValue)
+        ? value
+        : choiceValue,
+    firstValue,
+  )
+}
+
 function SurveyPage({
   playerName,
   characterName,
@@ -215,15 +233,33 @@ function SurveyPage({
                   illustration,
                   illustrationIndex,
                 ) => {
+                  const illustrationValue =
+                    getIllustrationChoiceValue(
+                      illustration.values,
+                    )
+
                   const isActive =
                     displayedValue !== undefined &&
                     illustration.values.includes(
                       displayedValue,
                     )
 
+                  const isSelected =
+                    selectedValue ===
+                    illustrationValue
+
+                  const optionLabel =
+                    config.scale.find(
+                      (option) =>
+                        option.value ===
+                        illustrationValue,
+                    )?.label ??
+                    String(illustrationValue)
+
                   return (
-                    <div
+                    <button
                       key={illustration.src}
+                      type="button"
                       className={
                         isActive
                           ? 'survey-illustration survey-illustration--active'
@@ -235,12 +271,30 @@ function SurveyPage({
                             illustrationIndex,
                         } as CSSProperties
                       }
+                      data-value={illustrationValue}
+                      onClick={() =>
+                        handleSelect(
+                          illustrationValue,
+                        )
+                      }
+                      onMouseEnter={() =>
+                        setPreviewValue(
+                          illustrationValue,
+                        )
+                      }
+                      onFocus={() =>
+                        setPreviewValue(
+                          illustrationValue,
+                        )
+                      }
+                      aria-label={`${illustration.alt}. Выбрать вариант ${optionLabel}`}
+                      aria-pressed={isSelected}
                     >
                       <img
                         src={illustration.src}
                         alt={illustration.alt}
                       />
-                    </div>
+                    </button>
                   )
                 },
               )}

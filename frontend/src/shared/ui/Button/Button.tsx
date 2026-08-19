@@ -11,6 +11,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       fullWidth = false,
       icon,
+      size = 'hero',
       type = 'button',
       variant = 'primary',
       ...buttonProps
@@ -35,6 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...buttonProps}
         ref={ref}
         className={buttonClassName}
+        data-size={size}
         data-variant={variant}
         type={type}
       >

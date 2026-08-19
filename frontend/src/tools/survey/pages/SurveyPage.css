@@ -244,37 +244,6 @@
     background 220ms ease;
 }
 
-.survey-illustration-panel::before,
-.survey-illustration-panel::after {
-  content: '';
-
-  position: absolute;
-
-  width: 16px;
-  height: 16px;
-
-  border-color:
-    rgba(224, 187, 111, 0.95);
-
-  pointer-events: none;
-}
-
-.survey-illustration-panel::before {
-  top: 7px;
-  left: 7px;
-
-  border-top: 2px solid;
-  border-left: 2px solid;
-}
-
-.survey-illustration-panel::after {
-  right: 7px;
-  bottom: 7px;
-
-  border-right: 2px solid;
-  border-bottom: 2px solid;
-}
-
 .survey-illustrations {
   position: relative;
   z-index: 1;
@@ -297,11 +266,24 @@
 }
 
 .survey-illustration {
+  appearance: none;
+
   display: grid;
 
   min-width: 0;
 
+  padding: 0;
+
   place-items: center;
+
+  border: 0;
+
+  background: transparent;
+  color: inherit;
+
+  font: inherit;
+
+  cursor: pointer;
 
   opacity: 0.22;
 
@@ -315,6 +297,13 @@
     opacity 200ms ease,
     transform 200ms ease,
     filter 200ms ease;
+}
+
+.survey-illustration:focus-visible {
+  outline:
+    var(--border-width-strong) solid
+    var(--color-border-accent);
+  outline-offset: var(--space-1);
 }
 
 .survey-illustration img {

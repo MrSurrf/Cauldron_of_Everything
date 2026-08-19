@@ -1,7 +1,11 @@
 import type {
   InputHTMLAttributes,
-  ReactNode,
 } from 'react'
+
+import type {
+  FieldControlProps,
+  FieldPresentationProps,
+} from '../internal/field/field.types'
 
 export type TextInputType =
   | 'text'
@@ -14,8 +18,8 @@ export type TextInputType =
 export type TextInputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'children' | 'type'
-> & {
-  icon?: ReactNode
-  rootClassName?: string
-  type?: TextInputType
-}
+> &
+  FieldControlProps &
+  FieldPresentationProps & {
+    type?: TextInputType
+  }

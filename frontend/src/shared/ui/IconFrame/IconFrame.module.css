@@ -1,0 +1,152 @@
+.iconFrame {
+  --icon-frame-color:
+    var(--color-border-accent);
+  --icon-frame-square-background:
+    var(--color-background);
+  --icon-frame-circle-background:
+    var(--icon-frame-color);
+  --icon-frame-circle-opacity: 0.1;
+  --icon-frame-size: 12rem;
+  --icon-frame-content-size: 44%;
+
+  position: relative;
+
+  display: inline-grid;
+
+  width: var(--icon-frame-size);
+  min-width: 0;
+  max-width: 100%;
+
+  flex: 0 1 auto;
+  aspect-ratio: 1121 / 1135;
+  place-items: center;
+
+  color: var(--icon-frame-color);
+  line-height: 0;
+  isolation: isolate;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: visible;
+}
+
+.squareSurface {
+  fill:
+    var(
+      --icon-frame-square-background
+    );
+}
+
+.circleSurface {
+  fill:
+    var(
+      --icon-frame-circle-background
+    );
+  fill-opacity:
+    var(
+      --icon-frame-circle-opacity
+    );
+}
+
+.stroke {
+  fill: none;
+  stroke: var(--icon-frame-color);
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+
+.outerStroke {
+  stroke-width: 20;
+}
+
+.detailStroke {
+  stroke-width: 10;
+}
+
+.frameLines,
+.content {
+  filter: none;
+}
+
+.frameLines {
+  opacity: 0.5;
+}
+
+.iconFrame[data-glow='true']
+  .frameLines {
+  filter:
+    drop-shadow(
+      0 0 0.35rem
+      color-mix(
+        in srgb,
+        var(--icon-frame-color) 46%,
+        transparent
+      )
+    );
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+
+  color: inherit;
+}
+
+.contentSize {
+  display: grid;
+
+  width: var(--icon-frame-content-size);
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: 100%;
+
+  aspect-ratio: 1;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+}
+
+.iconFrame[data-glow='true']
+  .content {
+  filter:
+    drop-shadow(
+      0 0 0.4rem
+      color-mix(
+        in srgb,
+        var(--icon-frame-color) 58%,
+        transparent
+      )
+    );
+}
+
+.contentSize > :is(svg, img) {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+
+  object-fit: contain;
+}
