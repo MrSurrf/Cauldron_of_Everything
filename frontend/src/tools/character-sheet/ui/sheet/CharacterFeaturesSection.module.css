@@ -1,0 +1,5 @@
+.featuresEditor :global(textarea) {
+  height: clamp(9rem, 17vh, 13rem);
+  min-height: 9rem;
+  max-height: 13rem;
+}

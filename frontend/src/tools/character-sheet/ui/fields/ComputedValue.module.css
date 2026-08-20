@@ -1,0 +1,36 @@
+.value {
+  display: inline-grid;
+  min-width: 2.5ch;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding: var(--space-1) var(--space-2);
+  place-items: center;
+
+  color: var(--color-text-primary);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-value-size, var(--font-size-lg));
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+  text-shadow:
+    0 0 var(--space-2)
+    color-mix(in srgb, var(--palette-white) 14%, transparent);
+}
+
+.value[data-status='empty'] {
+  color: var(--color-text-disabled);
+  text-shadow: none;
+}
+
+.value[data-status='error'] {
+  color: var(--color-status-danger);
+  text-shadow: 0 0 var(--space-2) color-mix(in srgb, var(--color-status-danger) 38%, transparent);
+}
+
+@media (forced-colors: active) {
+  .value {
+    text-shadow: none;
+  }
+
+  .value[data-status='error'] {
+    color: Mark;
+  }
+}

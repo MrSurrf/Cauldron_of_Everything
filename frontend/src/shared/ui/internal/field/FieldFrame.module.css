@@ -151,8 +151,10 @@
   color: var(--input-text);
   caret-color: var(--input-text);
 
-  font-family: var(--font-family-body);
-  font-size: var(--font-size-md);
+  font-family:
+    var(--field-font-family, var(--font-family-body));
+  font-size:
+    var(--field-font-size, var(--font-size-md));
   font-weight: 400;
   line-height: var(--line-height-normal);
 

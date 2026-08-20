@@ -1,0 +1,123 @@
+.compactFrame {
+  --input-border:
+    color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-inner-border:
+    color-mix(in srgb, var(--input-border) 26%, transparent);
+  --input-surface-start:
+    color-mix(in srgb, var(--color-surface-default) 92%, transparent);
+  --input-surface-end:
+    color-mix(in srgb, var(--color-surface-muted) 96%, transparent);
+  --input-corner-cut: var(--space-1);
+  --input-inner-frame-inset: 2px;
+
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  filter: none;
+}
+
+.compactFrame input,
+.compactFrame textarea {
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding-inline: var(--space-2);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.compactField {
+  min-width: 0;
+}
+
+.compactField label {
+  left: var(--space-2);
+  right: var(--space-2);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.numericInput {
+  text-align: center;
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-value-size, var(--font-size-lg)) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.statField {
+  min-width: 0;
+}
+
+.statFrame {
+  --input-border: transparent;
+  --input-inner-border: transparent;
+  --input-surface-start: transparent;
+  --input-surface-end: transparent;
+  --input-corner-cut: 0;
+  --input-inner-frame-inset: 0;
+
+  min-height: var(--control-height-lg);
+  background: transparent;
+  clip-path: none;
+  filter: none;
+}
+
+.statFrame::before,
+.statFrame > span[aria-hidden='true'] {
+  display: none;
+}
+
+.statFrame:focus-within {
+  filter: none;
+}
+
+.statInput {
+  min-height: var(--control-height-lg) !important;
+  padding: 0 var(--space-1) !important;
+  color: var(--color-text-primary);
+  font-size: var(--sheet-value-size, var(--font-size-xl)) !important;
+  line-height: 1;
+}
+
+.plainInput {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 78%, transparent);
+  outline: 0;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 18%, transparent)
+    );
+  color: var(--color-text-primary);
+  font: inherit;
+  transition:
+    border-color var(--motion-duration-fast)
+    var(--motion-easing-standard),
+    background-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.plainInput:hover:not(:disabled) {
+  border-color:
+    color-mix(in srgb, var(--color-border-accent) 58%, var(--color-content-border));
+}
+
+.plainInput:focus-visible {
+  border-color: var(--color-border-accent);
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 42%, transparent)
+    );
+  box-shadow: 0 1px 0 var(--color-border-accent);
+}
+
+.plainInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.plainTextarea {
+  min-height: 5rem;
+  resize: vertical;
+}

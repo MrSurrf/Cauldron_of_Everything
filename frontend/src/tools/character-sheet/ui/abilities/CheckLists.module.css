@@ -1,0 +1,67 @@
+.checkSection {
+  --sheet-section-padding: 0;
+}
+
+.list {
+  display: grid;
+  min-width: 0;
+}
+
+.row,
+.skillRow {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: var(--icon-size-sm);
+  padding: 0 var(--space-1);
+  align-items: center;
+  gap: var(--space-1);
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 72%, transparent);
+  transition:
+    background-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.row:hover,
+.skillRow:hover,
+.row:focus-within,
+.skillRow:focus-within {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-surface-accent) 54%, transparent),
+      transparent 78%
+    );
+}
+
+.row {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.skillRow {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.proficiencies {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.checkControl {
+  width: var(--icon-size-sm);
+  align-items: center;
+  justify-content: center;
+}
+
+.checkControl > input {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  flex-basis: var(--icon-size-sm);
+}
+
+.row:last-child,
+.skillRow:last-child {
+  border-bottom: 0;
+}

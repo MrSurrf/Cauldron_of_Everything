@@ -1,0 +1,445 @@
+.root {
+  --sheet-frame:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 72%,
+      var(--palette-purple-300)
+    );
+  --sheet-frame-muted:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 84%,
+      transparent
+    );
+  --sheet-accent-muted:
+    color-mix(
+      in srgb,
+      var(--color-border-accent) 26%,
+      transparent
+    );
+
+  container-name: character-sheet;
+  container-type: inline-size;
+
+  width: 100%;
+  height: 100%;
+  min-width: 18rem;
+  min-height: 30rem;
+
+  color: var(--color-text-primary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.panel,
+.shell,
+.scrollArea {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.panel {
+  --panel-border: var(--sheet-frame);
+  --panel-surface-start: var(--color-canvas-background);
+  --panel-surface-end: var(--color-background);
+  --panel-inner-border:
+    color-mix(
+      in srgb,
+      var(--sheet-frame) 42%,
+      transparent
+    );
+}
+
+.shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--color-canvas-background);
+}
+
+.viewport {
+  height: 100%;
+  background:
+    radial-gradient(
+      circle at 50% -10%,
+      var(--sheet-accent-muted),
+      transparent 36rem
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--color-canvas-background) 94%,
+        var(--color-surface-accent)
+      ),
+      var(--color-background)
+    );
+}
+
+.document {
+  display: grid;
+  min-width: 0;
+  min-height: 100%;
+  padding: var(--space-2);
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.statsStrip {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.statCard {
+  position: relative;
+  isolation: isolate;
+
+  display: grid;
+  min-width: 0;
+  min-height: 3.75rem;
+  padding: var(--space-1);
+  align-items: center;
+
+  border: var(--border-width-default) solid var(--sheet-frame);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--color-surface-accent) 56%,
+        var(--color-canvas-background)
+      ),
+      color-mix(
+        in srgb,
+        var(--color-surface-muted) 92%,
+        transparent
+      )
+    );
+  box-shadow:
+    inset 0 0 0 0.22rem
+    color-mix(
+      in srgb,
+      var(--sheet-frame-muted) 34%,
+      transparent
+    );
+  clip-path:
+    polygon(
+      var(--space-2) 0,
+      calc(100% - var(--space-2)) 0,
+      100% var(--space-2),
+      100% calc(100% - var(--space-2)),
+      calc(100% - var(--space-2)) 100%,
+      var(--space-2) 100%,
+      0 calc(100% - var(--space-2)),
+      0 var(--space-2)
+    );
+}
+
+.supportStats,
+.combatStats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.armorClassStat {
+  display: grid;
+  min-width: 0;
+  width: min(100%, 6.5rem);
+  margin-inline: auto;
+}
+
+.statCard::before,
+.statCard::after {
+  content: '';
+
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+
+  width: var(--space-1);
+  aspect-ratio: 1;
+  background: var(--palette-purple-300);
+  opacity: 0.7;
+  transform: translateY(-50%) rotate(45deg);
+
+  pointer-events: none;
+}
+
+.statCard::before {
+  left: var(--space-1);
+}
+
+.statCard::after {
+  right: var(--space-1);
+}
+
+.statCardLabel {
+  color: var(--color-text-secondary);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-tight);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.inspirationStat {
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.inspirationControl {
+  display: grid;
+  place-items: center;
+}
+
+.inspirationControl > input {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-color: var(--palette-purple-300);
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+.inspirationControl > input::after {
+  transform:
+    translate(-50%, -58%)
+    rotate(0deg)
+    scale(0.72);
+}
+
+.inspirationControl > input:checked::after {
+  transform:
+    translate(-50%, -58%)
+    rotate(0deg)
+    scale(1);
+}
+
+.bodyGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-areas: 'left center notes';
+  grid-template-columns:
+    minmax(20rem, 1fr)
+    minmax(30rem, 1.5fr)
+    minmax(19rem, 0.95fr);
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.column,
+.leftRegion,
+.checksRegion,
+.centerRegion,
+.notesRegion,
+.proficiencyLists,
+.resources,
+.inventoryRegion {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.proficiencyLists {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proficiencySection {
+  --sheet-section-padding: var(--space-1);
+}
+
+.proficiencyLists > :last-child {
+  grid-column: 1 / -1;
+}
+
+.compactProficiencyFrame {
+  min-height: 0;
+  filter: none;
+}
+
+.compactProficiencyArea {
+  min-height: calc(var(--control-height-sm) + var(--space-1));
+  max-height: var(--control-height-lg);
+  padding: var(--space-4) calc(var(--space-6) + var(--space-1)) var(--space-1) var(--space-2);
+  overflow: auto;
+  resize: none;
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.leftRegion {
+  grid-area: left;
+  grid-template-columns:
+    minmax(6.25rem, 0.62fr)
+    minmax(13rem, 1.38fr);
+  align-items: start;
+  gap: var(--space-1);
+}
+
+.checksRegion {
+  min-width: 0;
+}
+
+.centerRegion {
+  grid-area: center;
+}
+
+.notesRegion {
+  grid-area: notes;
+}
+
+.personalityGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--sheet-gap, var(--space-2));
+}
+
+.abilitiesColumn {
+  grid-area: auto;
+}
+
+.checksColumn {
+  grid-area: auto;
+}
+
+.abilityGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+}
+
+.vitalsGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.vitalsGrid > * {
+  height: 100%;
+}
+
+.vitalsGrid > :first-child {
+  grid-column: 1 / -1;
+}
+
+.resource {
+  display: grid;
+  min-width: 0;
+  grid-template-columns:
+    minmax(8rem, 1.35fr)
+    minmax(5rem, 1fr)
+    minmax(5rem, 1fr)
+    auto;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--color-text-disabled);
+  text-align: center;
+}
+
+@container character-sheet (max-width: 72rem) {
+  .bodyGrid {
+    grid-template-areas:
+      'left center'
+      'notes notes';
+    grid-template-columns:
+      minmax(19rem, 0.92fr)
+      minmax(28.5rem, 1.08fr);
+  }
+
+  .notesRegion {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@container character-sheet (max-width: 50rem) {
+  .bodyGrid {
+    grid-template-areas:
+      'left'
+      'center'
+      'notes';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .abilityGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vitalsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notesRegion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vitalsGrid > :first-child {
+    grid-column: auto;
+  }
+}
+
+@container character-sheet (max-width: 34rem) {
+  .document {
+    padding: var(--space-2);
+  }
+
+  .resource {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .statCard {
+    min-height: 3.75rem;
+  }
+
+  .leftRegion {
+    grid-template-columns:
+      minmax(6.75rem, 0.58fr)
+      minmax(14rem, 1.42fr);
+  }
+
+  .proficiencyLists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .proficiencyLists > :last-child {
+    grid-column: auto;
+  }
+}
+
+@container character-sheet (max-width: 24rem) {
+  .leftRegion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (forced-colors: active) {
+  .root {
+    color: CanvasText;
+  }
+
+  .statCard {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+    clip-path: none;
+  }
+
+  .statCard::before,
+  .statCard::after {
+    display: none;
+  }
+}

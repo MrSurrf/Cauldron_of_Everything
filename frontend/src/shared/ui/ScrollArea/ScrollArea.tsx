@@ -35,9 +35,11 @@ export const ScrollArea = forwardRef<
     horizontalScrollBarLabel,
     id,
     orientation = 'vertical',
+    role,
     rootClassName,
     rootStyle,
     style,
+    tabIndex,
     verticalScrollBarLabel,
     ...viewportProps
   },
@@ -85,6 +87,9 @@ export const ScrollArea = forwardRef<
     (ariaLabel
       ? `Горизонтальная прокрутка: ${ariaLabel}`
       : 'Горизонтальная прокрутка области')
+  const hasAccessibleName = Boolean(
+    ariaLabel || ariaLabelledBy,
+  )
 
   const setViewportRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -112,7 +117,9 @@ export const ScrollArea = forwardRef<
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         className={resolvedViewportClassName}
+        role={role ?? (hasAccessibleName ? 'region' : undefined)}
         style={style}
+        tabIndex={tabIndex ?? (hasAccessibleName ? 0 : undefined)}
       >
         <div
           ref={contentRef}

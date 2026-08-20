@@ -1,0 +1,152 @@
+.section {
+  --section-cut: var(--space-2);
+  --section-border:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 78%,
+      var(--color-border-accent)
+    );
+
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  overflow: hidden;
+  border: var(--border-width-default) solid var(--section-border);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-default) 94%, var(--color-surface-accent)),
+      color-mix(in srgb, var(--color-surface-muted) 96%, var(--palette-black))
+    );
+  clip-path:
+    polygon(
+      var(--section-cut) 0,
+      calc(100% - var(--section-cut)) 0,
+      100% var(--section-cut),
+      100% calc(100% - var(--section-cut)),
+      calc(100% - var(--section-cut)) 100%,
+      var(--section-cut) 100%,
+      0 calc(100% - var(--section-cut)),
+      0 var(--section-cut)
+    );
+  color: var(--color-text-primary);
+  box-shadow:
+    inset 0 0 var(--space-5)
+    color-mix(in srgb, var(--palette-black) 48%, transparent);
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: var(--space-1);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--section-border) 32%, transparent);
+  clip-path:
+    polygon(
+      var(--space-2) 0,
+      calc(100% - var(--space-2)) 0,
+      100% var(--space-2),
+      100% calc(100% - var(--space-2)),
+      calc(100% - var(--space-2)) 100%,
+      var(--space-2) 100%,
+      0 calc(100% - var(--space-2)),
+      0 var(--space-2)
+    );
+  pointer-events: none;
+}
+
+.header,
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  display: flex;
+  min-height: calc(var(--control-height-sm) - var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--section-border) 68%, transparent);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 58%, transparent) 20%,
+      color-mix(in srgb, var(--color-surface-accent) 58%, transparent) 80%,
+      transparent
+    );
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  right: var(--space-3);
+  bottom: -1px;
+  left: var(--space-3);
+  height: var(--border-width-default);
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-border-accent) 64%, transparent),
+      transparent
+    );
+  pointer-events: none;
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: clamp(
+    var(--font-size-xs),
+    calc(var(--sheet-heading-size, var(--font-size-sm)) * 0.88),
+    var(--font-size-md)
+  );
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  line-height: var(--line-height-tight);
+  text-align: center;
+  text-shadow:
+    0 0 var(--space-2)
+    color-mix(in srgb, var(--color-action-primary) 24%, transparent);
+}
+
+.actions {
+  position: absolute;
+  right: var(--space-2);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.content {
+  min-width: 0;
+  padding: var(--sheet-section-padding, var(--space-1));
+}
+
+@media (forced-colors: active) {
+  .section {
+    border-color: CanvasText;
+    background: Canvas;
+    clip-path: none;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .section::before,
+  .header::after {
+    display: none;
+  }
+
+  .header {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+}

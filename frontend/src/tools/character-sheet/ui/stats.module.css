@@ -1,0 +1,349 @@
+.derivedStat {
+  --stat-cut: var(--space-2);
+  --stat-border:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 70%,
+      var(--color-border-accent)
+    );
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-width: 0;
+  min-height: calc(var(--control-height-lg) + var(--space-4));
+  padding: var(--space-2);
+  place-content: center;
+  place-items: center;
+  gap: var(--space-1);
+  overflow: hidden;
+
+  border: var(--border-width-default) solid var(--stat-border);
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--color-surface-accent) 64%, transparent),
+      transparent 68%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-default) 92%, var(--color-surface-accent)),
+      var(--color-surface-muted)
+    );
+  clip-path:
+    polygon(
+      var(--stat-cut) 0,
+      calc(100% - var(--stat-cut)) 0,
+      100% var(--stat-cut),
+      100% calc(100% - var(--stat-cut)),
+      calc(100% - var(--stat-cut)) 100%,
+      var(--stat-cut) 100%,
+      0 calc(100% - var(--stat-cut)),
+      0 var(--stat-cut)
+    );
+  color: var(--color-text-primary);
+}
+
+.derivedStat::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: var(--space-1);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--stat-border) 42%, transparent);
+  clip-path:
+    polygon(
+      var(--space-2) 0,
+      calc(100% - var(--space-2)) 0,
+      100% var(--space-2),
+      100% calc(100% - var(--space-2)),
+      calc(100% - var(--space-2)) 100%,
+      var(--space-2) 100%,
+      0 calc(100% - var(--space-2)),
+      0 var(--space-2)
+    );
+  pointer-events: none;
+}
+
+.derivedStat::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 50%;
+  width: var(--space-3);
+  height: var(--border-width-default);
+  background: var(--color-border-accent);
+  box-shadow: 0 0 var(--space-2) var(--color-action-primary);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.derivedStat:focus-within {
+  --stat-border: var(--color-border-accent);
+}
+
+.derivedHeader {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+.label {
+  overflow: hidden;
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.06em;
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.valueRow {
+  display: flex;
+  min-height: var(--control-height-sm);
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.value {
+  color: var(--color-text-primary);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow:
+    0 0 var(--space-2)
+    color-mix(in srgb, var(--palette-white) 18%, transparent);
+}
+
+.suffix {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.formula {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--color-text-disabled);
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-status-danger);
+  font-size: var(--font-size-xs);
+}
+
+.compactFrame {
+  --input-border:
+    color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-inner-border:
+    color-mix(in srgb, var(--input-border) 30%, transparent);
+  --input-surface-start:
+    color-mix(in srgb, var(--color-surface-default) 88%, transparent);
+  --input-surface-end:
+    color-mix(in srgb, var(--color-surface-muted) 92%, transparent);
+  --input-corner-cut: var(--space-1);
+  --input-inner-frame-inset: 2px;
+
+  min-height: var(--control-height-sm);
+  filter: none;
+}
+
+.compactControl {
+  min-height: var(--control-height-sm);
+  padding-inline: var(--space-2);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.statInput {
+  text-align: center;
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-value-size, var(--font-size-lg));
+  font-variant-numeric: tabular-nums;
+}
+
+.hpGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.hpGrid > * {
+  min-height: calc(var(--control-height-lg) + var(--space-4));
+  padding: var(--space-1) var(--space-2);
+  place-content: center;
+  text-align: center;
+  border-right: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 84%, transparent);
+}
+
+.hpGrid > *:last-child {
+  border-right: 0;
+}
+
+.fieldLabel {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.diceList {
+  display: grid;
+  container-type: inline-size;
+}
+
+.diceRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(5rem, 1fr) minmax(5rem, 1fr) minmax(5rem, 1fr) auto;
+  padding-block: var(--space-1);
+  align-items: end;
+  gap: var(--space-2);
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 68%, transparent);
+}
+
+.diceRow:first-child {
+  padding-top: 0;
+}
+
+.diceRow:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.currencyGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(4.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+@container (max-width: 19rem) {
+  .diceRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .diceRow > :last-child {
+    justify-self: end;
+  }
+}
+
+@container character-sheet (max-width: 32rem) {
+  .currencyGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container character-sheet (max-width: 22rem) {
+  .currencyGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.deathSaves {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.saveRow {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) auto;
+  padding-block: var(--space-1);
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 62%, transparent);
+}
+
+.saveRow:last-child {
+  border-bottom: 0;
+}
+
+.saveLabel {
+  color: var(--color-text-secondary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.saveControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.saveMark[aria-pressed='true'] {
+  color: var(--color-status-success);
+  filter: drop-shadow(0 0 var(--space-1) color-mix(in srgb, var(--color-status-success) 45%, transparent));
+}
+
+.failureMark[aria-pressed='true'] {
+  color: var(--color-status-danger);
+  filter: drop-shadow(0 0 var(--space-1) color-mix(in srgb, var(--color-status-danger) 45%, transparent));
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width-default) dashed
+    color-mix(in srgb, var(--color-content-border) 76%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+@container character-sheet (max-width: 30rem) {
+  .hpGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .hpGrid > * {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: var(--border-width-default) solid
+      color-mix(in srgb, var(--color-content-border) 84%, transparent);
+  }
+
+  .hpGrid > *:last-child {
+    border-bottom: 0;
+  }
+
+  .diceRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (forced-colors: active) {
+  .derivedStat {
+    clip-path: none;
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .derivedStat::before,
+  .derivedStat::after {
+    display: none;
+  }
+
+  .saveMark[aria-pressed='true'],
+  .failureMark[aria-pressed='true'] {
+    color: Highlight;
+    filter: none;
+  }
+}

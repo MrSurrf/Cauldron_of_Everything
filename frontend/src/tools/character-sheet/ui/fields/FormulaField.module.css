@@ -1,0 +1,347 @@
+.field {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.label {
+  display: flex;
+  overflow: hidden;
+  padding-inline-end: calc(var(--icon-size-md) + var(--space-1));
+  align-items: baseline;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.025em;
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labelDetail {
+  flex: 0 0 auto;
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.labelText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label[data-visibility='sr-only'] {
+  position: absolute;
+  width: var(--border-width-default);
+  height: var(--border-width-default);
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.control {
+  display: grid;
+  min-width: 0;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 72%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 16%, transparent)
+    );
+}
+
+.settingsButton[data-size='sm'] {
+  --icon-button-size: calc(var(--icon-size-md) + var(--space-1));
+  --icon-button-glyph-size: calc(var(--icon-size-sm) - var(--space-1));
+  --button-border: transparent;
+  --button-inner-border: transparent;
+  --button-surface-start: transparent;
+  --button-surface-end: transparent;
+
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--space-1) * -1);
+  right: calc(var(--space-1) * -1);
+  opacity: 0.46;
+  filter: none;
+}
+
+.settingsButton[data-size='sm']::before {
+  background: transparent;
+}
+
+.settingsButton[data-size='sm'] > span[aria-hidden='true'] {
+  display: none;
+}
+
+.field:hover .settingsButton,
+.field:focus-within .settingsButton,
+.settingsButton:focus-visible {
+  opacity: 1;
+}
+
+.field[data-mode='formula'] .control {
+  border-bottom-color:
+    color-mix(in srgb, var(--color-border-accent) 38%, var(--color-content-border));
+}
+
+.field:focus-within .control {
+  border-bottom-color: var(--color-border-accent);
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 38%, transparent)
+    );
+}
+
+.field[data-status='error'] .control {
+  border-color: var(--color-status-danger);
+}
+
+.error {
+  color: var(--color-status-danger);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.settings {
+  display: grid;
+  width: min(22rem, calc(100vw - var(--space-6)));
+  gap: var(--space-3);
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--palette-purple-300);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-md);
+}
+
+.settingsIcon {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  color: var(--color-border-accent);
+}
+
+.preview {
+  display: flex;
+  min-height: var(--control-height-sm);
+  padding: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 72%, var(--color-border-accent));
+  background:
+    color-mix(in srgb, var(--color-surface-accent) 22%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.field[data-presentation='list'] {
+  --sheet-control-height: var(--icon-size-sm);
+  --sheet-value-size: var(--font-size-sm);
+
+  grid-template-columns:
+    minmax(calc(var(--icon-size-lg) + var(--space-1)), auto)
+    minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.field[data-presentation='list'] .label {
+  grid-column: 2;
+  grid-row: 1;
+  padding-inline-end: calc(var(--icon-size-md) + var(--space-1));
+  color: var(--color-text-primary);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  letter-spacing: 0;
+}
+
+.field[data-presentation='list'] .control {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: var(--icon-size-sm);
+  border-bottom: 0;
+  background: transparent;
+}
+
+.field[data-presentation='list'] .control output,
+.field[data-presentation='list'] .control input {
+  min-height: var(--icon-size-sm);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  text-align: center;
+}
+
+.field[data-presentation='list'] .error {
+  grid-column: 1 / -1;
+}
+
+.field[data-presentation='list'] .settingsButton {
+  opacity: 0;
+}
+
+.field[data-presentation='list']:hover .settingsButton,
+.field[data-presentation='list']:focus-within .settingsButton {
+  opacity: 1;
+}
+
+.field[data-presentation='stat'] {
+  --sheet-value-size:
+    max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+
+  min-height: calc(var(--control-height-lg) + var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  place-content: center;
+  text-align: center;
+}
+
+.field[data-presentation='stat'] .label {
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  letter-spacing: 0.055em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.field[data-presentation='stat'] .control {
+  width: 100%;
+  min-height: var(--control-height-sm);
+  border-bottom-color: transparent;
+  background: transparent;
+}
+
+.field[data-presentation='stat'] .control > :last-child {
+  opacity: 0.46;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.field[data-presentation='stat']:focus-within
+  .control > :last-child,
+.field[data-presentation='stat']:hover
+  .control > :last-child {
+  opacity: 1;
+}
+
+.field[data-presentation='stat'] .control output,
+.field[data-presentation='stat'] .control input {
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-value-size);
+  line-height: 1;
+  text-align: center;
+}
+
+.field[data-presentation='shield'] {
+  --shield-border:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 64%,
+      var(--color-border-accent)
+    );
+  --sheet-value-size:
+    max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+
+  min-height: calc(var(--control-height-lg) + var(--space-5));
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  place-content: center;
+  background: var(--shield-border);
+  clip-path:
+    polygon(
+      14% 0,
+      86% 0,
+      100% 16%,
+      91% 68%,
+      50% 100%,
+      9% 68%,
+      0 16%
+    );
+  text-align: center;
+}
+
+.field[data-presentation='shield']::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: var(--border-width-default);
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--color-surface-accent) 72%, transparent),
+      var(--color-surface-muted) 74%
+    );
+  clip-path: inherit;
+}
+
+.field[data-presentation='shield'] > .label,
+.field[data-presentation='shield'] > .control,
+.field[data-presentation='shield'] > .error {
+  position: relative;
+  z-index: 1;
+}
+
+.field[data-presentation='shield'] .label {
+  padding-inline: var(--space-3);
+  justify-content: center;
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field[data-presentation='shield'] .control {
+  min-height: var(--control-height-sm);
+  border-bottom: 0;
+  background: transparent;
+}
+
+.field[data-presentation='shield'] .control output,
+.field[data-presentation='shield'] .control input {
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-value-size);
+  line-height: 1;
+  text-align: center;
+}
+
+.field[data-presentation='shield'] .settingsButton {
+  top: var(--space-1);
+  right: var(--space-3);
+}
+
+@media (forced-colors: active) {
+  .control,
+  .field[data-presentation='stat'] .control,
+  .field[data-presentation='shield'],
+  .field[data-presentation='shield'] .control,
+  .preview {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .field[data-presentation='shield'] {
+    clip-path: none;
+  }
+
+  .field[data-presentation='shield']::before {
+    display: none;
+  }
+}

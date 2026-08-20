@@ -1,0 +1,198 @@
+.editor {
+  position: relative;
+  width: 100%;
+}
+
+.scaledControl {
+  font-size: var(--text-area-content-size);
+  transition:
+    font-size
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.frameWithTopToolbar {
+  transition:
+    padding-top
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.editor:focus-within .frameWithTopToolbar {
+  --text-field-extra-block-start:
+    calc(var(--control-height-sm) + var(--space-2));
+}
+
+.frameWithScaleControls {
+  --text-field-extra-block-end:
+    calc(var(--control-height-sm) - var(--space-1));
+}
+
+.topToolbar,
+.formattingToolbar,
+.scaleControls {
+  display: flex;
+  align-items: center;
+
+  border: var(--border-width-default) solid var(--color-content-border);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-default),
+      var(--color-surface-muted)
+    );
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text-primary);
+}
+
+.topToolbar {
+  position: absolute;
+  z-index: calc(var(--z-index-base) + 6);
+  top: var(--space-2);
+  left: var(--space-3);
+
+  max-width: calc(100% - var(--space-6));
+  min-height: var(--control-height-sm);
+  padding-inline: var(--space-1);
+  gap: var(--space-1);
+  overflow-x: auto;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(var(--space-1) * -1));
+  visibility: hidden;
+  transition:
+    opacity
+      var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    transform
+      var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    visibility 0s linear var(--motion-duration-fast);
+}
+
+.editor:focus-within .topToolbar {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.formattingToolbar {
+  position: absolute;
+  z-index: var(--z-index-tooltip);
+  top: 0;
+  left: 50%;
+
+  padding: var(--space-1);
+  gap: var(--space-1);
+
+  filter:
+    drop-shadow(
+      0 0 var(--space-3)
+      color-mix(
+        in srgb,
+        var(--palette-purple-500) 30%,
+        transparent
+      )
+    );
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -58%);
+  visibility: hidden;
+  transition:
+    opacity
+      var(--motion-duration-fast)
+      var(--motion-easing-standard),
+    visibility 0s linear var(--motion-duration-fast);
+}
+
+.editor:focus-within .formattingToolbar {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.editor .toolbarButton[data-size],
+.editor .scaleButton[data-size] {
+  --button-corner-shape-offset: var(--space-1);
+  --button-inner-frame-inset: var(--border-width-default);
+  --icon-button-glyph-size: var(--icon-size-sm);
+  --icon-button-size: calc(var(--control-height-sm) - var(--space-2));
+}
+
+.letterIcon {
+  display: inline-grid;
+  place-items: center;
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.letterIcon[data-format='italic'] {
+  font-style: italic;
+}
+
+.letterIcon[data-format='underline'] {
+  text-decoration: underline;
+  text-underline-offset: var(--border-width-strong);
+}
+
+.scaleControls {
+  position: absolute;
+  z-index: calc(var(--z-index-base) + 6);
+  right: calc(var(--icon-size-lg) + var(--space-2));
+  bottom: var(--space-2);
+
+  padding: var(--space-1);
+  gap: var(--space-1);
+}
+
+.scaleValue {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.scaleGlyph {
+  display: inline-grid;
+  place-items: center;
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-md);
+  font-weight: 400;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scaledControl,
+  .frameWithTopToolbar,
+  .topToolbar,
+  .formattingToolbar {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .topToolbar,
+  .formattingToolbar,
+  .scaleControls {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+    color: CanvasText;
+    filter: none;
+  }
+}
