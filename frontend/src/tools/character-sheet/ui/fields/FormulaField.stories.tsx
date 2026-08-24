@@ -106,7 +106,7 @@ export const CompactListValue: Story = {
 
 export const ArmorClassShield: Story = {
   args: {
-    label: 'Класс защиты',
+    label: 'Класс доспеха',
     presentation: 'shield',
     value: {
       formulaOverride: null,

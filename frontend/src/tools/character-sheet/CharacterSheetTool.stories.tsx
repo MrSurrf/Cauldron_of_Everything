@@ -188,6 +188,25 @@ export const PortraitWorkflow: Story = {
   },
 }
 
+export const ReferenceDesktopLayout: Story = {
+  args: {
+    initialDocument: createMockCharacterSheet(),
+  },
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          width: '61rem',
+          height: '72rem',
+          margin: '0 auto',
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+}
+
 export const TwoColumnWorkspace: Story = {
   args: {
     initialDocument: createMockCharacterSheet(),
@@ -196,7 +215,7 @@ export const TwoColumnWorkspace: Story = {
     (Story) => (
       <div
         style={{
-          width: '62rem',
+          width: '55rem',
           height: '100vh',
           minHeight: '42rem',
           margin: '0 auto',

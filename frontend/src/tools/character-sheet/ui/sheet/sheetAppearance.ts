@@ -76,9 +76,9 @@ export function getSheetStyle(
 ): CharacterSheetStyle {
   const density = {
     compact: {
-      control: 'var(--control-height-sm)',
-      gap: 'var(--space-2)',
-      padding: 'var(--space-2)',
+      control: 'calc(var(--control-height-sm) - var(--space-1))',
+      gap: 'var(--sheet-layout-gap)',
+      padding: 'var(--sheet-layout-gap)',
     },
     comfortable: {
       control: 'var(--control-height-md)',

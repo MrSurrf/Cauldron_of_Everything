@@ -1,4 +1,4 @@
-import { Checkbox } from '../../../../shared/ui'
+import { ScrollArea } from '../../../../shared/ui'
 import {
   FormulaField,
   type ComputedValueResult,
@@ -17,6 +17,7 @@ export type SavingThrowListItem = {
 }
 
 export type SavingThrowsListProps = {
+  fill?: boolean
   items: readonly SavingThrowListItem[]
   onItemChange: (
     id: string,
@@ -28,43 +29,99 @@ export type SavingThrowsListProps = {
 }
 
 export function SavingThrowsList({
+  fill = false,
   items,
   onItemChange,
 }: SavingThrowsListProps) {
+  const list = (
+    <div className={styles.list}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className={styles.row}
+          data-rank={
+            item.proficient ? 'proficient' : 'none'
+          }
+          title={
+            item.proficient
+              ? 'Нажмите, чтобы убрать владение.'
+              : 'Нажмите, чтобы добавить владение.'
+          }
+          onClick={(event) => {
+            const target = event.target
+            if (
+              target instanceof Element &&
+              target.closest(
+                "button, input, textarea, select, a, [contenteditable='true'], [role='button']",
+              )
+            ) {
+              return
+            }
+
+            onItemChange(item.id, {
+              proficient: !item.proficient,
+            })
+          }}
+        >
+          <button
+            type="button"
+            className={styles.rankButton}
+            aria-label={`Владение спасброском: ${item.label}`}
+            aria-pressed={item.proficient}
+            title={
+              item.proficient
+                ? 'Убрать владение'
+                : 'Добавить владение'
+            }
+            onClick={() => {
+              onItemChange(item.id, {
+                proficient: !item.proficient,
+              })
+            }}
+          >
+            <span
+              aria-hidden={true}
+              className={styles.rankMarker}
+              data-rank={
+                item.proficient
+                  ? 'proficient'
+                  : 'none'
+              }
+            />
+          </button>
+
+          <FormulaField
+            defaultFormula={item.defaultFormula}
+            label={item.label}
+            presentation="list"
+            prefixPositive={true}
+            result={item.result}
+            signDisplay="compact"
+            value={item.value}
+            onValueChange={(value) => {
+              onItemChange(item.id, { value })
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <SheetSection
       className={styles.checkSection}
+      data-fill={fill || undefined}
       title="Спасброски"
     >
-      <div className={styles.list}>
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={styles.row}
-          >
-            <Checkbox
-              rootClassName={styles.checkControl}
-              aria-label={`Владение спасброском: ${item.label}`}
-              checked={item.proficient}
-              onCheckedChange={(proficient) => {
-                onItemChange(item.id, { proficient })
-              }}
-            />
-
-            <FormulaField
-              defaultFormula={item.defaultFormula}
-              label={item.label}
-              presentation="list"
-              prefixPositive={true}
-              result={item.result}
-              value={item.value}
-              onValueChange={(value) => {
-                onItemChange(item.id, { value })
-              }}
-            />
-          </div>
-        ))}
-      </div>
+      {fill ? (
+        <ScrollArea
+          aria-label="Спасброски"
+          orientation="vertical"
+          rootClassName={styles.checkScrollArea}
+        >
+          {list}
+        </ScrollArea>
+      ) : list}
     </SheetSection>
   )
 }

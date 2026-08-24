@@ -13,10 +13,9 @@ import {
 const initialItems: SkillListItem[] = [
   {
     ability: 'DEX',
-    expertise: false,
     id: 'acrobatics',
     label: 'Акробатика',
-    proficient: true,
+    rank: 'proficient',
     result: { status: 'ok', value: 5 },
     value: {
       formulaOverride: null,
@@ -26,10 +25,9 @@ const initialItems: SkillListItem[] = [
   },
   {
     ability: 'WIS',
-    expertise: true,
     id: 'perception',
     label: 'Восприятие',
-    proficient: true,
+    rank: 'expertise',
     result: { status: 'ok', value: 7 },
     value: {
       formulaOverride: null,

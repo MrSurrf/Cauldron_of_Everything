@@ -25,7 +25,7 @@ export function CharacterSheetLeftColumn({
   return (
     <section
       aria-label="Характеристики"
-      className={`${styles.column} ${styles.abilitiesColumn}`}
+      className={styles.abilitiesColumn}
     >
       <div className={styles.abilityGrid}>
         {ABILITY_KEYS.map((ability) => {

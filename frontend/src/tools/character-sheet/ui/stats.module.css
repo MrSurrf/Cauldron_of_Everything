@@ -12,10 +12,10 @@
   display: grid;
   min-width: 0;
   min-height: calc(var(--control-height-lg) + var(--space-4));
-  padding: var(--space-2);
+  padding: var(--sheet-layout-gap, var(--space-2));
   place-content: center;
   place-items: center;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
   overflow: hidden;
 
   border: var(--border-width-default) solid var(--stat-border);
@@ -89,7 +89,7 @@
   min-width: 0;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
   text-align: center;
 }
 
@@ -97,7 +97,7 @@
   overflow: hidden;
   color: var(--palette-purple-300);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   letter-spacing: 0.06em;
   line-height: var(--line-height-tight);
   text-overflow: ellipsis;
@@ -109,13 +109,13 @@
   min-height: var(--control-height-sm);
   align-items: baseline;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
 .value {
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+  font-size: var(--sheet-large-value-size, var(--font-size-xl));
   font-variant-numeric: tabular-nums;
   line-height: 1;
   text-shadow:
@@ -125,7 +125,7 @@
 
 .suffix {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
 }
 
 .formula {
@@ -133,7 +133,7 @@
   max-width: 100%;
   color: var(--color-text-disabled);
   font-family: ui-monospace, 'Cascadia Code', monospace;
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -141,7 +141,7 @@
 .error {
   margin: 0;
   color: var(--color-status-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
 }
 
 .compactFrame {
@@ -156,20 +156,24 @@
   --input-corner-cut: var(--space-1);
   --input-inner-frame-inset: 2px;
 
-  min-height: var(--control-height-sm);
+  min-height: var(--sheet-control-height, var(--control-height-sm));
   filter: none;
 }
 
 .compactControl {
-  min-height: var(--control-height-sm);
-  padding-inline: var(--space-2);
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
   font-size: var(--sheet-body-size, var(--font-size-sm));
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
 .statInput {
   text-align: center;
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-value-size, var(--font-size-lg));
+  font-size: var(
+    --sheet-value-size,
+    var(--sheet-ordinary-value-size, var(--font-size-lg))
+  );
   font-variant-numeric: tabular-nums;
 }
 
@@ -179,9 +183,52 @@
   gap: 0;
 }
 
+.hitPointsRoot[data-compact='true'] {
+  --sheet-section-padding: 0;
+
+  height: 100%;
+  min-height: 0;
+}
+
+.hitPointsRoot {
+  container-type: inline-size;
+}
+
+.hitPointsRoot[data-compact='true'] .hpGrid {
+  height: 100%;
+}
+
+.hitPointsRoot[data-compact='true'] .hpGrid > * {
+  min-height: 0;
+  padding: 0 var(--sheet-tight-gap, var(--space-1));
+}
+
+.hitPointsRoot[data-compact='true'] .fieldLabel,
+.hitPointsRoot[data-compact='true'] [data-presentation] {
+  min-height: 0;
+  gap: 0;
+}
+
+.hitPointsRoot[data-compact='true'] [data-presentation] {
+  padding: 0;
+}
+
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  > :nth-child(2),
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  input,
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  output {
+  min-height: var(--icon-size-md);
+}
+
 .hpGrid > * {
   min-height: calc(var(--control-height-lg) + var(--space-4));
-  padding: var(--space-1) var(--space-2);
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
   place-content: center;
   text-align: center;
   border-right: var(--border-width-default) solid
@@ -195,10 +242,10 @@
 .fieldLabel {
   display: grid;
   min-width: 0;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
   color: var(--color-text-secondary);
   font-family: var(--sheet-body-font, var(--font-family-body));
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -208,15 +255,51 @@
   container-type: inline-size;
 }
 
+.hitDiceRoot[data-fill='true'] {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.hitDiceRoot[data-fill='true'] > :last-child {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.diceScroll {
+  height: auto;
+  min-height: 0;
+}
+
+.hitDiceRoot[data-fill='true'] .diceScroll {
+  height: 100%;
+}
+
 .diceRow {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(5rem, 1fr) minmax(5rem, 1fr) minmax(5rem, 1fr) auto;
-  padding-block: var(--space-1);
+  padding-block: var(--sheet-tight-gap, var(--space-1));
   align-items: end;
-  gap: var(--space-2);
+  gap: var(--sheet-layout-gap, var(--space-2));
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 68%, transparent);
+}
+
+.hitDiceRoot[data-compact='true'] .diceRow {
+  grid-template-columns:
+    minmax(2.75rem, 0.75fr)
+    repeat(2, minmax(3.25rem, 1fr))
+    auto;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.diceRow :global(button[data-size='sm']) {
+  --icon-button-size: var(--sheet-control-height, var(--control-height-sm));
+  --icon-button-glyph-size: var(--icon-size-sm);
 }
 
 .diceRow:first-child {
@@ -229,45 +312,48 @@
 }
 
 .currencyGrid {
+  --sheet-value-size: var(
+    --sheet-ordinary-value-size,
+    var(--sheet-body-size, var(--font-size-sm))
+  );
+
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(5, minmax(4.5rem, 1fr));
-  gap: var(--space-2);
+  gap: var(--sheet-layout-gap, var(--space-2));
 }
 
 @container (max-width: 19rem) {
-  .diceRow {
+  .hitDiceRoot:not([data-compact='true']) .diceRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .diceRow > :last-child {
+  .hitDiceRoot:not([data-compact='true']) .diceRow > :last-child {
     justify-self: end;
   }
 }
 
-@container character-sheet (max-width: 32rem) {
-  .currencyGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@container character-sheet (max-width: 22rem) {
-  .currencyGrid {
+@container (max-width: 12rem) {
+  .hitDiceRoot[data-compact='true'] .diceRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hitDiceRoot[data-compact='true'] .diceRow > :last-child {
+    justify-self: end;
   }
 }
 
 .deathSaves {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
 .saveRow {
   display: grid;
-  grid-template-columns: minmax(6rem, 1fr) auto;
-  padding-block: var(--space-1);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-block: var(--sheet-tight-gap, var(--space-1));
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--sheet-tight-gap, var(--space-1));
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 62%, transparent);
 }
@@ -279,13 +365,19 @@
 .saveLabel {
   color: var(--color-text-secondary);
   font-family: var(--sheet-body-font, var(--font-family-body));
-  font-size: var(--sheet-body-size, var(--font-size-sm));
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
 .saveControls {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.saveControls :global(button[data-size='sm']) {
+  --icon-button-size: var(--sheet-control-height, var(--control-height-sm));
+  --icon-button-glyph-size: var(--icon-size-sm);
 }
 
 .saveMark[aria-pressed='true'] {
@@ -308,7 +400,7 @@
   text-align: center;
 }
 
-@container character-sheet (max-width: 30rem) {
+@container (max-width: 14rem) {
   .hpGrid {
     grid-template-columns: 1fr;
   }
@@ -324,9 +416,6 @@
     border-bottom: 0;
   }
 
-  .diceRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (forced-colors: active) {

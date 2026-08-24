@@ -1,11 +1,11 @@
 .content {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
 .content > :first-child {
-  min-height: var(--control-height-sm);
-  padding: var(--space-1);
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding: var(--sheet-tight-gap, var(--space-1));
   align-items: center;
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 76%, transparent);

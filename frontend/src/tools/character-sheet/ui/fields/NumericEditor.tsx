@@ -5,6 +5,7 @@ import styles from './SheetFields.module.css'
 
 export type NumericEditorProps = {
   'aria-label': string
+  compactPositiveSign?: boolean
   disabled?: boolean
   max?: number
   min?: number
@@ -13,8 +14,19 @@ export type NumericEditorProps = {
   value: number | null
 }
 
-function formatNumericValue(value: number | null) {
-  return value === null ? '' : String(value)
+function formatNumericValue(
+  value: number | null,
+  compactPositiveSign: boolean,
+) {
+  if (value === null) return ''
+  if (
+    compactPositiveSign &&
+    value >= 0 &&
+    value < 10
+  ) {
+    return `+${value}`
+  }
+  return String(value)
 }
 
 function parseNumericValue(value: string) {
@@ -37,6 +49,7 @@ function parseNumericValue(value: string) {
 
 export function NumericEditor({
   'aria-label': ariaLabel,
+  compactPositiveSign = false,
   disabled = false,
   max,
   min,
@@ -45,14 +58,20 @@ export function NumericEditor({
   value,
 }: NumericEditorProps) {
   const [draft, setDraft] = useState(
-    formatNumericValue(value),
+    formatNumericValue(value, compactPositiveSign),
   )
-  const [previousValue, setPreviousValue] =
-    useState(value)
+  const [previousDisplay, setPreviousDisplay] =
+    useState({ compactPositiveSign, value })
 
-  if (!Object.is(previousValue, value)) {
-    setPreviousValue(value)
-    setDraft(formatNumericValue(value))
+  if (
+    !Object.is(previousDisplay.value, value) ||
+    previousDisplay.compactPositiveSign !==
+      compactPositiveSign
+  ) {
+    setPreviousDisplay({ compactPositiveSign, value })
+    setDraft(
+      formatNumericValue(value, compactPositiveSign),
+    )
   }
 
   function commit(nextDraft: string) {
@@ -68,7 +87,9 @@ export function NumericEditor({
             ),
           )
 
-    setDraft(formatNumericValue(clamped))
+    setDraft(
+      formatNumericValue(clamped, compactPositiveSign),
+    )
     onValueChange(clamped)
   }
 

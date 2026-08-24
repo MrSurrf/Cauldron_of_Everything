@@ -7,42 +7,56 @@ import { FormulaField } from '../fields'
 import styles from '../../CharacterSheetTool.module.css'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
-export type CharacterSheetStatsStripProps = {
-  group: 'combat' | 'support'
+export type CharacterSheetStatKey =
+  | 'armorClass'
+  | 'initiative'
+  | 'inspiration'
+  | 'passivePerception'
+  | 'proficiency'
+  | 'speed'
+
+export type CharacterSheetStatProps = {
+  className?: string
+  compact?: boolean
+  presentation?: 'list' | 'stat'
   sheet: CharacterSheetViewModel
+  stat: CharacterSheetStatKey
 }
 
-const derivedStats = [
-  {
+const derivedStats = {
+  armorClass: {
     field: 'armorClass',
     key: FORMULA_FIELD_KEYS.armorClass,
-    label: 'Класс защиты',
+    label: 'КД',
     prefixPositive: false,
   },
-  {
+  initiative: {
     field: 'initiative',
     key: FORMULA_FIELD_KEYS.initiative,
     label: 'Инициатива',
     prefixPositive: true,
   },
-  {
+  passivePerception: {
+    field: 'passivePerception',
+    key: FORMULA_FIELD_KEYS.passivePerception,
+    label: 'Пассивное восприятие',
+    prefixPositive: false,
+  },
+  speed: {
     field: 'speed',
     key: FORMULA_FIELD_KEYS.speed,
     label: 'Скорость',
     prefixPositive: false,
   },
-  {
-    field: 'passivePerception',
-    key: FORMULA_FIELD_KEYS.passivePerception,
-    label: 'Пасс. мудрость',
-    prefixPositive: false,
-  },
-] as const
+} as const
 
-export function CharacterSheetStatsStrip({
-  group,
+export function CharacterSheetStat({
+  className,
+  compact = false,
+  presentation,
   sheet,
-}: CharacterSheetStatsStripProps) {
+  stat,
+}: CharacterSheetStatProps) {
   const {
     dispatch,
     document,
@@ -51,108 +65,91 @@ export function CharacterSheetStatsStrip({
     updateNumericField,
     variables,
   } = sheet
-  const visibleDerivedStats = derivedStats.filter((stat) =>
-    group === 'combat'
-      ? stat.field !== 'passivePerception'
-      : stat.field === 'passivePerception',
-  )
+  const rootClassName = [
+    stat === 'armorClass'
+      ? styles.armorClassStat
+      : styles.statCard,
+    stat === 'inspiration' ? styles.inspirationStat : undefined,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  if (stat === 'inspiration') {
+    return (
+      <div className={rootClassName} data-stat={stat}>
+        <span className={styles.statCardLabel}>
+          Вдохновение
+        </span>
+        <Checkbox
+          aria-label="Вдохновение"
+          checked={document.inspiration}
+          rootClassName={styles.inspirationControl}
+          onCheckedChange={(value) => {
+            dispatch(
+              characterSheetActions.setInspiration(value),
+            )
+          }}
+        />
+      </div>
+    )
+  }
+
+  if (stat === 'proficiency') {
+    return (
+      <div className={rootClassName} data-stat={stat}>
+        <FormulaField
+          accessibleLabel="Бонус мастерства"
+          compact={compact}
+          defaultFormula={
+            ruleset.defaultFormulas[
+              FORMULA_FIELD_KEYS.proficiency
+            ]
+          }
+          label="Мастерство"
+        presentation={presentation ?? 'stat'}
+          prefixPositive={true}
+          result={resultFor(FORMULA_FIELD_KEYS.proficiency)}
+          value={document.proficiencyBonus}
+          variables={variables}
+          onValueChange={(value) => {
+            updateNumericField(
+              { kind: 'proficiencyBonus' },
+              value,
+            )
+          }}
+        />
+      </div>
+    )
+  }
+
+  const meta = derivedStats[stat]
 
   return (
-    <section
-      aria-label={
-        group === 'combat'
-          ? 'Боевые показатели персонажа'
-          : 'Вспомогательные показатели персонажа'
-      }
-      className={`${styles.statsStrip} ${
-        group === 'combat'
-          ? styles.combatStats
-          : styles.supportStats
-      }`}
+    <div
+      className={rootClassName}
+      data-stat={meta.field}
     >
-      {group === 'support' && (
-        <>
-          <div
-            className={`${styles.statCard} ${styles.inspirationStat}`}
-          >
-            <span className={styles.statCardLabel}>
-              Вдохновение
-            </span>
-            <Checkbox
-              aria-label="Вдохновение"
-              checked={document.inspiration}
-              rootClassName={styles.inspirationControl}
-              onCheckedChange={(value) => {
-                dispatch(
-                  characterSheetActions.setInspiration(value),
-                )
-              }}
-            />
-          </div>
-
-          <div className={styles.statCard}>
-            <FormulaField
-              accessibleLabel="Бонус мастерства"
-              defaultFormula={
-                ruleset.defaultFormulas[
-                  FORMULA_FIELD_KEYS.proficiency
-                ]
-              }
-              label="Мастерство"
-              presentation="stat"
-              prefixPositive={true}
-              result={resultFor(
-                FORMULA_FIELD_KEYS.proficiency,
-              )}
-              value={document.proficiencyBonus}
-              variables={variables}
-              onValueChange={(value) => {
-                updateNumericField(
-                  { kind: 'proficiencyBonus' },
-                  value,
-                )
-              }}
-            />
-          </div>
-        </>
-      )}
-
-      {visibleDerivedStats.map((stat) => (
-        <div
-          key={stat.field}
-          className={
-            stat.field === 'armorClass'
-              ? styles.armorClassStat
-              : styles.statCard
-          }
-          data-stat={stat.field}
-        >
-          <FormulaField
-            defaultFormula={
-              ruleset.defaultFormulas[stat.key]
-            }
-            label={stat.label}
-            presentation={
-              stat.field === 'armorClass'
-                ? 'shield'
-                : 'stat'
-            }
-            prefixPositive={stat.prefixPositive}
-            result={resultFor(stat.key)}
-            value={document.derivedStats[stat.field]}
-            variables={variables}
-            onValueChange={(value) => {
-              updateNumericField(
-                {
-                  field: stat.field,
-                  kind: 'derived',
-                },
-                value,
-              )
-            }}
-          />
-        </div>
-      ))}
-    </section>
+      <FormulaField
+        compact={compact}
+        defaultFormula={ruleset.defaultFormulas[meta.key]}
+        label={meta.label}
+        presentation={
+          meta.field === 'armorClass'
+            ? 'shield'
+            : (presentation ?? 'stat')
+        }
+        prefixPositive={meta.prefixPositive}
+        result={resultFor(meta.key)}
+        value={document.derivedStats[meta.field]}
+        variables={variables}
+        onValueChange={(value) => {
+          updateNumericField(
+            { field: meta.field, kind: 'derived' },
+            value,
+          )
+        }}
+      />
+    </div>
   )
 }

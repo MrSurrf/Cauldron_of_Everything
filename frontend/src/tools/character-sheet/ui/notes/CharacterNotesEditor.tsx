@@ -19,6 +19,7 @@ export type CharacterNotesInsertAction =
 export type CharacterNotesEditorProps = {
   accessibleLabel: string
   className?: string
+  fill?: boolean
   placeholder?: string
   renderPreview?: boolean
   rows?: number
@@ -27,6 +28,7 @@ export type CharacterNotesEditorProps = {
   onStructuredResourceChange?: (
     source: string,
     current: number,
+    nextValue: string,
   ) => void
   onValueChange: (value: string) => void
 }
@@ -82,6 +84,7 @@ function withParagraphSpacing(
 export function CharacterNotesEditor({
   accessibleLabel,
   className,
+  fill = false,
   placeholder = 'Введите текст...',
   renderPreview = true,
   rows = 5,
@@ -118,7 +121,7 @@ export function CharacterNotesEditor({
   }
 
   function finishEditing(
-    event: FocusEvent<HTMLTextAreaElement>,
+    event: FocusEvent<HTMLDivElement>,
   ) {
     const nextTarget = event.relatedTarget
 
@@ -159,7 +162,12 @@ export function CharacterNotesEditor({
     .join(' ')
 
   return (
-    <div ref={rootRef} className={rootClassName}>
+    <div
+      ref={rootRef}
+      className={rootClassName}
+      data-fill={fill || undefined}
+      onBlurCapture={finishEditing}
+    >
       {renderPreview && !editing ? (
         <CharacterNotesPreview
           accessibleLabel={accessibleLabel}
@@ -212,7 +220,6 @@ export function CharacterNotesEditor({
             </div>
           ) : undefined}
           value={value}
-          onBlur={finishEditing}
           onChange={(event) => {
             onValueChange(event.currentTarget.value)
           }}

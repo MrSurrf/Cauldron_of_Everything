@@ -1,5 +1,6 @@
 import {
   IconButton,
+  ScrollArea,
   TextInput,
   Tooltip,
 } from '../../../shared/ui'
@@ -23,7 +24,9 @@ export type HitDicePoolPatch = Partial<
 >
 
 export type HitDiceBlockProps = {
+  compact?: boolean
   defaultOpen?: boolean
+  fill?: boolean
   onAdd?: () => void
   onOpenChange?: (open: boolean) => void
   onPoolChange?: (
@@ -52,7 +55,9 @@ function parseOptionalNumber(value: string) {
 }
 
 export function HitDiceBlock({
+  compact = false,
   defaultOpen = true,
+  fill = false,
   onAdd,
   onOpenChange,
   onPoolChange,
@@ -78,13 +83,21 @@ export function HitDiceBlock({
           </Tooltip>
         ) : undefined
       }
+      className={styles.hitDiceRoot}
+      data-compact={compact || undefined}
+      data-fill={fill || undefined}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       open={open}
       title={title}
     >
-      {pools.length > 0 ? (
-        <div className={styles.diceList}>
+      <ScrollArea
+        aria-label={title}
+        orientation="vertical"
+        rootClassName={styles.diceScroll}
+      >
+        {pools.length > 0 ? (
+          <div className={styles.diceList}>
           {pools.map((pool, poolIndex) => (
             <div key={pool.id} className={styles.diceRow}>
               <label className={styles.fieldLabel}>
@@ -165,10 +178,11 @@ export function HitDiceBlock({
               )}
             </div>
           ))}
-        </div>
-      ) : (
-        <p className={styles.empty}>Пулы костей не добавлены.</p>
-      )}
+          </div>
+        ) : (
+          <p className={styles.empty}>Пулы костей не добавлены.</p>
+        )}
+      </ScrollArea>
     </CollapsibleSection>
   )
 }

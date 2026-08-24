@@ -86,8 +86,13 @@
   top: 0;
   left: 50%;
 
+  max-width: calc(100% - var(--space-2));
   padding: var(--space-1);
   gap: var(--space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
 
   filter:
     drop-shadow(
@@ -107,6 +112,10 @@
       var(--motion-duration-fast)
       var(--motion-easing-standard),
     visibility 0s linear var(--motion-duration-fast);
+}
+
+.formattingToolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .editor:focus-within .formattingToolbar {

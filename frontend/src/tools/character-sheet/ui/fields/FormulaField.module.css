@@ -3,19 +3,23 @@
   isolation: isolate;
   display: grid;
   min-width: 0;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
 .label {
   display: flex;
   overflow: hidden;
-  padding-inline-end: calc(var(--icon-size-md) + var(--space-1));
+  padding-inline-end:
+    calc(
+      var(--sheet-icon-control-size, 1.125rem) +
+        var(--sheet-tight-gap, var(--space-1))
+    );
   align-items: baseline;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   letter-spacing: 0.025em;
-  line-height: var(--line-height-tight);
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -23,7 +27,7 @@
 .labelDetail {
   flex: 0 0 auto;
   color: var(--color-text-disabled);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -64,8 +68,10 @@
 }
 
 .settingsButton[data-size='sm'] {
-  --icon-button-size: calc(var(--icon-size-md) + var(--space-1));
-  --icon-button-glyph-size: calc(var(--icon-size-sm) - var(--space-1));
+  --icon-button-size:
+    var(--sheet-icon-control-size, 1.125rem);
+  --icon-button-glyph-size:
+    var(--sheet-icon-glyph-size, 0.6875rem);
   --button-border: transparent;
   --button-inner-border: transparent;
   --button-surface-start: transparent;
@@ -114,7 +120,7 @@
 
 .error {
   color: var(--color-status-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
@@ -163,16 +169,21 @@
     minmax(calc(var(--icon-size-lg) + var(--space-1)), auto)
     minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
 .field[data-presentation='list'] .label {
   grid-column: 2;
   grid-row: 1;
-  padding-inline-end: calc(var(--icon-size-md) + var(--space-1));
+  padding-inline-end:
+    calc(
+      var(--sheet-icon-control-size, 1.125rem) +
+        var(--sheet-tight-gap, var(--space-1))
+    );
   color: var(--color-text-primary);
   font-size: var(--sheet-body-size, var(--font-size-sm));
   letter-spacing: 0;
+  line-height: 1.15;
 }
 
 .field[data-presentation='list'] .control {
@@ -188,7 +199,7 @@
   min-height: var(--icon-size-sm);
   padding: 0 var(--space-1);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-tight);
+  line-height: 1.15;
   text-align: center;
 }
 
@@ -206,13 +217,55 @@
 }
 
 .field[data-presentation='stat'] {
-  --sheet-value-size:
-    max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+  --sheet-value-size: var(--sheet-large-value-size, var(--font-size-xl));
 
   min-height: calc(var(--control-height-lg) + var(--space-2));
-  padding: var(--space-1) var(--space-2);
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
   place-content: center;
   text-align: center;
+}
+
+.field[data-compact='true'] {
+  gap: 0;
+}
+
+.field[data-compact='true'][data-presentation='stat'],
+.field[data-compact='true'][data-presentation='shield'] {
+  min-height: 0;
+  padding: var(--sheet-tight-gap, var(--space-1));
+}
+
+.field[data-compact='true'][data-presentation='stat'] .label,
+.field[data-compact='true'][data-presentation='shield'] .label {
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  line-height: 1.1;
+}
+
+.field[data-compact='true'][data-presentation='stat']
+  .label:not([data-visibility='sr-only']) {
+  padding-inline: var(--sheet-tight-gap, var(--space-1));
+  justify-content: center;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-compact='true'][data-presentation='stat']
+  .label:not([data-visibility='sr-only'])
+  .labelText {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-compact='true'] .control,
+.field[data-compact='true'] .control input,
+.field[data-compact='true'] .control output {
+  min-height: min(
+    var(--icon-size-md),
+    var(--sheet-control-height, var(--icon-size-md))
+  );
 }
 
 .field[data-presentation='stat'] .label {
@@ -225,7 +278,7 @@
 
 .field[data-presentation='stat'] .control {
   width: 100%;
-  min-height: var(--control-height-sm);
+  min-height: var(--sheet-control-height, var(--control-height-sm));
   border-bottom-color: transparent;
   background: transparent;
 }
@@ -258,8 +311,7 @@
       var(--color-content-border) 64%,
       var(--color-border-accent)
     );
-  --sheet-value-size:
-    max(var(--font-size-xl), var(--sheet-heading-size, var(--font-size-xl)));
+  --sheet-value-size: var(--sheet-large-value-size, var(--font-size-xl));
 
   min-height: calc(var(--control-height-lg) + var(--space-5));
   padding: var(--space-2) var(--space-3) var(--space-4);
@@ -300,16 +352,32 @@
 }
 
 .field[data-presentation='shield'] .label {
-  padding-inline: var(--space-3);
-  justify-content: center;
   color: var(--palette-purple-300);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+.field[data-presentation='shield']
+  .label:not([data-visibility='sr-only']) {
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
+  justify-content: center;
+  overflow: visible;
+  line-height: 1.1;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-presentation='shield']
+  .label:not([data-visibility='sr-only'])
+  .labelText {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .field[data-presentation='shield'] .control {
-  min-height: var(--control-height-sm);
+  min-height: var(--sheet-control-height, var(--control-height-sm));
   border-bottom: 0;
   background: transparent;
 }

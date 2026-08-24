@@ -1,4 +1,6 @@
 import {
+  characterSheetActions,
+  characterSheetReducer,
   createClientId,
   featureUseFormulaVariable,
   resourceFormulaVariable,
@@ -13,6 +15,9 @@ import styles from './CharacterFeaturesSection.module.css'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterFeaturesSectionProps = {
+  className?: string
+  editorClassName?: string
+  rows?: number
   sheet: CharacterSheetViewModel
 }
 
@@ -30,6 +35,90 @@ function compactedFeature(
 ) {
   return features.find((feature) =>
     feature.id.startsWith('feature-notes-'),
+  )
+}
+
+function directiveSource(header: string) {
+  const source = header.match(
+    /\bsource\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s}]+))/i,
+  )
+
+  return source?.[1] ?? source?.[2] ?? source?.[3] ?? null
+}
+
+function replaceDirectiveNumber(
+  header: string,
+  attribute: 'current' | 'maximum',
+  value: number,
+) {
+  const attributePattern = new RegExp(
+    `(\\b${attribute}\\s*=\\s*)(?:"[^"]*"|'[^']*'|[^\\s}]+)`,
+    'i',
+  )
+
+  if (attributePattern.test(header)) {
+    return header.replace(
+      attributePattern,
+      (_match, prefix: string) => `${prefix}${value}`,
+    )
+  }
+
+  return header.replace(/}\s*$/, (closing) =>
+    ` ${attribute}=${value}${closing}`,
+  )
+}
+
+function synchronizeStructuredResources(
+  value: string,
+  features: readonly CharacterFeature[],
+  resources: readonly ResourcePool[],
+  valueFor: CharacterSheetViewModel['valueFor'],
+) {
+  return value.replace(
+    /^:::resource\[[^\]\r\n]*\](?:\{[^}\r\n]*\})?\s*$/gim,
+    (header) => {
+      const source = directiveSource(header)
+      if (!source) return header
+
+      const separator = source.indexOf(':')
+      if (separator <= 0 || separator === source.length - 1) {
+        return header
+      }
+
+      const kind = source.slice(0, separator)
+      const id = source.slice(separator + 1)
+      let values: readonly [number | null, number | null]
+
+      if (kind === 'resource') {
+        if (!resources.some((resource) => resource.id === id)) {
+          return header
+        }
+
+        values = [
+          valueFor(resourceFormulaVariable(id, 'current')),
+          valueFor(resourceFormulaVariable(id, 'maximum')),
+        ]
+      } else if (kind === 'feature') {
+        if (!features.some((feature) => feature.id === id && feature.uses)) {
+          return header
+        }
+
+        values = [
+          valueFor(featureUseFormulaVariable(id, 'current')),
+          valueFor(featureUseFormulaVariable(id, 'maximum')),
+        ]
+      } else {
+        return header
+      }
+
+      const [current, maximum] = values
+
+      return replaceDirectiveNumber(
+        replaceDirectiveNumber(header, 'current', current ?? 0),
+        'maximum',
+        maximum ?? 0,
+      )
+    },
   )
 }
 
@@ -121,7 +210,14 @@ function featuresToText(
   valueFor: CharacterSheetViewModel['valueFor'],
 ) {
   const compacted = compactedFeature(features)
-  if (compacted) return compacted.description
+  if (compacted) {
+    return synchronizeStructuredResources(
+      compacted.description,
+      features,
+      resources,
+      valueFor,
+    )
+  }
 
   const featureNotes = features
     .map((feature) => {
@@ -200,12 +296,14 @@ function featuresToText(
 }
 
 export function CharacterFeaturesSection({
+  className,
+  editorClassName,
+  rows = 10,
   sheet,
 }: CharacterFeaturesSectionProps) {
   const {
     dispatch,
     document,
-    updateNumericField,
     valueFor,
   } = sheet
   const compacted = compactedFeature(document.features)
@@ -240,67 +338,90 @@ export function CharacterFeaturesSection({
   }
 
   return (
-    <SheetSection title="Особенности, умения и заметки">
+    <SheetSection
+      className={className}
+      title="Особенности, умения и заметки"
+    >
       <CharacterNotesEditor
         accessibleLabel="Особенности, умения и заметки"
-        className={styles.featuresEditor}
+        className={[styles.featuresEditor, editorClassName]
+          .filter(Boolean)
+          .join(' ')}
+        fill={true}
         placeholder="Особенности персонажа, способности и заметки..."
-        rows={10}
+        rows={rows}
         showStructureActions={true}
-        onStructuredResourceChange={
-          compacted
-            ? undefined
-            : (source, current) => {
-                const separator = source.indexOf(':')
-                if (separator <= 0 || separator === source.length - 1) {
-                  return
-                }
+        onStructuredResourceChange={(source, current, nextValue) => {
+          const separator = source.indexOf(':')
+          if (separator <= 0 || separator === source.length - 1) {
+            return
+          }
 
-                const kind = source.slice(0, separator)
-                const id = source.slice(separator + 1)
+          const kind = source.slice(0, separator)
+          const id = source.slice(separator + 1)
+          let nextDocument = document
 
-                if (kind === 'resource') {
-                  const resource = document.resources.find(
-                    (entry) => entry.id === id,
-                  )
-                  if (!resource) return
+          if (kind === 'resource') {
+            const resource = document.resources.find(
+              (entry) => entry.id === id,
+            )
+            if (!resource) return
 
-                  updateNumericField(
-                    {
-                      field: 'current',
-                      kind: 'resource',
-                      resourceId: id,
-                    },
-                    {
-                      ...resource.current,
-                      manualValue: current,
-                      mode: 'manual',
-                    },
-                  )
-                  return
-                }
+            nextDocument = characterSheetReducer(
+              nextDocument,
+              characterSheetActions.setNumericField(
+                {
+                  field: 'current',
+                  kind: 'resource',
+                  resourceId: id,
+                },
+                {
+                  ...resource.current,
+                  manualValue: current,
+                  mode: 'manual',
+                },
+              ),
+            )
+          } else if (kind === 'feature') {
+            const feature = document.features.find(
+              (entry) => entry.id === id,
+            )
+            if (!feature?.uses) return
 
-                if (kind === 'feature') {
-                  const feature = document.features.find(
-                    (entry) => entry.id === id,
-                  )
-                  if (!feature?.uses) return
+            nextDocument = characterSheetReducer(
+              nextDocument,
+              characterSheetActions.setNumericField(
+                {
+                  featureId: id,
+                  field: 'current',
+                  kind: 'featureUse',
+                },
+                {
+                  ...feature.uses.current,
+                  manualValue: current,
+                  mode: 'manual',
+                },
+              ),
+            )
+          } else {
+            return
+          }
 
-                  updateNumericField(
-                    {
-                      featureId: id,
-                      field: 'current',
-                      kind: 'featureUse',
-                    },
-                    {
-                      ...feature.uses.current,
-                      manualValue: current,
-                      mode: 'manual',
-                    },
-                  )
-                }
-              }
-        }
+          if (compacted) {
+            nextDocument = characterSheetReducer(
+              nextDocument,
+              {
+                type: 'feature/update',
+                id: compacted.id,
+                patch: { description: nextValue },
+              },
+            )
+          }
+
+          dispatch(
+            characterSheetActions.replaceDocument(nextDocument),
+          )
+        }}
         value={featuresToText(
           document.features,
           document.resources,

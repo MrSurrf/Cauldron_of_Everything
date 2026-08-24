@@ -127,4 +127,54 @@ describe('characterSheetReducer', () => {
       'class-first',
     ])
   })
+
+  it('добавляет единый текст владений без потери прежних данных', () => {
+    const document = createEmptyCharacterSheet({
+      id: 'proficiencies-text-test',
+    })
+    document.proficiencies = {
+      languages: ['Общий', 'Эльфийский'],
+      armor: ['Лёгкие доспехи'],
+      weapons: ['Простое оружие'],
+      tools: ['Воровские инструменты'],
+      notes: 'Редкое обучение',
+      languagesText: 'Общий\nЭльфийский',
+      proficienciesText:
+        'Лёгкие доспехи, простое оружие',
+    }
+
+    const next = characterSheetReducer(document, {
+      type: 'proficiencies/patch',
+      patch: {
+        contentText:
+          'Общий, Эльфийский, лёгкие доспехи',
+      },
+    })
+
+    expect(next.proficiencies.languages).toEqual(
+      document.proficiencies.languages,
+    )
+    expect(next.proficiencies.armor).toEqual(
+      document.proficiencies.armor,
+    )
+    expect(next.proficiencies.weapons).toEqual(
+      document.proficiencies.weapons,
+    )
+    expect(next.proficiencies.tools).toEqual(
+      document.proficiencies.tools,
+    )
+    expect(next.proficiencies.notes).toBe(
+      document.proficiencies.notes,
+    )
+    expect(next.proficiencies.languagesText).toBe(
+      document.proficiencies.languagesText,
+    )
+    expect(next.proficiencies.proficienciesText).toBe(
+      document.proficiencies.proficienciesText,
+    )
+    expect(next.proficiencies.contentText).toBe(
+      'Общий, Эльфийский, лёгкие доспехи',
+    )
+    expect(next.inventory).toBe(document.inventory)
+  })
 })

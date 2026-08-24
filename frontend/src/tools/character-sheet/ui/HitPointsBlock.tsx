@@ -12,6 +12,7 @@ export type HitPointsPatch = {
 }
 
 export type HitPointsBlockProps = {
+  compact?: boolean
   current: HitPointsValue
   defaultOpen?: boolean
   maximum: HitPointsValue
@@ -38,6 +39,7 @@ function parseHitPoints(value: string) {
 }
 
 export function HitPointsBlock({
+  compact = false,
   current,
   defaultOpen = true,
   maximum,
@@ -69,6 +71,8 @@ export function HitPointsBlock({
   return (
     <CollapsibleSection
       collapsible={false}
+      className={styles.hitPointsRoot}
+      data-compact={compact || undefined}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       open={open}

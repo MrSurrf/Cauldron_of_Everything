@@ -144,7 +144,7 @@
   bottom: var(--space-1);
   left: var(--space-1);
 
-  padding: var(--space-2) var(--space-1);
+  padding: var(--sheet-tight-gap, var(--space-1)) var(--space-1);
 
   background:
     linear-gradient(
@@ -157,7 +157,7 @@
 
   color: var(--color-text-primary);
   font-family: var(--font-family-body);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   line-height: var(--line-height-tight);
   text-align: center;
 
@@ -182,11 +182,16 @@
   right: var(--space-2);
 
   display: grid;
-  width: var(--control-height-sm);
-  height: var(--control-height-sm);
-  padding: var(--space-1);
+  width: var(--sheet-icon-control-size, 1.125rem);
+  height: var(--sheet-icon-control-size, 1.125rem);
+  padding: 0;
 
-  border: var(--border-width-default) solid var(--color-border-accent);
+  border: var(--border-width-default) solid
+    color-mix(
+      in srgb,
+      var(--color-border-accent) 58%,
+      transparent
+    );
   place-items: center;
 
   background: color-mix(in srgb, var(--color-canvas-background) 90%, transparent);
@@ -197,8 +202,8 @@
 }
 
 .remove svg {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
+  width: var(--sheet-icon-glyph-size, 0.6875rem);
+  height: var(--sheet-icon-glyph-size, 0.6875rem);
 }
 
 .remove:hover {

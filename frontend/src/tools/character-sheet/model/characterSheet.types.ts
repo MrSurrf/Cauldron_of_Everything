@@ -234,6 +234,14 @@ export type CharacterProficiencies = {
   weapons: string[]
   tools: string[]
   notes: string
+  /**
+   * Свободный текст единого редактора. Если поле отсутствует, UI безопасно
+   * собирает его из прежних текстовых представлений и структурированных данных.
+   * Остальные поля сохраняются для обратной совместимости и будущих связей.
+   */
+  contentText?: string | null
+  languagesText?: string | null
+  proficienciesText?: string | null
 }
 
 export type CharacterSheetDocument = {

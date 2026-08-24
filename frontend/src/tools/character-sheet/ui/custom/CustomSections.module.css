@@ -1,7 +1,7 @@
 .sections {
   display: grid;
   min-width: 0;
-  gap: var(--space-3);
+  gap: var(--sheet-gap, var(--space-3));
 }
 
 .heading {
@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--sheet-layout-gap, var(--space-2));
 }
 
 .heading h2 {
@@ -19,7 +19,7 @@
   flex: 1 1 10rem;
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-heading-size, var(--font-size-md));
+  font-size: var(--sheet-section-title-size, var(--font-size-md));
   font-weight: 400;
   overflow-wrap: anywhere;
 }
@@ -35,7 +35,7 @@
 .tableWrap {
   display: grid;
   min-width: 0;
-  gap: var(--space-2);
+  gap: var(--sheet-layout-gap, var(--space-2));
 }
 
 .tableContent {
@@ -46,8 +46,8 @@
 .field {
   display: grid;
   min-width: 0;
-  padding: var(--space-2);
-  gap: var(--space-2);
+  padding: var(--sheet-layout-gap, var(--space-2));
+  gap: var(--sheet-layout-gap, var(--space-2));
   border: var(--border-width-default) solid var(--color-content-border);
 }
 
@@ -57,7 +57,7 @@
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--sheet-layout-gap, var(--space-2));
 }
 
 .columnHeader {
@@ -82,13 +82,13 @@
 
 .table th,
 .table td {
-  padding: var(--space-1);
+  padding: var(--sheet-tight-gap, var(--space-1));
   border: var(--border-width-default) solid var(--color-content-border);
 }
 
 .table th {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
   font-weight: 400;
   text-align: start;
 }
@@ -99,11 +99,4 @@
   color: var(--color-text-disabled);
   font-size: var(--font-size-sm);
   text-align: center;
-}
-
-@container character-sheet (max-width: 24rem) {
-  .heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
 }

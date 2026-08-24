@@ -30,6 +30,7 @@ export type EquipmentSectionProps = {
   defaultOpen?: boolean
   emptyText?: string
   entries: readonly EquipmentEntry[]
+  fill?: boolean
   onAdd?: () => void
   onEntryChange?: (
     id: string,
@@ -51,6 +52,7 @@ export function EquipmentSection({
   defaultOpen = true,
   emptyText = 'Снаряжение пока не добавлено.',
   entries,
+  fill = false,
   onAdd,
   onEntryChange,
   onEntryRemove,
@@ -75,6 +77,7 @@ export function EquipmentSection({
         ) : undefined
       }
       className={styles.tableRoot}
+      data-fill={fill || undefined}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       open={open}
@@ -85,7 +88,7 @@ export function EquipmentSection({
           aria-label={title}
           className={styles.tableViewport}
           contentClassName={styles.tableContent}
-          orientation="horizontal"
+          orientation="both"
           rootClassName={styles.tableScroll}
         >
           <table className={`${styles.table} ${styles.equipmentTable}`}>

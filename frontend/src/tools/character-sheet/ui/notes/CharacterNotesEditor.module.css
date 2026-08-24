@@ -3,6 +3,50 @@
   min-width: 0;
 }
 
+.editor button[data-icon-only='true'][data-size] {
+  --icon-button-size:
+    var(--sheet-icon-control-size, 1.125rem);
+  --icon-button-glyph-size:
+    var(--sheet-icon-glyph-size, 0.6875rem);
+}
+
+.editor [role='toolbar']:has(button[data-icon-only='true']) {
+  padding: var(--border-width-default);
+  border-color:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 56%,
+      transparent
+    );
+  gap: var(--border-width-default);
+  box-shadow: none;
+}
+
+.editor [role='group']:has(button[data-icon-only='true']) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: var(--border-width-default);
+  box-shadow: none;
+}
+
+.editor[data-fill='true'] {
+  height: 100%;
+  min-height: 0;
+}
+
+.editor[data-fill='true'] > * {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+.editor[data-fill='true'] textarea {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
 .frame {
   --input-border:
     color-mix(
@@ -21,6 +65,14 @@
 
   min-height: 0;
   filter: none;
+}
+
+.editor .frame {
+  --text-field-extra-block-end:
+    calc(
+      var(--sheet-icon-control-size, 1.125rem) +
+        var(--space-1)
+    );
 }
 
 .textarea {
@@ -161,32 +213,27 @@
   bottom: var(--space-2);
 
   display: flex;
-  padding: var(--space-1);
+  padding: 0;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--border-width-default);
 
-  border: var(--border-width-default) solid var(--color-content-border);
-  background:
-    linear-gradient(
-      180deg,
-      var(--color-surface-default),
-      var(--color-surface-muted)
-    );
-  box-shadow: var(--shadow-panel);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .previewScaleButton[data-size='sm'] {
-  --button-corner-shape-offset: var(--space-1);
-  --button-inner-frame-inset: var(--border-width-default);
-  --icon-button-glyph-size: var(--icon-size-sm);
-  --icon-button-size: calc(var(--control-height-sm) - var(--space-2));
+  --icon-button-glyph-size:
+    var(--sheet-icon-glyph-size, 0.6875rem);
+  --icon-button-size:
+    var(--sheet-icon-control-size, 1.125rem);
 }
 
 .previewScaleGlyph {
   display: inline-grid;
   place-items: center;
   font-family: var(--font-family-body);
-  font-size: var(--font-size-md);
+  font-size: var(--sheet-icon-glyph-size, 0.6875rem);
   font-weight: 400;
   line-height: 1;
 }
@@ -404,26 +451,40 @@
 
 .resourceCounter {
   display: inline-grid;
-  grid-template-columns: 1.55em auto 1.55em;
+  grid-template-columns:
+    var(--sheet-icon-control-size, 1.125rem)
+    auto
+    var(--sheet-icon-control-size, 1.125rem);
   align-items: center;
-  gap: 0.25em;
+  gap: var(--border-width-default);
 }
 
 .resourceCounter button {
   display: inline-grid;
   place-items: center;
 
-  width: 1.55em;
-  height: 1.55em;
+  width: var(--sheet-icon-control-size, 1.125rem);
+  height: var(--sheet-icon-control-size, 1.125rem);
   padding: 0;
   border:
     var(--border-width-default)
-    solid var(--color-content-border);
+    solid
+    color-mix(
+      in srgb,
+      var(--color-content-border) 54%,
+      transparent
+    );
 
-  background: var(--color-surface-muted);
+  background:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 22%,
+      transparent
+    );
   color: var(--color-text-primary);
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  font-size: var(--sheet-icon-glyph-size, 0.6875rem);
   line-height: 1;
 }
 

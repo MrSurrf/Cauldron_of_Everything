@@ -29,6 +29,7 @@ export type AttacksTableProps = {
   attacks: readonly AttackTableEntry[]
   defaultOpen?: boolean
   emptyText?: string
+  fill?: boolean
   onAdd?: () => void
   onAttackChange?: (
     id: string,
@@ -47,6 +48,7 @@ export function AttacksTable({
   attacks,
   defaultOpen = true,
   emptyText = 'Добавьте первую атаку или заклинание.',
+  fill = false,
   onAdd,
   onAttackChange,
   onAttackRemove,
@@ -72,6 +74,7 @@ export function AttacksTable({
         ) : undefined
       }
       className={styles.tableRoot}
+      data-fill={fill || undefined}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       open={open}
@@ -82,7 +85,7 @@ export function AttacksTable({
           aria-label={title}
           className={styles.tableViewport}
           contentClassName={styles.tableContent}
-          orientation="horizontal"
+          orientation="both"
           rootClassName={styles.tableScroll}
         >
           <table className={styles.table}>

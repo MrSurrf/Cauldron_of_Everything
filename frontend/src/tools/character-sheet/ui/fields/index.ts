@@ -2,6 +2,7 @@ export { ComputedValue } from './ComputedValue'
 export type {
   ComputedValueProps,
   ComputedValueResult,
+  NumericSignDisplay,
 } from './ComputedValue'
 export { FormulaField } from './FormulaField'
 export type {

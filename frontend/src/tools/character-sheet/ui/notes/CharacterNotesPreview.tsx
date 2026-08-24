@@ -83,6 +83,7 @@ export type CharacterNotesPreviewProps = {
   onStructuredResourceChange?: (
     source: string,
     current: number,
+    nextValue: string,
   ) => void
   onTextScaleChange: (direction: -1 | 1) => void
   onValueChange: (value: string) => void
@@ -468,16 +469,6 @@ export function CharacterNotesPreview({
       0,
       Math.min(maximum, current + direction),
     )
-    const structuredSource = block.attributes.source
-
-    if (structuredSource && onStructuredResourceChange) {
-      onStructuredResourceChange(
-        structuredSource,
-        nextCurrent,
-      )
-      return
-    }
-
     const header = value.slice(
       block.headerRange.start,
       block.headerRange.end,
@@ -502,11 +493,22 @@ export function CharacterNotesPreview({
       nextHeader = `${header}{current=${nextCurrent}}`
     }
 
-    onValueChange(
+    const nextValue =
       value.slice(0, block.headerRange.start) +
         nextHeader +
-        value.slice(block.headerRange.end),
-    )
+        value.slice(block.headerRange.end)
+    const structuredSource = block.attributes.source
+
+    if (structuredSource && onStructuredResourceChange) {
+      onStructuredResourceChange(
+        structuredSource,
+        nextCurrent,
+        nextValue,
+      )
+      return
+    }
+
+    onValueChange(nextValue)
   }
 
   function renderInline(

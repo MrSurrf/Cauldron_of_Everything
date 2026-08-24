@@ -12,6 +12,7 @@ import { FormulaIcon, SettingsIcon } from '../icons'
 import {
   ComputedValue,
   type ComputedValueResult,
+  type NumericSignDisplay,
 } from './ComputedValue'
 import { NumericEditor } from './NumericEditor'
 import sheetFieldStyles from './SheetFields.module.css'
@@ -31,6 +32,7 @@ export type FormulaVariableOption = {
 export type FormulaFieldProps = {
   accessibleLabel?: string
   className?: string
+  compact?: boolean
   defaultFormula?: string
   disabled?: boolean
   labelDetail?: string
@@ -40,6 +42,7 @@ export type FormulaFieldProps = {
   presentation?: 'default' | 'list' | 'shield' | 'stat'
   prefixPositive?: boolean
   result: ComputedValueResult
+  signDisplay?: NumericSignDisplay
   value: FormulaFieldValue
   variables?: readonly FormulaVariableOption[]
 }
@@ -52,6 +55,7 @@ const modeOptions = [
 export function FormulaField({
   accessibleLabel,
   className,
+  compact = false,
   defaultFormula,
   disabled = false,
   labelDetail,
@@ -61,6 +65,7 @@ export function FormulaField({
   presentation = 'default',
   prefixPositive = false,
   result,
+  signDisplay = 'standard',
   value,
   variables = [],
 }: FormulaFieldProps) {
@@ -157,6 +162,7 @@ export function FormulaField({
       className={[styles.field, className]
         .filter(Boolean)
         .join(' ')}
+      data-compact={compact || undefined}
       data-mode={value.mode}
       data-presentation={presentation}
       data-status={result.status}
@@ -179,6 +185,9 @@ export function FormulaField({
         {value.mode === 'manual' ? (
           <NumericEditor
             aria-label={controlLabel}
+            compactPositiveSign={
+              prefixPositive && signDisplay === 'compact'
+            }
             disabled={disabled}
             presentation={
               presentation === 'stat' ||
@@ -199,6 +208,7 @@ export function FormulaField({
             aria-label={controlLabel}
             prefixPositive={prefixPositive}
             result={result}
+            signDisplay={signDisplay}
           />
         )}
 

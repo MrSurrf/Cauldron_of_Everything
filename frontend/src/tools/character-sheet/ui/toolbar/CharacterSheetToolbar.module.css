@@ -4,10 +4,11 @@
   display: flex;
   min-width: 0;
   min-height: var(--control-height-sm);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--sheet-layout-gap, var(--space-3));
   border-bottom:
     var(--border-width-default) solid
     var(--sheet-frame, var(--color-content-border));
@@ -61,7 +62,7 @@
   margin: 0;
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--font-size-sm);
+  font-size: var(--sheet-section-title-size, var(--font-size-sm));
   font-weight: 400;
   line-height: var(--line-height-tight);
 }
@@ -71,18 +72,11 @@
   min-width: 0;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+  flex-wrap: nowrap;
+  gap: var(--sheet-tight-gap, var(--space-1));
 }
 
-@container character-sheet (max-width: 30rem) {
-  .toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
+.actions :global(button[data-size='sm']) {
+  --icon-button-size: var(--sheet-row-height, var(--control-height-sm));
+  --icon-button-glyph-size: var(--icon-size-sm);
 }

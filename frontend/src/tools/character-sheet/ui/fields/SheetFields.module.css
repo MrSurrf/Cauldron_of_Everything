@@ -17,8 +17,9 @@
 .compactFrame input,
 .compactFrame textarea {
   min-height: var(--sheet-control-height, var(--control-height-sm));
-  padding-inline: var(--space-2);
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
   font-size: var(--sheet-body-size, var(--font-size-sm));
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
 .compactField {
@@ -26,15 +27,19 @@
 }
 
 .compactField label {
-  left: var(--space-2);
-  right: var(--space-2);
-  font-size: var(--sheet-body-size, var(--font-size-sm));
+  left: var(--sheet-layout-gap, var(--space-2));
+  right: var(--sheet-layout-gap, var(--space-2));
+  font-size: var(--sheet-label-size, var(--font-size-xs)) !important;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
 .numericInput {
   text-align: center;
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-value-size, var(--font-size-lg)) !important;
+  font-size: var(
+    --sheet-value-size,
+    var(--sheet-ordinary-value-size, var(--font-size-lg))
+  ) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -77,7 +82,8 @@
   width: 100%;
   min-width: 0;
   min-height: var(--sheet-control-height, var(--control-height-sm));
-  padding: var(--space-1) var(--space-2);
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
   border: 0;
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 78%, transparent);
@@ -90,6 +96,7 @@
     );
   color: var(--color-text-primary);
   font: inherit;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
   transition:
     border-color var(--motion-duration-fast)
     var(--motion-easing-standard),

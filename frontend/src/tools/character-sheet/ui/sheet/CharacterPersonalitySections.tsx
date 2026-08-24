@@ -5,11 +5,14 @@ import {
 } from '../../model'
 import { CharacterNotesEditor } from '../notes'
 import { SheetSection } from '../SheetSection'
-import styles from '../../CharacterSheetTool.module.css'
 import { personalityLabels } from './sheet.constants'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
-export type CharacterPersonalitySectionsProps = {
+export type CharacterPersonalitySectionProps = {
+  className?: string
+  editorClassName?: string
+  rows?: number
+  section: Exclude<PersonalitySectionKey, 'traits'>
   sheet: CharacterSheetViewModel
 }
 
@@ -44,16 +47,18 @@ function entriesToText(
     .join('\n\n')
 }
 
-export function CharacterPersonalitySections({
+export function CharacterPersonalitySection({
+  className,
+  editorClassName,
+  rows = 3,
+  section,
   sheet,
-}: CharacterPersonalitySectionsProps) {
+}: CharacterPersonalitySectionProps) {
   const { dispatch, document } = sheet
+  const entries = document.personality[section]
+  const label = personalityLabels[section]
 
-  function updateSection(
-    section: PersonalitySectionKey,
-    value: string,
-  ) {
-    const entries = document.personality[section]
+  function updateSection(value: string) {
     const compacted = compactedEntry(entries, section)
 
     if (!compacted) {
@@ -78,33 +83,17 @@ export function CharacterPersonalitySections({
   }
 
   return (
-    <div
-      aria-label="Характер и заметки"
-      className={styles.personalityGrid}
-      role="group"
-    >
-      {(Object.keys(personalityLabels) as PersonalitySectionKey[])
-        .map((section) => {
-          const label = personalityLabels[section]
-
-          return (
-            <SheetSection key={section} title={label}>
-              <CharacterNotesEditor
-                accessibleLabel={label}
-                placeholder={`${label}...`}
-                rows={3}
-                showStructureActions={true}
-                value={entriesToText(
-                  document.personality[section],
-                  section,
-                )}
-                onValueChange={(value) => {
-                  updateSection(section, value)
-                }}
-              />
-            </SheetSection>
-          )
-        })}
-    </div>
+    <SheetSection className={className} title={label}>
+      <CharacterNotesEditor
+        accessibleLabel={label}
+        className={editorClassName}
+        fill={true}
+        placeholder={`${label}...`}
+        rows={rows}
+        showStructureActions={true}
+        value={entriesToText(entries, section)}
+        onValueChange={updateSection}
+      />
+    </SheetSection>
   )
 }
