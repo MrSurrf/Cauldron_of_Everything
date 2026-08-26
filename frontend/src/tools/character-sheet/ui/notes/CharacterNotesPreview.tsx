@@ -14,63 +14,18 @@ import {
   Tooltip,
 } from '../../../../shared/ui'
 import {
+  parseContentInline,
+  parseContentSource,
+  safeContentLinkTarget,
+  type ContentBlock,
+  type ContentInline,
+} from '../../../../shared/ui/ContentEditor/contentCodec'
+import {
   describeDiceRoll,
   rollDiceExpression,
   type DiceRollResult,
 } from './diceExpression'
 import styles from './CharacterNotesEditor.module.css'
-
-type SourceRange = {
-  end: number
-  start: number
-}
-
-type NotesBlock =
-  | {
-      key: string
-      kind: 'paragraph'
-      lines: readonly string[]
-    }
-  | {
-      key: string
-      kind: 'heading'
-      level: number
-      text: string
-    }
-  | {
-      key: string
-      kind: 'divider'
-    }
-  | {
-      key: string
-      kind: 'list'
-      listKind: 'ordered' | 'unordered' | 'check'
-      items: readonly {
-        checked?: boolean
-        text: string
-      }[]
-    }
-  | {
-      attributes: Readonly<Record<string, string>>
-      body: readonly NotesBlock[]
-      headerRange: SourceRange
-      key: string
-      kind: 'resource'
-      title: string
-    }
-  | {
-      body: readonly NotesBlock[]
-      key: string
-      kind: 'collapsible'
-      title: string
-    }
-
-type SourceLine = {
-  end: number
-  nextStart: number
-  start: number
-  text: string
-}
 
 type PreviewStyle = CSSProperties & {
   '--notes-preview-lines': string
@@ -96,286 +51,6 @@ export type CharacterNotesPreviewProps = {
 type ActiveRoll = {
   id: string
   result: DiceRollResult
-}
-
-const directivePattern =
-  /^:::(resource|collapsible)\[([^\]]*)\](?:\{([^}]*)\})?\s*$/i
-const headingPattern = /^(#{1,6})\s+(.+)$/
-const orderedItemPattern = /^\s*\d+[.)]\s+(.+)$/
-const checkItemPattern =
-  /^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/
-const unorderedItemPattern = /^\s*[-*+]\s+(.+)$/
-
-function getSourceLines(
-  source: string,
-  baseOffset: number,
-) {
-  const lines: SourceLine[] = []
-  let localStart = 0
-
-  while (localStart <= source.length) {
-    const lineBreak = source.indexOf('\n', localStart)
-    const hasLineBreak = lineBreak !== -1
-    const rawEnd = hasLineBreak
-      ? lineBreak
-      : source.length
-    const textEnd =
-      rawEnd > localStart &&
-      source[rawEnd - 1] === '\r'
-        ? rawEnd - 1
-        : rawEnd
-
-    lines.push({
-      end: baseOffset + textEnd,
-      nextStart:
-        baseOffset + rawEnd + (hasLineBreak ? 1 : 0),
-      start: baseOffset + localStart,
-      text: source.slice(localStart, textEnd),
-    })
-
-    if (!hasLineBreak) break
-
-    localStart = rawEnd + 1
-  }
-
-  return lines
-}
-
-function parseAttributes(source = '') {
-  const attributes: Record<string, string> = {}
-  const pattern =
-    /([a-z][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s}]+))/gi
-  let match = pattern.exec(source)
-
-  while (match) {
-    attributes[match[1].toLowerCase()] =
-      match[2] ?? match[3] ?? match[4] ?? ''
-    match = pattern.exec(source)
-  }
-
-  return attributes
-}
-
-function beginsSpecialBlock(line: string) {
-  return (
-    directivePattern.test(line) ||
-    headingPattern.test(line) ||
-    line.trim() === '---' ||
-    orderedItemPattern.test(line) ||
-    checkItemPattern.test(line) ||
-    unorderedItemPattern.test(line)
-  )
-}
-
-function parseNotesBlocks(
-  source: string,
-  baseOffset = 0,
-): NotesBlock[] {
-  const lines = getSourceLines(source, baseOffset)
-  const blocks: NotesBlock[] = []
-  let index = 0
-
-  while (index < lines.length) {
-    const line = lines[index]
-    const trimmed = line.text.trim()
-
-    if (!trimmed) {
-      index += 1
-      continue
-    }
-
-    const directive = line.text.match(directivePattern)
-
-    if (directive) {
-      const closingIndex = lines.findIndex(
-        (candidate, candidateIndex) =>
-          candidateIndex > index &&
-          candidate.text.trim() === ':::',
-      )
-
-      if (closingIndex !== -1) {
-        const bodyStart = line.nextStart
-        const bodyEnd = lines[closingIndex].start
-        const bodySource = source.slice(
-          bodyStart - baseOffset,
-          bodyEnd - baseOffset,
-        )
-        const common = {
-          body: parseNotesBlocks(bodySource, bodyStart),
-          key: `${line.start}-${directive[1]}`,
-          title:
-            directive[2].trim() ||
-            (directive[1].toLowerCase() === 'resource'
-              ? 'Ресурс'
-              : 'Сворачиваемый блок'),
-        }
-
-        if (directive[1].toLowerCase() === 'resource') {
-          blocks.push({
-            ...common,
-            attributes: parseAttributes(directive[3]),
-            headerRange: {
-              end: line.end,
-              start: line.start,
-            },
-            kind: 'resource',
-          })
-        } else {
-          blocks.push({
-            ...common,
-            kind: 'collapsible',
-          })
-        }
-
-        index = closingIndex + 1
-        continue
-      }
-    }
-
-    const heading = line.text.match(headingPattern)
-
-    if (heading) {
-      blocks.push({
-        key: `${line.start}-heading`,
-        kind: 'heading',
-        level: heading[1].length,
-        text: heading[2],
-      })
-      index += 1
-      continue
-    }
-
-    if (trimmed === '---') {
-      blocks.push({
-        key: `${line.start}-divider`,
-        kind: 'divider',
-      })
-      index += 1
-      continue
-    }
-
-    const checkItem = line.text.match(checkItemPattern)
-
-    if (checkItem) {
-      const items: {
-        checked: boolean
-        text: string
-      }[] = []
-
-      while (index < lines.length) {
-        const item = lines[index].text.match(
-          checkItemPattern,
-        )
-
-        if (!item) break
-
-        items.push({
-          checked: item[1].toLowerCase() === 'x',
-          text: item[2],
-        })
-        index += 1
-      }
-
-      blocks.push({
-        items,
-        key: `${line.start}-check-list`,
-        kind: 'list',
-        listKind: 'check',
-      })
-      continue
-    }
-
-    const orderedItem = line.text.match(
-      orderedItemPattern,
-    )
-
-    if (orderedItem) {
-      const items: { text: string }[] = []
-
-      while (index < lines.length) {
-        const item = lines[index].text.match(
-          orderedItemPattern,
-        )
-
-        if (!item) break
-
-        items.push({ text: item[1] })
-        index += 1
-      }
-
-      blocks.push({
-        items,
-        key: `${line.start}-ordered-list`,
-        kind: 'list',
-        listKind: 'ordered',
-      })
-      continue
-    }
-
-    const unorderedItem = line.text.match(
-      unorderedItemPattern,
-    )
-
-    if (unorderedItem) {
-      const items: { text: string }[] = []
-
-      while (index < lines.length) {
-        const item = lines[index].text.match(
-          unorderedItemPattern,
-        )
-
-        if (!item || checkItemPattern.test(lines[index].text)) {
-          break
-        }
-
-        items.push({ text: item[1] })
-        index += 1
-      }
-
-      blocks.push({
-        items,
-        key: `${line.start}-unordered-list`,
-        kind: 'list',
-        listKind: 'unordered',
-      })
-      continue
-    }
-
-    const paragraphLines = [line.text]
-    index += 1
-
-    while (
-      index < lines.length &&
-      lines[index].text.trim() &&
-      !beginsSpecialBlock(lines[index].text)
-    ) {
-      paragraphLines.push(lines[index].text)
-      index += 1
-    }
-
-    blocks.push({
-      key: `${line.start}-paragraph`,
-      kind: 'paragraph',
-      lines: paragraphLines,
-    })
-  }
-
-  return blocks
-}
-
-function safeLinkTarget(source: string) {
-  const target = source.trim()
-
-  if (
-    /^(?:https?:|mailto:)/i.test(target) ||
-    (target.startsWith('/') &&
-      !target.startsWith('//')) ||
-    target.startsWith('#')
-  ) {
-    return target
-  }
-
-  return null
 }
 
 function numericAttribute(
@@ -410,7 +85,7 @@ export function CharacterNotesPreview({
   value,
 }: CharacterNotesPreviewProps) {
   const blocks = useMemo(
-    () => parseNotesBlocks(value),
+    () => parseContentSource(value),
     [value],
   )
   const [activeRoll, setActiveRoll] =
@@ -452,7 +127,7 @@ export function CharacterNotesPreview({
   }
 
   function updateResourceCurrent(
-    block: Extract<NotesBlock, { kind: 'resource' }>,
+    block: Extract<ContentBlock, { kind: 'resource' }>,
     direction: -1 | 1,
   ) {
     const current = numericAttribute(
@@ -511,32 +186,26 @@ export function CharacterNotesPreview({
     onValueChange(nextValue)
   }
 
-  function renderInline(
-    source: string,
+  function renderInlineNodes(
+    sourceNodes: readonly ContentInline[],
     keyPrefix: string,
   ): ReactNode[] {
-    const pattern =
-      /\[\[roll:([^\]\r\n]+)\]\]|\[([^\]\r\n]+)\]\(([^)\r\n]+)\)|\*\*([^*\r\n]+)\*\*|__([^_\r\n]+)__|<u>([\s\S]*?)<\/u>|\*([^*\r\n]+)\*|_([^_\r\n]+)_/gi
-    const nodes: ReactNode[] = []
-    let cursor = 0
-    let match = pattern.exec(source)
+    return sourceNodes.map((node, index) => {
+      const key = `${keyPrefix}-${node.sourceRange.start}-${index}`
 
-    while (match) {
-      if (match.index > cursor) {
-        nodes.push(source.slice(cursor, match.index))
+      if (node.kind === 'text') {
+        return <Fragment key={key}>{node.text}</Fragment>
       }
 
-      const key = `${keyPrefix}-${match.index}`
-
-      if (match[1] !== undefined) {
-        const expression = match[1].trim()
+      if (node.kind === 'roll') {
+        const expression = node.expression
         const rollId = `${key}-${expression}`
         const result =
           activeRoll?.id === rollId
             ? activeRoll.result
             : null
 
-        nodes.push(
+        return (
           <Tooltip
             key={key}
             closeDelay={0}
@@ -577,12 +246,14 @@ export function CharacterNotesPreview({
               <span aria-hidden="true">◇</span>
               {expression}
             </button>
-          </Tooltip>,
+          </Tooltip>
         )
-      } else if (match[2] !== undefined) {
-        const target = safeLinkTarget(match[3])
+      }
 
-        nodes.push(
+      if (node.kind === 'link') {
+        const target = safeContentLinkTarget(node.target)
+
+        return (
           target ? (
             <a
               key={key}
@@ -600,7 +271,7 @@ export function CharacterNotesPreview({
               }
               onClick={(event) => event.stopPropagation()}
             >
-              {renderInline(match[2], `${key}-link`)}
+              {renderInlineNodes(node.children, `${key}-link`)}
             </a>
           ) : (
             <span
@@ -608,56 +279,68 @@ export function CharacterNotesPreview({
               className={styles.invalidLink}
               title="Недопустимый адрес ссылки"
             >
-              {renderInline(match[2], `${key}-invalid-link`)}
+              {renderInlineNodes(
+                node.children,
+                `${key}-invalid-link`,
+              )}
             </span>
-          ),
-        )
-      } else if (match[4] !== undefined || match[5] !== undefined) {
-        const content = match[4] ?? match[5]
-
-        nodes.push(
-          <strong key={key}>
-            {renderInline(content, `${key}-strong`)}
-          </strong>,
-        )
-      } else if (match[6] !== undefined) {
-        nodes.push(
-          <u key={key}>
-            {renderInline(match[6], `${key}-underline`)}
-          </u>,
-        )
-      } else {
-        const content = match[7] ?? match[8]
-
-        nodes.push(
-          <em key={key}>
-            {renderInline(content, `${key}-emphasis`)}
-          </em>,
+          )
         )
       }
 
-      cursor = match.index + match[0].length
-      match = pattern.exec(source)
-    }
+      if (node.kind === 'bold') {
+        return (
+          <strong key={key}>
+            {renderInlineNodes(node.children, `${key}-strong`)}
+          </strong>
+        )
+      }
 
-    if (cursor < source.length) {
-      nodes.push(source.slice(cursor))
-    }
+      if (node.kind === 'underline') {
+        return (
+          <u key={key}>
+            {renderInlineNodes(
+              node.children,
+              `${key}-underline`,
+            )}
+          </u>
+        )
+      }
 
-    return nodes
+      return (
+        <em key={key}>
+          {renderInlineNodes(
+            node.children,
+            `${key}-emphasis`,
+          )}
+        </em>
+      )
+    })
+  }
+
+  function renderInline(
+    source: string,
+    keyPrefix: string,
+  ) {
+    return renderInlineNodes(
+      parseContentInline(source),
+      keyPrefix,
+    )
   }
 
   function renderBlocks(
-    sourceBlocks: readonly NotesBlock[],
+    sourceBlocks: readonly ContentBlock[],
   ): ReactNode {
     return sourceBlocks.map((block) => {
+      const blockKey = `${block.sourceRange.start}-${block.kind}`
+
       if (block.kind === 'paragraph') {
         return (
-          <p key={block.key} className={styles.previewParagraph}>
+          <p key={blockKey} className={styles.previewParagraph}>
             {block.lines.map((line, index) => (
-              <Fragment key={`${block.key}-${index}`}>
+              <Fragment key={`${blockKey}-${index}`}>
                 {index > 0 && <br />}
-                {renderInline(line, `${block.key}-${index}`)}
+                {renderInline(line, `${blockKey}-${index}`)}
               </Fragment>
             ))}
           </p>
@@ -672,22 +355,22 @@ export function CharacterNotesPreview({
           | 'h6'
 
         return (
-          <Heading key={block.key} className={styles.previewHeading}>
-            {renderInline(block.text, block.key)}
+          <Heading key={blockKey} className={styles.previewHeading}>
+            {renderInline(block.text, blockKey)}
           </Heading>
         )
       }
 
       if (block.kind === 'divider') {
-        return <hr key={block.key} className={styles.previewDivider} />
+        return <hr key={blockKey} className={styles.previewDivider} />
       }
 
       if (block.kind === 'list') {
         if (block.listKind === 'check') {
           return (
-            <ul key={block.key} className={styles.checkList}>
+            <ul key={blockKey} className={styles.checkList}>
               {block.items.map((item, index) => (
-                <li key={`${block.key}-${index}`}>
+                <li key={`${blockKey}-${index}`}>
                   <input
                     aria-label={
                       item.checked
@@ -702,7 +385,7 @@ export function CharacterNotesPreview({
                   <span>
                     {renderInline(
                       item.text,
-                      `${block.key}-${index}`,
+                      `${blockKey}-${index}`,
                     )}
                   </span>
                 </li>
@@ -715,12 +398,12 @@ export function CharacterNotesPreview({
           block.listKind === 'ordered' ? 'ol' : 'ul'
 
         return (
-          <List key={block.key} className={styles.previewList}>
+          <List key={blockKey} className={styles.previewList}>
             {block.items.map((item, index) => (
-              <li key={`${block.key}-${index}`}>
+              <li key={`${blockKey}-${index}`}>
                 {renderInline(
                   item.text,
-                  `${block.key}-${index}`,
+                  `${blockKey}-${index}`,
                 )}
               </li>
             ))}
@@ -730,7 +413,7 @@ export function CharacterNotesPreview({
 
       if (block.kind === 'collapsible') {
         return (
-          <details key={block.key} className={styles.collapsibleBlock}>
+          <details key={blockKey} className={styles.collapsibleBlock}>
             <summary>{block.title}</summary>
             <div className={styles.directiveBody}>
               {renderBlocks(block.body)}
@@ -754,7 +437,7 @@ export function CharacterNotesPreview({
         block.attributes.recovery
 
       return (
-        <section key={block.key} className={styles.resourceBlock}>
+        <section key={blockKey} className={styles.resourceBlock}>
           <header className={styles.resourceHeader}>
             <strong>{block.title}</strong>
             <div

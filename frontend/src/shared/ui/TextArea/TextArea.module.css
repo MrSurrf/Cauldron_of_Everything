@@ -133,25 +133,6 @@
   --icon-button-size: calc(var(--control-height-sm) - var(--space-2));
 }
 
-.letterIcon {
-  display: inline-grid;
-  place-items: center;
-
-  font-family: var(--font-family-body);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  line-height: 1;
-}
-
-.letterIcon[data-format='italic'] {
-  font-style: italic;
-}
-
-.letterIcon[data-format='underline'] {
-  text-decoration: underline;
-  text-underline-offset: var(--border-width-strong);
-}
-
 .scaleControls {
   position: absolute;
   z-index: calc(var(--z-index-base) + 6);

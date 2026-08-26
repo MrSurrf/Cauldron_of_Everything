@@ -278,8 +278,8 @@ export const ControlledDocument: Story = {
     const notes = canvas.getByRole('textbox', {
       name: 'Особенности, умения и заметки',
     })
-    const notesActions = canvas.getByRole('toolbar', {
-      name: 'Действия текстового поля',
+    const notesActions = await screen.findByRole('toolbar', {
+      name: 'Вставка содержимого',
     })
     await userEvent.click(
       within(notesActions).getByRole('button', {
@@ -287,8 +287,7 @@ export const ControlledDocument: Story = {
       }),
     )
 
-    await expect(notes).toHaveValue(
-      expect.stringContaining(':::resource['),
-    )
+    await expect(notes).toHaveTextContent('Новый ресурс')
+    await expect(notes).not.toHaveTextContent(':::resource[')
   },
 }

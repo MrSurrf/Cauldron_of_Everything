@@ -10,18 +10,6 @@
     var(--sheet-icon-glyph-size, 0.6875rem);
 }
 
-.editor [role='toolbar']:has(button[data-icon-only='true']) {
-  padding: var(--border-width-default);
-  border-color:
-    color-mix(
-      in srgb,
-      var(--color-content-border) 56%,
-      transparent
-    );
-  gap: var(--border-width-default);
-  box-shadow: none;
-}
-
 .editor [role='group']:has(button[data-icon-only='true']) {
   padding: 0;
   border: 0;
@@ -39,70 +27,6 @@
   height: 100%;
   min-height: 0;
   max-height: none;
-}
-
-.editor[data-fill='true'] textarea {
-  height: 100%;
-  min-height: 0;
-  max-height: none;
-}
-
-.frame {
-  --input-border:
-    color-mix(
-      in srgb,
-      var(--color-content-border) 66%,
-      var(--color-border-accent)
-    );
-  --input-inner-border:
-    color-mix(in srgb, var(--input-border) 24%, transparent);
-  --input-surface-start:
-    color-mix(in srgb, var(--color-surface-default) 97%, var(--palette-black));
-  --input-surface-end:
-    color-mix(in srgb, var(--color-surface-muted) 95%, var(--palette-black));
-  --input-corner-cut: var(--space-1);
-  --input-inner-frame-inset: 2px;
-
-  min-height: 0;
-  filter: none;
-}
-
-.editor .frame {
-  --text-field-extra-block-end:
-    calc(
-      var(--sheet-icon-control-size, 1.125rem) +
-        var(--space-1)
-    );
-}
-
-.textarea {
-  min-height: calc(var(--control-height-lg) + var(--space-5));
-  max-height: calc(var(--control-height-lg) * 3.5);
-  padding:
-    calc(var(--space-2) + var(--text-field-extra-block-start))
-    calc(
-      var(--space-6) +
-      var(--space-2) +
-      var(--text-field-extra-inline-end)
-    )
-    calc(var(--space-2) + var(--text-field-extra-block-end))
-    var(--space-3);
-  overflow: auto;
-  resize: none;
-  font-family: var(--sheet-body-font, var(--font-family-body));
-  line-height: var(--line-height-normal);
-}
-
-.structureActions {
-  display: flex;
-  min-width: max-content;
-  gap: 2px;
-}
-
-.structureActions :global(button) {
-  min-height: var(--control-height-sm);
-  padding-inline: var(--space-2);
-  white-space: nowrap;
 }
 
 .previewFrame {

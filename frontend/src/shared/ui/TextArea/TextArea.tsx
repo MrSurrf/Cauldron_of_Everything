@@ -20,7 +20,7 @@ import { useTextControlState } from '../internal/field/useTextControlState'
 import { ScrollSync } from '../ScrollBar/ScrollSync'
 import { Tooltip } from '../Tooltip'
 import styles from './TextArea.module.css'
-import { TextAreaFormattingToolbar } from './TextAreaFormattingToolbar'
+import { TextFormattingToolbar } from '../internal/content/TextFormattingToolbar'
 import {
   formatTextAreaSelection,
   type TextAreaSelection,
@@ -489,7 +489,9 @@ export const TextArea = forwardRef<
               hasSelection &&
               !disabled &&
               !readOnly && (
-                <TextAreaFormattingToolbar
+                <TextFormattingToolbar
+                  buttonClassName={styles.toolbarButton}
+                  className={styles.formattingToolbar}
                   onAction={applyFormat}
                 />
               )}

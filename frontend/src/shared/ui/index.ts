@@ -1,5 +1,6 @@
 export { Button } from './Button'
 export type {
+  ButtonDecoration,
   ButtonProps,
   ButtonSize,
   ButtonVariant,
@@ -12,6 +13,8 @@ export type {
   ComboboxOption,
   ComboboxProps,
 } from './Combobox'
+export { ContentEditor } from './ContentEditor'
+export type { ContentEditorProps } from './ContentEditor'
 export { IconFrame } from './IconFrame'
 export type { IconFrameProps } from './IconFrame'
 export { IconButton } from './IconButton'

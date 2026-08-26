@@ -69,23 +69,14 @@ export const StructuredNotes: Story = {
       canvas.getByText('Боевой стиль: оборона'),
     ).toBeVisible()
     await userEvent.click(preview)
-    await expect(
-      canvas.getByRole('toolbar', {
-        name: 'Действия текстового поля',
-      }),
-    ).toBeVisible()
-
-    await userEvent.click(
-      canvas.getByRole('button', {
-        name: 'Разделитель',
-      }),
-    )
     const editor = canvas.getByRole('textbox', {
       name: 'Особенности, умения и заметки',
     })
-    await expect(editor).toHaveValue(
-      expect.stringContaining('---'),
+    await expect(editor).toHaveTextContent(
+      'Боевой стиль: оборона',
     )
+    await expect(editor).not.toHaveTextContent('###')
+    await expect(editor).not.toHaveTextContent('**')
   },
 }
 

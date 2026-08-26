@@ -4,17 +4,9 @@ import {
   type FocusEvent,
 } from 'react'
 
-import {
-  Button,
-  TextArea,
-} from '../../../../shared/ui'
+import { ContentEditor } from '../../../../shared/ui'
 import { CharacterNotesPreview } from './CharacterNotesPreview'
 import styles from './CharacterNotesEditor.module.css'
-
-export type CharacterNotesInsertAction =
-  | 'resource'
-  | 'collapsible'
-  | 'divider'
 
 export type CharacterNotesEditorProps = {
   accessibleLabel: string
@@ -33,53 +25,9 @@ export type CharacterNotesEditorProps = {
   onValueChange: (value: string) => void
 }
 
-const insertTemplates: Readonly<
-  Record<CharacterNotesInsertAction, string>
-> = {
-  resource: [
-    ':::resource[Новый ресурс]{current=0 maximum=1 recovery=long}',
-    'Описание ресурса',
-    ':::',
-  ].join('\n'),
-  collapsible: [
-    ':::collapsible[Название блока]',
-    'Содержимое раскрывающегося блока',
-    ':::',
-  ].join('\n'),
-  divider: '---',
-}
-
 const MIN_TEXT_SCALE = 0.75
 const MAX_TEXT_SCALE = 1.5
 const TEXT_SCALE_STEP = 0.125
-
-function withParagraphSpacing(
-  value: string,
-  insertion: string,
-  start: number,
-  end: number,
-) {
-  const before = value.slice(0, start)
-  const after = value.slice(end)
-  const prefix =
-    before.length > 0 && !before.endsWith('\n\n')
-      ? before.endsWith('\n')
-        ? '\n'
-        : '\n\n'
-      : ''
-  const suffix =
-    after.length > 0 && !after.startsWith('\n\n')
-      ? after.startsWith('\n')
-        ? '\n'
-        : '\n\n'
-      : ''
-
-  return {
-    nextValue: `${before}${prefix}${insertion}${suffix}${after}`,
-    selectionEnd:
-      before.length + prefix.length + insertion.length,
-  }
-}
 
 export function CharacterNotesEditor({
   accessibleLabel,
@@ -94,16 +42,11 @@ export function CharacterNotesEditor({
   onValueChange,
 }: CharacterNotesEditorProps) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(!renderPreview)
   const [textScale, setTextScale] = useState(1)
 
   function beginEditing() {
     setEditing(true)
-
-    requestAnimationFrame(() => {
-      textareaRef.current?.focus()
-    })
   }
 
   function changeTextScale(direction: -1 | 1) {
@@ -120,9 +63,9 @@ export function CharacterNotesEditor({
     )
   }
 
-  function finishEditing(
-    event: FocusEvent<HTMLDivElement>,
-  ) {
+  function finishEditing(event: FocusEvent<HTMLDivElement>) {
+    if (!renderPreview) return
+
     const nextTarget = event.relatedTarget
 
     if (
@@ -135,29 +78,7 @@ export function CharacterNotesEditor({
     setEditing(false)
   }
 
-  function insert(action: CharacterNotesInsertAction) {
-    const textarea = textareaRef.current
-    const start = textarea?.selectionStart ?? value.length
-    const end = textarea?.selectionEnd ?? start
-    const { nextValue, selectionEnd } = withParagraphSpacing(
-      value,
-      insertTemplates[action],
-      start,
-      end,
-    )
-
-    onValueChange(nextValue)
-
-    requestAnimationFrame(() => {
-      textarea?.focus()
-      textarea?.setSelectionRange(selectionEnd, selectionEnd)
-    })
-  }
-
-  const rootClassName = [
-    styles.editor,
-    className,
-  ]
+  const rootClassName = [styles.editor, className]
     .filter(Boolean)
     .join(' ')
 
@@ -181,50 +102,17 @@ export function CharacterNotesEditor({
           value={value}
         />
       ) : (
-        <TextArea
-          ref={textareaRef}
-          aria-label={accessibleLabel}
-          className={styles.textarea}
-          formatting="markdown"
+        <ContentEditor
+          accessibleLabel={accessibleLabel}
+          autoFocus={renderPreview}
+          fill={fill}
           placeholder={placeholder}
-          rootClassName={styles.frame}
           rows={rows}
-          showTextScaleControls={true}
+          showStructureActions={showStructureActions}
           textScale={textScale}
-          topToolbar={showStructureActions ? (
-            <div
-              className={styles.structureActions}
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => insert('resource')}
-              >
-                Ресурс
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => insert('collapsible')}
-              >
-                Сворачиваемый блок
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => insert('divider')}
-              >
-                Разделитель
-              </Button>
-            </div>
-          ) : undefined}
           value={value}
-          onChange={(event) => {
-            onValueChange(event.currentTarget.value)
-          }}
-          onFocus={() => setEditing(true)}
           onTextScaleChange={setTextScale}
+          onValueChange={onValueChange}
         />
       )}
     </div>

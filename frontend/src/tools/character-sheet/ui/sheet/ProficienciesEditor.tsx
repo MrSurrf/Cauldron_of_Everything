@@ -1,9 +1,9 @@
-import { TextArea } from '../../../../shared/ui'
 import {
   characterSheetActions,
   useCharacterSheet,
 } from '../../model'
 import type { CharacterProficiencies } from '../../model'
+import { CharacterNotesEditor } from '../notes'
 import { SheetSection } from '../SheetSection'
 import styles from '../../CharacterSheetTool.module.css'
 
@@ -69,20 +69,20 @@ export function ProficienciesEditor() {
       title="Языки и владения"
     >
       <div className={styles.proficiencyTextBlock}>
-        <TextArea
-          aria-label="Языки и владения"
-          className={styles.proficiencyTextArea}
-          fieldClassName={styles.proficiencyTextField}
+        <CharacterNotesEditor
+          accessibleLabel="Языки и владения"
+          className={styles.proficiencyContentEditor}
+          fill={true}
           placeholder="Опишите известные языки и владения персонажа..."
-          rootClassName={styles.proficiencyTextFrame}
           rows={11}
+          showStructureActions={true}
           value={adaptContentToText(
             document.proficiencies,
           )}
-          onChange={(event) => {
+          onValueChange={(value) => {
             dispatch(
               characterSheetActions.patchProficiencies({
-                contentText: event.currentTarget.value,
+                contentText: value,
               }),
             )
           }}

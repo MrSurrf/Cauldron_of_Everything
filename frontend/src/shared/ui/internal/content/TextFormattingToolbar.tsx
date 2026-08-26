@@ -1,17 +1,28 @@
 import type { MouseEvent } from 'react'
 
-import { IconButton } from '../IconButton'
-import { Tooltip } from '../Tooltip'
-import type { TextAreaFormatAction } from './TextArea.types'
-import styles from './TextArea.module.css'
+import { IconButton } from '../../IconButton'
+import { Tooltip } from '../../Tooltip'
+import styles from './TextFormattingToolbar.module.css'
 
-type TextAreaFormattingToolbarProps = {
+export type TextFormatAction =
+  | 'bold'
+  | 'italic'
+  | 'underline'
+  | 'ordered-list'
+  | 'unordered-list'
+  | 'check-list'
+  | 'link'
+  | 'roll'
+
+export type TextFormattingToolbarProps = {
+  buttonClassName?: string
+  className?: string
   disabled?: boolean
-  onAction: (action: TextAreaFormatAction) => void
+  onAction: (action: TextFormatAction) => void
 }
 
 type FormatCommand = {
-  action: TextAreaFormatAction
+  action: TextFormatAction
   label: string
 }
 
@@ -26,11 +37,7 @@ const commands: FormatCommand[] = [
   { action: 'roll', label: 'Бросок кубика' },
 ]
 
-function FormatIcon({
-  action,
-}: {
-  action: TextAreaFormatAction
-}) {
+function FormatIcon({ action }: { action: TextFormatAction }) {
   if (
     action === 'bold' ||
     action === 'italic' ||
@@ -44,10 +51,7 @@ function FormatIcon({
           : 'U'
 
     return (
-      <span
-        className={styles.letterIcon}
-        data-format={action}
-      >
+      <span className={styles.letterIcon} data-format={action}>
         {character}
       </span>
     )
@@ -81,12 +85,7 @@ function FormatIcon({
                 stroke="currentColor"
               />
             ) : (
-              <circle
-                cx="3"
-                cy={y}
-                r="1"
-                fill="currentColor"
-              />
+              <circle cx="3" cy={y} r="1" fill="currentColor" />
             )}
             <path
               d={`M7 ${y}h11`}
@@ -128,32 +127,30 @@ function FormatIcon({
   )
 }
 
-export function TextAreaFormattingToolbar({
+export function TextFormattingToolbar({
+  buttonClassName,
+  className,
   disabled = false,
   onAction,
-}: TextAreaFormattingToolbarProps) {
-  function preserveSelection(
-    event: MouseEvent<HTMLDivElement>,
-  ) {
+}: TextFormattingToolbarProps) {
+  function preserveSelection(event: MouseEvent<HTMLDivElement>) {
     event.preventDefault()
   }
 
   return (
     <div
-      className={styles.formattingToolbar}
+      className={className}
+      data-content-editor-toolbar="format"
       role="toolbar"
       aria-label="Форматирование выделенного текста"
       onMouseDown={preserveSelection}
     >
       {commands.map(({ action, label }) => (
-        <Tooltip
-          key={action}
-          content={label}
-          openDelay={250}
-        >
+        <Tooltip key={action} content={label} openDelay={250}>
           <IconButton
             aria-label={label}
-            className={styles.toolbarButton}
+            className={buttonClassName}
+            decoration="bare"
             disabled={disabled}
             icon={<FormatIcon action={action} />}
             onClick={() => onAction(action)}

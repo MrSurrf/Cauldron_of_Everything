@@ -7,6 +7,7 @@ import type {
   FieldControlProps,
   FieldPresentationProps,
 } from '../internal/field/field.types'
+import type { TextFormatAction } from '../internal/content/TextFormattingToolbar'
 
 export type TextAreaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
@@ -45,12 +46,4 @@ export type TextAreaProps = Omit<
     ) => void
   }
 
-export type TextAreaFormatAction =
-  | 'bold'
-  | 'italic'
-  | 'underline'
-  | 'ordered-list'
-  | 'unordered-list'
-  | 'check-list'
-  | 'link'
-  | 'roll'
+export type TextAreaFormatAction = TextFormatAction
