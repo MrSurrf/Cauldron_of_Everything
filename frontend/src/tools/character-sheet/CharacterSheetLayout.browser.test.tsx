@@ -24,7 +24,9 @@ function nextFrame() {
   })
 }
 
-async function mountCharacterSheet() {
+async function mountCharacterSheet(
+  initialDocument = createMockCharacterSheet(),
+) {
   const container = document.createElement('div')
   container.style.width = '75rem'
   container.style.height = '70rem'
@@ -37,7 +39,7 @@ async function mountCharacterSheet() {
   await act(async () => {
     root.render(
       <CharacterSheetTool
-        initialDocument={createMockCharacterSheet()}
+        initialDocument={initialDocument}
       />,
     )
     await nextFrame()
@@ -83,8 +85,8 @@ describe('Character Sheet fixed desktop composition', () => {
     const right = container.querySelector<HTMLElement>(
       '[data-character-sheet-column="right"]',
     )!
-    const traits = container.querySelector<HTMLElement>(
-      '[data-character-sheet-identity-traits]',
+    const personalitySections = container.querySelector<HTMLElement>(
+      '[data-character-sheet-personality-sections]',
     )!
     const identity = page.firstElementChild as HTMLElement
     const identityInputs = Array.from(
@@ -95,7 +97,12 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(roundedWidth(left)).toBe(288)
     expect(roundedWidth(center)).toBe(400)
     expect(roundedWidth(right)).toBe(264)
-    expect(roundedWidth(traits)).toBe(264)
+    expect(roundedWidth(personalitySections)).toBe(264)
+    expect(
+      container.querySelector(
+        '[data-character-sheet-identity-traits]',
+      ),
+    ).toBeNull()
     expect(identity.getBoundingClientRect().height).toBeGreaterThanOrEqual(
       123,
     )
@@ -110,6 +117,94 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(left.getBoundingClientRect().bottom).toBe(
       center.getBoundingClientRect().bottom,
     )
+  })
+
+  it('раскрывает личностные разделы вверх внутри статичных границ листа', async () => {
+    const document = createMockCharacterSheet()
+    document.appearance = {
+      ...document.appearance,
+      bodyFontSize: 16,
+      density: 'spacious',
+      headingFontSize: 16,
+    }
+    const container = await mountCharacterSheet(document)
+    const page = container.querySelector<HTMLElement>(
+      '[data-character-sheet-page]',
+    )!
+    const center = container.querySelector<HTMLElement>(
+      '[data-character-sheet-column="center"]',
+    )!
+    const right = container.querySelector<HTMLElement>(
+      '[data-character-sheet-column="right"]',
+    )!
+    const features = right.firstElementChild as HTMLElement
+    const personalitySections = right.lastElementChild as HTMLElement
+    const toggles = Array.from(
+      personalitySections.querySelectorAll<HTMLButtonElement>(
+        'button[aria-expanded]',
+      ),
+    )
+
+    expect(toggles).toHaveLength(4)
+    toggles.forEach((toggle) => {
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    })
+    expect(
+      Array.from(
+        personalitySections.querySelectorAll<HTMLElement>(
+          '[data-character-sheet-personality]',
+        ),
+      ).map((section) =>
+        section.dataset.characterSheetPersonality,
+      ),
+    ).toEqual(['traits', 'ideals', 'bonds', 'flaws'])
+
+    const pageBottomBefore = page.getBoundingClientRect().bottom
+    const rightBottomBefore = right.getBoundingClientRect().bottom
+    const featuresBefore = features.getBoundingClientRect()
+    const personalityTopBefore =
+      personalitySections.getBoundingClientRect().top
+    const traitsToggle = toggles[0]
+
+    await act(async () => {
+      traitsToggle.click()
+      await nextFrame()
+    })
+
+    const featuresAfter = features.getBoundingClientRect()
+    const personalityTopAfter =
+      personalitySections.getBoundingClientRect().top
+
+    expect(traitsToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      personalitySections.querySelector(
+        '[data-character-sheet-personality="traits"] [role="region"]',
+      ),
+    ).not.toBeNull()
+    expect(featuresAfter.height).toBeLessThan(featuresBefore.height)
+    expect(featuresAfter.bottom).toBeLessThan(featuresBefore.bottom)
+    expect(personalityTopAfter).toBeLessThan(personalityTopBefore)
+    expect(page.getBoundingClientRect().bottom).toBe(pageBottomBefore)
+    expect(right.getBoundingClientRect().bottom).toBe(rightBottomBefore)
+    expect(right.getBoundingClientRect().bottom).toBe(
+      center.getBoundingClientRect().bottom,
+    )
+    expect(right.scrollHeight).toBeLessThanOrEqual(right.clientHeight)
+
+    await act(async () => {
+      toggles.slice(1).forEach((toggle) => toggle.click())
+      await nextFrame()
+    })
+
+    toggles.forEach((toggle) => {
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    })
+    expect(features.getBoundingClientRect().height).toBeLessThan(
+      featuresAfter.height,
+    )
+    expect(page.getBoundingClientRect().bottom).toBe(pageBottomBefore)
+    expect(right.getBoundingClientRect().bottom).toBe(rightBottomBefore)
+    expect(right.scrollHeight).toBeLessThanOrEqual(right.clientHeight)
   })
 
   it('группирует вдохновение с мастерством и упрощает запрошенные блоки', async () => {

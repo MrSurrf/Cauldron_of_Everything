@@ -31,6 +31,13 @@ import {
 } from './sheetAppearance'
 import { useCharacterSheetViewModel } from './sheetViewModel'
 
+const PERSONALITY_SECTION_ORDER = [
+  'traits',
+  'ideals',
+  'bonds',
+  'flaws',
+] as const
+
 export type CharacterSheetContentProps = {
   className?: string
   onPortraitFileSelect?: (
@@ -159,19 +166,6 @@ export function CharacterSheetContent({
                 </section>
 
                 <div
-                  className={styles.idealsSlot}
-                  data-character-sheet-slot="ideals"
-                >
-                  <CharacterPersonalitySection
-                    className={styles.stretchSection}
-                    editorClassName={styles.fillNotesEditor}
-                    rows={1}
-                    section="ideals"
-                    sheet={sheet}
-                  />
-                </div>
-
-                <div
                   className={styles.leftLowerGrid}
                   data-character-sheet-column="left"
                 >
@@ -240,23 +234,6 @@ export function CharacterSheetContent({
                   className={styles.notesLowerGrid}
                   data-character-sheet-column="right"
                 >
-                  <div className={styles.minorPersonality}>
-                    <CharacterPersonalitySection
-                      className={styles.stretchSection}
-                      editorClassName={styles.fillNotesEditor}
-                      rows={1}
-                      section="bonds"
-                      sheet={sheet}
-                    />
-                    <CharacterPersonalitySection
-                      className={styles.stretchSection}
-                      editorClassName={styles.fillNotesEditor}
-                      rows={1}
-                      section="flaws"
-                      sheet={sheet}
-                    />
-                  </div>
-
                   <div className={styles.featuresSlot}>
                     <CharacterFeaturesSection
                       className={styles.stretchSection}
@@ -264,6 +241,22 @@ export function CharacterSheetContent({
                       rows={10}
                       sheet={sheet}
                     />
+                  </div>
+
+                  <div
+                    className={styles.personalitySections}
+                    data-character-sheet-personality-sections={true}
+                  >
+                    {PERSONALITY_SECTION_ORDER.map((section) => (
+                      <CharacterPersonalitySection
+                        key={section}
+                        className={styles.personalitySection}
+                        editorClassName={styles.personalityEditor}
+                        rows={3}
+                        section={section}
+                        sheet={sheet}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>

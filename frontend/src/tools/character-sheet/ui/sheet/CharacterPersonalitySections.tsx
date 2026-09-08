@@ -3,16 +3,17 @@ import {
   type PersonalitySectionKey,
   type RepeatableTextEntry,
 } from '../../model'
+import { CollapsibleSection } from '../CollapsibleSection'
 import { CharacterNotesEditor } from '../notes'
-import { SheetSection } from '../SheetSection'
 import { personalityLabels } from './sheet.constants'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterPersonalitySectionProps = {
   className?: string
+  defaultOpen?: boolean
   editorClassName?: string
   rows?: number
-  section: Exclude<PersonalitySectionKey, 'traits'>
+  section: PersonalitySectionKey
   sheet: CharacterSheetViewModel
 }
 
@@ -49,6 +50,7 @@ function entriesToText(
 
 export function CharacterPersonalitySection({
   className,
+  defaultOpen = false,
   editorClassName,
   rows = 3,
   section,
@@ -83,17 +85,22 @@ export function CharacterPersonalitySection({
   }
 
   return (
-    <SheetSection className={className} title={label}>
+    <CollapsibleSection
+      className={className}
+      data-character-sheet-personality={section}
+      defaultOpen={defaultOpen}
+      headingLevel={2}
+      title={label}
+    >
       <CharacterNotesEditor
         accessibleLabel={label}
         className={editorClassName}
-        fill={true}
         placeholder={`${label}...`}
         rows={rows}
         showStructureActions={true}
         value={entriesToText(entries, section)}
         onValueChange={updateSection}
       />
-    </SheetSection>
+    </CollapsibleSection>
   )
 }

@@ -28,7 +28,6 @@ export type CharacterIdentityProps = {
     field: 'experience' | 'level',
     label: string,
   ) => ReactNode
-  traits?: ReactNode
   value: CharacterIdentityValue
 }
 
@@ -107,7 +106,6 @@ export function CharacterIdentity({
   onPortraitRemove,
   onValueChange,
   renderNumericField,
-  traits,
   value,
 }: CharacterIdentityProps) {
   const experienceProgress = getExperienceProgress(
@@ -221,18 +219,6 @@ export function CharacterIdentity({
             />
           </div>
         </div>
-
-        {traits && (
-          <div
-            className={styles.traitsCard}
-            data-character-sheet-identity-traits={true}
-          >
-            <span className={styles.traitsLabel}>
-              Черты характера
-            </span>
-            {traits}
-          </div>
-        )}
       </div>
     </SheetSection>
   )

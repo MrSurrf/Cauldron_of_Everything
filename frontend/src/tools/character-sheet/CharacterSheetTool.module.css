@@ -39,6 +39,7 @@
   --sheet-icon-glyph-size: 0.6875rem;
   --sheet-page-width: 60.25rem;
   --sheet-identity-height: 7.125rem;
+  --sheet-quick-row-height: 4.5rem;
   --sheet-main-column-height: 51rem;
   --sheet-attacks-section-height: 19rem;
 
@@ -463,13 +464,15 @@
   width: var(--sheet-page-width);
   min-width: var(--sheet-page-width);
   grid-template-areas:
-    'quick quick ideals'
+    'quick quick notes-lower'
     'left-lower center-lower notes-lower';
   grid-template-columns:
     18rem
     25rem
     16.5rem;
-  grid-template-rows: auto var(--sheet-main-column-height);
+  grid-template-rows:
+    var(--sheet-quick-row-height)
+    var(--sheet-main-column-height);
   align-content: start;
   align-items: start;
   gap: var(--sheet-layout-gap);
@@ -616,7 +619,6 @@
 }
 
 .hitPointsSlot,
-.idealsSlot,
 .leftLowerGrid,
 .centerLowerGrid,
 .notesLowerGrid,
@@ -630,16 +632,15 @@
 .attacksSlot,
 .equipmentSlot,
 .currencySlot,
-.minorPersonality,
+.personalitySections,
 .featuresSlot {
   min-width: 0;
   min-height: 0;
   align-self: start;
 }
 
-.hitPointsSlot,
-.idealsSlot {
-  height: 4.5rem;
+.hitPointsSlot {
+  height: var(--sheet-quick-row-height);
 }
 
 .hitPointsSlot > *,
@@ -663,8 +664,7 @@
   --sheet-section-padding: var(--border-width-default);
 }
 
-.hitPointsSlot > *,
-.idealsSlot > * {
+.hitPointsSlot > * {
   height: 100%;
 }
 
@@ -699,10 +699,6 @@
 .hitPointsSlot > * > :last-child > * > * {
   min-height: 0;
   padding: 0 var(--sheet-tight-gap);
-}
-
-.idealsSlot {
-  grid-area: ideals;
 }
 
 .leftLowerGrid {
@@ -821,18 +817,39 @@
   display: grid;
   height: 100%;
   grid-area: notes-lower;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   align-self: stretch;
   align-content: start;
-  align-items: start;
+  align-items: stretch;
   gap: var(--sheet-layout-gap);
+  overflow: hidden;
 }
 
-.minorPersonality {
+.personalitySections {
   display: grid;
-  grid-template-rows: repeat(2, auto);
+  min-height: 0;
+  grid-template-rows: repeat(4, auto);
+  align-content: end;
   align-items: start;
   gap: var(--sheet-tight-gap);
+}
+
+.personalitySection {
+  --sheet-section-padding: 0;
+
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto auto;
+}
+
+.personalitySection[data-open='true'] > :last-child {
+  display: grid;
+  min-height: 0;
+}
+
+.personalityEditor {
+  min-height: 0;
 }
 
 .stretchSection {

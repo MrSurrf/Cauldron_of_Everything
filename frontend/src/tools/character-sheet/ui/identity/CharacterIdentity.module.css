@@ -9,9 +9,8 @@
   min-height: var(--sheet-identity-height, 7.125rem);
   grid-template-columns:
     6.5rem
-    27.75rem
-    7.875rem
-    16.5rem;
+    minmax(0, 1fr)
+    7.875rem;
   align-items: start;
   gap: var(--sheet-layout-gap, var(--space-2));
 }
@@ -219,8 +218,7 @@
 }
 
 .levelCard,
-.experienceCard,
-.traitsCard {
+.experienceCard {
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -352,44 +350,6 @@
   content: '';
 }
 
-.traitsCard {
-  display: grid;
-  min-height: 0;
-  padding: var(--sheet-tight-gap, var(--space-1));
-  grid-template-rows: auto auto;
-  align-self: start;
-  gap: var(--sheet-tight-gap, var(--space-1));
-  clip-path:
-    polygon(
-      var(--space-2) 0,
-      calc(100% - var(--space-2)) 0,
-      100% var(--space-2),
-      100% calc(100% - var(--space-2)),
-      calc(100% - var(--space-2)) 100%,
-      var(--space-2) 100%,
-      0 calc(100% - var(--space-2)),
-      0 var(--space-2)
-    );
-}
-
-.traitsLabel {
-  overflow: hidden;
-  color: var(--palette-purple-300);
-  font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-label-size, var(--font-size-xs));
-  letter-spacing: 0.045em;
-  line-height: var(--line-height-tight);
-  text-align: center;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.traitsCard :global([role='region']),
-.traitsCard :global(textarea) {
-  max-height: 5rem;
-}
-
 .numericLabel {
   color: var(--color-text-secondary);
   font-size: var(--sheet-label-size, var(--font-size-xs));
@@ -401,8 +361,7 @@
 @media (forced-colors: active) {
   .nameFrame,
   .detailFrame,
-  .progressColumn,
-  .traitsCard {
+  .progressColumn {
     border-color: CanvasText;
     background: Canvas;
     clip-path: none;

@@ -1,15 +1,12 @@
 import {
   FORMULA_FIELD_KEYS,
   characterSheetActions,
-  createClientId,
-  type RepeatableTextEntry,
 } from '../../model'
 import { FormulaField } from '../fields'
 import {
   CharacterIdentity,
   type CharacterIdentityValue,
 } from '../identity'
-import { CharacterNotesEditor } from '../notes'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterIdentitySectionProps = {
@@ -19,34 +16,6 @@ export type CharacterIdentitySectionProps = {
   ) => void
   onPortraitRemove?: (characterId: string) => void
   sheet: CharacterSheetViewModel
-}
-
-function compactedTraitsEntry(
-  entries: readonly RepeatableTextEntry[],
-) {
-  return entries.find((entry) =>
-    entry.id.startsWith('traits-notes-'),
-  )
-}
-
-function traitsToText(
-  entries: readonly RepeatableTextEntry[],
-) {
-  const compacted = compactedTraitsEntry(entries)
-
-  if (compacted) return compacted.text
-
-  return entries
-    .map((entry) => {
-      const title = entry.title.trim()
-
-      if (!title) return entry.text
-      if (!entry.text.trim()) return `### ${title}`
-
-      return `### ${title}\n${entry.text}`
-    })
-    .filter(Boolean)
-    .join('\n\n')
 }
 
 export function CharacterIdentitySection({
@@ -74,32 +43,6 @@ export function CharacterIdentitySection({
     race: document.identity.race,
     subclass: document.identity.subclass,
   }
-  const traitEntries = document.personality.traits
-
-  function updateTraits(value: string) {
-    const compacted = compactedTraitsEntry(traitEntries)
-
-    if (!compacted) {
-      dispatch({
-        type: 'personality/add',
-        section: 'traits',
-        value: {
-          id: createClientId('traits-notes'),
-          text: value,
-          title: '',
-        },
-      })
-      return
-    }
-
-    dispatch({
-      type: 'personality/update',
-      id: compacted.id,
-      patch: { text: value },
-      section: 'traits',
-    })
-  }
-
   return (
     <CharacterIdentity
       key={document.id}
@@ -110,17 +53,6 @@ export function CharacterIdentitySection({
       onPortraitRemove={() => {
         onPortraitRemove?.(document.id)
       }}
-      traits={(
-        <CharacterNotesEditor
-          accessibleLabel="Черты характера"
-          fill={true}
-          placeholder="Черты характера..."
-          rows={3}
-          showStructureActions={true}
-          value={traitsToText(traitEntries)}
-          onValueChange={updateTraits}
-        />
-      )}
       renderNumericField={(field, label) => {
         const key =
           field === 'level'
