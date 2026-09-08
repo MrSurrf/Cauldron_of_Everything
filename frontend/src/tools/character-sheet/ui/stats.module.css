@@ -184,6 +184,9 @@
 }
 
 .hitPointsRoot[data-compact='true'] {
+  --sheet-icon-control-size: 0.625rem;
+  --sheet-icon-glyph-size: 0.4375rem;
+  --sheet-label-size: 0.4375rem;
   --sheet-section-padding: 0;
 
   height: 100%;
@@ -200,7 +203,7 @@
 
 .hitPointsRoot[data-compact='true'] .hpGrid > * {
   min-height: 0;
-  padding: 0 var(--sheet-tight-gap, var(--space-1));
+  padding: 0 var(--border-width-default);
 }
 
 .hitPointsRoot[data-compact='true'] .fieldLabel,
@@ -211,6 +214,27 @@
 
 .hitPointsRoot[data-compact='true'] [data-presentation] {
   padding: 0;
+}
+
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  > :first-child {
+  padding-inline: 0;
+  letter-spacing: -0.075em;
+}
+
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  > :nth-child(2) {
+  width: 2.25rem;
+  max-width: 100%;
+  justify-self: center;
+}
+
+.hitPointsRoot[data-compact='true']
+  [data-presentation]
+  input {
+  padding-inline: 0;
 }
 
 .hitPointsRoot[data-compact='true']
@@ -311,7 +335,12 @@
   border-bottom: 0;
 }
 
+.currencyBlock {
+  --sheet-section-padding: var(--border-width-default);
+}
+
 .currencyGrid {
+  --sheet-control-height: var(--icon-size-sm);
   --sheet-value-size: var(
     --sheet-ordinary-value-size,
     var(--sheet-body-size, var(--font-size-sm))
@@ -319,8 +348,32 @@
 
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(5, minmax(4.5rem, 1fr));
-  gap: var(--sheet-layout-gap, var(--space-2));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--border-width-default);
+}
+
+.currencyField {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0;
+}
+
+.currencyLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.currencyField :global(input) {
+  min-height: var(--icon-size-sm);
+  padding-inline: var(--border-width-default);
+  line-height: 1;
 }
 
 @container (max-width: 19rem) {
@@ -345,15 +398,17 @@
 
 .deathSaves {
   display: grid;
-  gap: var(--sheet-tight-gap, var(--space-1));
+  padding-inline: var(--border-width-default);
+  gap: var(--border-width-default);
 }
 
 .saveRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding-block: var(--sheet-tight-gap, var(--space-1));
+  min-height: var(--sheet-icon-control-size, 1.125rem);
+  padding-block: 0;
   align-items: center;
-  gap: var(--sheet-tight-gap, var(--space-1));
+  gap: var(--border-width-default);
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 62%, transparent);
 }
@@ -372,7 +427,7 @@
 .saveControls {
   display: flex;
   align-items: center;
-  gap: var(--sheet-tight-gap, var(--space-1));
+  gap: var(--border-width-default);
 }
 
 .saveControls :global(button[data-size='sm']) {
@@ -401,21 +456,20 @@
 }
 
 @container (max-width: 14rem) {
-  .hpGrid {
+  .hitPointsRoot:not([data-compact='true']) .hpGrid {
     grid-template-columns: 1fr;
   }
 
-  .hpGrid > * {
+  .hitPointsRoot:not([data-compact='true']) .hpGrid > * {
     min-height: 0;
     border-right: 0;
     border-bottom: var(--border-width-default) solid
       color-mix(in srgb, var(--color-content-border) 84%, transparent);
   }
 
-  .hpGrid > *:last-child {
+  .hitPointsRoot:not([data-compact='true']) .hpGrid > *:last-child {
     border-bottom: 0;
   }
-
 }
 
 @media (forced-colors: active) {

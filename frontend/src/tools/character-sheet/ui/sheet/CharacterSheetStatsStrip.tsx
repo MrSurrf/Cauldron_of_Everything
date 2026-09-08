@@ -66,9 +66,10 @@ export function CharacterSheetStat({
     variables,
   } = sheet
   const rootClassName = [
+    styles.statCard,
     stat === 'armorClass'
       ? styles.armorClassStat
-      : styles.statCard,
+      : undefined,
     stat === 'inspiration' ? styles.inspirationStat : undefined,
     className,
   ]
@@ -106,8 +107,8 @@ export function CharacterSheetStat({
               FORMULA_FIELD_KEYS.proficiency
             ]
           }
-          label="Мастерство"
-        presentation={presentation ?? 'stat'}
+          label="Бонус мастерства"
+          presentation={presentation ?? 'stat'}
           prefixPositive={true}
           result={resultFor(FORMULA_FIELD_KEYS.proficiency)}
           value={document.proficiencyBonus}
@@ -136,7 +137,7 @@ export function CharacterSheetStat({
         label={meta.label}
         presentation={
           meta.field === 'armorClass'
-            ? 'shield'
+            ? 'stat'
             : (presentation ?? 'stat')
         }
         prefixPositive={meta.prefixPositive}

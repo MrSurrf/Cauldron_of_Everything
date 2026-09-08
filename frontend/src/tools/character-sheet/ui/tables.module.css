@@ -48,7 +48,25 @@
 }
 
 .equipmentTable {
-  min-width: 28rem;
+  --sheet-row-height: 1.5rem;
+
+  min-width: 24rem;
+}
+
+.equipmentTable .nameColumn {
+  width: auto;
+}
+
+.equipmentTable .quantityColumn {
+  width: 3.25rem;
+}
+
+.equipmentTable .stateColumn {
+  width: 3.5rem;
+}
+
+.equipmentTable .notesColumn {
+  width: 5.5rem;
 }
 
 .table th {

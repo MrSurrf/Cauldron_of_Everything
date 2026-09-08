@@ -1,19 +1,51 @@
 import {
   FORMULA_FIELD_KEYS,
   attackBonusFormulaVariable,
+  characterSheetActions,
   createClientId,
   hitDieFormulaVariable,
   manualNumericField,
+  type AttackEntry,
 } from '../../model'
-import { AttacksTable } from '../AttacksTable'
 import { DeathSavesBlock } from '../DeathSavesBlock'
 import { FormulaField } from '../fields'
 import { HitDiceBlock } from '../HitDiceBlock'
 import { HitPointsBlock } from '../HitPointsBlock'
+import { CharacterNotesEditor } from '../notes'
+import { SheetSection } from '../SheetSection'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterSheetCenterColumnProps = {
   sheet: CharacterSheetViewModel
+}
+
+function displayAttackBonus(value: number | null) {
+  if (value === null) return ''
+  return value >= 0 ? `+${value}` : String(value)
+}
+
+function attacksToText(
+  attacks: readonly AttackEntry[],
+  bonusFor: (attack: AttackEntry) => number | null,
+) {
+  return attacks
+    .map((attack) => {
+      const bonus = displayAttackBonus(bonusFor(attack))
+      const damage = [attack.damage, attack.damageType]
+        .filter(Boolean)
+        .join(' · ')
+      const summary = [
+        bonus ? `Бонус атаки: ${bonus}` : '',
+        damage ? `Урон: ${damage}` : '',
+      ].filter(Boolean)
+
+      return [
+        `### ${attack.name || 'Атака'}`,
+        summary.join(' · '),
+        attack.notes,
+      ].filter(Boolean).join('\n')
+    })
+    .join('\n\n')
 }
 
 export function CharacterHitPointsSection({
@@ -226,94 +258,28 @@ export function CharacterAttacksSection({
   const {
     dispatch,
     document,
-    isSectionOpen,
-    resultFor,
-    setSectionOpen,
-    updateNumericField,
     valueFor,
-    variables,
   } = sheet
 
   return (
-    <AttacksTable
-      fill={true}
-      open={isSectionOpen('attacks')}
-      attacks={document.attacks.map((attack) => ({
-        attackBonus: String(
-          valueFor(attackBonusFormulaVariable(attack.id)) ?? '',
-        ),
-        damage: attack.damage,
-        damageType: attack.damageType,
-        id: attack.id,
-        name: attack.name,
-        notes: attack.notes,
-      }))}
-      renderAttackBonus={(attack) => {
-        const source = document.attacks.find(
-          (item) => item.id === attack.id,
-        )
-        if (!source) return null
-        const key = attackBonusFormulaVariable(source.id)
-
-        return (
-          <FormulaField
-            accessibleLabel={`Бонус атаки: ${
-              source.name || 'без названия'
-            }`}
-            label="Бонус"
-            prefixPositive={true}
-            result={resultFor(key)}
-            value={source.attackBonus}
-            variables={variables}
-            onValueChange={(value) => {
-              updateNumericField(
-                { attackId: source.id, kind: 'attack' },
-                value,
-              )
-            }}
-          />
-        )
-      }}
-      onAdd={() => {
-        dispatch({
-          type: 'attack/add',
-          value: {
-            attackBonus: manualNumericField(0),
-            damage: '',
-            damageType: '',
-            id: createClientId('attack'),
-            itemId: null,
-            name: `Новая атака ${document.attacks.length + 1}`,
-            notes: '',
-          },
-        })
-      }}
-      onAttackChange={(id, patch) => {
-        dispatch({
-          type: 'attack/update',
-          id,
-          patch: {
-            ...(patch.name !== undefined
-              ? { name: patch.name }
-              : {}),
-            ...(patch.damage !== undefined
-              ? { damage: patch.damage }
-              : {}),
-            ...(patch.damageType !== undefined
-              ? { damageType: patch.damageType }
-              : {}),
-            ...(patch.notes !== undefined
-              ? { notes: patch.notes }
-              : {}),
-          },
-        })
-      }}
-      onAttackRemove={(id) => {
-        dispatch({ type: 'attack/remove', id })
-      }}
-      onOpenChange={(open) => {
-        setSectionOpen('attacks', open)
-      }}
-    />
+    <SheetSection title="Атаки и заклинания">
+      <CharacterNotesEditor
+        accessibleLabel="Атаки и заклинания"
+        fill={true}
+        placeholder="Оружие, заклинания, бонусы атаки и урон..."
+        rows={3}
+        value={
+          document.attacksContentText ??
+          attacksToText(document.attacks, (attack) =>
+            valueFor(attackBonusFormulaVariable(attack.id)),
+          )
+        }
+        onValueChange={(value) => {
+          dispatch(
+            characterSheetActions.setAttacksContentText(value),
+          )
+        }}
+      />
+    </SheetSection>
   )
 }

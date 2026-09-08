@@ -177,4 +177,36 @@ describe('characterSheetReducer', () => {
     )
     expect(next.inventory).toBe(document.inventory)
   })
+
+  it('сохраняет структурированные атаки при редактировании текстового представления', () => {
+    const document = createEmptyCharacterSheet({
+      id: 'attacks-content-text-test',
+    })
+    document.attacks = [
+      {
+        attackBonus: {
+          formulaOverride: 'STR_MOD + PROFICIENCY',
+          manualValue: 0,
+          mode: 'formula',
+        },
+        damage: '1d8 + STR_MOD',
+        damageType: 'рубящий',
+        id: 'longsword',
+        itemId: 'encyclopedia-longsword',
+        name: 'Длинный меч',
+        notes: 'Фамильное оружие',
+      },
+    ]
+
+    const next = characterSheetReducer(document, {
+      type: 'attacks/setContentText',
+      value: 'Длинный меч — [[roll:1d8+3]] рубящего урона.',
+    })
+
+    expect(next.attacksContentText).toBe(
+      'Длинный меч — [[roll:1d8+3]] рубящего урона.',
+    )
+    expect(next.attacks).toBe(document.attacks)
+    expect(next.attacks[0]).toEqual(document.attacks[0])
+  })
 })

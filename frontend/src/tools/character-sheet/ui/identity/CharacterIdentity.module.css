@@ -6,11 +6,12 @@
 .layout {
   display: grid;
   min-width: 0;
+  min-height: var(--sheet-identity-height, 7.125rem);
   grid-template-columns:
     6.5rem
-    33rem
-    8.75rem
-    10.375rem;
+    27.75rem
+    7.875rem
+    16.5rem;
   align-items: start;
   gap: var(--sheet-layout-gap, var(--space-2));
 }
@@ -71,7 +72,12 @@
     var(--sheet-tight-gap, var(--space-1));
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: clamp(1.375rem, 2.1cqi, 1.75rem);
+  font-size:
+    clamp(
+      1.375rem,
+      calc(var(--sheet-heading-size, var(--font-size-sm)) + 0.625rem),
+      1.625rem
+    );
   font-weight: 400;
   letter-spacing: 0.015em;
   line-height: 1;

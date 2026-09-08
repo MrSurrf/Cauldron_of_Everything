@@ -151,7 +151,7 @@
   );
   font-weight: 400;
   letter-spacing: 0.035em;
-  line-height: var(--line-height-tight);
+  line-height: 1;
   text-align: center;
   text-overflow: ellipsis;
   text-shadow:
@@ -255,7 +255,7 @@
 
 .usage {
   color: var(--palette-purple-300);
-  font-size: var(--font-size-xs);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

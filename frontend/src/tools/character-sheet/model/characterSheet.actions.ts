@@ -42,6 +42,7 @@ export type CharacterSheetAction =
   | { type: 'attack/add'; value: AttackEntry }
   | { type: 'attack/update'; id: string; patch: Partial<AttackEntry> }
   | { type: 'attack/remove'; id: string }
+  | { type: 'attacks/setContentText'; value: string }
   | { type: 'inventory/add'; value: InventoryEntry }
   | { type: 'inventory/update'; id: string; patch: Partial<InventoryEntry> }
   | { type: 'inventory/remove'; id: string }
@@ -105,6 +106,10 @@ export const characterSheetActions = {
   ): CharacterSheetAction => ({
     type: 'proficiencies/patch',
     patch,
+  }),
+  setAttacksContentText: (value: string): CharacterSheetAction => ({
+    type: 'attacks/setContentText',
+    value,
   }),
   patchAppearance: (patch: Partial<SheetAppearance>): CharacterSheetAction => ({
     type: 'appearance/patch',

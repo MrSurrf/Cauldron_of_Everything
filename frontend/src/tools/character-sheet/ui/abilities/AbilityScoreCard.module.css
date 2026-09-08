@@ -11,7 +11,7 @@
   isolation: isolate;
   display: grid;
   min-width: 0;
-  min-height: calc(var(--control-height-lg) + var(--space-1));
+  min-height: var(--control-height-lg);
   padding: var(--sheet-tight-gap, var(--space-1))
     var(--sheet-layout-gap, var(--space-2));
   gap: var(--sheet-tight-gap, var(--space-1));
@@ -123,9 +123,7 @@
 .fields {
   display: grid;
   min-width: 0;
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(calc(var(--control-height-md) + var(--space-1)), 0.62fr);
+  grid-template-columns: minmax(0, 1fr);
   padding-top: var(--sheet-tight-gap, var(--space-1));
   align-items: end;
   gap: var(--sheet-tight-gap, var(--space-1));
@@ -133,14 +131,16 @@
     color-mix(in srgb, var(--color-content-border) 72%, transparent);
 }
 
+.fields[data-score-visible='true'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  justify-items: center;
+  gap: var(--border-width-default);
+}
+
 .fields > :first-child {
   --sheet-control-height: var(--sheet-row-height, var(--control-height-sm));
   --sheet-value-size: var(--sheet-large-value-size, var(--font-size-xl));
-}
-
-.fields > :last-child {
-  --sheet-control-height: var(--sheet-row-height, var(--control-height-sm));
-  --sheet-value-size: var(--sheet-ordinary-value-size, var(--font-size-sm));
 }
 
 .modifierField,
@@ -149,10 +149,48 @@
 }
 
 .scoreField {
-  padding-inline: var(--sheet-tight-gap, var(--space-1));
-  border-inline:
-    var(--border-width-default) solid
-    color-mix(in srgb, var(--color-content-border) 72%, transparent);
+  --sheet-control-height: var(--icon-size-sm);
+  --sheet-value-size: var(--sheet-ordinary-value-size, var(--font-size-sm));
+  --sheet-icon-control-size: var(--space-3);
+  --sheet-icon-glyph-size: var(--space-2);
+
+  width: var(--control-height-md);
+  max-width: 100%;
+  padding-inline: var(--space-1);
+  border: var(--border-width-default) solid
+    color-mix(
+      in srgb,
+      var(--color-content-border) 76%,
+      var(--color-border-accent)
+    );
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-default) 84%, transparent),
+      color-mix(in srgb, var(--color-surface-accent) 38%, transparent)
+    );
+  clip-path:
+    polygon(
+      var(--space-1) 0,
+      calc(100% - var(--space-1)) 0,
+      100% var(--space-1),
+      100% calc(100% - var(--space-1)),
+      calc(100% - var(--space-1)) 100%,
+      var(--space-1) 100%,
+      0 calc(100% - var(--space-1)),
+      0 var(--space-1)
+    );
+}
+
+.scoreField > :nth-child(2) {
+  border-bottom: 0;
+  background: transparent;
+}
+
+.scoreField :global(input),
+.scoreField :global(output) {
+  padding: 0 var(--space-1);
+  line-height: 1;
 }
 
 @media (forced-colors: active) {

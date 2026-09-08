@@ -321,6 +321,8 @@ export function characterSheetReducer(
       return { ...document, attacks: replaceById(document.attacks, action.id, action.patch) }
     case 'attack/remove':
       return { ...document, attacks: document.attacks.filter((item) => item.id !== action.id) }
+    case 'attacks/setContentText':
+      return { ...document, attacksContentText: action.value }
     case 'inventory/add':
       return { ...document, inventory: [...document.inventory, action.value] }
     case 'inventory/update':

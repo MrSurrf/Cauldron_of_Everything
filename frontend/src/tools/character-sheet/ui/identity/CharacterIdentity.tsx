@@ -223,7 +223,10 @@ export function CharacterIdentity({
         </div>
 
         {traits && (
-          <div className={styles.traitsCard}>
+          <div
+            className={styles.traitsCard}
+            data-character-sheet-identity-traits={true}
+          >
             <span className={styles.traitsLabel}>
               Черты характера
             </span>

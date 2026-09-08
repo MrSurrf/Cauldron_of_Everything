@@ -75,7 +75,7 @@ export function CharacterSheetContent({
                   bodyFontSize: 14,
                   density: 'compact',
                   font: 'cauldron',
-                  headingFontSize: 16,
+                  headingFontSize: 14,
                 }),
               )
             }}
@@ -88,24 +88,43 @@ export function CharacterSheetContent({
             orientation="both"
             rootClassName={styles.scrollArea}
           >
-            <div className={styles.sheetPage}>
+            <div
+              className={styles.sheetPage}
+              data-character-sheet-page={true}
+            >
               <CharacterIdentitySection
                 sheet={sheet}
                 onPortraitFileSelect={onPortraitFileSelect}
                 onPortraitRemove={onPortraitRemove}
               />
 
-              <div className={styles.bodyGrid}>
+              <div
+                className={styles.bodyGrid}
+                data-character-sheet-layout="body"
+              >
                 <section
                   aria-label="Основные показатели"
                   className={styles.quickBar}
                 >
-                  <CharacterSheetStat
-                    className={styles.quickStat}
-                    compact={true}
-                    sheet={sheet}
-                    stat="inspiration"
-                  />
+                  <div
+                    className={styles.inspirationStats}
+                    data-character-sheet-stat-stack="mastery"
+                  >
+                    <CharacterSheetStat
+                      className={styles.quickStat}
+                      compact={true}
+                      sheet={sheet}
+                      stat="inspiration"
+                    />
+
+                    <CharacterSheetStat
+                      className={styles.quickStat}
+                      compact={true}
+                      presentation="list"
+                      sheet={sheet}
+                      stat="proficiency"
+                    />
+                  </div>
 
                   <div className={styles.movementStats}>
                     <CharacterSheetStat
@@ -131,19 +150,18 @@ export function CharacterSheetContent({
                     stat="armorClass"
                   />
 
-                  <div className={styles.hitPointsSlot}>
+                  <div
+                    className={styles.hitPointsSlot}
+                    data-character-sheet-slot="hit-points"
+                  >
                     <CharacterHitPointsSection sheet={sheet} />
                   </div>
-
-                  <CharacterSheetStat
-                    className={styles.quickStat}
-                    compact={true}
-                    sheet={sheet}
-                    stat="proficiency"
-                  />
                 </section>
 
-                <div className={styles.idealsSlot}>
+                <div
+                  className={styles.idealsSlot}
+                  data-character-sheet-slot="ideals"
+                >
                   <CharacterPersonalitySection
                     className={styles.stretchSection}
                     editorClassName={styles.fillNotesEditor}
@@ -153,7 +171,10 @@ export function CharacterSheetContent({
                   />
                 </div>
 
-                <div className={styles.leftLowerGrid}>
+                <div
+                  className={styles.leftLowerGrid}
+                  data-character-sheet-column="left"
+                >
                   <div className={styles.abilityRail}>
                     <CharacterSheetLeftColumn sheet={sheet} />
                     <CharacterSheetStat
@@ -177,30 +198,48 @@ export function CharacterSheetContent({
                   </div>
                 </div>
 
-                <div className={styles.centerLowerGrid}>
+                <div
+                  className={styles.centerLowerGrid}
+                  data-character-sheet-column="center"
+                >
                   <div className={styles.secondaryVitals}>
                     <div className={styles.hitDiceSlot}>
                       <CharacterHitDiceSection sheet={sheet} />
                     </div>
-                    <div className={styles.deathSavesSlot}>
+                    <div
+                      className={styles.deathSavesSlot}
+                      data-character-sheet-slot="death-saves"
+                    >
                       <CharacterDeathSavesSection sheet={sheet} />
                     </div>
                   </div>
 
-                  <div className={styles.attacksSlot}>
+                  <div
+                    className={styles.attacksSlot}
+                    data-character-sheet-slot="attacks"
+                  >
                     <CharacterAttacksSection sheet={sheet} />
                   </div>
 
-                  <div className={styles.equipmentSlot}>
+                  <div
+                    className={styles.equipmentSlot}
+                    data-character-sheet-slot="equipment"
+                  >
                     <CharacterEquipmentSection sheet={sheet} />
                   </div>
 
-                  <div className={styles.currencySlot}>
+                  <div
+                    className={styles.currencySlot}
+                    data-character-sheet-slot="currency"
+                  >
                     <CharacterCurrencySection sheet={sheet} />
                   </div>
                 </div>
 
-                <div className={styles.notesLowerGrid}>
+                <div
+                  className={styles.notesLowerGrid}
+                  data-character-sheet-column="right"
+                >
                   <div className={styles.minorPersonality}>
                     <CharacterPersonalitySection
                       className={styles.stretchSection}

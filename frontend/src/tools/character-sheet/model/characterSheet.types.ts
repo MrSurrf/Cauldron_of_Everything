@@ -262,6 +262,11 @@ export type CharacterSheetDocument = {
   deathSaves: DeathSavesState
   resources: ResourcePool[]
   attacks: AttackEntry[]
+  /**
+   * Свободное визуальное представление атак. Структурированный `attacks`
+   * сохраняется отдельно для формул, связей с Encyclopedia и будущего API.
+   */
+  attacksContentText?: string | null
   currency: CurrencyState
   inventory: InventoryEntry[]
   personality: PersonalitySections

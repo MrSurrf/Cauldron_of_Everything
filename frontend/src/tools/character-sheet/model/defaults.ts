@@ -113,6 +113,7 @@ export function createEmptyCharacterSheet(
     deathSaves: { successes: 0, failures: 0 },
     resources: [],
     attacks: [],
+    attacksContentText: null,
     currency: {
       cp: manualNumericField(0),
       sp: manualNumericField(0),
@@ -133,7 +134,7 @@ export function createEmptyCharacterSheet(
     appearance: {
       font: 'cauldron',
       bodyFontSize: 14,
-      headingFontSize: 16,
+      headingFontSize: 14,
       density: 'compact',
     },
     view: { collapsedSectionIds: [] },

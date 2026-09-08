@@ -15,6 +15,7 @@ export type AbilityScoreCardProps = {
   onScoreChange: (value: FormulaFieldValue) => void
   score: FormulaFieldValue
   scoreResult: ComputedValueResult
+  showScore?: boolean
 }
 
 export function AbilityScoreCard({
@@ -27,6 +28,7 @@ export function AbilityScoreCard({
   onScoreChange,
   score,
   scoreResult,
+  showScore = true,
 }: AbilityScoreCardProps) {
   return (
     <article
@@ -45,10 +47,14 @@ export function AbilityScoreCard({
         </span>
       </header>
 
-      <div className={styles.fields}>
+      <div
+        className={styles.fields}
+        data-score-visible={showScore || undefined}
+      >
         <FormulaField
           className={styles.modifierField}
           accessibleLabel={`${label}: модификатор`}
+          compact={true}
           defaultFormula={modifierDefaultFormula}
           labelVisibility="sr-only"
           label="Модификатор"
@@ -61,15 +67,18 @@ export function AbilityScoreCard({
           onValueChange={onModifierChange}
         />
 
-        <FormulaField
-          className={styles.scoreField}
-          accessibleLabel={`${label}: значение`}
-          labelVisibility="sr-only"
-          label="Значение"
-          value={score}
-          result={scoreResult}
-          onValueChange={onScoreChange}
-        />
+        {showScore && (
+          <FormulaField
+            className={styles.scoreField}
+            accessibleLabel={`${label}: значение`}
+            compact={true}
+            labelVisibility="sr-only"
+            label="Значение"
+            value={score}
+            result={scoreResult}
+            onValueChange={onScoreChange}
+          />
+        )}
       </div>
     </article>
   )

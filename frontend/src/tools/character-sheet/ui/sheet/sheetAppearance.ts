@@ -24,8 +24,8 @@ export function getAppearanceValue(
     return 'medium' as const
   }
   const getHeadingSize = (value: number) => {
-    if (value <= 14) return 'small' as const
-    if (value >= 20) return 'large' as const
+    if (value <= 12) return 'small' as const
+    if (value >= 16) return 'large' as const
     return 'medium' as const
   }
 
@@ -53,9 +53,9 @@ export function appearancePatch(
     large: 16,
   } as const
   const headingSizeMap = {
-    small: 14,
-    medium: 16,
-    large: 20,
+    small: 12,
+    medium: 14,
+    large: 16,
   } as const
 
   return {
