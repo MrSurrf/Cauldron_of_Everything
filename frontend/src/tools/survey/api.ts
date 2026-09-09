@@ -1,4 +1,5 @@
 import type { SurveyResult } from './surveys/surveyTypes'
+import { authFetch } from './auth'
 
 // Адрес бэкенда. В продакшене задаётся через VITE_API_BASE_URL
 // при сборке (например, в Dokploy). Для локальной разработки — localhost:8000.
@@ -16,7 +17,7 @@ export type Submission = {
 export async function sendSurveyResult(
   result: SurveyResult,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/submissions/`, {
+  const response = await authFetch(`${API_BASE_URL}/api/submissions/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
