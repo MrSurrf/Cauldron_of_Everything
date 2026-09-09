@@ -56,7 +56,7 @@ export const DND5E_2014_RULESET: CharacterRulesetDefinition = {
     ...skillFormulas,
     PROFICIENCY: '2 + FLOOR((LEVEL - 1) / 4)',
     INITIATIVE: 'DEX_MOD',
-    ARMOR_CLASS: '10 + DEX_MOD + ARMOR_BONUS',
+    ARMOR_CLASS: '10 + DEX_MOD',
     PASSIVE_PERCEPTION: '10 + SKILL_PERCEPTION',
   },
   skills: DND_5E_SKILLS,

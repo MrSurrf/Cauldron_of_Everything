@@ -47,7 +47,7 @@
   --input-corner-cut: 0;
   --input-inner-frame-inset: 0;
 
-  min-height: calc(var(--control-height-sm) + var(--space-1));
+  min-height: calc(var(--control-height-sm) + var(--space-3));
   border-bottom: var(--border-width-default) solid
     color-mix(in srgb, var(--color-content-border) 76%, transparent);
   background: transparent;
@@ -66,8 +66,8 @@
 }
 
 .nameInput {
-  min-height: calc(var(--control-height-sm) + var(--space-1));
-  padding: var(--space-2) var(--sheet-layout-gap, var(--space-2))
+  min-height: calc(var(--control-height-sm) + var(--space-3));
+  padding: var(--space-3) var(--sheet-layout-gap, var(--space-2))
     var(--sheet-tight-gap, var(--space-1));
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
@@ -136,9 +136,17 @@
 
   border-bottom: var(--border-width-default) solid
     var(--input-border);
+  min-height: calc(var(--control-height-sm) + var(--space-1));
   background: transparent;
   clip-path: none;
   filter: none;
+}
+
+.detailInput {
+  min-height: calc(var(--control-height-sm) + var(--space-1));
+  padding-top: 0.625rem;
+  padding-bottom: 0;
+  line-height: 1.1;
 }
 
 .detailFrame::before,

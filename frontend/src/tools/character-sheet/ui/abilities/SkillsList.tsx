@@ -67,6 +67,7 @@ export function SkillsList({
           <div
             key={item.id}
             className={styles.skillRow}
+            data-skill-row={item.id}
             data-rank={rank}
             title={`${rankLabels[rank]}. Нажмите, чтобы изменить владение.`}
             onClick={(event) => {

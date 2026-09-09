@@ -323,12 +323,8 @@ export function characterSheetReducer(
       return { ...document, attacks: document.attacks.filter((item) => item.id !== action.id) }
     case 'attacks/setContentText':
       return { ...document, attacksContentText: action.value }
-    case 'inventory/add':
-      return { ...document, inventory: [...document.inventory, action.value] }
-    case 'inventory/update':
-      return { ...document, inventory: replaceById(document.inventory, action.id, action.patch) }
-    case 'inventory/remove':
-      return { ...document, inventory: document.inventory.filter((item) => item.id !== action.id) }
+    case 'equipment/setContentText':
+      return { ...document, equipmentContentText: action.value }
     case 'personality/add':
       return {
         ...document,

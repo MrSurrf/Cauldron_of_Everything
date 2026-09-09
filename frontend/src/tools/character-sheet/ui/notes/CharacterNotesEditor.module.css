@@ -153,15 +153,6 @@
     var(--sheet-icon-control-size, 1.125rem);
 }
 
-.previewScaleGlyph {
-  display: inline-grid;
-  place-items: center;
-  font-family: var(--font-family-body);
-  font-size: var(--sheet-icon-glyph-size, 0.6875rem);
-  font-weight: 400;
-  line-height: 1;
-}
-
 .previewParagraph,
 .previewHeading,
 .previewList,
@@ -383,43 +374,35 @@
   gap: var(--border-width-default);
 }
 
-.resourceCounter button {
-  display: inline-grid;
-  place-items: center;
-
-  width: var(--sheet-icon-control-size, 1.125rem);
-  height: var(--sheet-icon-control-size, 1.125rem);
-  padding: 0;
-  border:
-    var(--border-width-default)
-    solid
+.resourceCounterButton[data-size='sm'] {
+  --button-border:
     color-mix(
       in srgb,
-      var(--color-content-border) 54%,
-      transparent
+      var(--color-content-border) 64%,
+      var(--color-border-accent)
     );
+  --button-surface-start:
+    color-mix(in srgb, var(--color-surface-default) 88%, transparent);
+  --button-surface-end:
+    color-mix(in srgb, var(--color-surface-accent) 42%, transparent);
+  --button-corner-cut: var(--space-1);
+  --icon-button-glyph-size: var(--sheet-icon-glyph-size, 0.6875rem);
+  --icon-button-size: var(--sheet-icon-control-size, 1.125rem);
 
-  background:
-    color-mix(
-      in srgb,
-      var(--color-surface-accent) 22%,
-      transparent
-    );
+  border: 0;
   color: var(--color-text-primary);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: var(--sheet-icon-glyph-size, 0.6875rem);
-  line-height: 1;
+  filter: none;
 }
 
-.resourceCounter button:hover:not(:disabled),
-.resourceCounter button:focus-visible {
-  border-color: var(--color-border-accent);
+.resourceCounterButton:hover:not(:disabled),
+.resourceCounterButton:focus-visible {
+  --button-border: var(--color-border-accent);
+
   outline: 0;
   color: var(--palette-purple-300);
 }
 
-.resourceCounter button:disabled {
+.resourceCounterButton:disabled {
   cursor: default;
   opacity: var(--disabled-opacity);
 }
@@ -512,7 +495,7 @@
   .resourceBlock,
   .collapsibleBlock,
   .rollToken,
-  .resourceCounter button {
+  .resourceCounterButton {
     border: var(--border-width-default) solid CanvasText;
     background: Canvas;
     color: CanvasText;

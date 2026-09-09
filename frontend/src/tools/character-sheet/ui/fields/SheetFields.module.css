@@ -33,51 +33,6 @@
   line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
-.numericInput {
-  text-align: center;
-  font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(
-    --sheet-value-size,
-    var(--sheet-ordinary-value-size, var(--font-size-lg))
-  ) !important;
-  font-variant-numeric: tabular-nums;
-}
-
-.statField {
-  min-width: 0;
-}
-
-.statFrame {
-  --input-border: transparent;
-  --input-inner-border: transparent;
-  --input-surface-start: transparent;
-  --input-surface-end: transparent;
-  --input-corner-cut: 0;
-  --input-inner-frame-inset: 0;
-
-  min-height: var(--control-height-lg);
-  background: transparent;
-  clip-path: none;
-  filter: none;
-}
-
-.statFrame::before,
-.statFrame > span[aria-hidden='true'] {
-  display: none;
-}
-
-.statFrame:focus-within {
-  filter: none;
-}
-
-.statInput {
-  min-height: var(--control-height-lg) !important;
-  padding: 0 var(--space-1) !important;
-  color: var(--color-text-primary);
-  font-size: var(--sheet-value-size, var(--font-size-xl)) !important;
-  line-height: 1;
-}
-
 .plainInput {
   width: 100%;
   min-width: 0;

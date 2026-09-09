@@ -9,7 +9,6 @@ import type {
   CustomSection,
   DeathSavesState,
   HitDicePool,
-  InventoryEntry,
   NumericFieldAddress,
   NumericFieldState,
   PersonalitySections,
@@ -43,9 +42,7 @@ export type CharacterSheetAction =
   | { type: 'attack/update'; id: string; patch: Partial<AttackEntry> }
   | { type: 'attack/remove'; id: string }
   | { type: 'attacks/setContentText'; value: string }
-  | { type: 'inventory/add'; value: InventoryEntry }
-  | { type: 'inventory/update'; id: string; patch: Partial<InventoryEntry> }
-  | { type: 'inventory/remove'; id: string }
+  | { type: 'equipment/setContentText'; value: string }
   | {
       type: 'personality/add'
       section: PersonalitySectionKey
@@ -109,6 +106,10 @@ export const characterSheetActions = {
   }),
   setAttacksContentText: (value: string): CharacterSheetAction => ({
     type: 'attacks/setContentText',
+    value,
+  }),
+  setEquipmentContentText: (value: string): CharacterSheetAction => ({
+    type: 'equipment/setContentText',
     value,
   }),
   patchAppearance: (patch: Partial<SheetAppearance>): CharacterSheetAction => ({

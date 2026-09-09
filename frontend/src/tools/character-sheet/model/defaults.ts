@@ -121,7 +121,7 @@ export function createEmptyCharacterSheet(
       gp: manualNumericField(0),
       pp: manualNumericField(0),
     },
-    inventory: [],
+    equipmentContentText: '',
     personality: {
       traits: [],
       ideals: [],

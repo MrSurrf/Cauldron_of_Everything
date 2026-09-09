@@ -37,7 +37,7 @@ export function CharacterSheetLeftColumn({
           return (
             <AbilityScoreCard
               key={ability}
-              abbreviation={meta.abbreviation}
+              abbreviation={meta.formulaAbbreviation}
               label={meta.label}
               modifier={state.modifier}
               modifierDefaultFormula={

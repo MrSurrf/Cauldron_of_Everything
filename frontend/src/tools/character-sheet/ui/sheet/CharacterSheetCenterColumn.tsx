@@ -79,6 +79,7 @@ export function CharacterHitPointsSection({
           <FormulaField
             compact={true}
             label={label}
+            presentation="stat"
             result={resultFor(key)}
             value={document.hitPoints[field]}
             variables={variables}

@@ -45,6 +45,9 @@ async function mountCharacterSheet(
     await nextFrame()
   })
 
+  await document.fonts.ready
+  await nextFrame()
+
   return container
 }
 
@@ -90,7 +93,7 @@ describe('Character Sheet fixed desktop composition', () => {
     )!
     const identity = page.firstElementChild as HTMLElement
     const identityInputs = Array.from(
-      identity.querySelectorAll<HTMLElement>('input'),
+      identity.querySelectorAll<HTMLElement>('input:not([type="file"])'),
     )
 
     expect(roundedWidth(page)).toBe(964)
@@ -107,8 +110,17 @@ describe('Character Sheet fixed desktop composition', () => {
       123,
     )
     identityInputs.forEach((input) => {
+      const inputStyle = getComputedStyle(input)
+      const verticalContentSize =
+        parseFloat(inputStyle.paddingTop) +
+        parseFloat(inputStyle.lineHeight) +
+        parseFloat(inputStyle.paddingBottom)
+
       expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(
         identity.getBoundingClientRect().bottom,
+      )
+      expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+        verticalContentSize,
       )
     })
     expect(right.getBoundingClientRect().bottom).toBe(
@@ -117,6 +129,138 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(left.getBoundingClientRect().bottom).toBe(
       center.getBoundingClientRect().bottom,
     )
+  })
+
+  it('показывает русские названия и сокращения характеристик', async () => {
+    const container = await mountCharacterSheet()
+    const abilityHeadings = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[aria-label="Характеристики"] article > header',
+      ),
+      (heading) => heading.textContent?.trim(),
+    )
+    const skillAbbreviations = Array.from(new Set(
+      Array.from(
+        container.querySelectorAll<HTMLElement>(
+          '[data-character-sheet-column="left"] [data-presentation="list"] small',
+        ),
+        (abbreviation) => abbreviation.textContent?.trim(),
+      ),
+    )).sort()
+    const savingThrowRows = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[data-saving-throw-row]',
+      ),
+    )
+    const skillRows = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        '[data-skill-row]',
+      ),
+    )
+    const skillNames = skillRows.map((row) =>
+      row.querySelector<HTMLElement>(
+        '[data-presentation="list"] > :first-child > span',
+      )!,
+    )
+
+    expect(abilityHeadings).toEqual([
+      'Сила',
+      'Ловкость',
+      'Телосложение',
+      'Интеллект',
+      'Мудрость',
+      'Харизма',
+    ])
+    expect(abilityHeadings.join(' ')).not.toMatch(
+      /\b(?:STR|DEX|CON|INT|WIS|CHA)\b/,
+    )
+    expect(skillAbbreviations).toEqual([
+      'ИНТ',
+      'ЛОВ',
+      'МУД',
+      'СИЛ',
+      'ХАР',
+    ])
+    expect(
+      skillNames
+        .filter((name) => name.scrollWidth > name.clientWidth)
+        .map((name) => ({
+          available: name.clientWidth,
+          label: name.textContent,
+          required: name.scrollWidth,
+        })),
+    ).toEqual([])
+
+    ;[savingThrowRows[0], skillRows[0]].forEach((row) => {
+      const field = row.querySelector<HTMLElement>(
+        '[data-presentation="list"]',
+      )!
+      const numberFrame = field.querySelector<HTMLElement>('[data-numeric-frame]')!
+      const numberFrameStyle = getComputedStyle(numberFrame)
+
+      expect(parseFloat(getComputedStyle(field).columnGap)).toBeGreaterThan(1)
+      expect(numberFrame.dataset.framed).toBe('true')
+      expect(numberFrameStyle.clipPath).toContain('polygon')
+      expect(field.querySelectorAll('[data-numeric-frame]')).toHaveLength(1)
+    })
+
+    const firstSkillLabel = skillRows[0].querySelector<HTMLElement>(
+      '[data-presentation="list"] > :first-child',
+    )!
+    const skillName = firstSkillLabel.querySelector<HTMLElement>('span')!
+    const skillAbility = firstSkillLabel.querySelector<HTMLElement>('small')!
+
+    expect(skillAbility.getBoundingClientRect().left).toBeGreaterThan(
+      skillName.getBoundingClientRect().right,
+    )
+    expect(getComputedStyle(skillRows[0]).backgroundImage).not.toBe(
+      getComputedStyle(skillRows[1]).backgroundImage,
+    )
+
+    skillRows.forEach((row) => {
+      const abbreviation = row.querySelector('small')!
+      const panel = row.closest('section')!
+      expect(abbreviation.getBoundingClientRect().right).toBeLessThanOrEqual(
+        panel.getBoundingClientRect().right - 8,
+      )
+    })
+
+    const speedNumberFrame = container.querySelector<HTMLElement>(
+      '[data-stat="speed"] [data-numeric-frame]',
+    )!
+    const skillNumberFrame = skillRows[0].querySelector<HTMLElement>(
+      '[data-numeric-frame]',
+    )!
+
+    expect(getComputedStyle(skillNumberFrame).clipPath).toBe(
+      getComputedStyle(speedNumberFrame).clipPath,
+    )
+
+    const scoreField = container.querySelector<HTMLElement>(
+      '[aria-label="Сила: значение"]',
+    )!.closest<HTMLElement>('[data-mode]')!
+    const scoreFrame = scoreField.querySelector<HTMLElement>('[data-numeric-frame]')!
+    expect(scoreField.querySelectorAll('[data-numeric-frame]')).toHaveLength(1)
+    expect(getComputedStyle(scoreFrame).clipPath).toBe(getComputedStyle(speedNumberFrame).clipPath)
+    expect(getComputedStyle(scoreField).clipPath).toBe('none')
+    expect(getComputedStyle(scoreField).borderTopWidth).toBe('0px')
+
+    ;[skillNumberFrame, speedNumberFrame, scoreFrame].forEach((frame) => {
+      const control = frame.querySelector<HTMLElement>('input, output')!
+      expect(getComputedStyle(control).color).toBe(
+        getComputedStyle(scoreFrame.querySelector('input')!).color,
+      )
+      expect(getComputedStyle(control).opacity).toBe('1')
+      const formulaControl = frame.parentElement!
+      expect(getComputedStyle(formulaControl).borderBottomWidth).toBe('0px')
+      expect(getComputedStyle(formulaControl).backgroundImage).toBe('none')
+    })
+
+    ;['proficiency', 'initiative', 'speed'].forEach((stat) => {
+      const card = container.querySelector(`[data-stat="${stat}"]`)!
+      expect(getComputedStyle(card, '::before').content).toBe('none')
+      expect(getComputedStyle(card, '::after').content).toBe('none')
+    })
   })
 
   it('раскрывает личностные разделы вверх внутри статичных границ листа', async () => {
@@ -221,6 +365,9 @@ describe('Character Sheet fixed desktop composition', () => {
     const hitPointsSlot = container.querySelector<HTMLElement>(
       '[data-character-sheet-slot="hit-points"]',
     )!
+    const hitDiceSlot = container.querySelector<HTMLElement>(
+      '[data-character-sheet-slot="hit-dice"]',
+    )!
     const deathSavesSlot = container.querySelector<HTMLElement>(
       '[data-character-sheet-slot="death-saves"]',
     )!
@@ -237,7 +384,9 @@ describe('Character Sheet fixed desktop composition', () => {
     const equipmentSlot = container.querySelector<HTMLElement>(
       '[data-character-sheet-slot="equipment"]',
     )!
-    const equipmentTable = equipmentSlot.querySelector('table')!
+    const equipmentTextArea = equipmentSlot.querySelector<HTMLTextAreaElement>(
+      'textarea[aria-label="Снаряжение"]',
+    )!
     const currencySlot = container.querySelector<HTMLElement>(
       '[data-character-sheet-slot="currency"]',
     )!
@@ -269,9 +418,9 @@ describe('Character Sheet fixed desktop composition', () => {
       `${armorClassShieldStyle.maskImage} ${armorClassShieldStyle.getPropertyValue('-webkit-mask-image')}`,
     ).toContain('data:image/svg+xml')
     expect(getComputedStyle(armorClass).borderTopWidth).toBe('0px')
-    expect(roundedWidth(armorClass)).toBeLessThanOrEqual(72)
+    expect(roundedWidth(armorClass)).toBeGreaterThan(72)
     expect(hitPointsSlot.getBoundingClientRect().width).toBeCloseTo(
-      166.5,
+      184,
       1,
     )
     expect(hitPointsSlot.getBoundingClientRect().height).toBe(72)
@@ -281,21 +430,22 @@ describe('Character Sheet fixed desktop composition', () => {
         '[data-presentation]',
       ),
     )
+    const hitPointFieldFrames = Array.from(
+      hitPointsSlot.querySelectorAll<HTMLElement>(
+        '[data-hit-points-field]',
+      ),
+    )
     expect(hitPointFields).toHaveLength(3)
-    const hitPointFieldRects = hitPointFields.map((field) =>
-      field.getBoundingClientRect(),
+    expect(
+      hitPointFieldFrames.map((field) =>
+        field.dataset.hitPointsField,
+      ),
+    ).toEqual(['current', 'maximum', 'temporary'])
+    expect(hitPointFieldFrames[1].getBoundingClientRect().left).toBeGreaterThanOrEqual(
+      hitPointFieldFrames[0].getBoundingClientRect().right,
     )
-    expect(hitPointFieldRects[1].top).toBe(
-      hitPointFieldRects[0].top,
-    )
-    expect(hitPointFieldRects[2].top).toBe(
-      hitPointFieldRects[0].top,
-    )
-    expect(hitPointFieldRects[1].left).toBeGreaterThanOrEqual(
-      hitPointFieldRects[0].right,
-    )
-    expect(hitPointFieldRects[2].left).toBeGreaterThanOrEqual(
-      hitPointFieldRects[1].right,
+    expect(hitPointFieldFrames[2].getBoundingClientRect().left).toBeGreaterThanOrEqual(
+      hitPointFieldFrames[1].getBoundingClientRect().right,
     )
     hitPointFields.forEach((field) => {
       const label = field.firstElementChild as HTMLElement
@@ -306,16 +456,78 @@ describe('Character Sheet fixed desktop composition', () => {
         labelText.clientWidth,
       )
       expect(control.getBoundingClientRect().width).toBeLessThanOrEqual(
-        36,
+        44,
       )
     })
+    const temporaryHitPointsControl =
+      hitPointFields[2].children[1] as HTMLElement
+    expect(
+      getComputedStyle(
+        temporaryHitPointsControl,
+        '::before',
+      ).maskImage,
+    ).not.toBe('none')
+    expect(temporaryHitPointsControl.getBoundingClientRect().width).toBeLessThanOrEqual(
+      36,
+    )
     expect(
       deathSavesSlot.getBoundingClientRect().height,
     ).toBeLessThanOrEqual(72)
+    expect(deathSavesSlot.getBoundingClientRect().top).toBe(
+      hitPointsSlot.getBoundingClientRect().top,
+    )
+    expect(deathSavesSlot.getBoundingClientRect().left).toBe(
+      hitPointsSlot.getBoundingClientRect().right,
+    )
+    expect(deathSavesSlot.parentElement).toBe(
+      hitPointsSlot.parentElement,
+    )
+    const deathSaveMarks = Array.from(
+      deathSavesSlot.querySelectorAll<HTMLButtonElement>(
+        'button[aria-pressed]',
+      ),
+    )
+    expect(deathSaveMarks).toHaveLength(6)
+    deathSaveMarks.forEach((mark) => {
+      const markRect = mark.getBoundingClientRect()
+      const deathSavesRect = deathSavesSlot.getBoundingClientRect()
+
+      expect(mark.querySelector('svg')).toBeNull()
+      expect(getComputedStyle(mark).borderRadius).toBe('50%')
+      expect(markRect.right).toBeLessThan(deathSavesRect.right)
+      expect(markRect.bottom).toBeLessThan(deathSavesRect.bottom)
+    })
+    expect(roundedWidth(hitDiceSlot)).toBe(roundedWidth(attacks))
     const abilityValues = Array.from(
       strength.querySelectorAll<HTMLElement>('[data-mode]'),
     )
     expect(abilityValues).toHaveLength(2)
+    const armorClassValue = armorClass.querySelector<HTMLElement>(
+      'input, output',
+    )!
+    const currentHitPointsValue = hitPointFieldFrames[0]
+      .querySelector<HTMLElement>('input, output')!
+    const maximumHitPointsValue = hitPointFieldFrames[1]
+      .querySelector<HTMLElement>('input, output')!
+    const temporaryHitPointsValue = hitPointFieldFrames[2]
+      .querySelector<HTMLElement>('input, output')!
+    const abilityModifierValue = abilityValues[0]
+      .querySelector<HTMLElement>('input, output')!
+    const abilityScoreValue = abilityValues[1]
+      .querySelector<HTMLElement>('input, output')!
+
+    expect(getComputedStyle(currentHitPointsValue).fontSize).toBe(
+      getComputedStyle(armorClassValue).fontSize,
+    )
+    expect(getComputedStyle(currentHitPointsValue).fontSize).toBe(
+      getComputedStyle(abilityModifierValue).fontSize,
+    )
+    expect(getComputedStyle(maximumHitPointsValue).fontSize).toBe(
+      getComputedStyle(abilityScoreValue).fontSize,
+    )
+    expect(getComputedStyle(temporaryHitPointsValue).fontSize).toBe(
+      getComputedStyle(abilityScoreValue).fontSize,
+    )
     expect(
       abilityValues[1].getBoundingClientRect().top,
     ).toBeGreaterThanOrEqual(
@@ -344,8 +556,14 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(
       equipmentSlot.getBoundingClientRect().height,
     ).toBeLessThanOrEqual(400)
-    expect(roundedWidth(equipmentTable)).toBeLessThanOrEqual(
+    expect(equipmentSlot.querySelector('table')).toBeNull()
+    expect(equipmentTextArea.closest('[data-multiline]')).toBeNull()
+    expect(equipmentTextArea.value).toContain('Кольчуга')
+    expect(roundedWidth(equipmentTextArea)).toBeLessThanOrEqual(
       roundedWidth(equipmentSlot),
+    )
+    expect(equipmentTextArea.getBoundingClientRect().height).toBeGreaterThan(
+      100,
     )
     expect(
       currencySlot.getBoundingClientRect().height,
@@ -357,5 +575,60 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(currencySlot.scrollWidth).toBeLessThanOrEqual(
       currencySlot.clientWidth,
     )
+  })
+
+  it('раскладывает пулы костей хитов по два в строке', async () => {
+    const container = await mountCharacterSheet()
+    const list = container.querySelector<HTMLElement>(
+      '[data-hit-dice-list]',
+    )!
+    const addButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="Добавить пул костей хитов"]',
+    )!
+    const getPools = () => Array.from(
+      list.querySelectorAll<HTMLElement>(
+        '[data-hit-dice-pool]',
+      ),
+    )
+
+    expect(getPools()).toHaveLength(1)
+    expect(roundedWidth(getPools()[0])).toBe(roundedWidth(list))
+
+    await act(async () => {
+      addButton.click()
+      await nextFrame()
+    })
+
+    let pools = getPools()
+    expect(pools).toHaveLength(2)
+    expect(pools[0].getBoundingClientRect().top).toBe(
+      pools[1].getBoundingClientRect().top,
+    )
+    expect(roundedWidth(pools[0])).toBe(roundedWidth(pools[1]))
+    expect(roundedWidth(pools[0])).toBeLessThan(roundedWidth(list))
+
+    await act(async () => {
+      addButton.click()
+      await nextFrame()
+    })
+
+    pools = getPools()
+    expect(pools).toHaveLength(3)
+    expect(pools[2].getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      pools[0].getBoundingClientRect().bottom,
+    )
+    expect(roundedWidth(pools[2])).toBe(roundedWidth(list))
+
+    await act(async () => {
+      addButton.click()
+      await nextFrame()
+    })
+
+    pools = getPools()
+    expect(pools).toHaveLength(4)
+    expect(pools[2].getBoundingClientRect().top).toBe(
+      pools[3].getBoundingClientRect().top,
+    )
+    expect(roundedWidth(pools[2])).toBe(roundedWidth(pools[0]))
   })
 })

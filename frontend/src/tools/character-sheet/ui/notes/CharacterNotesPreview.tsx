@@ -25,6 +25,7 @@ import {
   rollDiceExpression,
   type DiceRollResult,
 } from './diceExpression'
+import { MinusIcon, PlusIcon } from '../icons'
 import styles from './CharacterNotesEditor.module.css'
 
 type PreviewStyle = CSSProperties & {
@@ -445,31 +446,35 @@ export function CharacterNotesPreview({
               role="group"
               aria-label={`Использования ресурса «${block.title}»`}
             >
-              <button
-                type="button"
+              <IconButton
                 aria-label={`Уменьшить ресурс «${block.title}»`}
+                className={styles.resourceCounterButton}
+                decoration="minimal"
                 disabled={current <= 0}
+                icon={<MinusIcon />}
+                size="sm"
+                variant="secondary"
                 onClick={(event) => {
                   event.stopPropagation()
                   updateResourceCurrent(block, -1)
                 }}
-              >
-                −
-              </button>
+              />
               <output aria-live="polite">
                 {current} / {maximum}
               </output>
-              <button
-                type="button"
+              <IconButton
                 aria-label={`Увеличить ресурс «${block.title}»`}
+                className={styles.resourceCounterButton}
+                decoration="minimal"
                 disabled={maximum >= 0 && current >= maximum}
+                icon={<PlusIcon />}
+                size="sm"
+                variant="secondary"
                 onClick={(event) => {
                   event.stopPropagation()
                   updateResourceCurrent(block, 1)
                 }}
-              >
-                +
-              </button>
+              />
             </div>
           </header>
           {recovery && (
@@ -522,12 +527,9 @@ export function CharacterNotesPreview({
           <IconButton
             aria-label={`Уменьшить текст: ${accessibleLabel}`}
             className={styles.previewScaleButton}
+            decoration="minimal"
             disabled={textScale <= 0.75}
-            icon={
-              <span className={styles.previewScaleGlyph}>
-                −
-              </span>
-            }
+            icon={<MinusIcon />}
             size="sm"
             variant="secondary"
             onClick={() => onTextScaleChange(-1)}
@@ -542,12 +544,9 @@ export function CharacterNotesPreview({
           <IconButton
             aria-label={`Увеличить текст: ${accessibleLabel}`}
             className={styles.previewScaleButton}
+            decoration="minimal"
             disabled={textScale >= 1.5}
-            icon={
-              <span className={styles.previewScaleGlyph}>
-                +
-              </span>
-            }
+            icon={<PlusIcon />}
             size="sm"
             variant="secondary"
             onClick={() => onTextScaleChange(1)}

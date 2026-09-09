@@ -78,7 +78,7 @@ export function CharacterSkillsSection({
     <SkillsList
       fill={true}
       items={Object.values(document.skills).map((skill) => ({
-        ability: abilityLabels[skill.ability].abbreviation,
+        ability: abilityLabels[skill.ability].shortLabel,
         defaultFormula:
           ruleset.defaultFormulas[skill.variableKey],
         id: skill.id,

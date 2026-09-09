@@ -6,14 +6,42 @@ import type {
 
 export const abilityLabels: Readonly<Record<
   AbilityKey,
-  { abbreviation: string; label: string }
+  {
+    formulaAbbreviation: string
+    label: string
+    shortLabel: string
+  }
 >> = {
-  strength: { abbreviation: 'STR', label: 'Сила' },
-  dexterity: { abbreviation: 'DEX', label: 'Ловкость' },
-  constitution: { abbreviation: 'CON', label: 'Телосложение' },
-  intelligence: { abbreviation: 'INT', label: 'Интеллект' },
-  wisdom: { abbreviation: 'WIS', label: 'Мудрость' },
-  charisma: { abbreviation: 'CHA', label: 'Харизма' },
+  strength: {
+    formulaAbbreviation: 'STR',
+    label: 'Сила',
+    shortLabel: 'СИЛ',
+  },
+  dexterity: {
+    formulaAbbreviation: 'DEX',
+    label: 'Ловкость',
+    shortLabel: 'ЛОВ',
+  },
+  constitution: {
+    formulaAbbreviation: 'CON',
+    label: 'Телосложение',
+    shortLabel: 'ТЕЛ',
+  },
+  intelligence: {
+    formulaAbbreviation: 'INT',
+    label: 'Интеллект',
+    shortLabel: 'ИНТ',
+  },
+  wisdom: {
+    formulaAbbreviation: 'WIS',
+    label: 'Мудрость',
+    shortLabel: 'МУД',
+  },
+  charisma: {
+    formulaAbbreviation: 'CHA',
+    label: 'Харизма',
+    shortLabel: 'ХАР',
+  },
 }
 
 export const currencyLabels: Readonly<Record<CurrencyKey, string>> = {
@@ -32,10 +60,4 @@ export const personalityLabels: Readonly<Record<
   ideals: 'Идеалы',
   bonds: 'Привязанности',
   flaws: 'Слабости',
-}
-
-export const mockItemNames: Readonly<Record<string, string>> = {
-  'item-chain-mail': 'Кольчуга',
-  'item-longsword': 'Длинный меч',
-  'item-light-crossbow': 'Лёгкий арбалет',
 }

@@ -13,10 +13,8 @@ import {
   CharacterHitDiceSection,
   CharacterHitPointsSection,
 } from './CharacterSheetCenterColumn'
-import {
-  CharacterCurrencySection,
-  CharacterEquipmentSection,
-} from './CharacterSheetInventoryRegion'
+import { CharacterCurrencySection } from './CharacterSheetCurrencySection'
+import { CharacterEquipmentSection } from './CharacterEquipmentSection'
 import { CharacterSheetLeftColumn } from './CharacterSheetLeftColumn'
 import { CharacterFeaturesSection } from './CharacterFeaturesSection'
 import { CharacterPersonalitySection } from './CharacterPersonalitySections'
@@ -158,10 +156,22 @@ export function CharacterSheetContent({
                   />
 
                   <div
-                    className={styles.hitPointsSlot}
-                    data-character-sheet-slot="hit-points"
+                    className={styles.vitalsPanel}
+                    data-character-sheet-vitals={true}
                   >
-                    <CharacterHitPointsSection sheet={sheet} />
+                    <div
+                      className={styles.hitPointsSlot}
+                      data-character-sheet-slot="hit-points"
+                    >
+                      <CharacterHitPointsSection sheet={sheet} />
+                    </div>
+
+                    <div
+                      className={styles.deathSavesSlot}
+                      data-character-sheet-slot="death-saves"
+                    >
+                      <CharacterDeathSavesSection sheet={sheet} />
+                    </div>
                   </div>
                 </section>
 
@@ -196,16 +206,11 @@ export function CharacterSheetContent({
                   className={styles.centerLowerGrid}
                   data-character-sheet-column="center"
                 >
-                  <div className={styles.secondaryVitals}>
-                    <div className={styles.hitDiceSlot}>
-                      <CharacterHitDiceSection sheet={sheet} />
-                    </div>
-                    <div
-                      className={styles.deathSavesSlot}
-                      data-character-sheet-slot="death-saves"
-                    >
-                      <CharacterDeathSavesSection sheet={sheet} />
-                    </div>
+                  <div
+                    className={styles.hitDiceSlot}
+                    data-character-sheet-slot="hit-dice"
+                  >
+                    <CharacterHitDiceSection sheet={sheet} />
                   </div>
 
                   <div

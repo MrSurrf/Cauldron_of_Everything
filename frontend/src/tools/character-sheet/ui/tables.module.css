@@ -47,28 +47,6 @@
   line-height: var(--sheet-single-line-height, var(--line-height-tight));
 }
 
-.equipmentTable {
-  --sheet-row-height: 1.5rem;
-
-  min-width: 24rem;
-}
-
-.equipmentTable .nameColumn {
-  width: auto;
-}
-
-.equipmentTable .quantityColumn {
-  width: 3.25rem;
-}
-
-.equipmentTable .stateColumn {
-  width: 3.5rem;
-}
-
-.equipmentTable .notesColumn {
-  width: 5.5rem;
-}
-
 .table th {
   height: var(--sheet-row-height, var(--control-height-sm));
   padding: var(--sheet-tight-gap, var(--space-1))
@@ -172,15 +150,6 @@
   width: 15%;
 }
 
-.quantityColumn {
-  width: 3.75rem;
-}
-
-.stateColumn {
-  width: 4rem;
-  text-align: center !important;
-}
-
 .notesColumn {
   width: 19%;
 }
@@ -217,15 +186,6 @@
   --icon-button-glyph-size: var(--icon-size-sm);
 }
 
-.stateButton {
-  margin-inline: auto;
-}
-
-.stateButton[aria-pressed='true'] {
-  color: var(--color-status-success);
-  filter: drop-shadow(0 0 var(--space-1) color-mix(in srgb, var(--color-status-success) 42%, transparent));
-}
-
 .linkedBadge {
   display: block;
   margin-top: var(--sheet-tight-gap, var(--space-1));
@@ -255,10 +215,5 @@
 
   .table tbody td:first-child::before {
     display: none;
-  }
-
-  .stateButton[aria-pressed='true'] {
-    color: Highlight;
-    filter: none;
   }
 }

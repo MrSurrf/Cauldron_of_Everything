@@ -1,6 +1,6 @@
 .checkSection {
-  --sheet-section-padding: 0;
-  --check-row-height: 1rem;
+  --sheet-section-padding: var(--space-1) var(--space-2) var(--space-2);
+  --check-row-height: 1.125rem;
   --check-marker-size: 0.5rem;
 }
 
@@ -35,9 +35,9 @@
   display: grid;
   min-width: 0;
   min-height: var(--check-row-height);
-  padding: 0 0.125rem;
+  padding: var(--border-width-default) 0;
   align-items: center;
-  gap: var(--border-width-default);
+  gap: var(--space-1);
   cursor: pointer;
   line-height: 1;
   border-bottom: var(--border-width-default) solid
@@ -45,6 +45,24 @@
   transition:
     background-color var(--motion-duration-fast)
     var(--motion-easing-standard);
+}
+
+.row:nth-child(even),
+.skillRow:nth-child(even) {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 16%,
+        var(--color-surface-default)
+      ),
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 8%,
+        var(--color-surface-muted)
+      )
+    );
 }
 
 .row:hover,
@@ -70,33 +88,48 @@
 .row > [data-presentation='list'],
 .skillRow > [data-presentation='list'] {
   min-height: var(--check-row-height);
-  grid-template-columns: 2rem minmax(0, 1fr);
+  grid-template-columns: 1.75rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--border-width-default);
+  gap: calc(var(--space-1) - var(--border-width-default));
 }
 
-.row > [data-presentation='list'] > :first-child,
-.skillRow > [data-presentation='list'] > :first-child {
-  line-height: 1;
+.row > [data-presentation='list'] > [data-formula-label],
+.skillRow > [data-presentation='list'] > [data-formula-label] {
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  line-height: 1.15;
+  white-space: normal;
 }
 
-.row > [data-presentation='list'] > :nth-child(2),
-.skillRow > [data-presentation='list'] > :nth-child(2),
-.row > [data-presentation='list'] > :nth-child(2) :is(input, output),
-.skillRow > [data-presentation='list'] > :nth-child(2) :is(input, output) {
-  min-height: var(--check-row-height);
-  line-height: 1;
+.skillRow > [data-presentation='list'] > [data-formula-label] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.5rem;
+  align-items: center;
+  column-gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.row > [data-presentation='list'] > [data-formula-label] > span,
+.skillRow > [data-presentation='list'] > [data-formula-label] > span {
+  min-width: 0;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .skillRow
   > [data-presentation='list']
-  > :first-child
-  small {
+  > [data-formula-label]
+  > small {
   color: var(--color-text-disabled);
   font-size: var(--sheet-secondary-size, var(--font-size-xs));
   letter-spacing: 0.02em;
   line-height: 1;
+  justify-self: end;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .rankButton {

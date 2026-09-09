@@ -154,6 +154,7 @@ export function CharacterIdentity({
             {detailFields.map((field) => (
               <TextInput
                 key={field.key}
+                className={styles.detailInput}
                 fieldClassName={`${sheetFieldStyles.compactField} ${styles.detailField}`}
                 label={field.label}
                 rootClassName={`${sheetFieldStyles.compactFrame} ${styles.detailFrame}`}

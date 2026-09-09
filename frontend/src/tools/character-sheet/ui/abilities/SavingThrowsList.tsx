@@ -39,6 +39,7 @@ export function SavingThrowsList({
         <div
           key={item.id}
           className={styles.row}
+          data-saving-throw-row={item.id}
           data-rank={
             item.proficient ? 'proficient' : 'none'
           }

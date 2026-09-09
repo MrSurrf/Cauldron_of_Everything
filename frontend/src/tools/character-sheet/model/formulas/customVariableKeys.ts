@@ -57,7 +57,6 @@ function collectReservedVariableKeys(
   const ruleset = getRulesetDefinition(document.rulesetId)
   const keys = new Set<string>([
     ...Object.values(FORMULA_FIELD_KEYS),
-    'ARMOR_BONUS',
   ])
 
   ABILITY_KEYS.forEach((ability) => {

@@ -181,20 +181,6 @@ const staticDescriptors: FormulaVariableDescriptor[] = [
       fieldId: FORMULA_FIELD_KEYS.passivePerception,
     },
   },
-  {
-    key: 'ARMOR_BONUS',
-    label: 'Бонус брони',
-    category: 'Бой',
-    source: {
-      kind: 'document',
-      read: (document) =>
-        document.inventory.reduce((total, item) => {
-          if (!item.equipped) return total
-          const bonus = item.overrides.armorBonus
-          return total + (typeof bonus === 'number' ? bonus : 0)
-        }, 0),
-    },
-  },
 ]
 
 export function createCharacterSheetVariableRegistry(
