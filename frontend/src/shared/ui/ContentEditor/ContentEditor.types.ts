@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import type { ContentResourceValue, ResourceFormulaResult } from './ResourceWidget'
 
 export type ContentEditorProps = {
   accessibleLabel: string
@@ -11,8 +12,16 @@ export type ContentEditorProps = {
   minTextScale?: number
   onTextScaleChange?: (textScale: number) => void
   onValueChange: (value: string) => void
+  evaluateResourceMaximum?: (expression: string) => ResourceFormulaResult
+  onStructuredResourceChange?: (
+    source: string,
+    current: number,
+    nextValue: string,
+    resource?: ContentResourceValue,
+  ) => void
   placeholder?: string
   readOnly?: boolean
+  renderPreview?: boolean
   rootClassName?: string
   rows?: number
   showStructureActions?: boolean

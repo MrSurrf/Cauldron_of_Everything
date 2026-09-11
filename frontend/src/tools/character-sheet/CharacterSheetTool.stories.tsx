@@ -287,7 +287,7 @@ export const ControlledDocument: Story = {
       }),
     )
 
-    await expect(notes).toHaveTextContent('Новый ресурс')
+    await expect(notes.querySelector('[data-resource-widget]')).toHaveTextContent('/')
     await expect(notes).not.toHaveTextContent(':::resource[')
   },
 }

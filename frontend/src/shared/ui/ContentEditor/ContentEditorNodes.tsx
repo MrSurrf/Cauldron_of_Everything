@@ -11,6 +11,8 @@ import {
   from 'lexical'
 
 import styles from './ContentEditor.module.css'
+import { ContentWidgetSelection } from './ContentWidgetSelection'
+import { ContentResourceNode } from './ContentResourceNode'
 
 export type ContentDirectiveKind =
   | 'resource'
@@ -70,6 +72,7 @@ export class ContentDirectiveNode extends DecoratorNode<ReactElement> {
   createDOM() {
     const element = document.createElement('div')
     element.className = styles.directiveHost
+    element.dataset.contentDirective = this.__kind
     return element
   }
 
@@ -108,31 +111,39 @@ export class ContentDirectiveNode extends DecoratorNode<ReactElement> {
     return this.getLatest().__title
   }
 
+  setContent(title: string, source: string) {
+    const writable = this.getWritable()
+    writable.__title = title
+    writable.__source = source
+    return writable
+  }
+
   isInline() {
     return false
   }
 
   isIsolated() {
-    return true
+    return false
   }
 
   decorate() {
     const kind = this.getKind()
+    if (kind === 'resource') return <ContentResourceNode nodeKey={this.getKey()} source={this.getSource()} />
 
     return (
+      <ContentWidgetSelection nodeKey={this.getKey()} label="вкладку">
       <section
         className={styles.directiveCard}
         data-kind={kind}
       >
         <span className={styles.directiveType}>
-          {kind === 'resource'
-            ? 'Ресурс'
-            : 'Раскрываемый раздел'}
+          Вкладка
         </span>
         <strong className={styles.directiveTitle}>
           {this.getTitle()}
         </strong>
       </section>
+      </ContentWidgetSelection>
     )
   }
 }
@@ -201,7 +212,11 @@ export class ContentDividerNode extends DecoratorNode<ReactElement> {
   }
 
   decorate() {
-    return <hr className={styles.contentDivider} />
+    return (
+      <ContentWidgetSelection nodeKey={this.getKey()} label="разделитель">
+        <hr className={styles.contentDivider} />
+      </ContentWidgetSelection>
+    )
   }
 }
 
@@ -282,11 +297,12 @@ export class ContentRollNode extends DecoratorNode<ReactElement> {
   }
 
   isIsolated() {
-    return true
+    return false
   }
 
   decorate() {
     return (
+      <ContentWidgetSelection nodeKey={this.getKey()} label="бросок" inline>
       <span
         className={styles.rollToken}
         title="Бросок станет активным после завершения редактирования"
@@ -294,6 +310,7 @@ export class ContentRollNode extends DecoratorNode<ReactElement> {
         <span aria-hidden="true">◇</span>
         {this.getExpression()}
       </span>
+      </ContentWidgetSelection>
     )
   }
 }

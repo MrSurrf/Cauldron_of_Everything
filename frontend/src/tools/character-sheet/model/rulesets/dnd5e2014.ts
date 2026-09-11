@@ -11,7 +11,7 @@ import {
 
 export const DND_5E_SKILLS: readonly SkillDefinition[] = [
   { id: 'acrobatics', label: 'Акробатика', ability: 'dexterity', variableKey: 'SKILL_ACROBATICS' },
-  { id: 'animal-handling', label: 'Уход за животными', ability: 'wisdom', variableKey: 'SKILL_ANIMAL_HANDLING' },
+  { id: 'animal-handling', label: 'Животные', ability: 'wisdom', variableKey: 'SKILL_ANIMAL_HANDLING' },
   { id: 'arcana', label: 'Магия', ability: 'intelligence', variableKey: 'SKILL_ARCANA' },
   { id: 'athletics', label: 'Атлетика', ability: 'strength', variableKey: 'SKILL_ATHLETICS' },
   { id: 'deception', label: 'Обман', ability: 'charisma', variableKey: 'SKILL_DECEPTION' },

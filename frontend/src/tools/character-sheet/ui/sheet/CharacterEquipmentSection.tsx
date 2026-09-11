@@ -1,5 +1,6 @@
 import { characterSheetActions } from '../../model'
-import styles from '../../CharacterSheetTool.module.css'
+import { ContentEditor } from '../../../../shared/ui'
+import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 import { SheetSection } from '../SheetSection'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
@@ -16,23 +17,24 @@ export function CharacterEquipmentSection({
   } = sheet
 
   return (
-    <SheetSection title="Снаряжение">
-      <div className={styles.equipmentTextBlock}>
-        <textarea
-          aria-label="Снаряжение"
-          className={styles.equipmentTextArea}
-          placeholder="Перечислите снаряжение персонажа..."
-          rows={10}
-          value={document.equipmentContentText ?? ''}
-          onChange={(event) => {
-            dispatch(
-              characterSheetActions.setEquipmentContentText(
-                event.currentTarget.value,
-              ),
-            )
-          }}
-        />
-      </div>
+    <SheetSection contentLayout="editor" title="Снаряжение">
+      <ContentEditor
+        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
+        accessibleLabel="Снаряжение"
+        fill={true}
+        renderPreview={true}
+        showStructureActions={true}
+        placeholder="Перечислите снаряжение персонажа..."
+        rows={10}
+        value={document.equipmentContentText ?? ''}
+        onValueChange={(value) => {
+          dispatch(
+            characterSheetActions.setEquipmentContentText(
+              value,
+            ),
+          )
+        }}
+      />
     </SheetSection>
   )
 }

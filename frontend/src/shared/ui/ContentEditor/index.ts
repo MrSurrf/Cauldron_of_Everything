@@ -1,5 +1,6 @@
 export { ContentEditor } from './ContentEditor'
 export type { ContentEditorProps } from './ContentEditor.types'
+export type { ContentResourceValue, ResourceFormulaResult } from './ResourceWidget'
 export {
   parseContentInline,
   parseContentSource,

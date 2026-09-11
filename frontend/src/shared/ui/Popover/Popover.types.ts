@@ -35,6 +35,7 @@ export type PopoverProps = {
   disabled?: boolean
   id?: string
   matchTriggerWidth?: boolean
+  modal?: boolean
   offset?: number
   onOpenChange?: (open: boolean) => void
   open?: boolean

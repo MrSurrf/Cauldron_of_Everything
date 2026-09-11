@@ -112,11 +112,23 @@
 .row > [data-presentation='list'] > [data-formula-label] > span,
 .skillRow > [data-presentation='list'] > [data-formula-label] > span {
   min-width: 0;
+}
+
+.row > [data-presentation='list'] > [data-formula-label] > span {
   overflow: visible;
   overflow-wrap: anywhere;
   hyphens: auto;
   text-overflow: clip;
   white-space: normal;
+}
+
+.skillRow
+  > [data-presentation='list']
+  > [data-formula-label]
+  > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .skillRow

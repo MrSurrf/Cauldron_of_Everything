@@ -12,18 +12,19 @@ import {
   within,
 } from 'storybook/test'
 
-import { CharacterNotesEditor } from './CharacterNotesEditor'
+import { ContentEditor } from './ContentEditor'
+import { emptyResource, resourceToSource } from './resourceContent'
 
 function InteractiveEditor(
   props: Omit<
-    ComponentProps<typeof CharacterNotesEditor>,
+    ComponentProps<typeof ContentEditor>,
     'onValueChange'
   >,
 ) {
   const [value, setValue] = useState(props.value)
 
   return (
-    <CharacterNotesEditor
+    <ContentEditor
       {...props}
       value={value}
       onValueChange={setValue}
@@ -32,8 +33,10 @@ function InteractiveEditor(
 }
 
 const meta = {
-  component: CharacterNotesEditor,
+  title: 'Shared/ContentEditor',
+  component: ContentEditor,
   args: {
+    renderPreview: true,
     accessibleLabel: 'Особенности, умения и заметки',
     onValueChange: () => undefined,
     rows: 8,
@@ -49,7 +52,7 @@ const meta = {
     ),
   ],
   tags: ['ai-generated'],
-} satisfies Meta<typeof CharacterNotesEditor>
+} satisfies Meta<typeof ContentEditor>
 
 export default meta
 
@@ -113,7 +116,7 @@ export const RollsAndStructuredBlocks: Story = {
       }),
     )
     await expect(
-      preview.style.getPropertyValue('--notes-preview-scale'),
+      preview.closest<HTMLElement>('[data-content-editor]')!.style.getPropertyValue('--content-editor-scale'),
     ).toBe('1.125em')
 
     await userEvent.click(
@@ -127,10 +130,12 @@ export const RollsAndStructuredBlocks: Story = {
 
     await userEvent.click(
       canvas.getByRole('button', {
-        name: 'Увеличить ресурс «Второе дыхание»',
+        name: 'Второе дыхание: 0 / 2',
       }),
     )
-    await expect(canvas.getByText('1 / 2')).toBeVisible()
+    await userEvent.click(await documentCanvas.findByRole('button', { name: 'Восстановить' }))
+    await userEvent.click(documentCanvas.getByRole('button', { name: 'Закрыть настройки ресурса' }))
+    await expect(canvas.getByRole('button', { name: 'Второе дыхание: 2 / 2' })).toBeVisible()
 
     await userEvent.click(canvas.getByText('Тактика'))
     await expect(
@@ -166,4 +171,15 @@ export const InvalidRollDoesNotBreakEditor: Story = {
       }),
     ).toBeVisible()
   },
+}
+
+export const ResourceWidgets: Story = {
+  args: {
+    value: [
+      resourceToSource(emptyResource),
+      resourceToSource({ ...emptyResource, title: 'Ресурс', current: 10, maximum: '10', recovery: 'short' }),
+      resourceToSource({ ...emptyResource, title: 'Ресурс 2', current: 10, maximum: '10', recovery: 'long', notes: 'Заметка для примера', showNotes: true }),
+    ].join('\n\n'),
+  },
+  render: args => <InteractiveEditor {...args} />,
 }

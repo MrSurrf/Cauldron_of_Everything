@@ -70,6 +70,7 @@ export function HitDiceBlock({
   return (
     <CollapsibleSection
       collapsible={false}
+      actionsPlacement="title"
       actions={
         onAdd ? (
           <Tooltip content="Добавить пул костей">

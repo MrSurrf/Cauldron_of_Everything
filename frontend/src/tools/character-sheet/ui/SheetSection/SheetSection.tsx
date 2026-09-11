@@ -11,6 +11,7 @@ export type SheetSectionProps = Omit<
 > & {
   actions?: ReactNode
   children: ReactNode
+  contentLayout?: 'default' | 'editor'
   title?: ReactNode
 }
 
@@ -18,11 +19,13 @@ export function SheetSection({
   actions,
   children,
   className,
+  contentLayout = 'default',
   title,
   ...sectionProps
 }: SheetSectionProps) {
   const rootClassName = [
     styles.section,
+    contentLayout === 'editor' ? styles.editorSection : undefined,
     className,
   ]
     .filter(Boolean)
@@ -32,6 +35,7 @@ export function SheetSection({
     <section
       {...sectionProps}
       className={rootClassName}
+      data-content-layout={contentLayout}
     >
       {(title || actions) && (
         <header className={styles.header}>

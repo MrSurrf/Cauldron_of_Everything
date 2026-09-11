@@ -1,11 +1,11 @@
 import {
   characterSheetActions,
-  useCharacterSheet,
 } from '../../model'
 import type { CharacterProficiencies } from '../../model'
-import { CharacterNotesEditor } from '../notes'
+import { ContentEditor } from '../../../../shared/ui'
 import { SheetSection } from '../SheetSection'
-import styles from '../../CharacterSheetTool.module.css'
+import { useCharacterSheetViewModel } from './sheetViewModel'
+import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 
 const legacyProficiencyGroups = [
   { key: 'armor', title: 'Доспехи' },
@@ -61,33 +61,33 @@ function adaptContentToText(
 }
 
 export function ProficienciesEditor() {
-  const { dispatch, document } = useCharacterSheet()
+  const sheet = useCharacterSheetViewModel()
+  const { dispatch, document } = sheet
 
   return (
     <SheetSection
-      className={styles.proficiencySection}
+      contentLayout="editor"
       title="Языки и владения"
     >
-      <div className={styles.proficiencyTextBlock}>
-        <CharacterNotesEditor
-          accessibleLabel="Языки и владения"
-          className={styles.proficiencyContentEditor}
-          fill={true}
-          placeholder="Опишите известные языки и владения персонажа..."
-          rows={11}
-          showStructureActions={true}
-          value={adaptContentToText(
-            document.proficiencies,
-          )}
-          onValueChange={(value) => {
-            dispatch(
-              characterSheetActions.patchProficiencies({
-                contentText: value,
-              }),
-            )
-          }}
-        />
-      </div>
+      <ContentEditor
+        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
+        accessibleLabel="Языки и владения"
+        fill={true}
+        renderPreview={true}
+        placeholder="Опишите известные языки и владения персонажа..."
+        rows={11}
+        showStructureActions={true}
+        value={adaptContentToText(
+          document.proficiencies,
+        )}
+        onValueChange={(value) => {
+          dispatch(
+            characterSheetActions.patchProficiencies({
+              contentText: value,
+            }),
+          )
+        }}
+      />
     </SheetSection>
   )
 }

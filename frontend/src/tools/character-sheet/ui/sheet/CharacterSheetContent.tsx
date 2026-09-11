@@ -241,8 +241,6 @@ export function CharacterSheetContent({
                 >
                   <div className={styles.featuresSlot}>
                     <CharacterFeaturesSection
-                      className={styles.stretchSection}
-                      editorClassName={styles.fillNotesEditor}
                       rows={10}
                       sheet={sheet}
                     />
@@ -255,8 +253,6 @@ export function CharacterSheetContent({
                     {PERSONALITY_SECTION_ORDER.map((section) => (
                       <CharacterPersonalitySection
                         key={section}
-                        className={styles.personalitySection}
-                        editorClassName={styles.personalityEditor}
                         rows={3}
                         section={section}
                         sheet={sheet}

@@ -38,6 +38,7 @@
   --sheet-icon-control-size: 1.125rem;
   --sheet-icon-glyph-size: 0.6875rem;
   --sheet-page-width: 60.25rem;
+  --sheet-left-column-width: 18rem;
   --sheet-identity-height: 7.125rem;
   --sheet-quick-row-height: 4.5rem;
   --sheet-main-column-height: 51rem;
@@ -416,25 +417,6 @@
   gap: var(--sheet-tight-gap);
 }
 
-.proficiencySection {
-  --sheet-section-padding: var(--sheet-tight-gap);
-}
-
-.proficiencyTextBlock {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.proficiencyContentEditor {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .abilitiesColumn {
   min-width: 0;
 }
@@ -474,7 +456,7 @@
     'quick quick notes-lower'
     'left-lower center-lower notes-lower';
   grid-template-columns:
-    18rem
+    var(--sheet-left-column-width)
     25rem
     16.5rem;
   grid-template-rows:
@@ -486,12 +468,14 @@
 }
 
 .quickBar {
+  --quick-mastery-width: 10.5rem;
+
   display: grid;
   min-width: 0;
   grid-area: quick;
   grid-template-columns:
-    7rem
-    10.25rem
+    var(--quick-mastery-width)
+    calc(var(--sheet-left-column-width) - var(--quick-mastery-width) - var(--sheet-tight-gap))
     5.25rem
     minmax(0, 1fr);
   align-items: start;
@@ -581,19 +565,6 @@
   padding: var(--sheet-compact-stat-padding) var(--space-1) var(--space-2);
 }
 
-.inspirationStats > .quickStat[data-stat='proficiency'] {
-  --sheet-large-value-size: var(--font-size-lg);
-  --stat-card-cut: var(--sheet-layout-gap);
-  --stat-card-inner-inset: var(--border-width-strong);
-
-  min-height: var(--sheet-row-height);
-  height: var(--sheet-row-height);
-  padding: 0 var(--sheet-tight-gap);
-  align-self: center;
-}
-
-.inspirationStats > .quickStat[data-stat='proficiency']
-  > [data-presentation='list'],
 .passiveStat[data-stat='passivePerception']
   > [data-presentation='stat'] {
   --sheet-control-height: var(--icon-size-md);
@@ -605,9 +576,6 @@
 .quickBar > .quickStat[data-stat='armorClass']
   [data-presentation='stat']
   > div,
-.inspirationStats > .quickStat[data-stat='proficiency']
-  [data-presentation='list']
-  > div,
 .passiveStat[data-stat='passivePerception']
   [data-presentation='stat']
   > div {
@@ -616,9 +584,6 @@
 
 .quickBar > .quickStat[data-stat='armorClass']
   [data-presentation='stat']
-  :is(input, output),
-.inspirationStats > .quickStat[data-stat='proficiency']
-  [data-presentation='list']
   :is(input, output),
 .passiveStat[data-stat='passivePerception']
   [data-presentation='stat']
@@ -783,26 +748,19 @@
 .hitPointsSlot > * > :last-child,
 .savesSlot > * > :last-child,
 .skillsSlot > * > :last-child,
-.proficienciesSlot > * > :last-child,
 .hitDiceSlot > * > :last-child,
 .deathSavesSlot > * > :last-child,
-.attacksSlot > * > :last-child,
-.equipmentSlot > * > :last-child,
 .currencySlot > * > :last-child {
   min-height: 0;
 }
 
 .hitPointsSlot > * > :last-child,
-.attacksSlot > * > :last-child,
-.equipmentSlot > * > :last-child,
 .currencySlot > * > :last-child {
   display: grid;
   overflow: hidden;
 }
 
-.hitPointsSlot > * > :last-child > *,
-.attacksSlot > * > :last-child > *,
-.equipmentSlot > * > :last-child > * {
+.hitPointsSlot > * > :last-child > * {
   width: 100%;
   height: auto;
   min-height: 0;
@@ -819,12 +777,17 @@
   grid-area: left-lower;
   grid-template-areas:
     'abilities saves'
+    'abilities saves'
+    'abilities skills'
+    'abilities skills'
+    'abilities skills'
+    'abilities skills'
     'abilities skills'
     'proficiencies proficiencies';
   grid-template-columns:
     5.75rem
     11.875rem;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: repeat(7, auto) minmax(0, 1fr);
   align-self: stretch;
   align-content: start;
   align-items: start;
@@ -834,20 +797,31 @@
 .abilityRail {
   display: grid;
   grid-area: abilities;
-  grid-template-rows: auto auto;
-  align-self: start;
-  gap: var(--sheet-tight-gap);
+  grid-template-rows: subgrid;
+  align-self: stretch;
+  gap: var(--sheet-layout-gap);
 }
 
-.abilityRail > :first-child,
+.abilityRail .abilitiesColumn,
 .abilityRail .abilityGrid {
-  height: auto;
+  display: grid;
   min-height: 0;
+  grid-template-rows: subgrid;
+  gap: var(--sheet-layout-gap);
+}
+
+.abilityRail .abilitiesColumn {
+  grid-row: 1 / span 6;
 }
 
 .abilityRail .abilityGrid {
-  grid-template-rows: repeat(6, auto);
-  align-items: start;
+  grid-row: 1 / -1;
+  align-items: stretch;
+}
+
+.abilityRail > .passiveStat {
+  grid-row: 7;
+  align-self: stretch;
 }
 
 .passiveStat {
@@ -875,10 +849,12 @@
 
 .savesSlot {
   grid-area: saves;
+  align-self: stretch;
 }
 
 .skillsSlot {
   grid-area: skills;
+  align-self: stretch;
 }
 
 .proficienciesSlot {
@@ -905,17 +881,6 @@
   align-self: stretch;
 }
 
-.attacksSlot > * {
-  height: 100%;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.attacksSlot > * > :last-child > *,
-.attacksSlot > * > :last-child > * > * {
-  height: 100%;
-  min-height: 0;
-}
-
 .notesLowerGrid {
   display: grid;
   height: 100%;
@@ -937,44 +902,6 @@
   gap: var(--sheet-tight-gap);
 }
 
-.personalitySection {
-  --sheet-section-padding: 0;
-
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  grid-template-rows: auto auto;
-}
-
-.personalitySection[data-open='true'] > :last-child {
-  display: grid;
-  min-height: 0;
-}
-
-.personalityEditor {
-  min-height: 0;
-}
-
-.stretchSection {
-  --sheet-section-padding: 0;
-
-  display: grid;
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  grid-template-rows: auto auto;
-}
-
-.stretchSection > :last-child {
-  display: grid;
-  min-height: 0;
-  overflow: visible;
-}
-
-.fillNotesEditor {
-  min-height: 0;
-}
-
 .proficienciesSlot,
 .equipmentSlot,
 .featuresSlot {
@@ -982,79 +909,13 @@
   overflow: hidden;
 }
 
+.attacksSlot > *,
 .proficienciesSlot > *,
 .equipmentSlot > *,
 .featuresSlot > * {
   height: 100%;
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
-}
-
-.proficienciesSlot > * > :last-child,
-.equipmentSlot > * > :last-child,
-.featuresSlot > * > :last-child {
-  display: grid;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.featuresSlot .fillNotesEditor {
-  height: 100%;
-  overflow: hidden;
-}
-
-.equipmentTextBlock,
-.equipmentTextArea {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-}
-
-.equipmentTextBlock {
-  display: grid;
-}
-
-.equipmentTextArea {
-  padding: var(--space-3);
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--color-text-primary);
-  font: inherit;
-  line-height: var(--line-height-normal);
-  resize: none;
-}
-
-.equipmentTextArea:focus {
-  background:
-    color-mix(in srgb, var(--color-surface-accent) 22%, transparent);
-  box-shadow:
-    inset 0 0 0 var(--border-width-default)
-    color-mix(in srgb, var(--color-border-accent) 54%, transparent);
-}
-
-.equipmentTextArea::placeholder {
-  color: var(--color-text-disabled);
-}
-
-.featuresSlot .fillNotesEditor > [data-multiline='true'],
-.featuresSlot
-  .fillNotesEditor
-  > [data-multiline='true']
-  > :first-child,
-.featuresSlot
-  .fillNotesEditor
-  > [data-multiline='true']
-  > :first-child
-  > :first-child,
-.featuresSlot
-  .fillNotesEditor
-  > [data-multiline='true']
-  > :first-child
-  > :first-child
-  > [data-multiline='true'] {
-  height: 100%;
-  min-height: 0;
 }
 
 @media (forced-colors: active) {

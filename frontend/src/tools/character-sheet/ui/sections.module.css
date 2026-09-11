@@ -99,6 +99,15 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.section[data-actions-placement='title'] .header {
+  grid-template-columns: auto minmax(0, max-content) auto;
+  justify-content: center;
+}
+
+.section[data-actions-placement='title'][data-collapsible='false'] .header {
+  grid-template-columns: minmax(0, max-content) auto;
+}
+
 .section[data-open='true'] .header {
   border-bottom-color:
     color-mix(in srgb, var(--section-border) 68%, transparent);

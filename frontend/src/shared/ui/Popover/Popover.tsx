@@ -55,6 +55,7 @@ export const Popover = forwardRef<
     disabled = false,
     id,
     matchTriggerWidth = false,
+    modal = false,
     offset = 8,
     onOpenChange,
     open,
@@ -66,7 +67,8 @@ export const Popover = forwardRef<
   const generatedId = useId()
   const popoverId = id ?? `popover-${generatedId}`
   const triggerRef = useRef<HTMLElement>(null)
-  const overlayRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement | HTMLDialogElement>(null)
+  const Overlay = modal ? 'dialog' : 'div'
   const [internalOpen, setInternalOpen] =
     useState(defaultOpen)
   const [triggerNode, setTriggerNode] =
@@ -163,13 +165,13 @@ export const Popover = forwardRef<
   }
 
   function handleContentPointerDown(
-    event: ReactPointerEvent<HTMLDivElement>,
+    event: ReactPointerEvent<HTMLElement>,
   ) {
     event.stopPropagation()
   }
 
   function handleContentKeyDown(
-    event: KeyboardEvent<HTMLDivElement>,
+    event: KeyboardEvent<HTMLElement>,
   ) {
     if (event.key !== 'Tab') return
 
@@ -191,6 +193,11 @@ export const Popover = forwardRef<
     if (!leavingBackward && !leavingForward) return
 
     event.preventDefault()
+
+    if (modal) {
+      ;(leavingBackward ? last ?? overlay : first ?? overlay).focus()
+      return
+    }
 
     let focusTarget: HTMLElement | undefined = triggerElement
     if (leavingForward) {
@@ -290,6 +297,13 @@ export const Popover = forwardRef<
   ])
 
   useLayoutEffect(() => {
+    const overlay = overlayRef.current
+    if (!visible || !modal || position.style.visibility !== 'visible' || !(overlay instanceof HTMLDialogElement)) return
+    overlay.showModal()
+    return () => overlay.close()
+  }, [modal, position.style.visibility, visible])
+
+  useLayoutEffect(() => {
     const trigger = triggerRef.current
     const overlay = overlayRef.current
     const view = trigger?.ownerDocument.defaultView
@@ -361,10 +375,12 @@ export const Popover = forwardRef<
       {visible &&
         portalContainer &&
         createPortal(
-          <div
-            ref={overlayRef}
+          <Overlay
+            ref={(node: HTMLDivElement | HTMLDialogElement | null) => { overlayRef.current = node }}
             id={popoverId}
             role="dialog"
+            aria-modal={modal || undefined}
+            data-modal={modal || undefined}
             className={popoverClassName}
             aria-label={ariaLabelledBy ? undefined : ariaLabel}
             aria-labelledby={ariaLabelledBy}
@@ -373,11 +389,20 @@ export const Popover = forwardRef<
             style={position.style}
             onKeyDown={handleContentKeyDown}
             onPointerDown={handleContentPointerDown}
+            onClick={(event) => {
+              if (!modal || event.target !== event.currentTarget) return
+              const rect = event.currentTarget.getBoundingClientRect()
+              if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+                event.preventDefault()
+                event.stopPropagation()
+                updateOpen(false)
+              }
+            }}
           >
             <div className={styles.content}>
               {content}
             </div>
-          </div>,
+          </Overlay>,
           portalContainer,
         )}
     </>
