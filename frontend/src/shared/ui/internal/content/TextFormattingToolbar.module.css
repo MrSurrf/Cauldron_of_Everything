@@ -1,0 +1,18 @@
+.letterIcon {
+  display: inline-grid;
+  place-items: center;
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.letterIcon[data-format='italic'] {
+  font-style: italic;
+}
+
+.letterIcon[data-format='underline'] {
+  text-decoration: underline;
+  text-underline-offset: var(--border-width-strong);
+}

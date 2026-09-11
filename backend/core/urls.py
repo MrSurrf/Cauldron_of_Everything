@@ -5,7 +5,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from survey.views import RegisterView
+from survey.views import RegisterView, RequestCodeView, VerifyCodeView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -13,6 +13,8 @@ urlpatterns = [
     path("api/auth/register/", RegisterView.as_view(), name="register"),
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/auth/request-code/", RequestCodeView.as_view(), name="request-code"),
+    path("api/auth/verify-code/", VerifyCodeView.as_view(), name="verify-code"),
     # Анкета
     path("api/", include("survey.urls")),
     # Документация API (для фронтендера)

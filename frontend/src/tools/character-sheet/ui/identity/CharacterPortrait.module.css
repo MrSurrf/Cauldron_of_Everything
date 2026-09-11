@@ -1,0 +1,273 @@
+.root {
+  --portrait-cut: 0.8rem;
+  --portrait-clip:
+    polygon(
+      var(--portrait-cut) 0,
+      calc(100% - var(--portrait-cut)) 0,
+      100% var(--portrait-cut),
+      100% calc(100% - var(--portrait-cut)),
+      calc(100% - var(--portrait-cut)) 100%,
+      var(--portrait-cut) 100%,
+      0 calc(100% - var(--portrait-cut)),
+      0 var(--portrait-cut)
+    );
+
+  position: relative;
+  isolation: isolate;
+
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-border-accent) 64%, var(--color-border-default)),
+      var(--color-border-default) 43%,
+      color-mix(in srgb, var(--color-border-accent) 52%, var(--color-border-default))
+    );
+  clip-path: var(--portrait-clip);
+
+  filter:
+    drop-shadow(
+      0 0 0.45rem
+      color-mix(in srgb, var(--color-border-accent) 18%, transparent)
+    );
+}
+
+.picker {
+  position: absolute;
+  z-index: 1;
+  inset: var(--border-width-default);
+
+  display: grid;
+  overflow: hidden;
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+  place-items: center;
+
+  background:
+    radial-gradient(
+      circle at 50% 43%,
+      color-mix(in srgb, var(--color-border-accent) 13%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      150deg,
+      var(--color-surface-accent),
+      var(--color-canvas-background) 55%,
+      var(--color-surface-muted)
+    );
+  clip-path: var(--portrait-clip);
+
+  color: var(--color-border-accent);
+  cursor: pointer;
+}
+
+.picker::after {
+  content: '';
+
+  position: absolute;
+  inset: 8%;
+
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-border-default) 78%, transparent);
+  clip-path: var(--portrait-clip);
+
+  pointer-events: none;
+}
+
+.picker:hover:not(:disabled) {
+  color: var(--palette-purple-300);
+}
+
+.picker:focus-visible {
+  box-shadow: inset var(--focus-ring);
+}
+
+.picker:disabled {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
+
+.pentagram {
+  width: 76%;
+  height: 76%;
+
+  overflow: visible;
+
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.15;
+
+  filter:
+    drop-shadow(
+      0 0 0.35rem
+      color-mix(in srgb, var(--color-border-accent) 48%, transparent)
+    );
+  opacity: 0.86;
+
+  transition:
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    filter var(--motion-duration-fast) var(--motion-easing-standard),
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.picker:hover:not(:disabled) .pentagram,
+.picker:focus-visible .pentagram {
+  filter:
+    drop-shadow(
+      0 0 0.55rem
+      color-mix(in srgb, var(--palette-purple-300) 68%, transparent)
+    );
+  opacity: 1;
+  transform: scale(1.025);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+.hint {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  left: var(--space-1);
+
+  padding: var(--sheet-tight-gap, var(--space-1)) var(--space-1);
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-canvas-background) 88%, transparent) 18%,
+      color-mix(in srgb, var(--color-canvas-background) 88%, transparent) 82%,
+      transparent
+    );
+
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  line-height: var(--line-height-tight);
+  text-align: center;
+
+  opacity: 0;
+  transform: translateY(0.2rem);
+
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.picker:hover:not(:disabled) .hint,
+.picker:focus-visible .hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.remove {
+  position: absolute;
+  z-index: 4;
+  top: var(--space-2);
+  right: var(--space-2);
+
+  display: grid;
+  width: var(--sheet-icon-control-size, 1.125rem);
+  height: var(--sheet-icon-control-size, 1.125rem);
+  padding: 0;
+
+  border: var(--border-width-default) solid
+    color-mix(
+      in srgb,
+      var(--color-border-accent) 58%,
+      transparent
+    );
+  place-items: center;
+
+  background: color-mix(in srgb, var(--color-canvas-background) 90%, transparent);
+  clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%);
+
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.remove svg {
+  width: var(--sheet-icon-glyph-size, 0.6875rem);
+  height: var(--sheet-icon-glyph-size, 0.6875rem);
+}
+
+.remove:hover {
+  background: color-mix(in srgb, var(--color-status-danger) 22%, var(--color-canvas-background));
+  color: var(--color-text-primary);
+}
+
+.remove:focus-visible {
+  outline: 0;
+  filter: drop-shadow(0 0 0.4rem var(--color-border-accent));
+}
+
+.innerFrame {
+  position: absolute;
+  z-index: 2;
+  inset: var(--space-1);
+
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-border-accent) 31%, var(--color-border-default));
+  clip-path: var(--portrait-clip);
+
+  pointer-events: none;
+}
+
+.cornerOrnament {
+  position: absolute;
+  z-index: 3;
+  top: var(--space-2);
+  left: 50%;
+
+  width: 2.25rem;
+  height: 0.2rem;
+
+  background: var(--color-border-accent);
+  clip-path: polygon(0 50%, 42% 0, 50% 50%, 58% 0, 100% 50%, 58% 100%, 50% 50%, 42% 100%);
+
+  opacity: 0.72;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.fileInput {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pentagram,
+  .hint {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .root,
+  .picker,
+  .remove {
+    border: 1px solid CanvasText;
+  }
+}

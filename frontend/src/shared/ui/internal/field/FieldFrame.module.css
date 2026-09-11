@@ -1,3 +1,24 @@
+.root,
+.root::before,
+.innerFrame,
+.innerFrame::before,
+.multilineContentGuard::before,
+.multilineContentGuardInner,
+.multilineContentGuardInner::before {
+  /* Пересчитываем форму на каждом слое, не наследуем уже вычисленный срез внешней рамки. */
+  --input-frame-clip:
+    polygon(
+      var(--corner-cut) 0,
+      calc(100% - var(--corner-cut)) 0,
+      100% var(--corner-cut),
+      100% calc(100% - var(--corner-cut)),
+      calc(100% - var(--corner-cut)) 100%,
+      var(--corner-cut) 100%,
+      0 calc(100% - var(--corner-cut)),
+      0 var(--corner-cut)
+    );
+}
+
 .root {
   --input-border: var(--palette-gray-700);
   --input-inner-border:
@@ -16,18 +37,6 @@
   --text-field-extra-inline-end: 0px;
 
   --corner-cut: var(--input-corner-cut);
-  --input-frame-clip:
-    polygon(
-      var(--corner-cut) 0,
-      calc(100% - var(--corner-cut)) 0,
-      100% var(--corner-cut),
-      100% calc(100% - var(--corner-cut)),
-      calc(100% - var(--corner-cut)) 100%,
-      var(--corner-cut) 100%,
-      0 calc(100% - var(--corner-cut)),
-      0 var(--corner-cut)
-    );
-
   position: relative;
   isolation: isolate;
 
@@ -151,8 +160,10 @@
   color: var(--input-text);
   caret-color: var(--input-text);
 
-  font-family: var(--font-family-body);
-  font-size: var(--font-size-md);
+  font-family:
+    var(--field-font-family, var(--font-family-body));
+  font-size:
+    var(--field-font-size, var(--font-size-md));
   font-weight: 400;
   line-height: var(--line-height-normal);
 

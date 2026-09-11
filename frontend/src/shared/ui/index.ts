@@ -1,15 +1,20 @@
 export { Button } from './Button'
 export type {
+  ButtonDecoration,
   ButtonProps,
   ButtonSize,
   ButtonVariant,
 } from './Button'
+export { Checkbox } from './Checkbox'
+export type { CheckboxProps } from './Checkbox'
 export { Combobox } from './Combobox'
 export type {
   ComboboxFilter,
   ComboboxOption,
   ComboboxProps,
 } from './Combobox'
+export { ContentEditor } from './ContentEditor'
+export type { ContentEditorProps } from './ContentEditor'
 export { IconFrame } from './IconFrame'
 export type { IconFrameProps } from './IconFrame'
 export { IconButton } from './IconButton'
@@ -27,6 +32,12 @@ export type {
   PanelProps,
   PanelVariant,
 } from './Panel'
+export { Popover } from './Popover'
+export type {
+  PopoverPlacement,
+  PopoverProps,
+  PopoverTriggerProps,
+} from './Popover'
 export { ScrollArea } from './ScrollArea'
 export type {
   ScrollAreaOrientation,
@@ -37,8 +48,16 @@ export type {
   ScrollBarOrientation,
   ScrollBarProps,
 } from './ScrollBar'
+export { SegmentedControl } from './SegmentedControl'
+export type {
+  SegmentedControlOption,
+  SegmentedControlProps,
+} from './SegmentedControl'
 export { TextArea } from './TextArea'
-export type { TextAreaProps } from './TextArea'
+export type {
+  TextAreaFormatAction,
+  TextAreaProps,
+} from './TextArea'
 export { TextInput } from './TextInput'
 export type {
   TextInputProps,

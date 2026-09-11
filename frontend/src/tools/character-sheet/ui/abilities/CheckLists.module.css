@@ -1,0 +1,272 @@
+.checkSection {
+  --sheet-section-padding: var(--space-1) var(--space-2) var(--space-2);
+  --check-row-height: 1.125rem;
+  --check-marker-size: 0.5rem;
+}
+
+.checkSection[data-fill='true'] {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.checkSection[data-fill='true'] > :last-child {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.checkScrollArea {
+  height: 100%;
+  min-height: 0;
+}
+
+.list {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+}
+
+.row,
+.skillRow {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: var(--check-row-height);
+  padding: var(--border-width-default) 0;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  line-height: 1;
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 72%, transparent);
+  transition:
+    background-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.row:nth-child(even),
+.skillRow:nth-child(even) {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 16%,
+        var(--color-surface-default)
+      ),
+      color-mix(
+        in srgb,
+        var(--palette-purple-700) 8%,
+        var(--color-surface-muted)
+      )
+    );
+}
+
+.row:hover,
+.skillRow:hover,
+.row:focus-within,
+.skillRow:focus-within {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-surface-accent) 54%, transparent),
+      transparent 78%
+    );
+}
+
+.row {
+  grid-template-columns: 0.75rem minmax(0, 1fr);
+}
+
+.skillRow {
+  grid-template-columns: var(--check-marker-size) minmax(0, 1fr);
+}
+
+.row > [data-presentation='list'],
+.skillRow > [data-presentation='list'] {
+  min-height: var(--check-row-height);
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--space-1) - var(--border-width-default));
+}
+
+.row > [data-presentation='list'] > [data-formula-label],
+.skillRow > [data-presentation='list'] > [data-formula-label] {
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.skillRow > [data-presentation='list'] > [data-formula-label] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.5rem;
+  align-items: center;
+  column-gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.row > [data-presentation='list'] > [data-formula-label] > span,
+.skillRow > [data-presentation='list'] > [data-formula-label] > span {
+  min-width: 0;
+}
+
+.row > [data-presentation='list'] > [data-formula-label] > span {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.skillRow
+  > [data-presentation='list']
+  > [data-formula-label]
+  > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skillRow
+  > [data-presentation='list']
+  > [data-formula-label]
+  > small {
+  color: var(--color-text-disabled);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  letter-spacing: 0.02em;
+  line-height: 1;
+  justify-self: end;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rankButton {
+  display: grid;
+  width: 0.75rem;
+  height: var(--check-row-height);
+  padding: 0;
+  border: 0;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rankButton:focus-visible {
+  outline: var(--border-width-default) solid var(--color-border-accent);
+  outline-offset: 0;
+}
+
+.rankMarker {
+  position: relative;
+  display: grid;
+  width: var(--check-marker-size);
+  height: var(--check-marker-size);
+  place-items: center;
+  pointer-events: none;
+}
+
+.rankMarker::before {
+  position: absolute;
+  content: '';
+  inset: 0;
+  border: var(--border-width-default) solid
+    color-mix(
+      in srgb,
+      var(--color-text-secondary) 68%,
+      transparent
+    );
+  border-radius: var(--radius-round);
+  opacity: 1;
+}
+
+.rankMarker[data-rank='proficient']::before {
+  inset: 0.0625rem;
+  border: 0;
+  background: var(--palette-purple-300);
+  box-shadow:
+    0 0 0.25rem
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 58%,
+      transparent
+    );
+  opacity: 1;
+}
+
+.rankMarker[data-rank='half']::before {
+  border-color: var(--color-text-disabled);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--palette-purple-300) 54%,
+        transparent
+      ) 50%,
+      transparent 50%
+    );
+  opacity: 0.72;
+}
+
+.rankMarker[data-rank='expertise']::before {
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--palette-purple-300);
+  clip-path:
+    polygon(
+      50% 0,
+      63% 37%,
+      100% 50%,
+      63% 63%,
+      50% 100%,
+      37% 63%,
+      0 50%,
+      37% 37%
+    );
+  filter:
+    drop-shadow(
+      0 0 0.18rem
+      color-mix(
+        in srgb,
+        var(--palette-purple-300) 48%,
+        transparent
+      )
+    );
+  opacity: 1;
+}
+
+.row:last-child,
+.skillRow:last-child {
+  border-bottom: 0;
+}
+
+.skillRow[data-rank='expertise']::after {
+  position: absolute;
+  right: 0.125rem;
+  bottom: 0;
+  left: calc(var(--check-marker-size) + 0.25rem);
+
+  height: var(--border-width-default);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--palette-purple-300) 58%,
+        var(--color-content-border)
+      ),
+      color-mix(
+        in srgb,
+        var(--color-border-accent) 30%,
+        transparent
+      )
+    );
+  content: '';
+  pointer-events: none;
+}

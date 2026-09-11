@@ -188,9 +188,13 @@ SPECTACULAR_SETTINGS = {
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default=None)
 TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID', default=None)
 
-# Email-уведомления о новых прохождениях анкеты.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email-уведомления о новых прохождениях анкеты и коды входа.
+# Если EMAIL_HOST не задан (локальная разработка) — письма печатаются в консоль бэкенда.
 EMAIL_HOST = env('EMAIL_HOST', default='')
+if EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')

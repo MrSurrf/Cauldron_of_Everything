@@ -1,0 +1,93 @@
+.popover {
+  --popover-corner-cut: var(--space-2);
+  --popover-clip:
+    polygon(
+      var(--popover-corner-cut) 0,
+      calc(100% - var(--popover-corner-cut)) 0,
+      100% var(--popover-corner-cut),
+      100% calc(100% - var(--popover-corner-cut)),
+      calc(100% - var(--popover-corner-cut)) 100%,
+      var(--popover-corner-cut) 100%,
+      0 calc(100% - var(--popover-corner-cut)),
+      0 var(--popover-corner-cut)
+    );
+
+  z-index: var(--z-index-overlay);
+
+  min-width: 12rem;
+  max-width: min(28rem, calc(100vw - var(--space-4)));
+  padding: var(--border-width-default);
+  overflow: auto;
+
+  background: var(--color-border-default);
+  clip-path: var(--popover-clip);
+  color: var(--color-text-primary);
+
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+
+  filter: drop-shadow(var(--shadow-overlay));
+
+  animation:
+    popover-appear
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.content {
+  min-width: 0;
+  padding: var(--space-3);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-default),
+      var(--color-surface-muted)
+    );
+  clip-path: var(--popover-clip);
+}
+
+.popover[data-modal] {
+  margin: 0;
+  border: 0;
+}
+
+.popover::backdrop {
+  background: color-mix(in srgb, var(--palette-black) 68%, transparent);
+}
+
+@keyframes popover-appear {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .popover {
+    border:
+      var(--border-width-default)
+      solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    clip-path: none;
+    filter: none;
+  }
+
+  .content {
+    background: Canvas;
+    clip-path: none;
+  }
+}
