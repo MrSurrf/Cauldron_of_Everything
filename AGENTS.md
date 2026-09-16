@@ -42,6 +42,7 @@
 | CORS | django-cors-headers 4.9.0 |
 | Документация API | drf-spectacular 0.30.0 (Swagger UI) |
 | Изображения | Pillow 12.3.0 |
+| Парсинг HTML (импорт энциклопедии) | beautifulsoup4 4.14.3 |
 | База данных (dev) | SQLite (`backend/db.sqlite3`) |
 
 Полный список зависимостей — `backend/requirements.txt`.
@@ -78,6 +79,17 @@ Cauldron_of_Everything/
 │   │   ├── urls.py
 │   │   ├── views.py
 │   │   └── tests.py         # пустой заглушка
+│   ├── encyclopedia/        # приложение энциклопедии: сущности, связи, API, импорт
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   │       └── import_encyclopedia.py
+│   │   ├── migrations/
+│   │   ├── admin.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── Encyclopedia-data/   # сырой датасет энциклопедии, НЕ в git (~1.2 ГБ)
 │   ├── media/               # загружаемые файлы (картинки анкеты)
 │   │   └── survey/
 │   ├── db.sqlite3
@@ -128,11 +140,10 @@ Cauldron_of_Everything/
 
 ## 4. Архитектура бэкенда
 
-### 4.1. Django-проект и приложение
+### 4.1. Django-проект и приложения
 
 - Проект: `core` (`backend/core/`).
-- Единственное приложение: `survey` (`backend/survey/`).
-- Всё доменное поведение (модели, API, админка, management-команда) сосредоточено в `survey`.
+- Приложения: `survey` (`backend/survey/`) — анкета; `encyclopedia` (`backend/encyclopedia/`) — энциклопедия D&D.
 
 ### 4.2. Модели (`backend/survey/models.py`)
 
@@ -165,8 +176,31 @@ Cauldron_of_Everything/
 | POST | `/api/answers/` | JWT | Сохранить/перезаписать ответ `{"question", "choice"}` |
 | GET | `/api/submissions/` | нет | Список результатов прохождения анкеты |
 | POST | `/api/submissions/` | JWT | Сохранить результат целиком от фронтенда |
+| GET | `/api/encyclopedia/` | нет | Список сущностей энциклопедии: `?type=spell`, `?q=...`, пагинация |
+| GET | `/api/encyclopedia/<id>/` | нет | Карточка сущности: `content_html`, `data`, связи |
+| GET | `/api/encyclopedia/types/` | нет | Количество сущностей по типам |
 | GET | `/api/schema/` | нет | OpenAPI-схема |
 | GET | `/api/docs/` | нет | Swagger UI |
+
+### 4.3.1. Энциклопедия (`backend/encyclopedia/`)
+
+Модели (`encyclopedia/models.py`):
+
+| Модель | Назначение | Ключевые поля |
+|---|---|---|
+| `Entity` | Сущность энциклопедии | `entity_type` (spell/creature/item/class/race/feat/background/sidekick), `name` (НЕ уникально), `name_en`, `slug` (уникальный), `sources` (JSON), `content_html`, `content_text`, `data` (JSON: специфичные поля типа + tables/sections/tooltips) |
+| `EntityLink` | Связь между сущностями по нашим ID | FK `from_entity`, FK `to_entity`, `text`; unique на тройку полей |
+
+- Специфичные поля типа (у существ — `abilities`, `challenge_rating`...; у заклинаний — `level`, `school`...) хранятся в `Entity.data`, а не в отдельных таблицах.
+- Внутренние ссылки в `content_html` переписаны на роут фронтенда `/encyclopedia/<entity_type>/<slug>/` с атрибутом `data-entity-id` (наш ID). Ссылки на статьи вне датасета заменены простым текстом. Технические поля источника (`source_id`, `source_key`, `source_url`, `raw_file`, `data-source-href`, класс `tooltipstered`, URL dnd.su) при импорте удалены.
+
+Импорт датасета: `python manage.py import_encyclopedia [путь_к_parsed] [--replace]`
+
+- По умолчанию берёт JSON из `settings.ENCYCLOPEDIA_DATA_DIR` (`backend/Encyclopedia-data/Encyclopedia-data/parsed/`).
+- Сырой датасет (~1.2 ГБ) лежит локально в `backend/Encyclopedia-data/` и в git не попадает (в `.gitignore`).
+- Импорт одноразовый: `source_key` в БД не сохраняется, повторный запуск — только с `--replace` (полная очистка).
+- Три прохода: создание сущностей → очистка и перелинковка `content_html` (BeautifulSoup) → построение `EntityLink` через сопоставление `source_key → id`.
+- Импортировано: 4643 сущности (spell 524, creature 2921, item 942, class 13, sidekick 3, race 48, feat 105, background 87), 15247 связей.
 
 ### 4.4. Загрузка анкеты из JSON
 
@@ -209,6 +243,7 @@ Cauldron_of_Everything/
 - JWT: access — 60 минут, refresh — 7 дней.
 - Медиафайлы: `MEDIA_URL = 'media/'`, `MEDIA_ROOT = BASE_DIR / 'media'`.
 - `SURVEY_CONFIG_DIR` указывает на корневую папку `config/`.
+- `ENCYCLOPEDIA_DATA_DIR` указывает на `backend/Encyclopedia-data/Encyclopedia-data/parsed/` (сырой датасет энциклопедии, переопределяется через env).
 
 ---
 
