@@ -16,6 +16,7 @@ import {
   RemoveIcon,
 } from './icons'
 import styles from './sections.module.css'
+import sectionStyles from './SheetSection/SheetSection.module.css'
 import { useControllableBoolean } from './useControllableBoolean'
 
 export type CollapsibleSectionProps = Omit<
@@ -23,8 +24,10 @@ export type CollapsibleSectionProps = Omit<
   'children' | 'title'
 > & {
   actions?: ReactNode
+  actionsPlacement?: 'edge' | 'title'
   children: ReactNode
   collapsible?: boolean
+  contentLayout?: 'default' | 'editor'
   defaultOpen?: boolean
   editableTitle?: boolean
   headingLevel?: 2 | 3 | 4 | 5 | 6
@@ -41,9 +44,11 @@ export type CollapsibleSectionProps = Omit<
 
 export function CollapsibleSection({
   actions,
+  actionsPlacement = 'edge',
   children,
   className,
   collapsible = true,
+  contentLayout = 'default',
   defaultOpen = true,
   editableTitle = false,
   headingLevel = 3,
@@ -70,6 +75,7 @@ export function CollapsibleSection({
   const headingTag = `h${headingLevel}`
   const sectionClassName = [
     styles.section,
+    contentLayout === 'editor' ? sectionStyles.editorSection : undefined,
     className,
   ]
     .filter(Boolean)
@@ -81,6 +87,8 @@ export function CollapsibleSection({
       aria-labelledby={headingId}
       className={sectionClassName}
       data-collapsible={collapsible}
+      data-actions-placement={actionsPlacement}
+      data-content-layout={contentLayout}
       data-open={contentVisible}
     >
       <header className={styles.header}>

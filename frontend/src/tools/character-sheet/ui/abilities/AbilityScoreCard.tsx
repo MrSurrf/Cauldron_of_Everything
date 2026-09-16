@@ -39,12 +39,6 @@ export function AbilityScoreCard({
         <span className={styles.label}>
           {label}
         </span>
-        <span
-          className={styles.abbreviation}
-          aria-hidden="true"
-        >
-          ({abbreviation})
-        </span>
       </header>
 
       <div
@@ -58,6 +52,7 @@ export function AbilityScoreCard({
           defaultFormula={modifierDefaultFormula}
           labelVisibility="sr-only"
           label="Модификатор"
+          presentation="stat"
           prefixPositive={true}
           value={modifier}
           result={modifierResult}

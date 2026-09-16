@@ -1,7 +1,6 @@
 import { useState, type FocusEvent } from 'react'
 
-import { TextInput } from '../../../../shared/ui'
-import styles from './SheetFields.module.css'
+import { NumericValue } from './NumericValue'
 
 export type NumericEditorProps = {
   'aria-label': string
@@ -10,7 +9,7 @@ export type NumericEditorProps = {
   max?: number
   min?: number
   onValueChange: (value: number | null) => void
-  presentation?: 'default' | 'stat'
+  presentation?: 'default' | 'list' | 'stat'
   value: number | null
 }
 
@@ -100,35 +99,24 @@ export function NumericEditor({
   }
 
   return (
-    <TextInput
+    <NumericValue
+      as="input"
       aria-label={ariaLabel}
-      className={[
-        styles.numericInput,
-        presentation === 'stat' && styles.statInput,
-      ]
-        .filter(Boolean)
-        .join(' ')}
       disabled={disabled}
-      fieldClassName={[
-        styles.compactField,
-        presentation === 'stat' && styles.statField,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      framed={presentation !== 'stat'}
       inputMode="decimal"
       placeholder="—"
-      rootClassName={[
-        styles.compactFrame,
-        presentation === 'stat' && styles.statFrame,
-      ]
-        .filter(Boolean)
-        .join(' ')}
       spellCheck={false}
       type="text"
       value={draft}
       onBlur={handleBlur}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+      }}
       onChange={(event) => {
         const nextDraft = event.currentTarget.value
+        // Разрешаем промежуточный знак/дробь, но не текст, в том числе при вставке.
+        if (!/^[+-]?\d*(?:[.,]\d*)?$/.test(nextDraft)) return
         setDraft(nextDraft)
 
         const parsed = parseNumericValue(nextDraft)

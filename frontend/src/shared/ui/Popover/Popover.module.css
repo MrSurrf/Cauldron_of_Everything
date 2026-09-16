@@ -48,6 +48,15 @@
   clip-path: var(--popover-clip);
 }
 
+.popover[data-modal] {
+  margin: 0;
+  border: 0;
+}
+
+.popover::backdrop {
+  background: color-mix(in srgb, var(--palette-black) 68%, transparent);
+}
+
 @keyframes popover-appear {
   from {
     opacity: 0;

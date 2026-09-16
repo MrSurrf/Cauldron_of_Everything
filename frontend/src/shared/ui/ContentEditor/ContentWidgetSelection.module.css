@@ -1,0 +1,20 @@
+.widget {
+  position: relative;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.widget[data-inline] { display: inline-flex; vertical-align: baseline; }
+.widget[data-selected] { outline: 1px solid var(--color-border-accent); outline-offset: 1px; }
+.remove[data-size='sm'] {
+  --icon-button-size: 1rem;
+  --icon-button-glyph-size: 0.75rem;
+  position: absolute;
+  top: 0;
+  right: 0;
+  opacity: 0;
+}
+.widget:hover > .remove, .widget:focus-within > .remove, .widget[data-selected] > .remove {
+  opacity: 1;
+}
+.widget:has(> .remove) { padding-right: 1rem; }

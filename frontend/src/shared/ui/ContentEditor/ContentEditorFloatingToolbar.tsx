@@ -33,10 +33,10 @@ import {
 } from '../internal/content/TextFormattingToolbar'
 import {
   $createContentDirectiveNode,
-  $createContentDividerNode,
   $createContentRollNode,
 } from './ContentEditorNodes'
 import styles from './ContentEditor.module.css'
+import { emptyResource, resourceToSource } from './resourceContent'
 
 type FloatingRect = {
   bottom: number
@@ -60,6 +60,7 @@ type OverlayPosition = {
 
 type ContentEditorFloatingToolbarProps = {
   disabled?: boolean
+  editorId?: string
   showStructureActions: boolean
 }
 
@@ -110,6 +111,7 @@ function validLinkTarget(value: string) {
 }
 
 export function ContentEditorFloatingToolbar({
+  editorId,
   disabled = false,
   showStructureActions,
 }: ContentEditorFloatingToolbarProps) {
@@ -238,32 +240,49 @@ export function ContentEditorFloatingToolbar({
     const view = overlay.ownerDocument.defaultView
     if (!view) return
 
+    const root = editor.getRootElement()
+    const editorRect = root?.getBoundingClientRect()
+    const insert = floating.kind === 'insert' && editorRect
+    const textInset = root ? parseFloat(view.getComputedStyle(root).paddingLeft) : 0
+    const minimumLeft = insert
+      ? Math.max(VIEWPORT_GAP, editorRect.left + textInset)
+      : VIEWPORT_GAP
+    const maximumRight = insert
+      ? Math.min(view.innerWidth - VIEWPORT_GAP, editorRect.right - textInset)
+      : view.innerWidth - VIEWPORT_GAP
+    overlay.style.maxWidth = `${Math.max(0, maximumRight - minimumLeft)}px`
     const width = overlay.offsetWidth
     const height = overlay.offsetHeight
     const preferredLeft =
-      floating.rect.left + floating.rect.width / 2
+      insert ? floating.rect.left : floating.rect.left + floating.rect.width / 2 - width / 2
     const left = clamp(
       preferredLeft,
-      width / 2 + VIEWPORT_GAP,
-      view.innerWidth - width / 2 - VIEWPORT_GAP,
+      minimumLeft,
+      maximumRight - width,
     )
+    const frameRect = root?.closest('[data-content-editor-frame]')?.getBoundingClientRect()
+    const minimumTop = insert && frameRect ? Math.max(VIEWPORT_GAP, frameRect.top + 1) : VIEWPORT_GAP
+    const maximumBottom = insert && frameRect ? Math.min(view.innerHeight - VIEWPORT_GAP, frameRect.bottom - 1) : view.innerHeight - VIEWPORT_GAP
     const fitsAbove =
-      floating.rect.top - height - OVERLAY_GAP >= VIEWPORT_GAP
+      floating.rect.top - height - OVERLAY_GAP >= minimumTop
     const placement =
       floating.kind === 'format' && fitsAbove
         ? 'above'
         : floating.kind === 'insert' &&
             floating.rect.bottom + height + OVERLAY_GAP <=
-              view.innerHeight - VIEWPORT_GAP
+              maximumBottom
           ? 'below'
           : 'above'
-    const top =
+    const preferredTop =
       placement === 'above'
         ? floating.rect.top - OVERLAY_GAP
         : floating.rect.bottom + OVERLAY_GAP
 
+    const top = insert
+      ? clamp(preferredTop, minimumTop + (placement === 'above' ? height : 0), maximumBottom - (placement === 'below' ? height : 0))
+      : preferredTop
     setPosition({ left, placement, top })
-  }, [floating])
+  }, [editor, floating])
 
   function preserveSelection(event: MouseEvent<HTMLDivElement>) {
     event.preventDefault()
@@ -313,7 +332,7 @@ export function ContentEditorFloatingToolbar({
   }
 
   function insertBlock(
-    kind: 'resource' | 'collapsible' | 'divider',
+    kind: 'resource' | 'collapsible',
   ) {
     if (disabled) return
 
@@ -323,26 +342,17 @@ export function ContentEditorFloatingToolbar({
 
       const anchorNode = selection.anchor.getNode()
       const emptyTopLevel = anchorNode.getTopLevelElement()
-      const node =
-        kind === 'divider'
-          ? $createContentDividerNode()
-          : $createContentDirectiveNode(
-              kind,
-              kind === 'resource'
-                ? 'Новый ресурс'
-                : 'Новый раздел',
-              kind === 'resource'
-                ? [
-                    ':::resource[Новый ресурс]{current=0 maximum=1 recovery=long}',
-                    'Описание ресурса',
-                    ':::',
-                  ].join('\n')
-                : [
-                    ':::collapsible[Новый раздел]',
-                    'Содержимое раскрываемого раздела',
-                    ':::',
-                  ].join('\n'),
-            )
+      const node = $createContentDirectiveNode(
+        kind,
+        kind === 'resource' ? '' : 'Новая вкладка',
+        kind === 'resource'
+          ? resourceToSource(emptyResource)
+          : [
+              ':::collapsible[Новая вкладка]',
+              'Содержимое вкладки',
+              ':::',
+            ].join('\n'),
+      )
 
       if (
         emptyTopLevel &&
@@ -369,8 +379,8 @@ export function ContentEditorFloatingToolbar({
         top: position.top,
         transform:
           position.placement === 'above'
-            ? 'translate(-50%, -100%)'
-            : 'translate(-50%, 0)',
+            ? 'translateY(-100%)'
+            : 'none',
       }
     : { visibility: 'hidden' }
 
@@ -378,6 +388,7 @@ export function ContentEditorFloatingToolbar({
     <div
       ref={overlayRef}
       className={styles.floatingOverlay}
+      data-content-editor-owner={editorId}
       data-kind={floating.kind}
       style={overlayStyle}
       onMouseDown={preserveSelection}
@@ -410,15 +421,16 @@ export function ContentEditorFloatingToolbar({
             variant="secondary"
             onClick={() => insertBlock('collapsible')}
           >
-            Раскрываемый раздел
+            Вкладка
           </Button>
           <Button
             decoration="minimal"
             size="sm"
             variant="secondary"
-            onClick={() => insertBlock('divider')}
+            disabled={true}
+            title="Виджет предмета появится на следующем этапе"
           >
-            Разделитель
+            Предмет
           </Button>
         </div>
       )}

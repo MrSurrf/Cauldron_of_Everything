@@ -89,35 +89,11 @@ export const createMockCharacterSheet = (): CharacterSheetDocument => {
   ]
   sheet.currency.gp = manualNumericField(24)
   sheet.currency.sp = manualNumericField(8)
-  sheet.inventory = [
-    {
-      id: 'inventory-chain-mail',
-      definition: { kind: 'encyclopedia', itemId: 'item-chain-mail' },
-      quantity: 1,
-      equipped: true,
-      attuned: false,
-      notes: '',
-      overrides: { armorBonus: 5 },
-    },
-    {
-      id: 'inventory-longsword',
-      definition: { kind: 'encyclopedia', itemId: 'item-longsword' },
-      quantity: 1,
-      equipped: true,
-      attuned: false,
-      notes: 'Фамильный клинок',
-      overrides: {},
-    },
-    {
-      id: 'inventory-memento',
-      definition: { kind: 'custom', name: 'Полковой жетон' },
-      quantity: 1,
-      equipped: false,
-      attuned: false,
-      notes: 'Память о сослуживцах',
-      overrides: {},
-    },
-  ]
+  sheet.equipmentContentText = [
+    'Кольчуга',
+    'Длинный меч — фамильный клинок',
+    'Полковой жетон — память о сослуживцах',
+  ].join('\n')
   sheet.personality = {
     traits: [
       { id: 'trait-1', title: '', text: 'Всегда сохраняю спокойствие перед опасностью.' },

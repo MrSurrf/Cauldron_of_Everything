@@ -1,0 +1,172 @@
+.placeholder {
+  color: var(--color-text-disabled);
+}
+
+.checkList {
+  display: grid;
+  margin-block: 0 0.55em;
+  padding: 0;
+  list-style: none;
+  gap: 0.2em;
+}
+
+.checkList:last-child {
+  margin-bottom: 0;
+}
+
+.checkList li + li {
+  margin-top: 0.2em;
+}
+
+.checkList li {
+  display: grid;
+  grid-template-columns: 1em minmax(0, 1fr);
+  align-items: start;
+  gap: 0.45em;
+}
+
+.checkList input {
+  width: 0.85em;
+  height: 0.85em;
+  margin: 0.27em 0 0;
+  accent-color: var(--color-action-primary);
+  pointer-events: none;
+}
+
+.invalidLink {
+  color: var(--palette-purple-300);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-width-default);
+  text-underline-offset: 0.18em;
+  text-decoration-style: wavy;
+  cursor: help;
+}
+
+.rollToken {
+  cursor: pointer;
+  font: inherit;
+}
+
+.rollToken:hover,
+.rollToken:focus-visible {
+  border-color: var(--color-border-accent);
+  background:
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 24%,
+      var(--color-surface-accent)
+    );
+  outline: 0;
+  box-shadow:
+    0 0 0.65em
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 32%,
+      transparent
+    );
+}
+
+.rollResult {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.rollResult[data-error='true'] {
+  color: var(--color-status-danger);
+}
+
+.collapsibleBlock {
+  margin-block: 0.55em;
+  border:
+    var(--border-width-default)
+    solid
+    color-mix(
+      in srgb,
+      var(--color-border-accent) 42%,
+      var(--color-content-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 38%,
+      transparent
+    );
+  clip-path:
+    polygon(
+      0.5em 0,
+      calc(100% - 0.5em) 0,
+      100% 0.5em,
+      100% calc(100% - 0.5em),
+      calc(100% - 0.5em) 100%,
+      0.5em 100%,
+      0 calc(100% - 0.5em),
+      0 0.5em
+    );
+}
+
+.collapsibleBlock > summary {
+  position: relative;
+  padding: 0.45em 1.8em 0.45em 0.65em;
+  color: var(--palette-purple-300);
+  cursor: pointer;
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: 1em;
+  list-style: none;
+}
+
+.collapsibleBlock > summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsibleBlock > summary::after {
+  position: absolute;
+  top: 50%;
+  right: 0.65em;
+  transform: translateY(-58%) rotate(45deg);
+
+  width: 0.45em;
+  height: 0.45em;
+  border-right: var(--border-width-default) solid currentcolor;
+  border-bottom: var(--border-width-default) solid currentcolor;
+
+  content: '';
+  transition:
+    transform
+    var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.collapsibleBlock[open] > summary::after {
+  transform: translateY(-30%) rotate(225deg);
+}
+
+.collapsibleBlock > summary:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-border-accent);
+  outline-offset: calc(-1 * var(--border-width-strong));
+}
+
+.directiveBody {
+  padding: 0.4em 0.55em 0.55em;
+  border-top:
+    var(--border-width-default)
+    solid
+    color-mix(
+      in srgb,
+      var(--color-content-border) 66%,
+      transparent
+    );
+}
+
+.directiveBody > :last-child {
+  margin-bottom: 0;
+}
+
+@media (forced-colors: active) {
+  .collapsibleBlock,
+  .rollToken {
+    border: var(--border-width-default) solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    clip-path: none;
+  }
+}

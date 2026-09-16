@@ -12,7 +12,7 @@ import {
 
 const initialItems: SkillListItem[] = [
   {
-    ability: 'DEX',
+    ability: 'ЛОВ',
     id: 'acrobatics',
     label: 'Акробатика',
     rank: 'proficient',
@@ -24,7 +24,7 @@ const initialItems: SkillListItem[] = [
     },
   },
   {
-    ability: 'WIS',
+    ability: 'МУД',
     id: 'perception',
     label: 'Восприятие',
     rank: 'expertise',

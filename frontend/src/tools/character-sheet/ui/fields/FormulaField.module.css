@@ -57,14 +57,6 @@
   min-height: var(--sheet-control-height, var(--control-height-sm));
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  border-bottom: var(--border-width-default) solid
-    color-mix(in srgb, var(--color-content-border) 72%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      transparent,
-      color-mix(in srgb, var(--color-surface-accent) 16%, transparent)
-    );
 }
 
 .settingsButton[data-size='sm'] {
@@ -72,10 +64,6 @@
     var(--sheet-icon-control-size, 1.125rem);
   --icon-button-glyph-size:
     var(--sheet-icon-glyph-size, 0.6875rem);
-  --button-border: transparent;
-  --button-inner-border: transparent;
-  --button-surface-start: transparent;
-  --button-surface-end: transparent;
 
   position: absolute;
   z-index: 2;
@@ -85,37 +73,10 @@
   filter: none;
 }
 
-.settingsButton[data-size='sm']::before {
-  background: transparent;
-}
-
-.settingsButton[data-size='sm'] > span[aria-hidden='true'] {
-  display: none;
-}
-
 .field:hover .settingsButton,
 .field:focus-within .settingsButton,
 .settingsButton:focus-visible {
   opacity: 1;
-}
-
-.field[data-mode='formula'] .control {
-  border-bottom-color:
-    color-mix(in srgb, var(--color-border-accent) 38%, var(--color-content-border));
-}
-
-.field:focus-within .control {
-  border-bottom-color: var(--color-border-accent);
-  background:
-    linear-gradient(
-      180deg,
-      transparent,
-      color-mix(in srgb, var(--color-surface-accent) 38%, transparent)
-    );
-}
-
-.field[data-status='error'] .control {
-  border-color: var(--color-status-danger);
 }
 
 .error {
@@ -175,11 +136,7 @@
 .field[data-presentation='list'] .label {
   grid-column: 2;
   grid-row: 1;
-  padding-inline-end:
-    calc(
-      var(--sheet-icon-control-size, 1.125rem) +
-        var(--sheet-tight-gap, var(--space-1))
-    );
+  padding-inline-end: 0;
   color: var(--color-text-primary);
   font-size: var(--sheet-body-size, var(--font-size-sm));
   letter-spacing: 0;
@@ -190,17 +147,6 @@
   grid-column: 1;
   grid-row: 1;
   min-height: var(--icon-size-sm);
-  border-bottom: 0;
-  background: transparent;
-}
-
-.field[data-presentation='list'] .control output,
-.field[data-presentation='list'] .control input {
-  min-height: var(--icon-size-sm);
-  padding: 0 var(--space-1);
-  font-size: var(--font-size-sm);
-  line-height: 1.15;
-  text-align: center;
 }
 
 .field[data-presentation='list'] .error {
@@ -259,9 +205,7 @@
   white-space: normal;
 }
 
-.field[data-compact='true'] .control,
-.field[data-compact='true'] .control input,
-.field[data-compact='true'] .control output {
+.field[data-compact='true'] .control {
   min-height: min(
     var(--icon-size-md),
     var(--sheet-control-height, var(--icon-size-md))
@@ -279,29 +223,19 @@
 .field[data-presentation='stat'] .control {
   width: 100%;
   min-height: var(--sheet-control-height, var(--control-height-sm));
-  border-bottom-color: transparent;
-  background: transparent;
 }
 
-.field[data-presentation='stat'] .control > :last-child {
+.field[data-presentation='stat'] .settingsButton {
   opacity: 0.46;
   transition:
     opacity var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .field[data-presentation='stat']:focus-within
-  .control > :last-child,
+  .settingsButton,
 .field[data-presentation='stat']:hover
-  .control > :last-child {
+  .settingsButton {
   opacity: 1;
-}
-
-.field[data-presentation='stat'] .control output,
-.field[data-presentation='stat'] .control input {
-  font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-value-size);
-  line-height: 1;
-  text-align: center;
 }
 
 .field[data-presentation='shield'] {
@@ -378,16 +312,6 @@
 
 .field[data-presentation='shield'] .control {
   min-height: var(--sheet-control-height, var(--control-height-sm));
-  border-bottom: 0;
-  background: transparent;
-}
-
-.field[data-presentation='shield'] .control output,
-.field[data-presentation='shield'] .control input {
-  font-family: var(--sheet-heading-font, var(--font-family-heading));
-  font-size: var(--sheet-value-size);
-  line-height: 1;
-  text-align: center;
 }
 
 .field[data-presentation='shield'] .settingsButton {

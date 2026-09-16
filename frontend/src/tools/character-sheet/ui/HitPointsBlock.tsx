@@ -1,6 +1,7 @@
 import { TextInput } from '../../../shared/ui'
 import type { ReactNode } from 'react'
 import { CollapsibleSection } from './CollapsibleSection'
+import { HeartIcon } from './icons'
 import styles from './stats.module.css'
 
 export type HitPointsValue = number | null
@@ -52,14 +53,14 @@ export function HitPointsBlock({
 }: HitPointsBlockProps) {
   const fields = [
     {
-      key: 'maximum',
-      label: 'Максимальные',
-      value: maximum,
-    },
-    {
       key: 'current',
       label: 'Текущие',
       value: current,
+    },
+    {
+      key: 'maximum',
+      label: 'Макс.',
+      value: maximum,
     },
     {
       key: 'temporary',
@@ -83,12 +84,33 @@ export function HitPointsBlock({
           renderField ? (
             <div
               key={field.key}
-              className={styles.fieldLabel}
+              className={`${styles.fieldLabel} ${styles.hitPointsField}`}
+              data-hit-points-field={field.key}
             >
+              {field.key === 'current' && (
+                <span
+                  aria-hidden="true"
+                  className={styles.hitPointsSymbol}
+                >
+                  <HeartIcon />
+                </span>
+              )}
               {renderField(field.key, field.label, field.value)}
             </div>
           ) : (
-            <label key={field.key} className={styles.fieldLabel}>
+            <label
+              key={field.key}
+              className={`${styles.fieldLabel} ${styles.hitPointsField}`}
+              data-hit-points-field={field.key}
+            >
+              {field.key === 'current' && (
+                <span
+                  aria-hidden="true"
+                  className={styles.hitPointsSymbol}
+                >
+                  <HeartIcon />
+                </span>
+              )}
               {field.label}
               <TextInput
                 aria-label={`${field.label} хиты`}

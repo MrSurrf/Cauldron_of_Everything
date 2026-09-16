@@ -4,14 +4,13 @@ import {
   type RepeatableTextEntry,
 } from '../../model'
 import { CollapsibleSection } from '../CollapsibleSection'
-import { CharacterNotesEditor } from '../notes'
+import { ContentEditor } from '../../../../shared/ui'
+import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 import { personalityLabels } from './sheet.constants'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterPersonalitySectionProps = {
-  className?: string
   defaultOpen?: boolean
-  editorClassName?: string
   rows?: number
   section: PersonalitySectionKey
   sheet: CharacterSheetViewModel
@@ -49,9 +48,7 @@ function entriesToText(
 }
 
 export function CharacterPersonalitySection({
-  className,
   defaultOpen = false,
-  editorClassName,
   rows = 3,
   section,
   sheet,
@@ -86,15 +83,16 @@ export function CharacterPersonalitySection({
 
   return (
     <CollapsibleSection
-      className={className}
+      contentLayout="editor"
       data-character-sheet-personality={section}
       defaultOpen={defaultOpen}
       headingLevel={2}
       title={label}
     >
-      <CharacterNotesEditor
+      <ContentEditor
+        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
         accessibleLabel={label}
-        className={editorClassName}
+        renderPreview={true}
         placeholder={`${label}...`}
         rows={rows}
         showStructureActions={true}

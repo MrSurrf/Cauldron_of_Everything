@@ -175,7 +175,24 @@ describe('characterSheetReducer', () => {
     expect(next.proficiencies.contentText).toBe(
       'Общий, Эльфийский, лёгкие доспехи',
     )
-    expect(next.inventory).toBe(document.inventory)
+    expect(next.equipmentContentText).toBe(
+      document.equipmentContentText,
+    )
+  })
+
+  it('сохраняет снаряжение как единый текст', () => {
+    const document = createEmptyCharacterSheet({
+      id: 'equipment-content-text-test',
+    })
+
+    const next = characterSheetReducer(document, {
+      type: 'equipment/setContentText',
+      value: 'Кольчуга\nЩит\nПоходный набор',
+    })
+
+    expect(next.equipmentContentText).toBe(
+      'Кольчуга\nЩит\nПоходный набор',
+    )
   })
 
   it('сохраняет структурированные атаки при редактировании текстового представления', () => {

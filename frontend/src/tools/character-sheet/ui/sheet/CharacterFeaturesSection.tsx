@@ -9,14 +9,12 @@ import {
   type CustomSection,
   type ResourcePool,
 } from '../../model'
-import { CharacterNotesEditor } from '../notes'
+import { ContentEditor } from '../../../../shared/ui'
+import { createResourceMaximumEvaluator, normalizeResourceMaximumExpression } from './resourceMaximumEvaluator'
 import { SheetSection } from '../SheetSection'
-import styles from './CharacterFeaturesSection.module.css'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
 export type CharacterFeaturesSectionProps = {
-  className?: string
-  editorClassName?: string
   rows?: number
   sheet: CharacterSheetViewModel
 }
@@ -296,8 +294,6 @@ function featuresToText(
 }
 
 export function CharacterFeaturesSection({
-  className,
-  editorClassName,
   rows = 10,
   sheet,
 }: CharacterFeaturesSectionProps) {
@@ -339,19 +335,18 @@ export function CharacterFeaturesSection({
 
   return (
     <SheetSection
-      className={className}
+      contentLayout="editor"
       title="Особенности, умения и заметки"
     >
-      <CharacterNotesEditor
+      <ContentEditor
+        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
         accessibleLabel="Особенности, умения и заметки"
-        className={[styles.featuresEditor, editorClassName]
-          .filter(Boolean)
-          .join(' ')}
         fill={true}
+        renderPreview={true}
         placeholder="Особенности персонажа, способности и заметки..."
         rows={rows}
         showStructureActions={true}
-        onStructuredResourceChange={(source, current, nextValue) => {
+        onStructuredResourceChange={(source, current, nextValue, widget) => {
           const separator = source.indexOf(':')
           if (separator <= 0 || separator === source.length - 1) {
             return
@@ -407,6 +402,23 @@ export function CharacterFeaturesSection({
             return
           }
 
+          if (widget) {
+            const numericMaximum = widget.maximum.trim() ? Number(widget.maximum) : null
+            const maximum = Number.isFinite(numericMaximum) || numericMaximum === null
+              ? { mode: 'manual' as const, manualValue: numericMaximum, formulaOverride: null }
+              : { mode: 'formula' as const, manualValue: null, formulaOverride: normalizeResourceMaximumExpression(widget.maximum) }
+            nextDocument = characterSheetReducer(nextDocument, characterSheetActions.setNumericField(
+              kind === 'resource'
+                ? { kind: 'resource', field: 'maximum', resourceId: id }
+                : { kind: 'featureUse', field: 'maximum', featureId: id },
+              maximum,
+            ))
+            const recovery = widget.recovery === 'none' ? 'manual' : widget.recovery
+            nextDocument = characterSheetReducer(nextDocument, kind === 'resource'
+              ? { type: 'resource/update', id, patch: { label: widget.title, recovery } }
+              : { type: 'feature/update', id, patch: { title: widget.title, description: widget.notes, recovery } })
+          }
+
           if (compacted) {
             nextDocument = characterSheetReducer(
               nextDocument,
@@ -416,6 +428,15 @@ export function CharacterFeaturesSection({
                 patch: { description: nextValue },
               },
             )
+          } else {
+            nextDocument = characterSheetReducer(nextDocument, {
+              type: 'feature/add',
+              value: {
+                category: 'other', customFieldIds: [], description: nextValue,
+                expanded: true, id: createClientId('feature-notes'), linkedEntityIds: [],
+                recovery: null, recoveryLabel: '', title: '', uses: null,
+              },
+            })
           }
 
           dispatch(

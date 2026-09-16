@@ -16,9 +16,6 @@ export type RestRecovery = 'short' | 'long' | 'either' | 'manual'
 export type SheetDensity = 'compact' | 'comfortable' | 'spacious'
 export type SheetFont = 'cauldron' | 'sans' | 'serif'
 
-export type JsonPrimitive = string | number | boolean | null
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
-
 export type NumericFieldState = {
   mode: NumericFieldMode
   manualValue: number | null
@@ -100,26 +97,6 @@ export type AttackEntry = {
 
 export type CurrencyKey = 'cp' | 'sp' | 'ep' | 'gp' | 'pp'
 export type CurrencyState = Record<CurrencyKey, NumericFieldState>
-
-export type InventoryDefinition =
-  | {
-      kind: 'encyclopedia'
-      itemId: string
-    }
-  | {
-      kind: 'custom'
-      name: string
-    }
-
-export type InventoryEntry = {
-  id: string
-  definition: InventoryDefinition
-  quantity: number
-  equipped: boolean
-  attuned: boolean
-  notes: string
-  overrides: Record<string, JsonValue>
-}
 
 export type RepeatableTextEntry = {
   id: string
@@ -268,7 +245,7 @@ export type CharacterSheetDocument = {
    */
   attacksContentText?: string | null
   currency: CurrencyState
-  inventory: InventoryEntry[]
+  equipmentContentText: string
   personality: PersonalitySections
   features: CharacterFeature[]
   customFields: Record<string, CustomField>

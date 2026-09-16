@@ -169,6 +169,7 @@ export function FormulaField({
     >
       <span
         className={styles.label}
+        data-formula-label
         data-visibility={labelVisibility}
       >
         <span className={styles.labelText}>
@@ -181,7 +182,7 @@ export function FormulaField({
         )}
       </span>
 
-      <div className={styles.control}>
+      <div className={styles.control} data-formula-control>
         {value.mode === 'manual' ? (
           <NumericEditor
             aria-label={controlLabel}
@@ -193,7 +194,9 @@ export function FormulaField({
               presentation === 'stat' ||
               presentation === 'shield'
                 ? 'stat'
-                : 'default'
+                : presentation === 'list'
+                  ? 'list'
+                  : 'default'
             }
             value={value.manualValue}
             onValueChange={(manualValue) => {
@@ -206,28 +209,31 @@ export function FormulaField({
         ) : (
           <ComputedValue
             aria-label={controlLabel}
+            framed={presentation !== 'stat' && presentation !== 'shield'}
             prefixPositive={prefixPositive}
             result={result}
             signDisplay={signDisplay}
           />
         )}
 
-        <Popover
-          content={settings}
-          placement="bottom"
-        >
-          <Tooltip content={`Настроить поле «${controlLabel}»`}>
-            <IconButton
-              className={styles.settingsButton}
-              aria-label={`Настроить поле «${controlLabel}»`}
-              disabled={disabled}
-              icon={<SettingsIcon />}
-              size="sm"
-              variant="secondary"
-            />
-          </Tooltip>
-        </Popover>
       </div>
+
+      <Popover
+        content={settings}
+        placement="bottom"
+      >
+        <Tooltip content={`Настроить поле «${controlLabel}»`}>
+          <IconButton
+            className={styles.settingsButton}
+            aria-label={`Настроить поле «${controlLabel}»`}
+            decoration="bare"
+            disabled={disabled}
+            icon={<SettingsIcon />}
+            size="sm"
+            variant="secondary"
+          />
+        </Tooltip>
+      </Popover>
 
       {error && (
         <span className={styles.error}>

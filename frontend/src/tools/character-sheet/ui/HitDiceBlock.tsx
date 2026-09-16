@@ -70,6 +70,7 @@ export function HitDiceBlock({
   return (
     <CollapsibleSection
       collapsible={false}
+      actionsPlacement="title"
       actions={
         onAdd ? (
           <Tooltip content="Добавить пул костей">
@@ -97,9 +98,16 @@ export function HitDiceBlock({
         rootClassName={styles.diceScroll}
       >
         {pools.length > 0 ? (
-          <div className={styles.diceList}>
+          <div
+            className={styles.diceList}
+            data-hit-dice-list={true}
+          >
           {pools.map((pool, poolIndex) => (
-            <div key={pool.id} className={styles.diceRow}>
+            <div
+              key={pool.id}
+              className={styles.diceRow}
+              data-hit-dice-pool={pool.id}
+            >
               <label className={styles.fieldLabel}>
                 Кость
                 <TextInput

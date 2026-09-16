@@ -53,7 +53,6 @@ const meta = {
     },
     variables: [
       { key: 'DEX_MOD', label: 'Модификатор ловкости' },
-      { key: 'ARMOR_BONUS', label: 'Бонус брони' },
     ],
   },
 } satisfies Meta<typeof FormulaField>

@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react'
 
-import styles from './ComputedValue.module.css'
+import { NumericValue } from './NumericValue'
 
 export type ComputedValueResult =
   | {
@@ -23,6 +23,7 @@ export type ComputedValueProps = Omit<
   HTMLAttributes<HTMLOutputElement>,
   'children'
 > & {
+  framed?: boolean
   prefixPositive?: boolean
   result: ComputedValueResult
   signDisplay?: NumericSignDisplay
@@ -52,26 +53,23 @@ function formatValue(
 
 export function ComputedValue({
   className,
+  framed = false,
   prefixPositive = false,
   result,
   signDisplay = 'standard',
   ...outputProps
 }: ComputedValueProps) {
-  const rootClassName = [
-    styles.value,
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ')
   const error =
     result.status === 'error'
       ? result.error
       : undefined
 
   return (
-    <output
+    <NumericValue
       {...outputProps}
-      className={rootClassName}
+      as="output"
+      className={className}
+      framed={framed}
       data-status={result.status}
       title={error}
       aria-label={
@@ -85,6 +83,6 @@ export function ComputedValue({
         prefixPositive,
         signDisplay,
       )}
-    </output>
+    </NumericValue>
   )
 }

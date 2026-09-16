@@ -1,12 +1,7 @@
 import {
-  IconButton,
   Tooltip,
 } from '../../../shared/ui'
 import { CollapsibleSection } from './CollapsibleSection'
-import {
-  CheckIcon,
-  RemoveIcon,
-} from './icons'
 import styles from './stats.module.css'
 
 export type DeathSavesBlockProps = {
@@ -55,7 +50,8 @@ export function DeathSavesBlock({
               key={mark}
               content={`${label} ${mark}`}
             >
-              <IconButton
+              <button
+                type="button"
                 aria-label={`${label} ${mark}`}
                 aria-pressed={active}
                 className={
@@ -64,13 +60,6 @@ export function DeathSavesBlock({
                     : `${styles.failureMark}`
                 }
                 disabled={!onChange}
-                icon={
-                  isSuccess
-                    ? <CheckIcon />
-                    : <RemoveIcon />
-                }
-                size="sm"
-                variant="secondary"
                 onClick={() => {
                   const nextCount = active && mark === count
                     ? mark - 1
