@@ -1,0 +1,85 @@
+.compactFrame {
+  --input-border:
+    color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-inner-border:
+    color-mix(in srgb, var(--input-border) 26%, transparent);
+  --input-surface-start:
+    color-mix(in srgb, var(--color-surface-default) 92%, transparent);
+  --input-surface-end:
+    color-mix(in srgb, var(--color-surface-muted) 96%, transparent);
+  --input-corner-cut: var(--space-1);
+  --input-inner-frame-inset: 2px;
+
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  filter: none;
+}
+
+.compactFrame input,
+.compactFrame textarea {
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.compactField {
+  min-width: 0;
+}
+
+.compactField label {
+  left: var(--sheet-layout-gap, var(--space-2));
+  right: var(--sheet-layout-gap, var(--space-2));
+  font-size: var(--sheet-label-size, var(--font-size-xs)) !important;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.plainInput {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
+  border: 0;
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 78%, transparent);
+  outline: 0;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 18%, transparent)
+    );
+  color: var(--color-text-primary);
+  font: inherit;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+  transition:
+    border-color var(--motion-duration-fast)
+    var(--motion-easing-standard),
+    background-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.plainInput:hover:not(:disabled) {
+  border-color:
+    color-mix(in srgb, var(--color-border-accent) 58%, var(--color-content-border));
+}
+
+.plainInput:focus-visible {
+  border-color: var(--color-border-accent);
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface-accent) 42%, transparent)
+    );
+  box-shadow: 0 1px 0 var(--color-border-accent);
+}
+
+.plainInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.plainTextarea {
+  min-height: 5rem;
+  resize: vertical;
+}

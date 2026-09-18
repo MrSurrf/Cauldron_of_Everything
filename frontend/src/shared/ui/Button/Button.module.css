@@ -366,6 +366,52 @@
   filter: none;
 }
 
+.button[data-decoration='minimal'],
+.button[data-decoration='bare'] {
+  filter: none;
+}
+
+.button[data-decoration='minimal'] .content,
+.button[data-decoration='bare'] .content,
+.button[data-decoration='minimal']:hover:not(:disabled) .content,
+.button[data-decoration='bare']:hover:not(:disabled) .content {
+  filter: none;
+}
+
+.button[data-decoration='minimal']:hover:not(:disabled),
+.button[data-decoration='bare']:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.button[data-decoration='minimal']:active:not(:disabled),
+.button[data-decoration='bare']:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.button[data-decoration='minimal']:focus-visible,
+.button[data-decoration='bare']:focus-visible {
+  outline: var(--border-width-default) solid var(--color-border-accent);
+  outline-offset: var(--border-width-default);
+  filter: none;
+}
+
+.button[data-decoration='bare'] {
+  background: transparent;
+}
+
+.button[data-decoration='bare']::before {
+  display: none;
+}
+
+.button[data-decoration='bare']:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 72%,
+      transparent
+    );
+}
+
 .icon {
   display: grid;
 

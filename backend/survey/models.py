@@ -83,6 +83,24 @@ class Answer(models.Model):
         return f"{self.user} — {self.question} → {self.choice}"
 
 
+class EmailAuthCode(models.Model):
+    """Одноразовый код входа по email (хранится только хэш кода)."""
+
+    email = models.EmailField("Email", db_index=True)
+    code_hash = models.CharField("Хэш кода", max_length=64)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    attempts = models.PositiveSmallIntegerField("Попытки ввода", default=0)
+    is_used = models.BooleanField("Использован", default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Код входа по email"
+        verbose_name_plural = "Коды входа по email"
+
+    def __str__(self):
+        return f"{self.email} ({self.created_at:%d.%m.%Y %H:%M})"
+
+
 class SurveySubmission(models.Model):
     """Результат прохождения анкеты целиком (сырой формат от фронтенда)."""
 

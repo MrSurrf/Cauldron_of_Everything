@@ -1,2 +1,5 @@
 export { TextArea } from './TextArea'
-export type { TextAreaProps } from './TextArea.types'
+export type {
+  TextAreaFormatAction,
+  TextAreaProps,
+} from './TextArea.types'

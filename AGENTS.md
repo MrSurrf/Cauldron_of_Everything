@@ -42,6 +42,7 @@
 | CORS | django-cors-headers 4.9.0 |
 | Документация API | drf-spectacular 0.30.0 (Swagger UI) |
 | Изображения | Pillow 12.3.0 |
+| Парсинг HTML (импорт энциклопедии) | beautifulsoup4 4.14.3 |
 | База данных (dev) | SQLite (`backend/db.sqlite3`) |
 
 Полный список зависимостей — `backend/requirements.txt`.
@@ -78,6 +79,17 @@ Cauldron_of_Everything/
 │   │   ├── urls.py
 │   │   ├── views.py
 │   │   └── tests.py         # пустой заглушка
+│   ├── encyclopedia/        # приложение энциклопедии: сущности, связи, API, импорт
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   │       └── import_encyclopedia.py
+│   │   ├── migrations/
+│   │   ├── admin.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── Encyclopedia-data/   # сырой датасет энциклопедии, НЕ в git (~1.2 ГБ)
 │   ├── media/               # загружаемые файлы (картинки анкеты)
 │   │   └── survey/
 │   ├── db.sqlite3
@@ -128,11 +140,10 @@ Cauldron_of_Everything/
 
 ## 4. Архитектура бэкенда
 
-### 4.1. Django-проект и приложение
+### 4.1. Django-проект и приложения
 
 - Проект: `core` (`backend/core/`).
-- Единственное приложение: `survey` (`backend/survey/`).
-- Всё доменное поведение (модели, API, админка, management-команда) сосредоточено в `survey`.
+- Приложения: `survey` (`backend/survey/`) — анкета; `encyclopedia` (`backend/encyclopedia/`) — энциклопедия D&D.
 
 ### 4.2. Модели (`backend/survey/models.py`)
 
@@ -141,11 +152,13 @@ Cauldron_of_Everything/
 | `Question` | Вопрос анкеты | `text`, `image`, `order`, `is_active` |
 | `Choice` | Вариант ответа | FK `question` (related_name `choices`), `text`, `image`, `order` |
 | `Answer` | Ответ авторизованного пользователя | FK `user`, FK `question`, FK `choice`, `created_at`, `updated_at` |
+| `EmailAuthCode` | Одноразовый код входа по email | `email`, `code_hash` (SHA-256), `created_at`, `attempts`, `is_used` |
 | `SurveySubmission` | Результат прохождения от фронтенда | `survey_id`, `player_name`, `character_name`, `answers` (JSON), `created_at` |
 
 - `Question` и `Choice` упорядочены по `order`, затем `id`.
 - У `Answer` есть unique-констрейнт на пару `(user, question)` — повторный ответ перезаписывается.
-- `SurveySubmission` не требует авторизации и хранит сырые ответы фронтенда.
+- `SurveySubmission` хранит сырые ответы фронтенда; запись требует JWT (см. ниже), чтение открыто.
+- Код входа живёт 10 минут, повторная отправка — не чаще раза в 60 секунд, максимум 5 попыток ввода. Если `EMAIL_HOST` не задан, письма с кодом печатаются в консоль бэкенда (console email backend).
 
 ### 4.3. API-эндпоинты
 
@@ -154,15 +167,40 @@ Cauldron_of_Everything/
 | Метод | URL | Авторизация | Описание |
 |---|---|---|---|
 | POST | `/api/auth/register/` | нет | Регистрация: `{"username", "password"}` (пароль ≥ 8) |
+| POST | `/api/auth/request-code/` | нет | Отправить одноразовый код входа на `{"email"}` |
+| POST | `/api/auth/verify-code/` | нет | Проверить код `{"email", "code"}`, вернуть access/refresh токены |
 | POST | `/api/auth/token/` | нет | Получение access/refresh токенов |
 | POST | `/api/auth/token/refresh/` | нет | Обновление access-токена |
 | GET | `/api/questions/` | JWT | Список активных вопросов с вариантами |
 | GET | `/api/answers/` | JWT | Ответы текущего пользователя |
 | POST | `/api/answers/` | JWT | Сохранить/перезаписать ответ `{"question", "choice"}` |
 | GET | `/api/submissions/` | нет | Список результатов прохождения анкеты |
-| POST | `/api/submissions/` | нет | Сохранить результат целиком от фронтенда |
+| POST | `/api/submissions/` | JWT | Сохранить результат целиком от фронтенда |
+| GET | `/api/encyclopedia/` | нет | Список сущностей энциклопедии: `?type=spell`, `?q=...`, пагинация |
+| GET | `/api/encyclopedia/<id>/` | нет | Карточка сущности: `content_html`, `data`, связи |
+| GET | `/api/encyclopedia/types/` | нет | Количество сущностей по типам |
 | GET | `/api/schema/` | нет | OpenAPI-схема |
 | GET | `/api/docs/` | нет | Swagger UI |
+
+### 4.3.1. Энциклопедия (`backend/encyclopedia/`)
+
+Модели (`encyclopedia/models.py`):
+
+| Модель | Назначение | Ключевые поля |
+|---|---|---|
+| `Entity` | Сущность энциклопедии | `entity_type` (spell/creature/item/class/race/feat/background/sidekick), `name` (НЕ уникально), `name_en`, `slug` (уникальный), `sources` (JSON), `content_html`, `content_text`, `data` (JSON: специфичные поля типа + tables/sections/tooltips) |
+| `EntityLink` | Связь между сущностями по нашим ID | FK `from_entity`, FK `to_entity`, `text`; unique на тройку полей |
+
+- Специфичные поля типа (у существ — `abilities`, `challenge_rating`...; у заклинаний — `level`, `school`...) хранятся в `Entity.data`, а не в отдельных таблицах.
+- Внутренние ссылки в `content_html` переписаны на роут фронтенда `/encyclopedia/<entity_type>/<slug>/` с атрибутом `data-entity-id` (наш ID). Ссылки на статьи вне датасета заменены простым текстом. Технические поля источника (`source_id`, `source_key`, `source_url`, `raw_file`, `data-source-href`, класс `tooltipstered`, URL dnd.su) при импорте удалены.
+
+Импорт датасета: `python manage.py import_encyclopedia [путь_к_parsed] [--replace]`
+
+- По умолчанию берёт JSON из `settings.ENCYCLOPEDIA_DATA_DIR` (`backend/Encyclopedia-data/Encyclopedia-data/parsed/`).
+- Сырой датасет (~1.2 ГБ) лежит локально в `backend/Encyclopedia-data/` и в git не попадает (в `.gitignore`).
+- Импорт одноразовый: `source_key` в БД не сохраняется, повторный запуск — только с `--replace` (полная очистка).
+- Три прохода: создание сущностей → очистка и перелинковка `content_html` (BeautifulSoup) → построение `EntityLink` через сопоставление `source_key → id`.
+- Импортировано: 4643 сущности (spell 524, creature 2921, item 942, class 13, sidekick 3, race 48, feat 105, background 87), 15247 связей.
 
 ### 4.4. Загрузка анкеты из JSON
 
@@ -205,6 +243,7 @@ Cauldron_of_Everything/
 - JWT: access — 60 минут, refresh — 7 дней.
 - Медиафайлы: `MEDIA_URL = 'media/'`, `MEDIA_ROOT = BASE_DIR / 'media'`.
 - `SURVEY_CONFIG_DIR` указывает на корневую папку `config/`.
+- `ENCYCLOPEDIA_DATA_DIR` указывает на `backend/Encyclopedia-data/Encyclopedia-data/parsed/` (сырой датасет энциклопедии, переопределяется через env).
 
 ---
 
@@ -217,6 +256,7 @@ Cauldron_of_Everything/
 - Рабочий опросник изолирован в `frontend/src/tools/survey/`.
 - Пока workspace не реализован, оболочка запускает `SurveyApp`.
 - Переключение экранов опросника реализовано в `tools/survey/App.tsx` через локальный стейт:
+  - `LoginPage` — временный экран входа по email-коду, пока нет сохранённого токена.
   - `StartPage` — пока не введено имя.
   - `SurveyPage` — прохождение анкеты.
   - Экран завершения — после получения результата.
@@ -233,10 +273,12 @@ Cauldron_of_Everything/
 
 ### 5.3. Взаимодействие с бэкендом
 
-- Используемые эндпоинты: `POST /api/submissions/` (сохранение) и `GET /api/submissions/` (список результатов).
-- Адрес бэкенда захардкожен в `frontend/src/tools/survey/api.ts`:
+- Перед анкетой показывается временный экран входа (`pages/LoginPage.tsx`): пользователь вводит email, получает одноразовый код (`POST /api/auth/request-code/`), вводит его (`POST /api/auth/verify-code/`) и получает JWT-токены.
+- Токены хранятся в `localStorage` (ключи `surveyAuth.access` / `surveyAuth.refresh`), логика — в `frontend/src/tools/survey/auth.ts`. `authFetch` подставляет заголовок `Authorization: Bearer` и при 401 обновляет access-токен через `/api/auth/token/refresh/`.
+- Используемые эндпоинты: `POST /api/auth/request-code/`, `POST /api/auth/verify-code/`, `POST /api/submissions/` (сохранение, с JWT) и `GET /api/submissions/` (список результатов, без авторизации).
+- Адрес бэкенда задаётся в `frontend/src/tools/survey/api.ts` и `auth.ts`:
   ```ts
-  const API_BASE_URL = 'http://127.0.0.1:8000'
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
   ```
 - Тело запроса:
   ```json
@@ -371,7 +413,7 @@ npm run dev
 3. **CORS** настроен только на dev-адреса `localhost`/`127.0.0.1`.
 4. **База данных** — SQLite, подходит только для разработки.
 5. **Медиафайлы** в dev раздаются Django (`static()` в `urls.py`). В продакшене нужен nginx/CDN.
-6. **`SurveySubmissionListCreateView` доступен без авторизации** — это осознанный выбор для текущего флоу, но при включении авторизации нужно будет пересмотреть.
+6. **`GET /api/submissions/` открыт без авторизации** — это осознанный выбор для страницы результатов мастера (`#/gm`); `POST /api/submissions/` требует JWT.
 
 ### Развёртывание
 
@@ -383,7 +425,7 @@ npm run dev
 
 Эти моменты стоит знать перед правками:
 
-1. **Фронтенд не использует JWT-эндпоинты**: регистрация, логин, `/api/questions/`, `/api/answers/` реализованы на бэкенде, но фронтенд шлёт результат напрямую в `/api/submissions/` без авторизации.
+1. **Фронтенд частично использует JWT-эндпоинты**: вход по email-коду и авторизованная отправка результата в `/api/submissions/` работают, но `/api/questions/` и `/api/answers/` (пообъектное сохранение ответов) фронтендом не используются.
 
 2. **Артефакты в корне `backend/`**: `test_resp2.json` и `test_resp3.json` — это, по-видимому, остатки ручных тестовых запросов, не часть приложения.
 

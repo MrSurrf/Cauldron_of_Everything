@@ -1,0 +1,339 @@
+.field {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-width: 0;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.label {
+  display: flex;
+  overflow: hidden;
+  padding-inline-end:
+    calc(
+      var(--sheet-icon-control-size, 1.125rem) +
+        var(--sheet-tight-gap, var(--space-1))
+    );
+  align-items: baseline;
+  gap: var(--sheet-tight-gap, var(--space-1));
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  letter-spacing: 0.025em;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labelDetail {
+  flex: 0 0 auto;
+  color: var(--color-text-disabled);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.labelText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label[data-visibility='sr-only'] {
+  position: absolute;
+  width: var(--border-width-default);
+  height: var(--border-width-default);
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.control {
+  display: grid;
+  min-width: 0;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+.settingsButton[data-size='sm'] {
+  --icon-button-size:
+    var(--sheet-icon-control-size, 1.125rem);
+  --icon-button-glyph-size:
+    var(--sheet-icon-glyph-size, 0.6875rem);
+
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--space-1) * -1);
+  right: calc(var(--space-1) * -1);
+  opacity: 0.46;
+  filter: none;
+}
+
+.field:hover .settingsButton,
+.field:focus-within .settingsButton,
+.settingsButton:focus-visible {
+  opacity: 1;
+}
+
+.error {
+  color: var(--color-status-danger);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.settings {
+  display: grid;
+  width: min(22rem, calc(100vw - var(--space-6)));
+  gap: var(--space-3);
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--palette-purple-300);
+  font-family: var(--font-family-heading);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+}
+
+.settingsIcon {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  color: var(--color-border-accent);
+}
+
+.preview {
+  display: flex;
+  min-height: var(--control-height-sm);
+  padding: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 72%, var(--color-border-accent));
+  background:
+    color-mix(in srgb, var(--color-surface-accent) 22%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+}
+
+.field[data-presentation='list'] {
+  --sheet-control-height: var(--icon-size-sm);
+  --sheet-value-size: var(--font-size-sm);
+
+  grid-template-columns:
+    minmax(calc(var(--icon-size-lg) + var(--space-1)), auto)
+    minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.field[data-presentation='list'] .label {
+  grid-column: 2;
+  grid-row: 1;
+  padding-inline-end: 0;
+  color: var(--color-text-primary);
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.field[data-presentation='list'] .control {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: var(--icon-size-sm);
+}
+
+.field[data-presentation='list'] .error {
+  grid-column: 1 / -1;
+}
+
+.field[data-presentation='list'] .settingsButton {
+  opacity: 0;
+}
+
+.field[data-presentation='list']:hover .settingsButton,
+.field[data-presentation='list']:focus-within .settingsButton {
+  opacity: 1;
+}
+
+.field[data-presentation='stat'] {
+  --sheet-value-size: var(--sheet-large-value-size, var(--font-size-xl));
+
+  min-height: calc(var(--control-height-lg) + var(--space-2));
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
+  place-content: center;
+  text-align: center;
+}
+
+.field[data-compact='true'] {
+  gap: 0;
+}
+
+.field[data-compact='true'][data-presentation='stat'],
+.field[data-compact='true'][data-presentation='shield'] {
+  min-height: 0;
+  padding: var(--sheet-tight-gap, var(--space-1));
+}
+
+.field[data-compact='true'][data-presentation='stat'] .label,
+.field[data-compact='true'][data-presentation='shield'] .label {
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  line-height: 1.1;
+}
+
+.field[data-compact='true'][data-presentation='stat']
+  .label:not([data-visibility='sr-only']) {
+  padding-inline: var(--sheet-tight-gap, var(--space-1));
+  justify-content: center;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-compact='true'][data-presentation='stat']
+  .label:not([data-visibility='sr-only'])
+  .labelText {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-compact='true'] .control {
+  min-height: min(
+    var(--icon-size-md),
+    var(--sheet-control-height, var(--icon-size-md))
+  );
+}
+
+.field[data-presentation='stat'] .label {
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  letter-spacing: 0.055em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.field[data-presentation='stat'] .control {
+  width: 100%;
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+}
+
+.field[data-presentation='stat'] .settingsButton {
+  opacity: 0.46;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.field[data-presentation='stat']:focus-within
+  .settingsButton,
+.field[data-presentation='stat']:hover
+  .settingsButton {
+  opacity: 1;
+}
+
+.field[data-presentation='shield'] {
+  --shield-border:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 64%,
+      var(--color-border-accent)
+    );
+  --sheet-value-size: var(--sheet-large-value-size, var(--font-size-xl));
+
+  min-height: calc(var(--control-height-lg) + var(--space-5));
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  place-content: center;
+  background: var(--shield-border);
+  clip-path:
+    polygon(
+      14% 0,
+      86% 0,
+      100% 16%,
+      91% 68%,
+      50% 100%,
+      9% 68%,
+      0 16%
+    );
+  text-align: center;
+}
+
+.field[data-presentation='shield']::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: var(--border-width-default);
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--color-surface-accent) 72%, transparent),
+      var(--color-surface-muted) 74%
+    );
+  clip-path: inherit;
+}
+
+.field[data-presentation='shield'] > .label,
+.field[data-presentation='shield'] > .control,
+.field[data-presentation='shield'] > .error {
+  position: relative;
+  z-index: 1;
+}
+
+.field[data-presentation='shield'] .label {
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field[data-presentation='shield']
+  .label:not([data-visibility='sr-only']) {
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
+  justify-content: center;
+  overflow: visible;
+  line-height: 1.1;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-presentation='shield']
+  .label:not([data-visibility='sr-only'])
+  .labelText {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.field[data-presentation='shield'] .control {
+  min-height: var(--sheet-control-height, var(--control-height-sm));
+}
+
+.field[data-presentation='shield'] .settingsButton {
+  top: var(--space-1);
+  right: var(--space-3);
+}
+
+@media (forced-colors: active) {
+  .control,
+  .field[data-presentation='stat'] .control,
+  .field[data-presentation='shield'],
+  .field[data-presentation='shield'] .control,
+  .preview {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .field[data-presentation='shield'] {
+    clip-path: none;
+  }
+
+  .field[data-presentation='shield']::before {
+    display: none;
+  }
+}

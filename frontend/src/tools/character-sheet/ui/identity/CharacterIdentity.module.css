@@ -1,0 +1,393 @@
+.section {
+  --identity-field-inset: var(--sheet-layout-gap, var(--space-2));
+  --sheet-section-padding: var(--space-1)
+    var(--sheet-tight-gap, var(--space-1));
+}
+
+.layout {
+  display: grid;
+  min-width: 0;
+  min-height: var(--sheet-identity-height, 7.125rem);
+  grid-template-columns:
+    6.5rem
+    minmax(0, 1fr)
+    7.875rem;
+  align-items: start;
+  gap: var(--sheet-layout-gap, var(--space-2));
+}
+
+.portrait {
+  display: flex;
+  min-width: 0;
+  align-self: center;
+  align-items: center;
+}
+
+.portrait > * {
+  max-width: 7rem;
+}
+
+.identityBody {
+  display: grid;
+  min-width: 0;
+  align-self: center;
+  align-content: center;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.nameField {
+  --field-font-family:
+    var(--sheet-heading-font, var(--font-family-heading));
+}
+
+.nameFrame {
+  --input-border: transparent;
+  --input-inner-border: transparent;
+  --input-surface-start: transparent;
+  --input-surface-end: transparent;
+  --input-corner-cut: 0;
+  --input-inner-frame-inset: 0;
+
+  min-height: calc(var(--control-height-sm) + var(--space-3));
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 76%, transparent);
+  background: transparent;
+  clip-path: none;
+  filter: none;
+}
+
+.nameFrame::before,
+.nameFrame > span[aria-hidden='true'] {
+  display: none;
+}
+
+.nameFrame:focus-within {
+  border-bottom-color: var(--color-border-accent);
+  filter: none;
+}
+
+.nameInput {
+  min-height: calc(var(--control-height-sm) + var(--space-3));
+  padding: var(--space-3) var(--identity-field-inset)
+    var(--sheet-tight-gap, var(--space-1));
+  color: var(--color-text-primary);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size:
+    clamp(
+      1.375rem,
+      calc(var(--sheet-heading-size, var(--font-size-sm)) + 0.625rem),
+      1.625rem
+    );
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1;
+}
+
+.nameField label,
+.detailField label {
+  top: var(--space-1);
+  left: var(--identity-field-inset);
+  right: var(--identity-field-inset);
+  max-width: calc(100% - 2 * var(--identity-field-inset));
+  padding: 0;
+  transform: none;
+}
+
+.nameField label {
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--sheet-label-size, var(--font-size-xs)) !important;
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-tight);
+  text-transform: uppercase;
+}
+
+.details {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.details > :nth-child(1),
+.details > :nth-child(4) {
+  grid-column: span 3;
+}
+
+.details > :nth-child(2),
+.details > :nth-child(3),
+.details > :nth-child(5),
+.details > :nth-child(6) {
+  grid-column: span 2;
+}
+
+.detailField {
+  min-width: 0;
+}
+
+.detailField label {
+  font-size: var(--sheet-label-size, var(--font-size-xs)) !important;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.detailFrame {
+  --input-border:
+    color-mix(in srgb, var(--color-content-border) 52%, transparent);
+  --input-inner-border: transparent;
+  --input-surface-start: transparent;
+  --input-surface-end:
+    color-mix(in srgb, var(--color-surface-accent) 12%, transparent);
+  --input-corner-cut: 0;
+  --input-inner-frame-inset: 0;
+
+  border-bottom: var(--border-width-default) solid
+    var(--input-border);
+  min-height: calc(var(--control-height-sm) + var(--space-1));
+  background: transparent;
+  clip-path: none;
+  filter: none;
+}
+
+.detailInput {
+  min-height: calc(var(--control-height-sm) + var(--space-1));
+  padding-top: 0.625rem;
+  padding-bottom: 0;
+  line-height: 1.1;
+}
+
+.detailFrame::before,
+.detailFrame > span[aria-hidden='true'] {
+  display: none;
+}
+
+.detailFrame:focus-within {
+  border-bottom-color: var(--color-border-accent);
+  filter: none;
+}
+
+.progressColumn {
+  --progress-border:
+    color-mix(
+      in srgb,
+      var(--color-content-border) 68%,
+      var(--color-border-accent)
+    );
+
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-width: 0;
+  grid-template-rows:
+    var(--sheet-compact-stat-medium-height, 3.25rem)
+    var(--sheet-row-height, var(--control-height-sm));
+  align-self: center;
+  gap: 0;
+  border: var(--border-width-default) solid var(--progress-border);
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--color-surface-accent) 74%, transparent),
+      transparent 68%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-default) 90%, transparent),
+      color-mix(in srgb, var(--color-surface-muted) 94%, transparent)
+    );
+  clip-path:
+    polygon(
+      var(--space-2) 0,
+      calc(100% - var(--space-2)) 0,
+      100% var(--space-2),
+      100% calc(100% - var(--space-2)),
+      calc(100% - var(--space-2)) 100%,
+      var(--space-2) 100%,
+      0 calc(100% - var(--space-2)),
+      0 var(--space-2)
+    );
+  box-shadow:
+    inset 0 0 0 var(--border-width-strong)
+    color-mix(in srgb, var(--progress-border) 22%, transparent);
+}
+
+.progressColumn::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: var(--space-1);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--progress-border) 24%, transparent);
+  clip-path:
+    polygon(
+      var(--space-1) 0,
+      calc(100% - var(--space-1)) 0,
+      100% var(--space-1),
+      100% calc(100% - var(--space-1)),
+      calc(100% - var(--space-1)) 100%,
+      var(--space-1) 100%,
+      0 calc(100% - var(--space-1)),
+      0 var(--space-1)
+    );
+  pointer-events: none;
+}
+
+.levelCard,
+.experienceCard {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 68%, var(--color-border-accent));
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--color-surface-accent) 74%, transparent),
+      transparent 68%
+    );
+}
+
+.levelCard {
+  z-index: 1;
+  display: grid;
+  min-height: 0;
+  padding: var(--sheet-compact-stat-padding, 0.125rem) var(--space-1);
+  place-content: center;
+  border: 0;
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--progress-border) 64%, transparent);
+  background: transparent;
+  clip-path: none;
+}
+
+.levelCard::before {
+  display: none;
+}
+
+.levelCard > * {
+  width: 100%;
+}
+
+.levelCard :global([data-presentation='stat']) {
+  --sheet-control-height: var(--icon-size-md);
+
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.levelCard :global([data-presentation='stat']) > div {
+  min-height: var(--icon-size-md);
+}
+
+.levelCard
+  :global([data-presentation='stat'])
+  > div
+  > :first-child {
+  height: var(--icon-size-md);
+  min-height: var(--icon-size-md);
+}
+
+.levelCard
+  :global([data-presentation='stat'])
+  > div
+  > :first-child
+  > :first-child {
+  height: var(--icon-size-md);
+  min-height: var(--icon-size-md);
+  max-height: var(--icon-size-md);
+}
+
+.levelCard :global([data-presentation='stat']) :is(input, output) {
+  height: var(--icon-size-md) !important;
+  min-height: var(--icon-size-md) !important;
+  max-height: var(--icon-size-md) !important;
+  padding: 0 var(--space-1) !important;
+  line-height: 1 !important;
+}
+
+.experienceCard {
+  z-index: 1;
+  display: grid;
+  min-height: 0;
+  padding: var(--sheet-compact-stat-padding, 0.125rem) var(--space-1);
+  align-content: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
+.experienceCard :global([data-presentation='list']) {
+  --sheet-control-height: var(--icon-size-sm);
+
+  grid-template-columns: minmax(0, 1fr) 3rem;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.experienceCard
+  :global([data-presentation='list'])
+  > span:first-child {
+  padding-inline-end: var(--icon-size-md);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  line-height: 1.1;
+}
+
+.experienceCard
+  :global([data-presentation='list'])
+  :is(input, output) {
+  min-height: var(--icon-size-sm) !important;
+  padding: 0 var(--sheet-tight-gap, var(--space-1)) !important;
+  font-size: var(--sheet-compact-text-size, 0.8125rem) !important;
+  line-height: 1 !important;
+}
+
+.experienceProgress {
+  height: var(--border-width-strong);
+  overflow: hidden;
+  background:
+    color-mix(in srgb, var(--color-content-border) 58%, transparent);
+}
+
+.experienceProgress::before {
+  display: block;
+  width: var(--identity-experience-progress);
+  height: 100%;
+  background:
+    linear-gradient(
+      90deg,
+      var(--color-border-accent),
+      var(--palette-purple-300)
+    );
+  box-shadow:
+    0 0 var(--space-2)
+    color-mix(in srgb, var(--color-action-primary) 54%, transparent);
+  content: '';
+}
+
+.numericLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-tight);
+  text-transform: uppercase;
+}
+
+@media (forced-colors: active) {
+  .nameFrame,
+  .detailFrame,
+  .progressColumn {
+    border-color: CanvasText;
+    background: Canvas;
+    clip-path: none;
+  }
+
+  .levelCard::before,
+  .progressColumn::before {
+    display: none;
+  }
+
+  .levelCard {
+    border-color: CanvasText;
+  }
+}

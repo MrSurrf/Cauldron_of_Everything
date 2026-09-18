@@ -23,4 +23,28 @@ export default defineConfig([globalIgnores([
   languageOptions: {
     globals: globals.browser,
   },
+}, {
+  files: ['src/**/*.{ts,tsx}'],
+  ignores: ['src/shared/ui/Checkbox/Checkbox.tsx'],
+  rules: {
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "JSXOpeningElement[name.name='input'] > JSXAttribute[name.name='type'][value.value='checkbox']",
+        message: 'Используйте общий Checkbox из shared/ui вместо локального input[type="checkbox"].',
+      },
+      {
+        selector: "JSXOpeningElement[name.name='input'] > JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value='checkbox']",
+        message: 'Используйте общий Checkbox из shared/ui вместо локального input[type="checkbox"].',
+      },
+      {
+        selector: "JSXOpeningElement > JSXAttribute[name.name='role'][value.value='checkbox']",
+        message: 'Используйте общий Checkbox из shared/ui вместо локального role="checkbox".',
+      },
+      {
+        selector: "JSXOpeningElement > JSXAttribute[name.name='role'] > JSXExpressionContainer > Literal[value='checkbox']",
+        message: 'Используйте общий Checkbox из shared/ui вместо локального role="checkbox".',
+      },
+    ],
+  },
 }, ...storybook.configs["flat/recommended"]])
