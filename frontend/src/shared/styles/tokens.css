@@ -34,7 +34,7 @@
 
   /* Типографика */
   --font-family-body: 'Gilroy', Arial, sans-serif;
-  --font-family-heading: 'GothicRusWeb', Georgia, serif;
+  --font-family-heading: 'Greengoth Regular', Georgia, serif;
   --font-size-2xs: 0.625rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -71,6 +71,22 @@
   --icon-size-lg: 1.5rem;
   --focus-ring: 0 0 0 3px rgb(170 59 255 / 35%);
   --disabled-opacity: 0.48;
+  --checkbox-hit-area: var(--icon-size-sm);
+  --selection-marker-size: 0.5rem;
+  --selection-marker-outline:
+    color-mix(
+      in srgb,
+      var(--color-text-secondary) 68%,
+      transparent
+    );
+  --selection-marker-fill: var(--palette-purple-300);
+  --selection-marker-glow:
+    0 0 0.25rem
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 58%,
+      transparent
+    );
 
   /* Эффекты и движение */
   --shadow-panel: 0 1rem 3rem rgb(0 0 0 / 45%);

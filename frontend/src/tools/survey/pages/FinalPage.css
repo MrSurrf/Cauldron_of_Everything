@@ -71,9 +71,7 @@
     );
 
   font-family:
-    'GothicRusWeb',
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   font-size:
     clamp(

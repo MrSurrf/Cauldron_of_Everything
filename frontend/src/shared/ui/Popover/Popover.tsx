@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom'
 import { hasRenderableContent, setRef } from '../internal/react'
 import { resolvePortalContainer } from '../Overlay/portal'
 import { useAnchoredPosition } from '../Overlay/useAnchoredPosition'
+import { ScrollArea } from '../ScrollArea'
 import type {
   PopoverProps,
   PopoverTriggerProps,
@@ -95,7 +96,7 @@ export const Popover = forwardRef<
     anchorRef: triggerRef,
     matchAnchorWidth: matchTriggerWidth,
     offset,
-    open: visible,
+    open: visible && !modal,
     overlayRef,
     placement,
   })
@@ -298,10 +299,10 @@ export const Popover = forwardRef<
 
   useLayoutEffect(() => {
     const overlay = overlayRef.current
-    if (!visible || !modal || position.style.visibility !== 'visible' || !(overlay instanceof HTMLDialogElement)) return
+    if (!visible || !modal || !(overlay instanceof HTMLDialogElement)) return
     overlay.showModal()
     return () => overlay.close()
-  }, [modal, position.style.visibility, visible])
+  }, [modal, visible])
 
   useLayoutEffect(() => {
     const trigger = triggerRef.current
@@ -380,13 +381,14 @@ export const Popover = forwardRef<
             id={popoverId}
             role="dialog"
             aria-modal={modal || undefined}
+            data-overlay-root={modal || undefined}
             data-modal={modal || undefined}
             className={popoverClassName}
             aria-label={ariaLabelledBy ? undefined : ariaLabel}
             aria-labelledby={ariaLabelledBy}
-            data-placement={position.placement}
+            data-placement={modal ? 'center' : position.placement}
             tabIndex={-1}
-            style={position.style}
+            style={modal ? undefined : position.style}
             onKeyDown={handleContentKeyDown}
             onPointerDown={handleContentPointerDown}
             onClick={(event) => {
@@ -399,9 +401,22 @@ export const Popover = forwardRef<
               }
             }}
           >
-            <div className={styles.content}>
-              {content}
-            </div>
+            {modal ? (
+              <ScrollArea
+                aria-label={ariaLabelledBy ? undefined : ariaLabel}
+                aria-labelledby={ariaLabelledBy}
+                className={styles.modalViewport}
+                contentClassName={styles.content}
+                rootClassName={styles.modalScrollArea}
+                verticalScrollBarLabel="Прокрутка окна"
+              >
+                {content}
+              </ScrollArea>
+            ) : (
+              <div className={styles.content}>
+                {content}
+              </div>
+            )}
           </Overlay>,
           portalContainer,
         )}

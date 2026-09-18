@@ -2,6 +2,7 @@ import {
   IconButton,
   TextInput,
   Tooltip,
+  TrashIcon,
 } from '../../../../shared/ui'
 import {
   createClientId,
@@ -11,7 +12,7 @@ import {
 import { CollapsibleSection } from '../CollapsibleSection'
 import { FormulaField } from '../fields'
 import sheetFieldStyles from '../fields/SheetFields.module.css'
-import { PlusIcon, RemoveIcon } from '../icons'
+import { PlusIcon } from '../icons'
 import styles from '../../CharacterSheetTool.module.css'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
@@ -119,7 +120,7 @@ export function ResourcesEditor({
             <Tooltip content="Удалить ресурс">
               <IconButton
                 aria-label={`Удалить ресурс «${resource.label}»`}
-                icon={<RemoveIcon />}
+                icon={<TrashIcon />}
                 size="sm"
                 variant="secondary"
                 onClick={() => {

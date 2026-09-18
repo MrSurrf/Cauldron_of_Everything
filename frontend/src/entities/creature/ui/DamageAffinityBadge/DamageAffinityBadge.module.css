@@ -1,0 +1,183 @@
+.root {
+  --damage-badge-width: 5rem;
+  --damage-badge-height: 5.75rem;
+  --damage-shield-inset-y: 0.5rem;
+  --damage-shield-inset-x: 0.25rem;
+  --damage-glyph-inset-top: 1.35rem;
+  --damage-glyph-inset-x: 1.08rem;
+  --damage-glyph-inset-bottom: 1.65rem;
+  --damage-glow-blur: 0.32rem;
+  --damage-glow-shift: 0.22rem;
+  --damage-marker-width: 1.15rem;
+  --damage-marker-height: 1rem;
+  --damage-marker-gap: 0.15rem;
+  position: relative;
+  display: inline-block;
+  width: var(--damage-badge-width);
+  height: var(--damage-badge-height);
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  cursor: help;
+  isolation: isolate;
+}
+
+.root:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-border-accent);
+  outline-offset: var(--space-1);
+  box-shadow: var(--focus-ring);
+}
+
+.shield,
+.glyph,
+.glow {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Размываем родителя маски: маска на самом glow обрезает ореол. */
+.glow {
+  z-index: 0;
+  inset: var(--damage-shield-inset-y) var(--damage-shield-inset-x);
+  opacity: 0;
+  filter: blur(var(--damage-glow-blur));
+  transform: scale(1.05);
+}
+
+.glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  mask: var(--shield-icon) center / contain no-repeat;
+}
+
+.physicalGlow {
+  color: #ffd84a;
+}
+
+.magicalGlow {
+  color: #53e7e5;
+}
+
+.root[data-physical-state='immunity'] .physicalGlow,
+.root[data-magical-state='immunity'] .magicalGlow {
+  opacity: 1;
+}
+
+.root[data-physical-state='immunity'][data-magical-state='immunity']
+  .physicalGlow {
+  transform: translateX(calc(-1 * var(--damage-glow-shift))) scale(1.05);
+}
+
+.root[data-physical-state='immunity'][data-magical-state='immunity']
+  .magicalGlow {
+  transform: translateX(var(--damage-glow-shift)) scale(1.05);
+}
+
+.shield {
+  z-index: 1;
+  inset: var(--damage-shield-inset-y) var(--damage-shield-inset-x);
+  background: #74648f;
+  mask: var(--shield-icon) center / contain no-repeat;
+}
+
+.shield::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, #30263f, #161020 75%);
+  mask: var(--shield-icon) center / contain no-repeat;
+  transform: scale(0.96);
+}
+
+.glyph {
+  z-index: 2;
+  inset:
+    var(--damage-glyph-inset-top)
+    var(--damage-glyph-inset-x)
+    var(--damage-glyph-inset-bottom);
+  transform:
+    rotate(var(--glyph-rotation))
+    scale(var(--glyph-scale))
+    scaleX(var(--glyph-flip-x));
+  /* Контур строится снаружи маски и остаётся чётким. */
+  filter:
+    drop-shadow(1px 0 0 #08050e)
+    drop-shadow(-1px 0 0 #08050e)
+    drop-shadow(0 1px 0 #08050e)
+    drop-shadow(0 -1px 0 #08050e);
+}
+
+.glyph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--damage-color);
+  mask: var(--damage-icon) center / contain no-repeat;
+}
+
+.markers {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  display: flex;
+  justify-content: center;
+  gap: var(--damage-marker-gap);
+  pointer-events: none;
+  translate: -50% 0;
+  filter:
+    drop-shadow(0 1px 1px #08050e)
+    drop-shadow(0 -1px 1px #08050e);
+}
+
+.markersTop {
+  top: 0;
+}
+
+.markersBottom {
+  bottom: 0;
+}
+
+.marker {
+  display: block;
+  width: var(--damage-marker-width);
+  height: var(--damage-marker-height);
+  flex: 0 0 auto;
+}
+
+.markersTop .marker {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.markersBottom .marker {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.marker[data-marker='physical-vulnerability'] {
+  background: #ff5263;
+}
+
+.marker[data-marker='magical-vulnerability'] {
+  background: #c68aff;
+}
+
+.marker[data-marker='physical-resistance'] {
+  background: #ffd84a;
+}
+
+.marker[data-marker='magical-resistance'] {
+  background: #53e7e5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .root {
+    transition:
+      transform var(--motion-duration-fast)
+      var(--motion-easing-standard);
+  }
+
+  .root:hover,
+  .root:focus-visible {
+    transform: translateY(-0.1rem);
+  }
+}

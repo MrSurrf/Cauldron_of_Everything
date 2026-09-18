@@ -27,7 +27,9 @@ import { ScrollArea } from '../ScrollArea'
 import { Tooltip } from '../Tooltip'
 import { ContentEditorFloatingToolbar } from './ContentEditorFloatingToolbar'
 import { ContentPreview } from './ContentPreview'
-import { ContentWidgetContext } from './ContentWidgetContext'
+import { ContentWidgetContext, useContentWidgetContext } from './ContentWidgetContext'
+import { ContentWidgetKeyboardPlugin } from './ContentWidgetKeyboardPlugin'
+import { ContentWidgetDropPlugin } from './ContentWidgetDragDrop'
 import {
   ContentDirectiveNode,
   ContentDividerNode,
@@ -160,7 +162,9 @@ function EditableStatePlugin({ editable }: { editable: boolean }) {
 
 export function ContentEditor({
   accessibleLabel,
+  allowSections = true,
   autoFocus = false,
+  autoGrow = false,
   className,
   defaultTextScale = 1,
   disabled = false,
@@ -184,7 +188,11 @@ export function ContentEditor({
   value,
 }: ContentEditorProps) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const editorId = useId()
+  const inheritedContext = useContentWidgetContext()
+  const ownEditorId = useId()
+  const editorOwners = [inheritedContext.editorId, ownEditorId]
+    .filter(Boolean)
+    .join(' ')
   const [editing, setEditing] = useState(autoFocus)
   const viewing = renderPreview && !editing
   const lowerScale = Math.min(
@@ -264,17 +272,20 @@ export function ContentEditor({
     function finishUnlessOwned(target: EventTarget | null) {
       if (target instanceof Node && rootRef.current?.contains(target)) return
       if (target instanceof Element) {
+        const dialog = target.closest('[role="dialog"]')
         const owner = target.closest('[data-content-editor-owner]')
-          ?? (target.matches('[role="dialog"]') ? target.querySelector('[data-content-editor-owner]') : null)
-        if (owner?.getAttribute('data-content-editor-owner') === editorId) return
+          ?? dialog?.querySelector('[data-content-editor-owner]')
+        const ownerIds = owner?.getAttribute('data-content-editor-owner')?.split(/\s+/) ?? []
+        if (ownerIds.includes(ownEditorId)) return
       }
       setEditing(false)
     }
     if (event.relatedTarget) {
       finishUnlessOwned(event.relatedTarget)
     } else {
-      // showModal сначала делает лист inert, затем переводит фокус в окно.
-      queueMicrotask(() => {
+      // showModal сначала делает лист inert, а браузер и Popover переводят
+      // фокус внутрь окна на следующем кадре.
+      rootRef.current?.ownerDocument.defaultView?.requestAnimationFrame(() => {
         if (rootRef.current) finishUnlessOwned(rootRef.current.ownerDocument.activeElement)
       })
     }
@@ -285,6 +296,8 @@ export function ContentEditor({
       ref={rootRef}
       className={rootClass}
       data-content-editor
+      data-content-editor-id={ownEditorId}
+      data-auto-grow={autoGrow || undefined}
       data-viewing={viewing}
       data-disabled={disabled || undefined}
       data-fill={fill || undefined}
@@ -293,7 +306,7 @@ export function ContentEditor({
       onBlurCapture={finishEditing}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <ContentWidgetContext value={{ disabled, readOnly, evaluateResourceMaximum, onStructuredResourceChange, editorId }}>
+        <ContentWidgetContext value={{ disabled, readOnly, evaluateResourceMaximum, onStructuredResourceChange, editorId: editorOwners, dndEditorId: ownEditorId }}>
         <div
           className={styles.frame}
           data-content-editor-frame
@@ -305,10 +318,14 @@ export function ContentEditor({
             : undefined}
           onClick={(event) => {
             if (!viewing || disabled || readOnly) return
-            if (
-              event.target instanceof Element &&
-              event.target.closest('button, a, summary, input')
-            ) return
+            if (event.target instanceof Element) {
+              const section = event.target.closest('[data-section-widget]')
+              if (
+                event.target.closest('button, a, summary, input, textarea') ||
+                (section && event.currentTarget.contains(section)) ||
+                event.target.closest('[data-content-editor-frame]') !== event.currentTarget
+              ) return
+            }
             setEditing(true)
           }}
           onKeyDown={(event) => {
@@ -331,7 +348,8 @@ export function ContentEditor({
               <div className={editableClass}>
                 <ContentPreview
                   disabled={disabled}
-                  editorId={editorId}
+                  dndEditorId={ownEditorId}
+                  editorId={editorOwners}
                   evaluateResourceMaximum={evaluateResourceMaximum}
                   readOnly={readOnly}
                   placeholder={placeholder}
@@ -401,6 +419,13 @@ export function ContentEditor({
         </div>
 
         <HistoryPlugin />
+        <ContentWidgetKeyboardPlugin />
+        <ContentWidgetDropPlugin
+          allowSections={allowSections}
+          disabled={disabled || readOnly}
+          editorId={ownEditorId}
+          rootRef={rootRef}
+        />
         <ListPlugin />
         <CheckListPlugin />
         <LinkPlugin validateUrl={isAllowedUrl} />
@@ -410,7 +435,8 @@ export function ContentEditor({
         />
         <EditableStatePlugin editable={editable} />
         <ContentEditorFloatingToolbar
-          editorId={editorId}
+          allowSections={allowSections}
+          editorId={ownEditorId}
           disabled={!editable}
           showStructureActions={showStructureActions}
         />

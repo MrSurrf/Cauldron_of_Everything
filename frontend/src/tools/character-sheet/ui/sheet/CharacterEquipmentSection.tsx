@@ -19,22 +19,18 @@ export function CharacterEquipmentSection({
   return (
     <SheetSection contentLayout="editor" title="Снаряжение">
       <ContentEditor
-        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
-        accessibleLabel="Снаряжение"
-        fill={true}
-        renderPreview={true}
-        showStructureActions={true}
-        placeholder="Перечислите снаряжение персонажа..."
-        rows={10}
-        value={document.equipmentContentText ?? ''}
-        onValueChange={(value) => {
-          dispatch(
-            characterSheetActions.setEquipmentContentText(
-              value,
-            ),
-          )
-        }}
-      />
+          evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
+          accessibleLabel="Снаряжение"
+          fill={true}
+          renderPreview={true}
+          showStructureActions={true}
+          placeholder="Перечислите снаряжение персонажа..."
+          rows={10}
+          value={document.equipmentContentText ?? ''}
+          onValueChange={(value) => {
+            dispatch(characterSheetActions.setEquipmentContentText(value))
+          }}
+        />
     </SheetSection>
   )
 }

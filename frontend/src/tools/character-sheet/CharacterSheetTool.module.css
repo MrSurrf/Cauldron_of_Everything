@@ -41,7 +41,7 @@
   --sheet-left-column-width: 18rem;
   --sheet-identity-height: 7.125rem;
   --sheet-quick-row-height: 4.5rem;
-  --sheet-main-column-height: 51rem;
+  --sheet-main-column-height: 55rem;
   --sheet-attacks-section-height: 19rem;
 
   width: 100%;
@@ -296,8 +296,8 @@
   opacity: 1;
   transform: none;
 
-  -webkit-mask-image: url('./assets/armor_class_icon.svg');
-  mask-image: url('./assets/armor_class_icon.svg');
+  -webkit-mask-image: url('../../shared/ui/icons/assets/armor-class.svg');
+  mask-image: url('../../shared/ui/icons/assets/armor-class.svg');
   -webkit-mask-position: center;
   mask-position: center;
   -webkit-mask-repeat: no-repeat;
@@ -386,28 +386,6 @@
 .inspirationStats .inspirationControl {
   grid-column: 1;
   grid-row: 1;
-}
-
-.inspirationControl > input {
-  width: var(--sheet-body-size, var(--font-size-sm));
-  height: var(--sheet-body-size, var(--font-size-sm));
-  border-color: var(--palette-purple-300);
-  border-radius: 0;
-  transform: rotate(45deg);
-}
-
-.inspirationControl > input::after {
-  transform:
-    translate(-50%, -58%)
-    rotate(0deg)
-    scale(0.72);
-}
-
-.inspirationControl > input:checked::after {
-  transform:
-    translate(-50%, -58%)
-    rotate(0deg)
-    scale(1);
 }
 
 .resources {
@@ -602,11 +580,13 @@
 .savesSlot,
 .skillsSlot,
 .proficienciesSlot,
+.visionSlot,
 .hitDiceSlot,
 .deathSavesSlot,
 .attacksSlot,
 .equipmentSlot,
 .currencySlot,
+.carryingSlot,
 .personalitySections,
 .featuresSlot {
   min-width: 0;
@@ -783,11 +763,12 @@
     'abilities skills'
     'abilities skills'
     'abilities skills'
+    'vision vision'
     'proficiencies proficiencies';
   grid-template-columns:
     5.75rem
     11.875rem;
-  grid-template-rows: repeat(7, auto) minmax(0, 1fr);
+  grid-template-rows: repeat(7, auto) auto minmax(0, 1fr);
   align-self: stretch;
   align-content: start;
   align-items: start;
@@ -861,6 +842,10 @@
   grid-area: proficiencies;
 }
 
+.visionSlot {
+  grid-area: vision;
+}
+
 .centerLowerGrid {
   display: grid;
   height: 100%;
@@ -869,6 +854,7 @@
     auto
     var(--sheet-attacks-section-height)
     minmax(0, 1fr)
+    auto
     auto;
   align-self: stretch;
   align-content: start;
@@ -879,6 +865,10 @@
 .attacksSlot {
   height: 100%;
   align-self: stretch;
+}
+
+.equipmentSlot {
+  max-height: 25rem;
 }
 
 .notesLowerGrid {

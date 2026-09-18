@@ -18,9 +18,9 @@ import { TOGGLE_LINK_COMMAND } from '@lexical/link'
 import { $insertNodeToNearestRoot } from '@lexical/utils'
 import {
   $createParagraphNode,
-  $getRoot,
   $getSelection,
   $isRangeSelection,
+  $isParagraphNode,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
@@ -37,6 +37,8 @@ import {
 } from './ContentEditorNodes'
 import styles from './ContentEditor.module.css'
 import { emptyResource, resourceToSource } from './resourceContent'
+import { emptySection, sectionToSource } from './sectionContent'
+import { emptyItem, itemToSource } from './itemContent'
 
 type FloatingRect = {
   bottom: number
@@ -50,6 +52,7 @@ type FloatingRect = {
 type FloatingState = {
   kind: 'format' | 'insert'
   rect: FloatingRect
+  blockElement: HTMLElement | null
 }
 
 type OverlayPosition = {
@@ -59,6 +62,7 @@ type OverlayPosition = {
 }
 
 type ContentEditorFloatingToolbarProps = {
+  allowSections?: boolean
   disabled?: boolean
   editorId?: string
   showStructureActions: boolean
@@ -111,6 +115,7 @@ function validLinkTarget(value: string) {
 }
 
 export function ContentEditorFloatingToolbar({
+  allowSections = true,
   editorId,
   disabled = false,
   showStructureActions,
@@ -137,7 +142,8 @@ export function ContentEditorFloatingToolbar({
         nativeSelection.rangeCount === 0 ||
         !nativeSelection.anchorNode ||
         !root.contains(nativeSelection.anchorNode) ||
-        !root.contains(root.ownerDocument.activeElement)
+        (nativeSelection.anchorNode.parentElement?.closest('[contenteditable="true"]') !== root) ||
+        root.ownerDocument.activeElement !== root
       ) {
         setFloating(null)
         return
@@ -160,11 +166,8 @@ export function ContentEditorFloatingToolbar({
 
         const anchorNode = selection.anchor.getNode()
         const topLevel = anchorNode.getTopLevelElement()
-        const rootEmpty = $getRoot().getTextContent().trim().length === 0
-
         if (
-          rootEmpty ||
-          (topLevel && topLevel.getTextContent().trim().length === 0)
+          $isParagraphNode(topLevel) && topLevel.getTextContent().trim().length === 0
         ) {
           kind = 'insert'
           emptyBlockKey = topLevel?.getKey() ?? null
@@ -179,24 +182,9 @@ export function ContentEditorFloatingToolbar({
       const range = nativeSelection.getRangeAt(0)
       let rect = usefulRangeRect(range)
 
-      if (
-        kind === 'insert' &&
-        rect.width === 0 &&
-        rect.height === 0
-      ) {
-        const blockElement = emptyBlockKey
-          ? editor.getElementByKey(emptyBlockKey)
-          : null
-        const fallbackRect = (blockElement ?? root).getBoundingClientRect()
-        rect = new DOMRect(
-          fallbackRect.left + 4,
-          fallbackRect.top + 4,
-          1,
-          Math.max(16, fallbackRect.height),
-        )
-      }
-
-      setFloating({ kind, rect: toFloatingRect(rect) })
+      const blockElement = emptyBlockKey ? editor.getElementByKey(emptyBlockKey) : null
+      if (kind === 'insert' && blockElement) rect = blockElement.getBoundingClientRect()
+      setFloating({ kind, rect: toFloatingRect(rect), blockElement })
     })
   }, [editor, showStructureActions])
 
@@ -229,6 +217,11 @@ export function ContentEditorFloatingToolbar({
     }
   }, [editor, refreshFloatingState])
 
+  const insertionBlock = floating?.blockElement
+  useLayoutEffect(() => () => {
+    insertionBlock?.style.removeProperty('--content-insert-height')
+  }, [insertionBlock])
+
   useLayoutEffect(() => {
     const overlay = overlayRef.current
 
@@ -253,6 +246,23 @@ export function ContentEditorFloatingToolbar({
     overlay.style.maxWidth = `${Math.max(0, maximumRight - minimumLeft)}px`
     const width = overlay.offsetWidth
     const height = overlay.offsetHeight
+    if (insert && floating.blockElement) {
+      // Меню занимает пустую строку. Резервируем её высоту даже при переносе кнопок,
+      // чтобы не перекрывать виджеты ни перед кареткой, ни после неё.
+      const block = floating.blockElement
+      const reservedHeight = `${height + 4}px`
+      if (block.style.getPropertyValue('--content-insert-height') !== reservedHeight) {
+        block.style.setProperty('--content-insert-height', reservedHeight)
+        block.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      }
+      const rect = block.getBoundingClientRect()
+      setPosition({
+        left: clamp(rect.left + 4, minimumLeft, maximumRight - width),
+        top: rect.top + 2,
+        placement: 'below',
+      })
+      return
+    }
     const preferredLeft =
       insert ? floating.rect.left : floating.rect.left + floating.rect.width / 2 - width / 2
     const left = clamp(
@@ -332,7 +342,7 @@ export function ContentEditorFloatingToolbar({
   }
 
   function insertBlock(
-    kind: 'resource' | 'collapsible',
+    kind: 'resource' | 'collapsible' | 'item',
   ) {
     if (disabled) return
 
@@ -344,14 +354,10 @@ export function ContentEditorFloatingToolbar({
       const emptyTopLevel = anchorNode.getTopLevelElement()
       const node = $createContentDirectiveNode(
         kind,
-        kind === 'resource' ? '' : 'Новая вкладка',
+        '',
         kind === 'resource'
           ? resourceToSource(emptyResource)
-          : [
-              ':::collapsible[Новая вкладка]',
-              'Содержимое вкладки',
-              ':::',
-            ].join('\n'),
+          : kind === 'item' ? itemToSource(emptyItem) : sectionToSource(emptySection),
       )
 
       if (
@@ -404,6 +410,7 @@ export function ContentEditorFloatingToolbar({
         <div
           className={styles.insertToolbar}
           data-content-editor-toolbar="insert"
+          data-sections-allowed={allowSections || undefined}
           role="toolbar"
           aria-label="Вставка содержимого"
         >
@@ -415,20 +422,21 @@ export function ContentEditorFloatingToolbar({
           >
             Ресурс
           </Button>
+          {allowSections && (
+            <Button
+              decoration="minimal"
+              size="sm"
+              variant="secondary"
+              onClick={() => insertBlock('collapsible')}
+            >
+              Вкладка
+            </Button>
+          )}
           <Button
             decoration="minimal"
             size="sm"
             variant="secondary"
-            onClick={() => insertBlock('collapsible')}
-          >
-            Вкладка
-          </Button>
-          <Button
-            decoration="minimal"
-            size="sm"
-            variant="secondary"
-            disabled={true}
-            title="Виджет предмета появится на следующем этапе"
+            onClick={() => insertBlock('item')}
           >
             Предмет
           </Button>

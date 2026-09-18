@@ -3,7 +3,9 @@ import type { ContentResourceValue, ResourceFormulaResult } from './ResourceWidg
 
 export type ContentEditorProps = {
   accessibleLabel: string
+  allowSections?: boolean
   autoFocus?: boolean
+  autoGrow?: boolean
   className?: string
   defaultTextScale?: number
   disabled?: boolean

@@ -34,10 +34,10 @@ export function getAppearanceValue(
     density: appearance.density,
     fontFamily:
       appearance.font === 'serif'
-        ? 'gothic'
+        ? 'heading'
         : appearance.font === 'sans'
           ? 'system'
-          : 'gilroy',
+          : 'body',
     headingSize: getHeadingSize(
       appearance.headingFontSize,
     ),
@@ -62,7 +62,7 @@ export function appearancePatch(
     bodyFontSize: sizeMap[value.bodySize],
     density: value.density,
     font:
-      value.fontFamily === 'gothic'
+      value.fontFamily === 'heading'
         ? 'serif'
         : value.fontFamily === 'system'
           ? 'sans'

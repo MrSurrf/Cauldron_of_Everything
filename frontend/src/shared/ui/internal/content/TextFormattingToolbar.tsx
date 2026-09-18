@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 
 import { IconButton } from '../../IconButton'
 import { Tooltip } from '../../Tooltip'
+import { DiceIcon } from '../../icons/DiceIcon'
 import styles from './TextFormattingToolbar.module.css'
 
 export type TextFormatAction =
@@ -112,19 +113,7 @@ function FormatIcon({ action }: { action: TextFormatAction }) {
     )
   }
 
-  return (
-    <svg viewBox="0 0 20 20" fill="none">
-      <path
-        d="m10 1.8 7.3 4.1v8.2L10 18.2l-7.3-4.1V5.9z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.25"
-      />
-      <circle cx="7" cy="7" r="1" fill="currentColor" />
-      <circle cx="13" cy="7" r="1" fill="currentColor" />
-      <circle cx="10" cy="12.5" r="1" fill="currentColor" />
-    </svg>
-  )
+  return <DiceIcon type="d20" />
 }
 
 export function TextFormattingToolbar({

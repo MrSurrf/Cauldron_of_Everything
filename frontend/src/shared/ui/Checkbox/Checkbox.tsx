@@ -1,14 +1,17 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
+  useState,
   type ChangeEvent,
 } from 'react'
 
 import { mergeAriaIds } from '../internal/aria'
 import { hasRenderableContent, setRef } from '../internal/react'
+import { SelectionMarker } from '../SelectionMarker'
 import type { CheckboxProps } from './Checkbox.types'
 import styles from './Checkbox.module.css'
 
@@ -22,6 +25,7 @@ export const Checkbox = forwardRef<
     description,
     disabled = false,
     id,
+    indicator,
     indeterminate = false,
     label,
     onChange,
@@ -35,7 +39,15 @@ export const Checkbox = forwardRef<
   const controlId = id ?? `checkbox-${generatedId}`
   const descriptionId = `${controlId}-description`
   const inputRef = useRef<HTMLInputElement>(null)
+  const controlledChecked = inputProps.checked
+  const defaultChecked = inputProps.defaultChecked
+  const [uncontrolledChecked, setUncontrolledChecked] = useState(
+    Boolean(defaultChecked),
+  )
   const hasDescription = hasRenderableContent(description)
+  const hasCustomIndicator = hasRenderableContent(indicator)
+  const hasCopy = hasRenderableContent(label) || hasDescription
+  const checked = controlledChecked ?? uncontrolledChecked
 
   const setInputRef = useCallback(
     (node: HTMLInputElement | null) => {
@@ -49,11 +61,34 @@ export const Checkbox = forwardRef<
     if (inputRef.current) {
       inputRef.current.indeterminate = indeterminate
     }
-  }, [indeterminate])
+  })
+
+  useEffect(() => {
+    const input = inputRef.current
+    const form = input?.form
+
+    if (!input || !form || controlledChecked !== undefined) {
+      return
+    }
+
+    const handleReset = (event: Event) => {
+      queueMicrotask(() => {
+        if (!event.defaultPrevented) {
+          setUncontrolledChecked(input.defaultChecked)
+        }
+      })
+    }
+
+    form.addEventListener('reset', handleReset)
+    return () => form.removeEventListener('reset', handleReset)
+  }, [controlledChecked, defaultChecked])
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
+    if (inputProps.checked === undefined) {
+      setUncontrolledChecked(event.currentTarget.checked)
+    }
     onChange?.(event)
     onCheckedChange?.(event.currentTarget.checked, event)
   }
@@ -64,11 +99,20 @@ export const Checkbox = forwardRef<
   const inputClasses = [styles.input, className]
     .filter(Boolean)
     .join(' ')
+  const markerState = indeterminate
+    ? 'mixed'
+    : checked
+      ? 'checked'
+      : 'unchecked'
 
   return (
     <label
       className={rootClasses}
+      data-checkbox-root
       data-disabled={disabled || undefined}
+      data-has-copy={hasCopy || undefined}
+      data-indicator={hasCustomIndicator ? 'custom' : 'marker'}
+      data-state={markerState}
     >
       <input
         {...inputProps}
@@ -88,7 +132,22 @@ export const Checkbox = forwardRef<
         onChange={handleChange}
       />
 
-      {(hasRenderableContent(label) || hasDescription) && (
+      {hasCustomIndicator ? (
+        <span
+          className={styles.indicator}
+          data-checkbox-indicator
+          aria-hidden="true"
+        >
+          {indicator}
+        </span>
+      ) : (
+        <SelectionMarker
+          className={styles.marker}
+          state={markerState}
+        />
+      )}
+
+      {hasCopy && (
         <span className={styles.copy}>
           {hasRenderableContent(label) && (
             <span className={styles.label}>{label}</span>

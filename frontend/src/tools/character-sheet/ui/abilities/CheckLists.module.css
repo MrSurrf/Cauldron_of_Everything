@@ -1,7 +1,6 @@
 .checkSection {
   --sheet-section-padding: var(--space-1) var(--space-2) var(--space-2);
   --check-row-height: 1.125rem;
-  --check-marker-size: 0.5rem;
 }
 
 .checkSection[data-fill='true'] {
@@ -82,7 +81,7 @@
 }
 
 .skillRow {
-  grid-template-columns: var(--check-marker-size) minmax(0, 1fr);
+  grid-template-columns: var(--selection-marker-size) minmax(0, 1fr);
 }
 
 .row > [data-presentation='list'],
@@ -144,101 +143,13 @@
   white-space: nowrap;
 }
 
-.rankButton {
-  display: grid;
+.rankCheckbox {
+  --checkbox-hit-area: 0.75rem;
+
   width: 0.75rem;
   height: var(--check-row-height);
-  padding: 0;
-  border: 0;
-  place-items: center;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.rankButton:focus-visible {
-  outline: var(--border-width-default) solid var(--color-border-accent);
-  outline-offset: 0;
-}
-
-.rankMarker {
-  position: relative;
-  display: grid;
-  width: var(--check-marker-size);
-  height: var(--check-marker-size);
-  place-items: center;
-  pointer-events: none;
-}
-
-.rankMarker::before {
-  position: absolute;
-  content: '';
-  inset: 0;
-  border: var(--border-width-default) solid
-    color-mix(
-      in srgb,
-      var(--color-text-secondary) 68%,
-      transparent
-    );
-  border-radius: var(--radius-round);
-  opacity: 1;
-}
-
-.rankMarker[data-rank='proficient']::before {
-  inset: 0.0625rem;
-  border: 0;
-  background: var(--palette-purple-300);
-  box-shadow:
-    0 0 0.25rem
-    color-mix(
-      in srgb,
-      var(--color-action-primary) 58%,
-      transparent
-    );
-  opacity: 1;
-}
-
-.rankMarker[data-rank='half']::before {
-  border-color: var(--color-text-disabled);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(
-        in srgb,
-        var(--palette-purple-300) 54%,
-        transparent
-      ) 50%,
-      transparent 50%
-    );
-  opacity: 0.72;
-}
-
-.rankMarker[data-rank='expertise']::before {
-  inset: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--palette-purple-300);
-  clip-path:
-    polygon(
-      50% 0,
-      63% 37%,
-      100% 50%,
-      63% 63%,
-      50% 100%,
-      37% 63%,
-      0 50%,
-      37% 37%
-    );
-  filter:
-    drop-shadow(
-      0 0 0.18rem
-      color-mix(
-        in srgb,
-        var(--palette-purple-300) 48%,
-        transparent
-      )
-    );
-  opacity: 1;
+  align-items: center;
+  justify-content: center;
 }
 
 .row:last-child,
@@ -250,7 +161,7 @@
   position: absolute;
   right: 0.125rem;
   bottom: 0;
-  left: calc(var(--check-marker-size) + 0.25rem);
+  left: calc(var(--selection-marker-size) + 0.25rem);
 
   height: var(--border-width-default);
   background:

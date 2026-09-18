@@ -126,7 +126,7 @@ function importBlock(block: ContentBlock) {
     return $createContentDividerNode()
   }
 
-  if (block.kind === 'resource' || block.kind === 'collapsible') {
+  if (block.kind === 'resource' || block.kind === 'collapsible' || block.kind === 'item') {
     return $createContentDirectiveNode(
       block.kind,
       block.title,
@@ -166,6 +166,18 @@ export function $importContentSource(source: string) {
   }
 
   blocks.forEach((block) => root.append(importBlock(block)))
+
+  const lastBlock = blocks[blocks.length - 1]
+  if (
+    lastBlock.kind === 'resource' ||
+    lastBlock.kind === 'collapsible' ||
+    lastBlock.kind === 'item' ||
+    lastBlock.kind === 'divider'
+  ) {
+    // Пустой абзац не попадает в сериализованный текст, но оставляет доступную
+    // каретку после последнего decorator-виджета при повторном открытии поля.
+    root.append($createParagraphNode())
+  }
 }
 
 function exportTextNode(node: LexicalNode) {

@@ -4,11 +4,11 @@ import {
   IconButton,
   TextArea,
   Tooltip,
+  TrashIcon,
 } from '../../../shared/ui'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
   PlusIcon,
-  RemoveIcon,
 } from './icons'
 import styles from './sections.module.css'
 
@@ -107,7 +107,7 @@ export function RepeatableTextSection({
                   <Tooltip content={`Удалить: ${entryLabel}`}>
                     <IconButton
                       aria-label={`Удалить: ${entryLabel}`}
-                      icon={<RemoveIcon />}
+                      icon={<TrashIcon />}
                       size="sm"
                       variant="secondary"
                       onClick={() => onEntryRemove(entry.id)}

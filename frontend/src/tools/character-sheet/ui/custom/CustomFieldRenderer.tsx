@@ -4,6 +4,7 @@ import {
   ScrollArea,
   TextInput,
   Tooltip,
+  TrashIcon,
 } from '../../../../shared/ui'
 import type {
   CustomField,
@@ -15,7 +16,7 @@ import {
   type ComputedValueResult,
 } from '../fields'
 import sheetFieldStyles from '../fields/SheetFields.module.css'
-import { PlusIcon, RemoveIcon } from '../icons'
+import { PlusIcon } from '../icons'
 import styles from './CustomSections.module.css'
 
 export type CustomFieldRendererProps = {
@@ -67,7 +68,7 @@ function ListField({
           <Tooltip content="Удалить строку">
             <IconButton
               aria-label={`Удалить строку ${index + 1}`}
-              icon={<RemoveIcon />}
+              icon={<TrashIcon />}
               size="sm"
               variant="secondary"
               onClick={() => {
@@ -146,7 +147,7 @@ function TableField({
                       <IconButton
                         aria-label={`Удалить столбец «${column.label}»`}
                         disabled={value.columns.length <= 1}
-                        icon={<RemoveIcon />}
+                        icon={<TrashIcon />}
                         size="sm"
                         variant="secondary"
                         onClick={() => {
@@ -206,7 +207,7 @@ function TableField({
                   <Tooltip content="Удалить строку">
                     <IconButton
                       aria-label={`Удалить строку ${rowIndex + 1}`}
-                      icon={<RemoveIcon />}
+                      icon={<TrashIcon />}
                       size="sm"
                       variant="secondary"
                       onClick={() => {
@@ -312,7 +313,7 @@ export function CustomFieldRenderer({
         <Tooltip content="Удалить поле">
           <IconButton
             aria-label={`Удалить поле «${value.label}»`}
-            icon={<RemoveIcon />}
+            icon={<TrashIcon />}
             size="sm"
             variant="secondary"
             onClick={onRemove}

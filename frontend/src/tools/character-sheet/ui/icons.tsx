@@ -45,20 +45,6 @@ export function MinusIcon() {
   )
 }
 
-export function RemoveIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M7 7l10 10M17 7 7 17"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  )
-}
-
 export function ArrowIcon({
   direction = 'up',
 }: IconProps) {

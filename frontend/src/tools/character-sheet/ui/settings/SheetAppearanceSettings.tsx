@@ -8,7 +8,7 @@ import styles from './SheetAppearanceSettings.module.css'
 export type SheetAppearanceValue = {
   bodySize: 'small' | 'medium' | 'large'
   density: 'compact' | 'comfortable' | 'spacious'
-  fontFamily: 'gilroy' | 'gothic' | 'system'
+  fontFamily: 'body' | 'heading' | 'system'
   headingSize: 'small' | 'medium' | 'large'
 }
 
@@ -18,8 +18,8 @@ export type SheetAppearanceSettingsProps = {
 }
 
 const fontOptions = [
-  { value: 'gilroy', label: 'Gilroy' },
-  { value: 'gothic', label: 'Gothic Rus' },
+  { value: 'body', label: 'Gilroy' },
+  { value: 'heading', label: 'Greengoth Regular' },
   { value: 'system', label: 'Системный' },
 ]
 
@@ -49,8 +49,8 @@ export function SheetAppearanceSettings({
         value={value.fontFamily}
         onValueChange={(fontFamily) => {
           if (
-            fontFamily === 'gilroy' ||
-            fontFamily === 'gothic' ||
+            fontFamily === 'body' ||
+            fontFamily === 'heading' ||
             fontFamily === 'system'
           ) {
             onValueChange({ ...value, fontFamily })

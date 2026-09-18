@@ -1,13 +1,9 @@
 .survey-page {
   --survey-font:
-    'Gilroy',
-    Arial,
-    sans-serif;
+    var(--font-family-body);
 
   --survey-title-font:
-    GothicRusWeb,
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   position: relative;
 
@@ -601,7 +597,7 @@
 
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -651,7 +647,7 @@
   background: transparent;
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -827,7 +823,7 @@
 
   opacity: 0.6;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-weight: 400;
   line-height: 1;
 

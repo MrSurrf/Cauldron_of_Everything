@@ -11,12 +11,16 @@ import {
   from 'lexical'
 
 import styles from './ContentEditor.module.css'
+import { DiceIcon } from '../icons/DiceIcon'
+import { getDiceTypeFromExpression } from '../icons/dice'
 import { ContentWidgetSelection } from './ContentWidgetSelection'
 import { ContentResourceNode } from './ContentResourceNode'
+import { ContentSectionNode } from './ContentSectionNode'
 
 export type ContentDirectiveKind =
   | 'resource'
   | 'collapsible'
+  | 'item'
 
 export type SerializedContentDirectiveNode = Spread<
   {
@@ -130,21 +134,7 @@ export class ContentDirectiveNode extends DecoratorNode<ReactElement> {
     const kind = this.getKind()
     if (kind === 'resource') return <ContentResourceNode nodeKey={this.getKey()} source={this.getSource()} />
 
-    return (
-      <ContentWidgetSelection nodeKey={this.getKey()} label="вкладку">
-      <section
-        className={styles.directiveCard}
-        data-kind={kind}
-      >
-        <span className={styles.directiveType}>
-          Вкладка
-        </span>
-        <strong className={styles.directiveTitle}>
-          {this.getTitle()}
-        </strong>
-      </section>
-      </ContentWidgetSelection>
-    )
+    return <ContentSectionNode nodeKey={this.getKey()} source={this.getSource()} />
   }
 }
 
@@ -307,7 +297,11 @@ export class ContentRollNode extends DecoratorNode<ReactElement> {
         className={styles.rollToken}
         title="Бросок станет активным после завершения редактирования"
       >
-        <span aria-hidden="true">◇</span>
+        <DiceIcon
+          type={
+            getDiceTypeFromExpression(this.getExpression()) ?? 'd20'
+          }
+        />
         {this.getExpression()}
       </span>
       </ContentWidgetSelection>
