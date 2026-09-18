@@ -85,6 +85,7 @@ class RequestCodeView(generics.GenericAPIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
+        logger.info("Код входа отправлен на %s", email)
         return Response({"detail": "Код отправлен на почту."})
 
 

@@ -295,6 +295,8 @@ export function characterSheetReducer(
         ...document,
         proficiencies: { ...document.proficiencies, ...action.patch },
       }
+    case 'vision/set':
+      return { ...document, vision: action.value }
     case 'deathSaves/set':
       return {
         ...document,

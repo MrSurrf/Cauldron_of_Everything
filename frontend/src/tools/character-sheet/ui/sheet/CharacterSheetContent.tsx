@@ -14,7 +14,9 @@ import {
   CharacterHitPointsSection,
 } from './CharacterSheetCenterColumn'
 import { CharacterCurrencySection } from './CharacterSheetCurrencySection'
+import { CharacterCarryingSection } from './CharacterCarryingSection'
 import { CharacterEquipmentSection } from './CharacterEquipmentSection'
+import { CharacterVisionSection } from './CharacterVisionSection'
 import { CharacterSheetLeftColumn } from './CharacterSheetLeftColumn'
 import { CharacterFeaturesSection } from './CharacterFeaturesSection'
 import { CharacterPersonalitySection } from './CharacterPersonalitySections'
@@ -200,6 +202,10 @@ export function CharacterSheetContent({
                   <div className={styles.proficienciesSlot}>
                     <ProficienciesEditor />
                   </div>
+
+                  <div className={styles.visionSlot}>
+                    <CharacterVisionSection sheet={sheet} />
+                  </div>
                 </div>
 
                 <div
@@ -233,6 +239,10 @@ export function CharacterSheetContent({
                   >
                     <CharacterCurrencySection sheet={sheet} />
                   </div>
+
+                  <div className={styles.carryingSlot}>
+                    <CharacterCarryingSection sheet={sheet} />
+                  </div>
                 </div>
 
                 <div
@@ -241,8 +251,6 @@ export function CharacterSheetContent({
                 >
                   <div className={styles.featuresSlot}>
                     <CharacterFeaturesSection
-                      className={styles.stretchSection}
-                      editorClassName={styles.fillNotesEditor}
                       rows={10}
                       sheet={sheet}
                     />
@@ -255,8 +263,6 @@ export function CharacterSheetContent({
                     {PERSONALITY_SECTION_ORDER.map((section) => (
                       <CharacterPersonalitySection
                         key={section}
-                        className={styles.personalitySection}
-                        editorClassName={styles.personalityEditor}
                         rows={3}
                         section={section}
                         sheet={sheet}

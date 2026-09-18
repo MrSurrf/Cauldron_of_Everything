@@ -20,7 +20,8 @@
     "@lexical/utils": "^0.49.0",
     "lexical": "^0.49.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.2.1",

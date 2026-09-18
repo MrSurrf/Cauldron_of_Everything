@@ -201,7 +201,8 @@
   cursor: pointer;
 }
 
-.remove svg {
+.remove svg,
+.remove [data-shared-icon] {
   width: var(--sheet-icon-glyph-size, 0.6875rem);
   height: var(--sheet-icon-glyph-size, 0.6875rem);
 }

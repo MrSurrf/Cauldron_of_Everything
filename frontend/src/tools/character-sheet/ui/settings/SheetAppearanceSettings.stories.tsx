@@ -13,7 +13,7 @@ function StatefulAppearance() {
   const [value, setValue] = useState<SheetAppearanceValue>({
     bodySize: 'medium',
     density: 'compact',
-    fontFamily: 'gilroy',
+    fontFamily: 'body',
     headingSize: 'medium',
   })
 
@@ -32,7 +32,7 @@ const meta = {
     value: {
       bodySize: 'medium',
       density: 'compact',
-      fontFamily: 'gilroy',
+      fontFamily: 'body',
       headingSize: 'medium',
     },
   },

@@ -11,7 +11,7 @@ import {
 
 export const DND_5E_SKILLS: readonly SkillDefinition[] = [
   { id: 'acrobatics', label: 'Акробатика', ability: 'dexterity', variableKey: 'SKILL_ACROBATICS' },
-  { id: 'animal-handling', label: 'Уход за животными', ability: 'wisdom', variableKey: 'SKILL_ANIMAL_HANDLING' },
+  { id: 'animal-handling', label: 'Животные', ability: 'wisdom', variableKey: 'SKILL_ANIMAL_HANDLING' },
   { id: 'arcana', label: 'Магия', ability: 'intelligence', variableKey: 'SKILL_ARCANA' },
   { id: 'athletics', label: 'Атлетика', ability: 'strength', variableKey: 'SKILL_ATHLETICS' },
   { id: 'deception', label: 'Обман', ability: 'charisma', variableKey: 'SKILL_DECEPTION' },
@@ -58,6 +58,7 @@ export const DND5E_2014_RULESET: CharacterRulesetDefinition = {
     INITIATIVE: 'DEX_MOD',
     ARMOR_CLASS: '10 + DEX_MOD',
     PASSIVE_PERCEPTION: '10 + SKILL_PERCEPTION',
+    CARRYING_CAPACITY: 'STR * 15',
   },
   skills: DND_5E_SKILLS,
   featureSections: [

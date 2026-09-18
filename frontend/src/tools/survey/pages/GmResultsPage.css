@@ -1,14 +1,10 @@
 .gm-results-page,
 .gm-login-page {
   --gm-font:
-    'Gilroy',
-    Arial,
-    sans-serif;
+    var(--font-family-body);
 
   --gm-title-font:
-    'GothicRusWeb',
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   position: relative;
 

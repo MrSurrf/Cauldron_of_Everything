@@ -23,7 +23,25 @@ export type {
   IconButtonSize,
   IconButtonVariant,
 } from './IconButton'
-export { PlaceholderIcon } from './icons/PlaceholderIcon'
+export {
+  AttunementIcon,
+  DICE_TYPES,
+  DiceIcon,
+  EditIcon,
+  EquippedIcon,
+  PlaceholderIcon,
+  SavingThrowIcon,
+  TrashIcon,
+  VisionIcon,
+  getDiceTypeFromExpression,
+} from './icons'
+export type {
+  DiceIconProps,
+  DiceType,
+  SavingThrowIconProps,
+  SharedIconProps,
+  VisionIconProps,
+} from './icons'
 export { MenuButton } from './MenuButton'
 export type { MenuButtonProps } from './MenuButton'
 export { Panel } from './Panel'
@@ -48,6 +66,11 @@ export type {
   ScrollBarOrientation,
   ScrollBarProps,
 } from './ScrollBar'
+export { SelectionMarker } from './SelectionMarker'
+export type {
+  SelectionMarkerProps,
+  SelectionMarkerState,
+} from './SelectionMarker'
 export { SegmentedControl } from './SegmentedControl'
 export type {
   SegmentedControlOption,

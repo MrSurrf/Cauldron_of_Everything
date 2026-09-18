@@ -1,4 +1,8 @@
-import { ScrollArea } from '../../../../shared/ui'
+import {
+  ScrollArea,
+  SelectionMarker,
+  type SelectionMarkerState,
+} from '../../../../shared/ui'
 import type { ProficiencyRank } from '../../model'
 import {
   FormulaField,
@@ -39,6 +43,15 @@ const rankLabels: Readonly<
   expertise: 'Экспертиза',
 }
 
+const rankMarkers: Readonly<
+  Record<ProficiencyRank, SelectionMarkerState>
+> = {
+  none: 'unchecked',
+  half: 'mixed',
+  proficient: 'checked',
+  expertise: 'diamond',
+}
+
 function getNextRank(
   rank: ProficiencyRank,
 ): ProficiencyRank {
@@ -69,7 +82,7 @@ export function SkillsList({
             className={styles.skillRow}
             data-skill-row={item.id}
             data-rank={rank}
-            title={`${rankLabels[rank]}. Нажмите, чтобы изменить владение.`}
+            title={`${item.label}. ${rankLabels[rank]}. Нажмите, чтобы изменить владение.`}
             onClick={(event) => {
               const target = event.target
               if (
@@ -86,11 +99,7 @@ export function SkillsList({
               })
             }}
           >
-            <span
-              aria-hidden={true}
-              className={styles.rankMarker}
-              data-rank={rank}
-            />
+            <SelectionMarker state={rankMarkers[rank]} />
 
             <FormulaField
               accessibleLabel={`${item.label} (${item.ability})`}

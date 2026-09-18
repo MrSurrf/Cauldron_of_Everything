@@ -1,4 +1,5 @@
 .section {
+  --identity-field-inset: var(--sheet-layout-gap, var(--space-2));
   --sheet-section-padding: var(--space-1)
     var(--sheet-tight-gap, var(--space-1));
 }
@@ -67,7 +68,7 @@
 
 .nameInput {
   min-height: calc(var(--control-height-sm) + var(--space-3));
-  padding: var(--space-3) var(--sheet-layout-gap, var(--space-2))
+  padding: var(--space-3) var(--identity-field-inset)
     var(--sheet-tight-gap, var(--space-1));
   color: var(--color-text-primary);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
@@ -82,10 +83,17 @@
   line-height: 1;
 }
 
-.nameField label {
+.nameField label,
+.detailField label {
   top: var(--space-1);
-  left: var(--space-2);
+  left: var(--identity-field-inset);
+  right: var(--identity-field-inset);
+  max-width: calc(100% - 2 * var(--identity-field-inset));
   padding: 0;
+  transform: none;
+}
+
+.nameField label {
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--sheet-body-font, var(--font-family-body));
@@ -93,7 +101,6 @@
   letter-spacing: 0.08em;
   line-height: var(--line-height-tight);
   text-transform: uppercase;
-  transform: none;
 }
 
 .details {

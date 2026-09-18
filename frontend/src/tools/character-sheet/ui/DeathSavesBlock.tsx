@@ -1,4 +1,5 @@
 import {
+  SelectionMarker,
   Tooltip,
 } from '../../../shared/ui'
 import { CollapsibleSection } from './CollapsibleSection'
@@ -54,11 +55,8 @@ export function DeathSavesBlock({
                 type="button"
                 aria-label={`${label} ${mark}`}
                 aria-pressed={active}
-                className={
-                  isSuccess
-                    ? `${styles.saveMark}`
-                    : `${styles.failureMark}`
-                }
+                className={styles.saveMark}
+                data-save-kind={kind}
                 disabled={!onChange}
                 onClick={() => {
                   const nextCount = active && mark === count
@@ -74,7 +72,11 @@ export function DeathSavesBlock({
                       : safeSuccesses,
                   })
                 }}
-              />
+              >
+                <SelectionMarker
+                  state={active ? 'checked' : 'unchecked'}
+                />
+              </button>
             </Tooltip>
           )
         })}

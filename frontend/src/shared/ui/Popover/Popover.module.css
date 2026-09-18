@@ -48,6 +48,37 @@
   clip-path: var(--popover-clip);
 }
 
+.popover[data-modal] {
+  position: fixed;
+  inset: var(--space-4);
+
+  display: grid;
+
+  width: fit-content;
+  height: fit-content;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  border: 0;
+  overflow: hidden;
+}
+
+.modalScrollArea {
+  max-height: calc(
+    100dvh -
+    2 * var(--space-4) -
+    2 * var(--border-width-default)
+  );
+}
+
+.modalViewport {
+  height: auto;
+  max-height: inherit;
+}
+
+.popover::backdrop {
+  background: color-mix(in srgb, var(--palette-black) 68%, transparent);
+}
+
 @keyframes popover-appear {
   from {
     opacity: 0;

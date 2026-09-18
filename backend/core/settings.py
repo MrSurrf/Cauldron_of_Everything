@@ -27,6 +27,13 @@ environ.Env.read_env(PROJECT_ROOT / '.env')
 # В Docker образе перезаписывается через env, чтобы config/ лежал вне backend/.
 SURVEY_CONFIG_DIR = Path(env('SURVEY_CONFIG_DIR', default=str(PROJECT_ROOT / 'config')))
 
+# Папка с JSON-датасетом энциклопедии (import_encyclopedia берёт его отсюда).
+# Сырые данные в git не хранятся, это локальный источник для импорта.
+ENCYCLOPEDIA_DATA_DIR = Path(env(
+    'ENCYCLOPEDIA_DATA_DIR',
+    default=str(BASE_DIR / 'Encyclopedia-data' / 'Encyclopedia-data' / 'parsed'),
+))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -60,6 +67,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     # local
     'survey',
+    'encyclopedia',
 ]
 
 MIDDLEWARE = [

@@ -1,14 +1,16 @@
 import {
+  DiceIcon,
   IconButton,
   ScrollArea,
   TextInput,
   Tooltip,
+  TrashIcon,
+  getDiceTypeFromExpression,
 } from '../../../shared/ui'
 import type { ReactNode } from 'react'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
   PlusIcon,
-  RemoveIcon,
 } from './icons'
 import styles from './stats.module.css'
 
@@ -70,6 +72,7 @@ export function HitDiceBlock({
   return (
     <CollapsibleSection
       collapsible={false}
+      actionsPlacement="title"
       actions={
         onAdd ? (
           <Tooltip content="Добавить пул костей">
@@ -101,17 +104,21 @@ export function HitDiceBlock({
             className={styles.diceList}
             data-hit-dice-list={true}
           >
-          {pools.map((pool, poolIndex) => (
-            <div
-              key={pool.id}
-              className={styles.diceRow}
-              data-hit-dice-pool={pool.id}
-            >
+            {pools.map((pool, poolIndex) => {
+              const diceType = getDiceTypeFromExpression(pool.die)
+
+              return (
+                <div
+                  key={pool.id}
+                  className={styles.diceRow}
+                  data-hit-dice-pool={pool.id}
+                >
               <label className={styles.fieldLabel}>
                 Кость
                 <TextInput
                   aria-label={`Тип кости хитов: пул ${poolIndex + 1}`}
                   className={styles.compactControl}
+                  icon={diceType ? <DiceIcon type={diceType} /> : undefined}
                   placeholder="d10"
                   readOnly={!onPoolChange}
                   rootClassName={styles.compactFrame}
@@ -176,15 +183,16 @@ export function HitDiceBlock({
                 <Tooltip content="Удалить пул костей">
                   <IconButton
                     aria-label={`Удалить пул костей ${pool.die}: пул ${poolIndex + 1}`}
-                    icon={<RemoveIcon />}
+                    icon={<TrashIcon />}
                     size="sm"
                     variant="secondary"
                     onClick={() => onPoolRemove(pool.id)}
                   />
                 </Tooltip>
               )}
-            </div>
-          ))}
+                </div>
+              )
+            })}
           </div>
         ) : (
           <p className={styles.empty}>Пулы костей не добавлены.</p>

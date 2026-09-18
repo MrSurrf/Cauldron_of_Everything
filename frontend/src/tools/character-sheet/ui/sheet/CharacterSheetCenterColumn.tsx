@@ -11,7 +11,8 @@ import { DeathSavesBlock } from '../DeathSavesBlock'
 import { FormulaField } from '../fields'
 import { HitDiceBlock } from '../HitDiceBlock'
 import { HitPointsBlock } from '../HitPointsBlock'
-import { CharacterNotesEditor } from '../notes'
+import { ContentEditor } from '../../../../shared/ui'
+import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 import { SheetSection } from '../SheetSection'
 import type { CharacterSheetViewModel } from './sheetViewModel'
 
@@ -263,10 +264,13 @@ export function CharacterAttacksSection({
   } = sheet
 
   return (
-    <SheetSection title="Атаки и заклинания">
-      <CharacterNotesEditor
+    <SheetSection contentLayout="editor" title="Атаки и заклинания">
+      <ContentEditor
+        evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
         accessibleLabel="Атаки и заклинания"
         fill={true}
+        renderPreview={true}
+        showStructureActions={true}
         placeholder="Оружие, заклинания, бонусы атаки и урон..."
         rows={3}
         value={

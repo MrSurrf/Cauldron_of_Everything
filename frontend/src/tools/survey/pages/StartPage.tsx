@@ -22,7 +22,7 @@ function StartPage({ onStart }: StartPageProps) {
   }
 
   return (
-    <main className="start-page gilroy">
+    <main className="start-page font-body">
       <div className="start-page__scene">
         <img
           className="start-page__head"

@@ -9,6 +9,7 @@ export type CheckboxProps = Omit<
   'children' | 'size' | 'type'
 > & {
   description?: ReactNode
+  indicator?: ReactNode
   indeterminate?: boolean
   label?: ReactNode
   onCheckedChange?: (

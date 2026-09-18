@@ -17,6 +17,8 @@ urlpatterns = [
     path("api/auth/verify-code/", VerifyCodeView.as_view(), name="verify-code"),
     # Анкета
     path("api/", include("survey.urls")),
+    # Энциклопедия
+    path("api/encyclopedia/", include("encyclopedia.urls")),
     # Документация API (для фронтендера)
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

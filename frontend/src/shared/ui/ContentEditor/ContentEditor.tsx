@@ -1,9 +1,11 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
+  type FocusEvent,
 } from 'react'
 import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin'
@@ -24,6 +26,10 @@ import { IconButton } from '../IconButton'
 import { ScrollArea } from '../ScrollArea'
 import { Tooltip } from '../Tooltip'
 import { ContentEditorFloatingToolbar } from './ContentEditorFloatingToolbar'
+import { ContentPreview } from './ContentPreview'
+import { ContentWidgetContext, useContentWidgetContext } from './ContentWidgetContext'
+import { ContentWidgetKeyboardPlugin } from './ContentWidgetKeyboardPlugin'
+import { ContentWidgetDropPlugin } from './ContentWidgetDragDrop'
 import {
   ContentDirectiveNode,
   ContentDividerNode,
@@ -156,17 +162,22 @@ function EditableStatePlugin({ editable }: { editable: boolean }) {
 
 export function ContentEditor({
   accessibleLabel,
+  allowSections = true,
   autoFocus = false,
+  autoGrow = false,
   className,
   defaultTextScale = 1,
   disabled = false,
+  evaluateResourceMaximum,
   fill = false,
   maxTextScale = DEFAULT_MAX_TEXT_SCALE,
   minTextScale = DEFAULT_MIN_TEXT_SCALE,
   onTextScaleChange,
+  onStructuredResourceChange,
   onValueChange,
   placeholder = 'Введите текст...',
   readOnly = false,
+  renderPreview = false,
   rootClassName,
   rows = 5,
   showStructureActions = false,
@@ -176,6 +187,14 @@ export function ContentEditor({
   textScaleStep = DEFAULT_TEXT_SCALE_STEP,
   value,
 }: ContentEditorProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const inheritedContext = useContentWidgetContext()
+  const ownEditorId = useId()
+  const editorOwners = [inheritedContext.editorId, ownEditorId]
+    .filter(Boolean)
+    .join(' ')
+  const [editing, setEditing] = useState(autoFocus)
+  const viewing = renderPreview && !editing
   const lowerScale = Math.min(
     normalizedNumber(minTextScale, DEFAULT_MIN_TEXT_SCALE),
     normalizedNumber(maxTextScale, DEFAULT_MAX_TEXT_SCALE),
@@ -200,7 +219,7 @@ export function ContentEditor({
     0.01,
     Math.abs(normalizedNumber(textScaleStep, DEFAULT_TEXT_SCALE_STEP)),
   )
-  const editable = !disabled && !readOnly
+  const editable = !disabled && !readOnly && !viewing
   const rootClass = [styles.root, rootClassName]
     .filter(Boolean)
     .join(' ')
@@ -248,37 +267,115 @@ export function ContentEditor({
     onTextScaleChange?.(nextScale)
   }
 
+  function finishEditing(event: FocusEvent<HTMLDivElement>) {
+    if (!renderPreview) return
+    function finishUnlessOwned(target: EventTarget | null) {
+      if (target instanceof Node && rootRef.current?.contains(target)) return
+      if (target instanceof Element) {
+        const dialog = target.closest('[role="dialog"]')
+        const owner = target.closest('[data-content-editor-owner]')
+          ?? dialog?.querySelector('[data-content-editor-owner]')
+        const ownerIds = owner?.getAttribute('data-content-editor-owner')?.split(/\s+/) ?? []
+        if (ownerIds.includes(ownEditorId)) return
+      }
+      setEditing(false)
+    }
+    if (event.relatedTarget) {
+      finishUnlessOwned(event.relatedTarget)
+    } else {
+      // showModal сначала делает лист inert, а браузер и Popover переводят
+      // фокус внутрь окна на следующем кадре.
+      rootRef.current?.ownerDocument.defaultView?.requestAnimationFrame(() => {
+        if (rootRef.current) finishUnlessOwned(rootRef.current.ownerDocument.activeElement)
+      })
+    }
+  }
+
   return (
     <div
+      ref={rootRef}
       className={rootClass}
+      data-content-editor
+      data-content-editor-id={ownEditorId}
+      data-auto-grow={autoGrow || undefined}
+      data-viewing={viewing}
       data-disabled={disabled || undefined}
       data-fill={fill || undefined}
       data-read-only={readOnly || undefined}
       style={editorStyle}
+      onBlurCapture={finishEditing}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <div className={styles.frame}>
+        <ContentWidgetContext value={{ disabled, readOnly, evaluateResourceMaximum, onStructuredResourceChange, editorId: editorOwners, dndEditorId: ownEditorId }}>
+        <div
+          className={styles.frame}
+          data-content-editor-frame
+          aria-label={viewing ? accessibleLabel : undefined}
+          role={viewing ? 'region' : undefined}
+          tabIndex={viewing && !disabled ? 0 : undefined}
+          title={viewing && !readOnly && !disabled
+            ? 'Нажмите, чтобы редактировать'
+            : undefined}
+          onClick={(event) => {
+            if (!viewing || disabled || readOnly) return
+            if (event.target instanceof Element) {
+              const section = event.target.closest('[data-section-widget]')
+              if (
+                event.target.closest('button, a, summary, input, textarea') ||
+                (section && event.currentTarget.contains(section)) ||
+                event.target.closest('[data-content-editor-frame]') !== event.currentTarget
+              ) return
+            }
+            setEditing(true)
+          }}
+          onKeyDown={(event) => {
+            if (
+              !viewing || disabled || readOnly ||
+              event.target !== event.currentTarget
+            ) return
+            if (event.key === 'Enter' || event.key === 'F2') {
+              event.preventDefault()
+              setEditing(true)
+            }
+          }}
+        >
           <ScrollArea
             contentClassName={styles.scrollContent}
             rootClassName={styles.scrollArea}
             verticalScrollBarLabel={`Прокрутка поля «${accessibleLabel}»`}
           >
-            <RichTextPlugin
-              contentEditable={(
-                <ContentEditable
-                  aria-label={accessibleLabel}
-                  aria-placeholder={placeholder}
-                  className={editableClass}
-                  placeholder={(
-                    <div className={styles.placeholder}>
-                      {placeholder}
-                    </div>
-                  )}
-                  spellCheck={true}
+            {viewing ? (
+              <div className={editableClass}>
+                <ContentPreview
+                  disabled={disabled}
+                  dndEditorId={ownEditorId}
+                  editorId={editorOwners}
+                  evaluateResourceMaximum={evaluateResourceMaximum}
+                  readOnly={readOnly}
+                  placeholder={placeholder}
+                  value={value}
+                  onStructuredResourceChange={onStructuredResourceChange}
+                  onValueChange={onValueChange}
                 />
-              )}
-              ErrorBoundary={LexicalErrorBoundary}
-            />
+              </div>
+            ) : (
+              <RichTextPlugin
+                contentEditable={(
+                  <ContentEditable
+                    aria-label={accessibleLabel}
+                    aria-placeholder={placeholder}
+                    className={editableClass}
+                    placeholder={(
+                      <div className={styles.placeholder}>
+                        {placeholder}
+                      </div>
+                    )}
+                    spellCheck={true}
+                  />
+                )}
+                ErrorBoundary={LexicalErrorBoundary}
+              />
+            )}
           </ScrollArea>
 
           {showTextScaleControls && (
@@ -292,6 +389,7 @@ export function ContentEditor({
                 <IconButton
                   aria-label={`Уменьшить текст: ${accessibleLabel}`}
                   className={styles.scaleButton}
+                  decoration="minimal"
                   disabled={disabled || resolvedTextScale <= lowerScale}
                   icon={<span className={styles.scaleGlyph}>−</span>}
                   size="sm"
@@ -308,6 +406,7 @@ export function ContentEditor({
                 <IconButton
                   aria-label={`Увеличить текст: ${accessibleLabel}`}
                   className={styles.scaleButton}
+                  decoration="minimal"
                   disabled={disabled || resolvedTextScale >= upperScale}
                   icon={<span className={styles.scaleGlyph}>+</span>}
                   size="sm"
@@ -320,6 +419,13 @@ export function ContentEditor({
         </div>
 
         <HistoryPlugin />
+        <ContentWidgetKeyboardPlugin />
+        <ContentWidgetDropPlugin
+          allowSections={allowSections}
+          disabled={disabled || readOnly}
+          editorId={ownEditorId}
+          rootRef={rootRef}
+        />
         <ListPlugin />
         <CheckListPlugin />
         <LinkPlugin validateUrl={isAllowedUrl} />
@@ -329,10 +435,13 @@ export function ContentEditor({
         />
         <EditableStatePlugin editable={editable} />
         <ContentEditorFloatingToolbar
+          allowSections={allowSections}
+          editorId={ownEditorId}
           disabled={!editable}
           showStructureActions={showStructureActions}
         />
-        {autoFocus && <AutoFocusPlugin />}
+        {!viewing && (autoFocus || renderPreview) && <AutoFocusPlugin />}
+        </ContentWidgetContext>
       </LexicalComposer>
     </div>
   )
