@@ -13,6 +13,7 @@ import {
 } from './creatureFormatting'
 import { CreatureAbilitiesPanel } from './CreatureAbilitiesPanel'
 import { CreatureArmorClassBadge } from './CreatureArmorClassBadge'
+import { CreatureHitPointsBadge } from './CreatureHitPointsBadge'
 import { DamageAffinityBadge, DamageAffinityLegend } from './DamageAffinityBadge'
 import { CreatureSectionContent } from './CreatureSectionContent'
 import styles from './CreatureFullView.module.css'
@@ -59,7 +60,6 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
     { label: 'Бонус мастерства', value: entity.proficiencyBonus },
   ].filter((detail) => detail.value)
   const vitals = [
-    { label: 'Хиты', value: entity.hitPoints },
     { label: 'Скорость', value: entity.speed },
   ].filter((vital) => vital.value)
 
@@ -80,7 +80,7 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
       </header>
 
       <div className={styles.main}>
-        {(entity.armorClass || vitals.length > 0) && (
+        {(entity.armorClass || entity.hitPoints || vitals.length > 0) && (
           <dl className={styles.vitals}>
             {entity.armorClass && (
               <div className={styles.armorClassVital}>
@@ -88,6 +88,12 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
                 <dd>
                   <CreatureArmorClassBadge armorClass={entity.armorClass} />
                 </dd>
+              </div>
+            )}
+            {entity.hitPoints && (
+              <div className={styles.armorClassVital}>
+                <dt className={styles.srOnly}>Хиты</dt>
+                <dd><CreatureHitPointsBadge hitPoints={entity.hitPoints} /></dd>
               </div>
             )}
             {vitals.map((vital) => (
