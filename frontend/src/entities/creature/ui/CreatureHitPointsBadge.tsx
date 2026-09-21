@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HeartIcon } from '../../../shared/ui/icons/HeartIcon'
+import type { CSSProperties } from 'react'
 import { DiceIcon } from '../../../shared/ui/icons/DiceIcon'
 import { getDiceTypeFromExpression } from '../../../shared/ui/icons/dice'
 import { Tooltip } from '../../../shared/ui/Tooltip'
@@ -8,8 +8,20 @@ import {
   type DiceRollResult,
 } from '../../../shared/ui/ContentEditor/diceExpression'
 import styles from './CreatureHitPointsBadge.module.css'
+import { getCreatureHitPointsFrame } from './creatureHitPointsBadge/creatureHitPointsFrames'
 
-export function CreatureHitPointsBadge({ hitPoints }: { hitPoints: string }) {
+export type CreatureHitPointsBadgeProps = {
+  creatureType?: string
+  hitPoints: string
+}
+
+type FrameStyle = CSSProperties & {
+  '--creature-hp-frame': string
+  '--creature-hp-value-x': string
+  '--creature-hp-value-y': string
+}
+
+export function CreatureHitPointsBadge({ creatureType, hitPoints }: CreatureHitPointsBadgeProps) {
   const [roll, setRoll] = useState<{ source: string; result: DiceRollResult } | null>(null)
   const match = hitPoints.match(/^\s*(\d+)\s*(?:\(([^)]*)\))?\s*$/)
   const value = match?.[1] ?? hitPoints
@@ -17,13 +29,23 @@ export function CreatureHitPointsBadge({ hitPoints }: { hitPoints: string }) {
   const expression = details?.replace(/[кК]/g, 'd') ?? ''
   const isFormula = /^(?:\d*[dD]\d+)(?:\s*[+-]\s*(?:\d*[dD]\d+|\d+))*$/.test(expression.trim())
   const result = roll?.source === hitPoints ? roll.result : null
+  const frame = getCreatureHitPointsFrame(creatureType)
+  const frameStyle: FrameStyle = {
+    '--creature-hp-frame': `url("${frame.source}")`,
+    '--creature-hp-value-x': `${frame.valueCenter.x}%`,
+    '--creature-hp-value-y': `${frame.valueCenter.y}%`,
+  }
 
   return (
-    <div className={styles.root} aria-label={`Хиты ${hitPoints}`}>
-      <div className={styles.heart}>
-        <HeartIcon />
-        <span className={styles.label}>Хиты</span>
-        <strong className={styles.value}>{value}</strong>
+    <div
+      className={styles.root}
+      aria-label={`Хиты ${hitPoints}`}
+      data-creature-hp-frame={frame.type}
+    >
+      <span className={styles.label} data-creature-hp-label>Хиты</span>
+      <div className={styles.heart} data-creature-hp-shape style={frameStyle}>
+        <span aria-hidden="true" className={styles.frame} />
+        <strong className={styles.value} data-creature-hp-value>{value}</strong>
       </div>
       {details && (
         <div className={styles.details}>

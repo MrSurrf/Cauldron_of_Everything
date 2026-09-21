@@ -52,6 +52,9 @@ export const Tarrasque: Story = {
     await expect(
       canvas.getByLabelText('Хиты 676 (33к20 + 330)'),
     ).toBeVisible()
+    await expect(
+      canvas.getByLabelText('Хиты 676 (33к20 + 330)'),
+    ).toHaveAttribute('data-creature-hp-frame', 'monster')
     await userEvent.click(canvas.getByRole('button', { name: 'Бросить хиты 33к20 + 330' }))
     await expect(canvas.getByText(/^Хиты: \d+$/)).toBeVisible()
     await expect(canvas.getByText('676')).toBeVisible()

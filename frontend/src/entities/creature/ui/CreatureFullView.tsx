@@ -93,7 +93,12 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
             {entity.hitPoints && (
               <div className={styles.armorClassVital}>
                 <dt className={styles.srOnly}>Хиты</dt>
-                <dd><CreatureHitPointsBadge hitPoints={entity.hitPoints} /></dd>
+                <dd>
+                  <CreatureHitPointsBadge
+                    creatureType={entity.creatureType}
+                    hitPoints={entity.hitPoints}
+                  />
+                </dd>
               </div>
             )}
             {vitals.map((vital) => (
