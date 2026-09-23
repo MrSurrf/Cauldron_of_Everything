@@ -21,7 +21,7 @@ const meta = {
       <div
         style={{
           padding: '2rem',
-          background: '#080611',
+          background: 'var(--color-surface-muted)',
         }}
       >
         <Story />

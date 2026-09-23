@@ -381,6 +381,7 @@ export function ContentEditor({
           {showTextScaleControls && (
             <div
               className={styles.scaleControls}
+              data-content-editor-scale
               role="group"
               aria-label={`Размер текста: ${accessibleLabel}`}
               onMouseDown={(event) => event.preventDefault()}

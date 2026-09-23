@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react'
-import { formatVisionSense } from '../../../shared/model'
+import typography from '../../../shared/styles/entityTypography.module.css'
+import { visionTypeLabels } from '../../../shared/model'
 import { Panel } from '../../../shared/ui/Panel'
 import { IconButton } from '../../../shared/ui/IconButton'
 import { Popover } from '../../../shared/ui/Popover'
 import { RichContent } from '../../../shared/ui/RichContent'
 import { PlaceholderIcon } from '../../../shared/ui/icons/PlaceholderIcon'
 import { VisionIcon } from '../../../shared/ui/icons/VisionIcon'
-import type { CreatureEntity } from '../model/creature'
+import type { CreatureEntity, DamageAffinityState } from '../model/creature'
 import {
   formatCreatureSkills,
+  formatCreatureSpeeds,
   getCreatureTaxonomy,
 } from './creatureFormatting'
 import { CreatureAbilitiesPanel } from './CreatureAbilitiesPanel'
@@ -31,7 +33,7 @@ function DetailLabel({
   children: ReactNode
 }) {
   return (
-    <dt>
+    <dt className={typography.subsectionLabel}>
       <span className={styles.detailIcon} aria-hidden="true"><PlaceholderIcon /></span>
       <span className={styles.detailLabelText}>
         {children}
@@ -41,27 +43,71 @@ function DetailLabel({
   )
 }
 
+function StatBlockSection({
+  id,
+  title,
+  accessory,
+  children,
+}: {
+  id: string
+  title: string
+  accessory?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className={styles.statSection} aria-labelledby={id}>
+      <Panel padding="none" className={styles.statPanel}>
+        <div className={styles.statHeading}>
+          <span className={styles.detailIcon} aria-hidden="true"><PlaceholderIcon /></span>
+          <h2 id={id} className={typography.sectionTitle}>{title}</h2>
+          {accessory}
+        </div>
+        <div className={styles.statBody}>{children}</div>
+      </Panel>
+    </section>
+  )
+}
+
+function getAffinityGroup(physical: DamageAffinityState, magical: DamageAffinityState) {
+  if (physical === 'normal') return magical
+  if (magical === 'normal' || physical === magical) return physical
+  return 'mixed'
+}
+
 export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
   const taxonomy = getCreatureTaxonomy(entity)
   const descriptions = entity.sections.filter((section) => section.type === 'description')
   const sections = entity.sections.filter((section) => section.type !== 'description')
   const hasSidebar = descriptions.length > 0 || Boolean(entity.habitat?.length)
-  const hasDamageAffinities = Boolean(entity.damageAffinities?.length)
-  const checks = [
-    { label: 'Навыки', value: formatCreatureSkills(entity.skills) },
-  ].filter((detail) => detail.value)
+  const damageGroups = [
+    { key: 'resistance', title: 'Сопротивления к урону', notes: entity.damageResistances },
+    { key: 'immunity', title: 'Иммунитеты к урону', notes: entity.damageImmunities },
+    { key: 'vulnerability', title: 'Уязвимости', notes: entity.damageVulnerabilities },
+    { key: 'mixed', title: 'Смешанные особенности', notes: undefined },
+  ].map((group) => ({
+    ...group,
+    affinities: entity.damageAffinities?.filter(
+      ({ physical, magical }) => getAffinityGroup(physical, magical) === group.key,
+    ) ?? [],
+  })).filter((group) => group.affinities.length > 0 || group.notes?.length)
   const details = [
-    { label: 'Уязвимости к урону', value: entity.damageVulnerabilities?.join(', ') },
-    { label: 'Сопротивления урону', value: entity.damageResistances?.join(', ') },
-    { label: 'Иммунитеты к урону', value: entity.damageImmunities?.join(', ') },
-    { label: 'Иммунитеты к состояниям', value: entity.conditionImmunities?.join(', ') },
+    { label: 'Навыки', value: formatCreatureSkills(entity.skills) },
+    {
+      label: 'Иммунитеты к состояниям',
+      value: entity.conditionImmunities?.length ? (
+        <span className={styles.conditionList}>
+          {entity.conditionImmunities.map((condition) => (
+            <span className={styles.condition} key={condition}>{condition}</span>
+          ))}
+        </span>
+      ) : undefined,
+    },
     { label: 'Языки', value: entity.languages?.join(', ') },
-    { label: 'Опасность', value: entity.challengeRating },
-    { label: 'Бонус мастерства', value: entity.proficiencyBonus },
   ].filter((detail) => detail.value)
-  const vitals = [
-    { label: 'Скорость', value: entity.speed },
-  ].filter((vital) => vital.value)
+  const speeds = formatCreatureSpeeds(entity.speed)
+  const hasSenses = Boolean(entity.vision?.length || entity.senses?.length || entity.passivePerception != null)
+  const hasVitals = Boolean(entity.armorClass || entity.hitPoints)
+  const challenge = entity.challengeRating?.match(/^\s*([^()]+?)\s*(?:\((.*)\))?\s*$/)
 
   return (
     <article
@@ -74,52 +120,108 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
           <span className={styles.detailIcon} aria-hidden="true"><PlaceholderIcon /></span>
           Энциклопедия · Бестиарий
         </p>
-        <h1 id={`${entity.id}-title`} className={styles.title}>{entity.name}</h1>
-        {entity.nameEn && <p className={styles.englishName}>{entity.nameEn}</p>}
-        {taxonomy && <p className={styles.taxonomy}>{taxonomy}</p>}
+        <div className={styles.headerContent}>
+          <div className={styles.identity}>
+            <h1 id={`${entity.id}-title`} className={styles.title}>{entity.name}</h1>
+            {entity.nameEn && <p className={styles.englishName}>{entity.nameEn}</p>}
+            {taxonomy && <p className={styles.taxonomy}>{taxonomy}</p>}
+          </div>
+          {(entity.challengeRating || entity.proficiencyBonus) && (
+            <dl className={styles.combatMeta}>
+              {entity.challengeRating && (
+                <div>
+                  <dt className={typography.secondaryLabel}>Опасность</dt>
+                  <dd>
+                    <strong>{challenge?.[1]?.trim() ?? entity.challengeRating}</strong>
+                    {challenge?.[2] && <small>({challenge[2]})</small>}
+                  </dd>
+                </div>
+              )}
+              {entity.proficiencyBonus && (
+                <div>
+                  <dt className={typography.secondaryLabel}>Бонус мастерства</dt>
+                  <dd><strong>{entity.proficiencyBonus}</strong></dd>
+                </div>
+              )}
+            </dl>
+          )}
+        </div>
       </header>
 
       <div className={styles.main}>
-        {(entity.armorClass || entity.hitPoints || vitals.length > 0) && (
-          <dl className={styles.vitals}>
-            {entity.armorClass && (
-              <div className={styles.armorClassVital}>
-                <dt className={styles.srOnly}>Класс доспеха</dt>
-                <dd>
-                  <CreatureArmorClassBadge armorClass={entity.armorClass} />
-                </dd>
-              </div>
-            )}
-            {entity.hitPoints && (
-              <div className={styles.armorClassVital}>
-                <dt className={styles.srOnly}>Хиты</dt>
-                <dd>
-                  <CreatureHitPointsBadge
-                    creatureType={entity.creatureType}
-                    hitPoints={entity.hitPoints}
-                  />
-                </dd>
-              </div>
-            )}
-            {vitals.map((vital) => (
-              <div key={vital.label}>
-                <span className={styles.vitalIcon} aria-hidden="true"><PlaceholderIcon /></span>
-                <dt>{vital.label}</dt>
-                <dd>{vital.value}</dd>
-              </div>
-            ))}
-          </dl>
+        {(hasVitals || speeds.length > 0 || hasSenses) && (
+          <StatBlockSection id={`${entity.id}-passport-title`} title="Боевой паспорт">
+            <div className={styles.passport} data-has-vitals={hasVitals}>
+              {hasVitals && (
+                <dl className={styles.vitals}>
+                  {entity.armorClass && (
+                    <div className={`${styles.armorClassVital} ${styles.armorAlignment}`}>
+                      <dt className={styles.srOnly}>Класс доспеха</dt>
+                      <dd><CreatureArmorClassBadge armorClass={entity.armorClass} /></dd>
+                    </div>
+                  )}
+                  {entity.hitPoints && (
+                    <div className={styles.armorClassVital}>
+                      <dt className={styles.srOnly}>Хиты</dt>
+                      <dd>
+                        <CreatureHitPointsBadge creatureType={entity.creatureType} hitPoints={entity.hitPoints} />
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+              {(speeds.length > 0 || hasSenses) && (
+                <dl className={styles.mobility}>
+                  {speeds.length > 0 && (
+                    <div>
+                      <DetailLabel>Скорость</DetailLabel>
+                      <dd className={styles.speedList}>
+                        {speeds.map((speed, index) => (
+                          <span className={styles.speed} key={index}>
+                            <strong>{speed.value}</strong>
+                            {speed.label && <small>{speed.label}</small>}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  )}
+                  {hasSenses && (
+                    <div>
+                      <DetailLabel>Чувства</DetailLabel>
+                      <dd className={styles.sensesList}>
+                        {entity.vision?.map((sense) => (
+                          <span className={styles.visionSense} key={`${sense.type}-${sense.range ?? 'unlimited'}`}>
+                            <VisionIcon type={sense.type} />
+                            <span>
+                              <span>{visionTypeLabels[sense.type]}</span>
+                              {sense.range != null && <strong>{sense.range} фт.</strong>}
+                            </span>
+                          </span>
+                        ))}
+                        {entity.senses?.map((sense) => (
+                          <span className={styles.senseNote} key={sense}>{sense}</span>
+                        ))}
+                        {entity.passivePerception != null && (
+                          <span className={styles.passivePerception}>
+                            <VisionIcon type="normal" />
+                            <span>Пассивная внимательность</span>
+                            <strong>{entity.passivePerception}</strong>
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </div>
+          </StatBlockSection>
         )}
 
-        {hasDamageAffinities && (
-          <section
-            className={styles.damageStrip}
-            aria-labelledby={`${entity.id}-damage-affinities-title`}
-          >
-            <div className={styles.damageStripHeading}>
-              <h2 id={`${entity.id}-damage-affinities-title`}>
-                Сопротивления и уязвимости
-              </h2>
+        {damageGroups.length > 0 && (
+          <StatBlockSection
+            id={`${entity.id}-damage-affinities-title`}
+            title="Сопротивления, иммунитеты и уязвимости"
+            accessory={
               <Popover
                 aria-label="Пояснение обозначений урона"
                 className={styles.affinityPopover}
@@ -135,59 +237,47 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
                   variant="secondary"
                 />
               </Popover>
-            </div>
-            <div className={styles.damageAffinities}>
-              {entity.damageAffinities?.map((affinity) => (
-                <DamageAffinityBadge
-                  key={affinity.damageType}
-                  className={styles.compactDamageBadge}
-                  damageType={affinity.damageType}
-                  physicalState={affinity.physical}
-                  magicalState={affinity.magical}
-                />
+            }
+          >
+            <div className={styles.damageGroups}>
+              {damageGroups.map((group) => (
+                <section className={styles.damageGroup} key={group.key} aria-labelledby={`${entity.id}-damage-${group.key}`}>
+                  <h3 id={`${entity.id}-damage-${group.key}`} className={typography.subsectionLabel}>{group.title}</h3>
+                  <div className={styles.damageAffinities}>
+                    {group.affinities.map((affinity) => (
+                      <DamageAffinityBadge
+                        key={affinity.damageType}
+                        className={styles.compactDamageBadge}
+                        damageType={affinity.damageType}
+                        physicalState={affinity.physical}
+                        magicalState={affinity.magical}
+                      />
+                    ))}
+                  </div>
+                  {group.notes?.map((note) => <p className={styles.damageNote} key={note}>{note}</p>)}
+                </section>
               ))}
             </div>
-          </section>
+          </StatBlockSection>
         )}
 
         {entity.abilities && (
-          <CreatureAbilitiesPanel
-            abilities={entity.abilities}
-            savingThrows={entity.savingThrows}
-          />
+          <StatBlockSection id={`${entity.id}-abilities-title`} title="Характеристики">
+            <CreatureAbilitiesPanel abilities={entity.abilities} savingThrows={entity.savingThrows} />
+          </StatBlockSection>
         )}
 
-        {(checks.length > 0 || details.length > 0 || Boolean(entity.vision?.length) || Boolean(entity.senses?.length)) && (
-          <dl className={styles.details}>
-            {checks.map((detail) => (
-              <div key={detail.label}>
-                <DetailLabel>{detail.label}</DetailLabel>
-                <dd>{detail.value}</dd>
-              </div>
-            ))}
-            {(Boolean(entity.vision?.length) || Boolean(entity.senses?.length)) && (
-              <div>
-                <DetailLabel>Чувства</DetailLabel>
-                <dd className={styles.sensesList}>
-                  {entity.vision?.map((sense) => (
-                    <span className={styles.visionSense} key={`${sense.type}-${sense.range ?? 'unlimited'}`}>
-                      <VisionIcon type={sense.type} />
-                      {formatVisionSense(sense)}
-                    </span>
-                  ))}
-                  {entity.senses?.map((sense) => (
-                    <span key={sense}>{sense}</span>
-                  ))}
-                </dd>
-              </div>
-            )}
-            {details.map((detail) => (
-              <div key={detail.label}>
-                <DetailLabel>{detail.label}</DetailLabel>
-                <dd>{detail.value}</dd>
-              </div>
-            ))}
-          </dl>
+        {details.length > 0 && (
+          <StatBlockSection id={`${entity.id}-information-title`} title="Основная информация">
+            <dl className={styles.details}>
+              {details.map((detail) => (
+                <div key={detail.label}>
+                  <DetailLabel>{detail.label}</DetailLabel>
+                  <dd className={typography.bodyText}>{detail.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </StatBlockSection>
         )}
 
         <div className={styles.sections}>
@@ -218,7 +308,7 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
                 <dl className={styles.habitat}>
                   <div>
                     <DetailLabel>Среда обитания</DetailLabel>
-                    <dd>{entity.habitat?.join(', ')}</dd>
+                    <dd className={typography.bodyText}>{entity.habitat?.join(', ')}</dd>
                   </div>
                 </dl>
               )}

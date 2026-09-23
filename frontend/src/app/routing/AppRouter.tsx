@@ -55,6 +55,10 @@ export function AppRouter() {
             element={<BestiaryEntityPage />}
           />
           <Route
+            path="/encyclopedia/creature/:slug"
+            element={<BestiaryEntityPage />}
+          />
+          <Route
             path="*"
             element={<NotFoundPage />}
           />

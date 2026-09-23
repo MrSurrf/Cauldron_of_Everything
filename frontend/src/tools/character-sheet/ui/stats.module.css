@@ -404,14 +404,14 @@
   background:
     linear-gradient(
       105deg,
-      var(--palette-blue-400, #5e7dff) 4%,
+      var(--color-temporary-hit-points) 4%,
       var(--palette-purple-300) 54%,
       var(--color-border-accent) 100%
     );
   filter:
     drop-shadow(
       0 0 0.12rem
-      color-mix(in srgb, var(--palette-blue-400, #5e7dff) 90%, transparent)
+      color-mix(in srgb, var(--color-temporary-hit-points) 90%, transparent)
     )
     drop-shadow(
       0 0 var(--space-2)
@@ -440,7 +440,7 @@
   background:
     radial-gradient(
       circle at 50% 62%,
-      color-mix(in srgb, var(--palette-blue-400, #5e7dff) 30%, transparent),
+      color-mix(in srgb, var(--color-temporary-hit-points) 30%, transparent),
       color-mix(in srgb, var(--color-action-primary) 12%, transparent) 52%,
       transparent 76%
     );

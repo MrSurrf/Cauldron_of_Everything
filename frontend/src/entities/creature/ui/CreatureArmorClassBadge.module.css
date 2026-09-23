@@ -31,9 +31,13 @@
   z-index: -2;
   background: linear-gradient(
     145deg,
-    var(--palette-purple-300),
-    var(--color-border-accent) 48%,
-    var(--palette-purple-700)
+    var(--color-brand),
+    var(--color-icon-muted) 48%,
+    color-mix(
+      in srgb,
+      var(--color-brand-muted) 28%,
+      var(--color-content-border)
+    )
   );
 }
 
@@ -48,8 +52,7 @@
 }
 
 .label {
-  color: var(--palette-purple-300);
-  font-family: var(--font-family-heading);
+  composes: subsectionLabel from '../../../shared/styles/entityTypography.module.css';
   font-size: var(--font-size-xs);
   letter-spacing: 0.055em;
   line-height: 1;
@@ -57,18 +60,18 @@
 }
 
 .value {
-  color: var(--color-text-primary);
+  composes: primaryValue from '../../../shared/styles/entityTypography.module.css';
   font-size: var(--font-size-2xl);
   line-height: 1;
 }
 
 .details {
+  composes: secondaryLabel from '../../../shared/styles/entityTypography.module.css';
   display: grid;
   max-width: 9rem;
   margin-top: var(--space-1);
   justify-items: center;
   gap: var(--space-1);
-  color: var(--color-text-disabled);
   text-align: center;
 }
 

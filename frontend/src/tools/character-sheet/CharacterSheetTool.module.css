@@ -54,7 +54,8 @@
   font-size: var(--sheet-body-size, var(--font-size-sm));
 }
 
-.root button[data-icon-only='true'][data-size] {
+/* Кнопки масштаба сохраняют общий дизайн ContentEditor. */
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button) {
   --icon-button-size: var(--sheet-icon-control-size);
   --icon-button-glyph-size: var(--sheet-icon-glyph-size);
   --button-min-height: var(--sheet-icon-control-size);
@@ -87,14 +88,14 @@
   filter: none;
 }
 
-.root button[data-icon-only='true'][data-size]::before,
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button)::before,
 .root
-  button[data-icon-only='true'][data-size]
+  button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button)
   > span[aria-hidden='true'] {
   display: none;
 }
 
-.root button[data-icon-only='true'][data-size]:hover:not(:disabled) {
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button):hover:not(:disabled) {
   border-color:
     color-mix(
       in srgb,
@@ -118,7 +119,7 @@
     );
 }
 
-.root button[data-icon-only='true'][data-size]:focus-visible {
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button):focus-visible {
   border-color: var(--color-border-accent);
   outline: var(--border-width-default) solid var(--palette-white);
   outline-offset: var(--border-width-default);

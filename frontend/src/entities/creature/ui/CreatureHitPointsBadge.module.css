@@ -21,12 +21,12 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: var(--color-action-primary);
+  background: var(--color-brand-bright);
   -webkit-mask: var(--creature-hp-frame) center / contain no-repeat;
   mask: var(--creature-hp-frame) center / contain no-repeat;
   filter: drop-shadow(
     0 0 0.35rem
-    color-mix(in srgb, var(--color-action-primary) 48%, transparent)
+    color-mix(in srgb, var(--color-brand-bright) 48%, transparent)
   );
 }
 
@@ -36,21 +36,20 @@
 }
 
 .label {
+  composes: subsectionLabel from '../../../shared/styles/entityTypography.module.css';
   margin-bottom: var(--space-2);
-  color: var(--palette-white);
-  font-family: var(--font-family-heading);
   font-size: var(--font-size-xs);
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
 
 .value {
+  composes: primaryValue from '../../../shared/styles/entityTypography.module.css';
   position: absolute;
   top: var(--creature-hp-value-y);
   left: var(--creature-hp-value-x);
   max-width: calc(100% - var(--space-4));
   transform: translate(-50%, -50%);
-  color: var(--palette-white);
   font-size: var(--font-size-2xl);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -58,11 +57,11 @@
 }
 
 .details {
+  composes: secondaryLabel from '../../../shared/styles/entityTypography.module.css';
   display: grid;
   justify-items: center;
   gap: var(--space-1);
   margin-top: var(--space-1);
-  color: var(--color-text-disabled);
   text-align: center;
   font-size: var(--font-size-2xs);
 }
@@ -70,6 +69,7 @@
 .details small { font: inherit; }
 
 .formula {
+  composes: interactiveValue from '../../../shared/styles/entityTypography.module.css';
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -77,18 +77,19 @@
   border: var(--border-width-default) solid var(--color-content-border);
   border-radius: var(--space-1);
   background: var(--color-surface-accent);
-  color: var(--palette-purple-300);
   font: inherit;
   cursor: pointer;
 }
 
 .formula:hover, .formula:focus-visible {
-  border-color: var(--color-border-accent);
-  box-shadow: 0 0 0.65em color-mix(in srgb, var(--color-action-primary) 32%, transparent);
+  color: var(--color-interactive-hover);
+  border-color: var(--color-interactive);
+  outline-color: var(--color-interactive);
+  box-shadow: 0 0 0.65em color-mix(in srgb, var(--color-interactive) 32%, transparent);
 }
 
 .formula [data-shared-icon] { width: 1rem; height: 1rem; flex-shrink: 0; }
-.result { color: var(--color-text-primary); font-size: inherit; }
+.result { color: var(--color-heading-primary); font-size: inherit; }
 .result:empty { display: none; }
 
 @media (forced-colors: active) {

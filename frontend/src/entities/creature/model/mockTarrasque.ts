@@ -14,7 +14,8 @@ export const mockTarrasque = {
     details: ['природный доспех'],
   },
   hitPoints: '676 (33к20 + 330)',
-  speed: '40 фт.',
+  // Дополнительные скорости и виды зрения — стресс-тест UI, не свойства Тараска.
+  speed: '40 фт., полёт 60 фт., лазание 20 фт., плавание 30 фт.',
   abilities: {
     strength: { score: 30 },
     dexterity: { score: 11 },
@@ -105,8 +106,14 @@ export const mockTarrasque = {
     'отравление',
     'паралич',
   ],
-  vision: [{ type: 'blindsight', range: 120 }],
-  senses: ['пассивная Внимательность 19'],
+  vision: [
+    { type: 'normal' },
+    { type: 'blindsight', range: 120 },
+    { type: 'darkvision', range: 120 },
+    { type: 'tremorsense', range: 60 },
+    { type: 'truesight', range: 120 },
+  ],
+  passivePerception: 19,
   languages: ['—'],
   challengeRating: '30 (155 000 опыта)',
   proficiencyBonus: '+9',

@@ -93,6 +93,7 @@ export type CreatureEntity = BaseEntity<'creature'> & {
   conditionImmunities?: readonly string[]
   vision?: readonly VisionSense[]
   senses?: readonly string[]
+  passivePerception?: number
   languages?: readonly string[]
   challengeRating?: string
   proficiencyBonus?: string

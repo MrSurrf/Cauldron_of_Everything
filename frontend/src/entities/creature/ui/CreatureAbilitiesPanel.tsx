@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import typography from '../../../shared/styles/entityTypography.module.css'
 
 import { DiceIcon } from '../../../shared/ui/icons/DiceIcon'
 import { SavingThrowIcon } from '../../../shared/ui/icons/SavingThrowIcon'
@@ -67,7 +68,7 @@ export function CreatureAbilitiesPanel({
             data-save-open={isOpen || undefined}
             data-save-result={Boolean(result) || undefined}
           >
-            <dt title={labels.label}>{labels.abbreviation}</dt>
+            <dt title={labels.label} className={typography.subsectionLabel}>{labels.abbreviation}</dt>
             <dd>
               <strong>{ability.score}</strong>
               <span>

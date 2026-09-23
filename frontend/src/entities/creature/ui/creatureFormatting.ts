@@ -66,3 +66,17 @@ export function formatCreatureSkills(
     .map(([name, bonus]) => `${name} ${bonus}`)
     .join(', ')
 }
+
+export function formatCreatureSpeeds(speed: CreatureEntity['speed']) {
+  if (!speed?.trim()) return []
+
+  // Не разбиваем уточнения в скобках; нестандартную запись оставляем целиком.
+  return speed.split(/,\s*(?![^()]*\))/).filter((part) => part.trim()).map((part) => {
+    const match = part.trim().match(/^(.*?)\s*(\d+\s*фт\.)(.*)$/i)
+    if (!match) return { value: part.trim(), label: '' }
+    return {
+      value: `${match[2]}${match[3]}`,
+      label: match[1] || 'ходьба',
+    }
+  })
+}
