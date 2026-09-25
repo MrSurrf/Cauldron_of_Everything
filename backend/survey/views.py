@@ -3,6 +3,7 @@ import logging
 import secrets
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -54,6 +55,14 @@ class RequestCodeView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
+
+        # Временное ограничение доступа: если задан белый список — пускаем только его.
+        if settings.AUTH_ALLOWED_EMAILS and email not in settings.AUTH_ALLOWED_EMAILS:
+            logger.info("Отклонён вход для %s: email не в белом списке", email)
+            return Response(
+                {"detail": "Доступ к анкете временно ограничен."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         last_code = (
             EmailAuthCode.objects.filter(email=email, is_used=False)
