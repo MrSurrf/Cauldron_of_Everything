@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CatalogCreature } from './bestiaryCatalog'
-import { mockBestiaryCatalog } from './mockBestiary'
+import { tarrasqueCatalogEntry } from './mockBestiary'
 import { emptyFilters, facetOptions, filterCatalog } from './bestiaryFilters'
 
 const base: CatalogCreature = {
@@ -24,15 +24,10 @@ const catalog: CatalogCreature[] = [
 ]
 
 describe('фасетный поиск бестиария', () => {
-  it('моковый набор содержит значения каждого фильтра и полный текст', () => {
-    expect(mockBestiaryCatalog).toHaveLength(49)
-    expect(mockBestiaryCatalog.filter(({ fullRecord }) => fullRecord).map(({ name }) => name))
-      .toEqual(['Тараск'])
-    expect(mockBestiaryCatalog.some(({ homebrew }) => homebrew)).toBe(true)
-    expect(mockBestiaryCatalog.some(({ namedNpc }) => namedNpc)).toBe(true)
-    expect(mockBestiaryCatalog.some(({ movements }) => movements.includes('Полёт'))).toBe(true)
-    expect(mockBestiaryCatalog.some(({ movements }) => movements.includes('Плавание'))).toBe(true)
-    expect(mockBestiaryCatalog.some(({ contentText }) => contentText.includes('исследователь'))).toBe(true)
+  it('оставляет локальным только полный статблок Тараска', () => {
+    expect(tarrasqueCatalogEntry.fullRecord).toBe(true)
+    expect(tarrasqueCatalogEntry.name).toBe('Тараск')
+    expect(tarrasqueCatalogEntry.id).toBeLessThan(0)
   })
 
   it('ищет по полному тексту карточки и названию без учёта регистра', () => {

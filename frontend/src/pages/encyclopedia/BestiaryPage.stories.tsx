@@ -1,13 +1,32 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { expect, userEvent } from 'storybook/test'
+import { expect, userEvent, waitFor } from 'storybook/test'
 
 import BestiaryPage from './BestiaryPage'
 import MockTarrasquePage from './MockTarrasquePage'
 
 const meta = {
   component: BestiaryPage,
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    msw: { handlers: [
+      http.get('*/api/encyclopedia/', () => HttpResponse.json({
+        count: 2,
+        results: [
+          { id: 101, entity_type: 'creature', name: 'Арло Киттоу', name_en: '', slug: 'arlo-kittow', sources: ['Бестиарий'], summary: { challenge_rating: '6', size: 'Средний', creature_type: 'Гуманоид' } },
+          { id: 102, entity_type: 'creature', name: 'Болотник', name_en: '', slug: 'bolotnik', sources: ['Бестиарий'], summary: { challenge_rating: '1', size: 'Большой', creature_type: 'Монстр' } },
+        ],
+      })),
+      http.get('*/api/encyclopedia/:id/', ({ params }) => HttpResponse.json({
+        id: Number(params.id), entity_type: 'creature',
+        name: params.id === '101' ? 'Арло Киттоу' : 'Болотник',
+        name_en: '', slug: params.id === '101' ? 'arlo-kittow' : 'bolotnik',
+        sources: ['Бестиарий'], content_text: params.id === '101' ? 'Опытный исследователь.' : 'Живёт в болоте.',
+        data: { challenge_rating: params.id === '101' ? '6' : '1', size: 'Средний', creature_type: 'Гуманоид', speed: '30 фт.', languages: ['Общий'] },
+      })),
+    ] },
+  },
   decorators: [(Story) => (
     <MemoryRouter initialEntries={['/encyclopedia/bestiary']}>
       <Routes>
@@ -24,8 +43,9 @@ type Story = StoryObj<typeof meta>
 export const Catalog: Story = {
   play: async ({ canvas }) => {
     const search = canvas.getByRole('searchbox', { name: 'Поиск по названию и содержанию карточки' })
-    await expect(canvas.getByText('Найдено: 42')).toBeVisible()
-    await expect(canvas.getByRole('heading', { name: 'А', level: 3 })).toBeVisible()
+    await expect(await canvas.findByText('Найдено: 3')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /Арло Киттоу/ })).toBeVisible()
+    await waitFor(() => expect(search).toBeEnabled())
     await userEvent.type(search, 'исследователь')
     await expect(canvas.getByText('Найдено: 1')).toBeVisible()
     await expect(canvas.queryByRole('heading', { name: 'А', level: 3 })).not.toBeInTheDocument()

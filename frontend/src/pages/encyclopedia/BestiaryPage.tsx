@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -7,7 +7,8 @@ import {
 } from '../../entities/creature'
 import { Button, Checkbox, Panel, Popover, TextInput } from '../../shared/ui'
 import type { CatalogCreature } from './bestiaryCatalog'
-import { mockBestiaryCatalog } from './mockBestiary'
+import { getBestiaryCreature, loadBestiary } from './bestiaryApi'
+import { tarrasqueCatalogEntry } from './mockBestiary'
 import {
   emptyFilters,
   FACETS,
@@ -35,11 +36,13 @@ function FacetControl({
   creatures,
   facet,
   filters,
+  disabled,
   onToggle,
 }: {
   creatures: readonly CatalogCreature[]
   facet: (typeof FACETS)[number]
   filters: FilterState
+  disabled: boolean
   onToggle: (key: FacetKey, value: string) => void
 }) {
   const options = facetOptions(creatures, filters, facet.key)
@@ -68,6 +71,7 @@ function FacetControl({
       <button
         className={`${styles.facetButton} ${['languages', 'habitats', 'movements'].includes(facet.key) ? styles.facetWide : ''}`}
         type="button"
+        disabled={disabled}
       >
         <span>{facet.label}{count > 0 && <b> · {count}</b>}</span>
         <span aria-hidden="true">⌄</span>
@@ -80,9 +84,49 @@ export default function BestiaryPage() {
   const navigate = useNavigate()
   const [filters, setFilters] = useState(emptyFilters)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [selected, setSelected] = useState<CatalogCreature | null>(null)
-  const results = useMemo(() => filterCatalog(mockBestiaryCatalog, filters), [filters])
+  const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedDetail, setSelectedDetail] = useState<CatalogCreature | null>(null)
+  const [status, setStatus] = useState<'loading' | 'indexing' | 'ready' | 'error'>('loading')
+  const [progress, setProgress] = useState({ completed: 0, total: 0 })
+  const [error, setError] = useState('')
+  const [attempt, setAttempt] = useState(0)
+  const selected = selectedDetail?.id === selectedId
+    ? selectedDetail
+    : catalog.find((creature) => creature.id === selectedId) ?? null
+  const results = useMemo(() => filterCatalog(catalog, filters), [catalog, filters])
   const visible = results.slice(0, visibleCount)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    loadBestiary(
+      controller.signal,
+      (creatures) => {
+        setCatalog([...creatures, tarrasqueCatalogEntry])
+        setStatus('indexing')
+      },
+      (completed, total) => setProgress({ completed, total }),
+    ).then((creatures) => {
+      setCatalog([...creatures, tarrasqueCatalogEntry])
+      setStatus('ready')
+    }).catch((cause: unknown) => {
+      if (controller.signal.aborted) return
+      setError(cause instanceof Error ? cause.message : 'Не удалось загрузить бестиарий')
+      setStatus('error')
+    })
+    return () => controller.abort()
+  }, [attempt])
+
+  useEffect(() => {
+    if (status !== 'indexing' || selectedId === null || selectedId < 0) return
+    const creature = catalog.find((item) => item.id === selectedId)
+    if (!creature) return
+    const controller = new AbortController()
+    getBestiaryCreature(creature, controller.signal)
+      .then(setSelectedDetail)
+      .catch(() => { /* Общая загрузка каталога сообщит об ошибке отдельно. */ })
+    return () => controller.abort()
+  }, [catalog, selectedId, status])
 
   function updateFilters(update: (current: FilterState) => FilterState) {
     setFilters(update)
@@ -102,10 +146,6 @@ export default function BestiaryPage() {
     })
   }
 
-  function chooseCreature(creature: CatalogCreature) {
-    setSelected(creature)
-  }
-
   function renderCreature(creature: CatalogCreature) {
     return (
       <button
@@ -114,7 +154,7 @@ export default function BestiaryPage() {
         className={styles.creatureButton}
         data-selected={selected?.id === creature.id}
         aria-pressed={selected?.id === creature.id}
-        onClick={() => chooseCreature(creature)}
+        onClick={() => setSelectedId(creature.id)}
       >
         <CreatureReference entity={creature.entity} />
       </button>
@@ -132,6 +172,7 @@ export default function BestiaryPage() {
               className={styles.sourceTab}
               data-active={filters.sourceMode === mode}
               type="button"
+              disabled={status !== 'ready'}
               aria-pressed={filters.sourceMode === mode}
               onClick={() => updateFilters((current) => ({ ...current, sourceMode: mode }))}
             >
@@ -147,14 +188,16 @@ export default function BestiaryPage() {
             type="search"
             placeholder="Поиск по названию и содержанию карточки"
             value={filters.query}
+            disabled={status !== 'ready'}
             onChange={(event) => updateFilters((current) => ({ ...current, query: event.target.value }))}
           />
           {FACETS.map((facet) => (
             <FacetControl
               key={facet.key}
-              creatures={mockBestiaryCatalog}
+              creatures={catalog}
               facet={facet}
               filters={filters}
+              disabled={status !== 'ready'}
               onToggle={toggleFacet}
             />
           ))}
@@ -162,6 +205,7 @@ export default function BestiaryPage() {
             <span>Порядок</span>
             <select
               value={filters.sort}
+              disabled={status !== 'ready'}
               onChange={(event) => updateFilters((current) => ({ ...current, sort: event.target.value as SortKey }))}
             >
               <option value="alphabetical">По алфавиту</option>
@@ -173,6 +217,7 @@ export default function BestiaryPage() {
             variant="secondary"
             decoration="minimal"
             size="md"
+            disabled={status !== 'ready'}
             onClick={() => updateFilters(() => emptyFilters())}
           >
             Сброс
@@ -182,11 +227,18 @@ export default function BestiaryPage() {
 
       <div className={styles.layout}>
         <Panel className={styles.listPanel} padding="compact">
+          {status === 'loading' && <p className={styles.loadStatus} role="status">Загружаем существ из базы данных…</p>}
+          {status === 'indexing' && <p className={styles.loadStatus} role="status">Загружаем данные для фильтров и поиска: {progress.completed} из {progress.total}. Список уже доступен.</p>}
+          {status === 'error' && (
+            <div className={styles.loadStatus} role="alert">
+              Не удалось загрузить существ: {error}. <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setError(''); setStatus('loading'); setAttempt((value) => value + 1) }}>Повторить</Button>
+            </div>
+          )}
           <div className={styles.listToolbar}>
             <div className={styles.alphabet} role="group" aria-label="Первая буква названия">
-              <button type="button" data-active={!filters.letter} onClick={() => updateFilters((current) => ({ ...current, letter: '' }))}>Все</button>
+              <button type="button" disabled={status !== 'ready'} data-active={!filters.letter} onClick={() => updateFilters((current) => ({ ...current, letter: '' }))}>Все</button>
               {LETTERS.map((letter) => (
-                <button key={letter} type="button" data-active={filters.letter === letter} onClick={() => updateFilters((current) => ({ ...current, letter }))}>{letter}</button>
+                <button key={letter} type="button" disabled={status !== 'ready'} data-active={filters.letter === letter} onClick={() => updateFilters((current) => ({ ...current, letter }))}>{letter}</button>
               ))}
             </div>
             <span className={styles.count} role="status">Найдено: {results.length}</span>
