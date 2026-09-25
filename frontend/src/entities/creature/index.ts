@@ -7,6 +7,7 @@ export type {
   CreatureAbilityScore,
   CreatureArmorClass,
   CreatureEntity,
+  CreatureFeature,
   CreatureSection,
   CreatureSectionType,
   DamageAffinity,

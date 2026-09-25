@@ -19,6 +19,12 @@ const BestiaryEntityPage = lazy(
       '../../pages/encyclopedia/BestiaryEntityPage'
     ),
 )
+const BestiaryPage = lazy(
+  () => import('../../pages/encyclopedia/BestiaryPage'),
+)
+const MockTarrasquePage = lazy(
+  () => import('../../pages/encyclopedia/MockTarrasquePage'),
+)
 
 function RouteFallback() {
   return (
@@ -49,6 +55,14 @@ export function AppRouter() {
           <Route
             path="/"
             element={<SurveyRoutePage />}
+          />
+          <Route
+            path="/encyclopedia/bestiary"
+            element={<BestiaryPage />}
+          />
+          <Route
+            path="/encyclopedia/bestiary/tarrasque"
+            element={<MockTarrasquePage />}
           />
           <Route
             path="/encyclopedia/bestiary/:slug"

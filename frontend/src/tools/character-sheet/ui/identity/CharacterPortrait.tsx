@@ -158,8 +158,6 @@ export function CharacterPortrait({
           </button>
         )}
 
-      <span className={styles.innerFrame} aria-hidden="true" />
-      <span className={styles.cornerOrnament} aria-hidden="true" />
     </div>
   )
 }

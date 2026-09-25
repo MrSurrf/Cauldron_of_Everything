@@ -17,7 +17,7 @@ import { CreatureAbilitiesPanel } from './CreatureAbilitiesPanel'
 import { CreatureArmorClassBadge } from './CreatureArmorClassBadge'
 import { CreatureHitPointsBadge } from './CreatureHitPointsBadge'
 import { DamageAffinityBadge, DamageAffinityLegend } from './DamageAffinityBadge'
-import { CreatureSectionContent } from './CreatureSectionContent'
+import { CreatureFeatureSections } from './CreatureFeatureSections'
 import styles from './CreatureFullView.module.css'
 
 export type CreatureFullViewProps = {
@@ -280,16 +280,6 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
           </StatBlockSection>
         )}
 
-        <div className={styles.sections}>
-          {sections.map((section) => (
-            <section key={section.id} aria-labelledby={`${entity.id}-${section.id}-title`}>
-              <h2 id={`${entity.id}-${section.id}-title`} className={styles.sectionTitle}>
-                {section.title}
-              </h2>
-              <CreatureSectionContent html={section.html} />
-            </section>
-          ))}
-        </div>
       </div>
 
       {hasSidebar && (
@@ -316,6 +306,9 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
           </Panel>
         </aside>
       )}
+      <div className={styles.sections}>
+        <CreatureFeatureSections key={entity.id} entityId={entity.id} sections={sections} />
+      </div>
     </article>
   )
 }

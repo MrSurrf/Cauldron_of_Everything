@@ -1,4 +1,5 @@
 import type { CreatureEntity } from './creature'
+import { tarrasqueActions, tarrasqueLegendaryActions, tarrasqueTraits } from './mockTarrasqueFeatures'
 
 export const mockTarrasque = {
   id: 'creature-tarrasque',
@@ -133,18 +134,22 @@ export const mockTarrasque = {
       id: 'tarrasque-traits',
       type: 'traits',
       title: 'Особенности',
+      entries: tarrasqueTraits,
       html: '<p><strong>Легендарное сопротивление.</strong> Если Тараск проваливает спасбросок, он может вместо этого считать его успешным.</p><p><strong>Магический панцирь.</strong> Панцирь чудовища затрудняет попадание заклинаний и способен обратить направленную магию против её создателя.</p><p><strong>Осадное чудовище.</strong> Тараск наносит удвоенный урон строениям и предметам.</p>',
     },
     {
       id: 'tarrasque-actions',
       type: 'actions',
       title: 'Действия',
+      entries: tarrasqueActions,
       html: '<p><strong>Мультиатака.</strong> Тараск обрушивает на противников укус, рога, когти и удар хвостом.</p><p><strong>Укус.</strong> Мощная атака по существу рядом. Цель может оказаться схваченной и проглоченной.</p><p><strong>Коготь.</strong> Размашистый удар по ближайшей цели.</p><p><strong>Хвост.</strong> Удар способен сбить огромное существо с ног.</p><p><strong>Поглощение.</strong> Схваченное существо исчезает в утробе Тараска и получает урон в начале каждого его хода.</p>',
     },
     {
       id: 'tarrasque-legendary-actions',
       type: 'legendary-actions',
       title: 'Легендарные действия',
+      introduction: 'Тараск может совершить 3 легендарных действия, выбирая из вариантов ниже. Только одно за раз и только в конце хода другого существа. В начале своего хода он восстанавливает потраченные действия.',
+      entries: tarrasqueLegendaryActions,
       html: '<p>Тараск совершает легендарные действия в конце ходов других существ.</p><ul><li><strong>Атака.</strong> Совершает одну атаку когтем или хвостом.</li><li><strong>Перемещение.</strong> Движется на половину скорости.</li><li><strong>Жевание.</strong> Совершает атаку укусом или пытается проглотить схваченную цель.</li></ul>',
     },
     {

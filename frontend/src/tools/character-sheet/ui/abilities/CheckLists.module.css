@@ -48,8 +48,7 @@
 
 .row:nth-child(even),
 .skillRow:nth-child(even) {
-  background:
-    linear-gradient(
+  background: linear-gradient(
       90deg,
       color-mix(
         in srgb,
@@ -155,29 +154,4 @@
 .row:last-child,
 .skillRow:last-child {
   border-bottom: 0;
-}
-
-.skillRow[data-rank='expertise']::after {
-  position: absolute;
-  right: 0.125rem;
-  bottom: 0;
-  left: calc(var(--selection-marker-size) + 0.25rem);
-
-  height: var(--border-width-default);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(
-        in srgb,
-        var(--palette-purple-300) 58%,
-        var(--color-content-border)
-      ),
-      color-mix(
-        in srgb,
-        var(--color-border-accent) 30%,
-        transparent
-      )
-    );
-  content: '';
-  pointer-events: none;
 }

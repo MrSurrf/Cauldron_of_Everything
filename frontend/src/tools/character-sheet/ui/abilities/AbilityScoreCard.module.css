@@ -1,7 +1,6 @@
 .card {
   --ability-cut: var(--space-2);
-  --ability-border:
-    color-mix(
+  --ability-border: color-mix(
       in srgb,
       var(--color-content-border) 72%,
       var(--color-border-accent)
@@ -17,8 +16,7 @@
   gap: var(--sheet-tight-gap, var(--space-1));
 
   border: var(--border-width-default) solid var(--ability-border);
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at 50% 18%,
       color-mix(in srgb, var(--color-surface-accent) 76%, transparent),
       transparent 58%
@@ -39,44 +37,6 @@
       0 calc(100% - var(--ability-cut)),
       0 var(--ability-cut)
     );
-  box-shadow:
-    inset 0 0 var(--space-4)
-    color-mix(in srgb, var(--palette-black) 64%, transparent);
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: var(--space-1);
-  border: var(--border-width-default) solid
-    color-mix(in srgb, var(--ability-border) 44%, transparent);
-  clip-path:
-    polygon(
-      var(--space-2) 0,
-      calc(100% - var(--space-2)) 0,
-      100% var(--space-2),
-      100% calc(100% - var(--space-2)),
-      calc(100% - var(--space-2)) 100%,
-      var(--space-2) 100%,
-      0 calc(100% - var(--space-2)),
-      0 var(--space-2)
-    );
-  pointer-events: none;
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: 0;
-  width: var(--space-4);
-  height: var(--border-width-default);
-  background: var(--color-border-accent);
-  box-shadow: 0 0 var(--space-2) var(--color-action-primary);
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 
 .card:focus-within {
@@ -160,10 +120,5 @@
     background: Canvas;
     clip-path: none;
     box-shadow: none;
-  }
-
-  .card::before,
-  .card::after {
-    display: none;
   }
 }

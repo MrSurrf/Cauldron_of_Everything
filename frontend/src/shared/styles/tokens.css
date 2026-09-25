@@ -21,6 +21,7 @@
   --palette-slate-800: #252734;
   /* Зарезервирован только для будущего холодного угла крупных панелей. */
   --palette-teal-muted: #35636b;
+  --palette-teal-corner: #43888c;
   --palette-red-500: #d84b63;
   --palette-green-500: #42b883;
   --palette-yellow-500: #d7a83d;
@@ -51,6 +52,46 @@
   --color-status-danger: var(--palette-red-500);
   --color-status-success: var(--palette-green-500);
   --color-status-warning: var(--palette-yellow-500);
+
+  /*
+   * Decorative material for large panel frames only.
+   * Teal remains confined to the lower-right corner and is not a data accent.
+   */
+  --border-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 36px 36px at 100% 100%,
+      var(--palette-teal-corner) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 28% 18% at 100% 100%,
+      var(--palette-teal-muted) 0%,
+      var(--palette-teal-muted) 18%,
+      var(--palette-slate-800) 100%
+    );
+  /* Короткая вторая линия повторяет существующий внутренний контур панели. */
+  --border-gradient-panel-corner-detail:
+    radial-gradient(
+      ellipse 28px 28px at 100% 100%,
+      var(--palette-teal-muted) 0%,
+      var(--palette-teal-muted) 45%,
+      transparent 100%
+    );
+  --surface-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 64px 64px at 100% 100%,
+      color-mix(
+        in srgb,
+        var(--palette-teal-muted) 10%,
+        transparent
+      ) 0%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--palette-black-900),
+      var(--palette-black)
+    );
 
   /* Типографика */
   --font-family-body: 'Gilroy', Arial, sans-serif;
