@@ -1,16 +1,27 @@
 :root {
   /* Базовая палитра */
   --palette-black: #020108;
+  --palette-black-900: #08060d;
   --palette-navy-950: #0e0e1e;
   --palette-white: #f7f2ff;
   --palette-purple-300: #c983ff;
+  --palette-purple-400: #9a62c7;
   --palette-purple-500: #aa3bff;
   --palette-purple-700: #7e14ff;
+  --palette-purple-950: #1b0d29;
+  --palette-purple-muted: #665273;
+  --palette-blue-400: #5e7dff;
+  --palette-cyan-300: #79eaf2;
   --palette-gray-300: #bdb6c9;
+  --palette-gray-500: #8e8497;
+  --palette-gray-600: #756d80;
   --palette-gray-700: #393241;
   --palette-gray-900: #0d0914;
   --palette-slate-700: #2b2e31;
   --palette-slate-800: #252734;
+  /* Зарезервирован только для будущего холодного угла крупных панелей. */
+  --palette-teal-muted: #35636b;
+  --palette-teal-corner: #43888c;
   --palette-red-500: #d84b63;
   --palette-green-500: #42b883;
   --palette-yellow-500: #d7a83d;
@@ -20,21 +31,72 @@
   --color-canvas-background: var(--palette-navy-950);
   --color-content-border: var(--palette-slate-800);
   --color-surface-default: var(--palette-gray-900);
-  --color-surface-muted: #08060d;
-  --color-surface-accent: #1b0d29;
+  --color-surface-muted: var(--palette-black-900);
+  --color-surface-accent: var(--palette-purple-950);
   --color-text-primary: var(--palette-white);
   --color-text-secondary: var(--palette-gray-300);
-  --color-text-disabled: #756d80;
+  --color-text-disabled: var(--palette-gray-600);
   --color-border-default: var(--palette-gray-700);
   --color-border-accent: var(--palette-purple-500);
   --color-action-primary: var(--palette-purple-500);
+  /* Иерархия сущностей. Не заменяет палитру игровой инфографики. */
+  --color-heading-primary: var(--palette-white);
+  --color-brand-bright: var(--palette-purple-300);
+  --color-brand: var(--palette-purple-400);
+  --color-brand-muted: var(--palette-purple-muted);
+  --color-text-subtle: var(--palette-gray-500);
+  --color-icon-muted: var(--palette-purple-400);
+  --color-interactive: var(--palette-purple-300);
+  --color-interactive-hover: var(--palette-white);
+  --color-temporary-hit-points: var(--palette-blue-400);
   --color-status-danger: var(--palette-red-500);
   --color-status-success: var(--palette-green-500);
   --color-status-warning: var(--palette-yellow-500);
 
+  /*
+   * Decorative material for large panel frames only.
+   * Teal remains confined to the lower-right corner and is not a data accent.
+   */
+  --border-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 36px 36px at 100% 100%,
+      var(--palette-teal-corner) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 28% 18% at 100% 100%,
+      var(--palette-teal-muted) 0%,
+      var(--palette-teal-muted) 18%,
+      var(--palette-slate-800) 100%
+    );
+  /* Короткая вторая линия повторяет существующий внутренний контур панели. */
+  --border-gradient-panel-corner-detail:
+    radial-gradient(
+      ellipse 28px 28px at 100% 100%,
+      var(--palette-teal-muted) 0%,
+      var(--palette-teal-muted) 45%,
+      transparent 100%
+    );
+  --surface-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 64px 64px at 100% 100%,
+      color-mix(
+        in srgb,
+        var(--palette-teal-muted) 10%,
+        transparent
+      ) 0%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--palette-black-900),
+      var(--palette-black)
+    );
+
   /* Типографика */
   --font-family-body: 'Gilroy', Arial, sans-serif;
-  --font-family-heading: 'GothicRusWeb', Georgia, serif;
+  --font-family-heading: 'Greengoth Regular', Georgia, serif;
+  --font-size-2xs: 0.625rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
@@ -68,13 +130,45 @@
   --icon-size-sm: 1rem;
   --icon-size-md: 1.25rem;
   --icon-size-lg: 1.5rem;
-  --focus-ring: 0 0 0 3px rgb(170 59 255 / 35%);
+  --focus-ring:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--palette-purple-500) 35%,
+      transparent
+    );
   --disabled-opacity: 0.48;
+  --checkbox-hit-area: var(--icon-size-sm);
+  --selection-marker-size: 0.5rem;
+  --selection-marker-outline:
+    color-mix(
+      in srgb,
+      var(--color-text-secondary) 68%,
+      transparent
+    );
+  --selection-marker-fill: var(--palette-cyan-300);
+  --selection-marker-glow:
+    0 0 0.25rem
+    color-mix(
+      in srgb,
+      var(--palette-cyan-300) 58%,
+      transparent
+    );
 
   /* Эффекты и движение */
-  --shadow-panel: 0 1rem 3rem rgb(0 0 0 / 45%);
-  --shadow-overlay: 0 1.5rem 5rem rgb(0 0 0 / 65%);
-  --glow-accent: 0 0 1.75rem rgb(170 59 255 / 35%);
+  --shadow-panel:
+    0 1rem 3rem
+    color-mix(in srgb, var(--palette-black) 45%, transparent);
+  --shadow-overlay:
+    0 1.5rem 5rem
+    color-mix(in srgb, var(--palette-black) 65%, transparent);
+  --glow-accent:
+    0 0 1.75rem
+    color-mix(
+      in srgb,
+      var(--palette-purple-500) 35%,
+      transparent
+    );
   --motion-duration-fast: 160ms;
   --motion-duration-normal: 240ms;
   --motion-easing-standard: ease;

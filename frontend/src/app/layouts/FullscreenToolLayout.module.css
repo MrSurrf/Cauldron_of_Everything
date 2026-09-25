@@ -1,0 +1,7 @@
+.root {
+  width: 100%;
+  min-width: 320px;
+  height: 100svh;
+  min-height: 0;
+  overflow: hidden;
+}

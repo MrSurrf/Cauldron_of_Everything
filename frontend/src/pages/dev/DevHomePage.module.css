@@ -1,0 +1,50 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  padding: var(--space-5);
+  place-items: center;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-background) 58%, transparent),
+      color-mix(in srgb, var(--color-background) 88%, transparent)
+    ),
+    url('/tools/survey/start/background.png') center / cover no-repeat,
+    var(--color-canvas-background);
+}
+
+.menuPanel {
+  width: min(100%, 34rem);
+  --panel-surface-start: var(--color-surface-default);
+  --panel-surface-end: var(--color-background);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-brand-bright);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.menuPanel h1 {
+  margin: 0;
+  color: var(--color-heading-primary);
+  font-family: var(--font-family-heading);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+}
+
+.intro {
+  margin: var(--space-2) 0 var(--space-5);
+  color: var(--color-text-secondary);
+}
+
+.menu {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.menu :global(button:disabled) {
+  opacity: var(--disabled-opacity);
+}

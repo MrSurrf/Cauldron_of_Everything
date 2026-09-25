@@ -1,0 +1,124 @@
+.root {
+  display: block;
+  width: min(100%, 23rem);
+}
+
+.root :global([data-variant]) {
+  --panel-surface-start:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 54%,
+      var(--color-surface-default)
+    );
+  --panel-surface-end: var(--color-background);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mark {
+  display: grid;
+  width: 2.75rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border:
+    var(--border-width-default) solid
+    var(--color-border-accent);
+  border-radius: 50%;
+  background: var(--color-surface-accent);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  box-shadow: var(--glow-accent);
+}
+
+.heading {
+  display: grid;
+  min-width: 0;
+}
+
+.heading strong,
+.heading small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heading strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+  line-height: var(--line-height-tight);
+}
+
+.heading small {
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.challenge {
+  display: grid;
+  min-width: 2.5rem;
+  padding: var(--space-1) var(--space-2);
+  justify-items: center;
+  border:
+    var(--border-width-default) solid
+    var(--color-content-border);
+  background: var(--color-surface-muted);
+}
+
+.challenge small {
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-2xs);
+}
+
+.challenge strong {
+  color: var(--palette-purple-300);
+}
+
+.taxonomy {
+  margin: var(--space-3) 0 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats {
+  display: grid;
+  margin: var(--space-3) 0 0;
+  padding-block-start: var(--space-3);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  border-block-start:
+    var(--border-width-default) solid
+    var(--color-content-border);
+}
+
+.stats div {
+  min-width: 0;
+}
+
+.stats dt {
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+}
+
+.stats dd {
+  margin: var(--space-1) 0 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

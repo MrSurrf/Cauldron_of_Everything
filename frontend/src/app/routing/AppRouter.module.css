@@ -1,0 +1,35 @@
+.fallback,
+.notFound {
+  display: grid;
+  min-width: 320px;
+  min-height: 100svh;
+  place-items: center;
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-body);
+}
+
+.notFound {
+  align-content: center;
+}
+
+.notFound p,
+.notFound h1 {
+  margin: 0;
+}
+
+.notFound p {
+  color: var(--palette-purple-300);
+}
+
+.notFound h1 {
+  margin-block: var(--space-2) var(--space-5);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-heading);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 400;
+}
+
+.notFound a {
+  color: var(--palette-purple-300);
+}
