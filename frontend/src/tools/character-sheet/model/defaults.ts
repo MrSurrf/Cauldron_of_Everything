@@ -98,11 +98,14 @@ export function createEmptyCharacterSheet(
       tools: [],
       notes: '',
     },
+    vision: [{ type: 'normal' }],
     derivedStats: {
       armorClass: formulaNumericField(10),
       initiative: formulaNumericField(0),
       speed: manualNumericField(30),
       passivePerception: formulaNumericField(10),
+      carriedWeight: manualNumericField(0),
+      carryingCapacity: formulaNumericField(150),
     },
     hitPoints: {
       maximum: manualNumericField(null),

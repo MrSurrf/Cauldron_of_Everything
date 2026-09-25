@@ -3,7 +3,12 @@ import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  optimizeDeps: { include: ['@lexical/react/useLexicalNodeSelection'] },
+  optimizeDeps: {
+    include: [
+      '@atlaskit/pragmatic-drag-and-drop/element/adapter',
+      '@lexical/react/useLexicalNodeSelection',
+    ],
+  },
   plugins: [react()],
   test: {
     browser: {

@@ -14,7 +14,9 @@ import {
   CharacterHitPointsSection,
 } from './CharacterSheetCenterColumn'
 import { CharacterCurrencySection } from './CharacterSheetCurrencySection'
+import { CharacterCarryingSection } from './CharacterCarryingSection'
 import { CharacterEquipmentSection } from './CharacterEquipmentSection'
+import { CharacterVisionSection } from './CharacterVisionSection'
 import { CharacterSheetLeftColumn } from './CharacterSheetLeftColumn'
 import { CharacterFeaturesSection } from './CharacterFeaturesSection'
 import { CharacterPersonalitySection } from './CharacterPersonalitySections'
@@ -200,6 +202,10 @@ export function CharacterSheetContent({
                   <div className={styles.proficienciesSlot}>
                     <ProficienciesEditor />
                   </div>
+
+                  <div className={styles.visionSlot}>
+                    <CharacterVisionSection sheet={sheet} />
+                  </div>
                 </div>
 
                 <div
@@ -232,6 +238,10 @@ export function CharacterSheetContent({
                     data-character-sheet-slot="currency"
                   >
                     <CharacterCurrencySection sheet={sheet} />
+                  </div>
+
+                  <div className={styles.carryingSlot}>
+                    <CharacterCarryingSection sheet={sheet} />
                   </div>
                 </div>
 

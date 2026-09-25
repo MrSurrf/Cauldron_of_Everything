@@ -1,4 +1,8 @@
-import { ScrollArea } from '../../../../shared/ui'
+import {
+  ScrollArea,
+  SelectionMarker,
+  type SelectionMarkerState,
+} from '../../../../shared/ui'
 import type { ProficiencyRank } from '../../model'
 import {
   FormulaField,
@@ -37,6 +41,15 @@ const rankLabels: Readonly<
   half: 'Половинное владение',
   proficient: 'Владение',
   expertise: 'Экспертиза',
+}
+
+const rankMarkers: Readonly<
+  Record<ProficiencyRank, SelectionMarkerState>
+> = {
+  none: 'unchecked',
+  half: 'mixed',
+  proficient: 'checked',
+  expertise: 'diamond',
 }
 
 function getNextRank(
@@ -86,11 +99,7 @@ export function SkillsList({
               })
             }}
           >
-            <span
-              aria-hidden={true}
-              className={styles.rankMarker}
-              data-rank={rank}
-            />
+            <SelectionMarker state={rankMarkers[rank]} />
 
             <FormulaField
               accessibleLabel={`${item.label} (${item.ability})`}

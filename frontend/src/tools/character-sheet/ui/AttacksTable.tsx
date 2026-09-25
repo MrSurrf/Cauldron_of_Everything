@@ -3,12 +3,12 @@ import {
   ScrollArea,
   TextInput,
   Tooltip,
+  TrashIcon,
 } from '../../../shared/ui'
 import type { ReactNode } from 'react'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
   PlusIcon,
-  RemoveIcon,
 } from './icons'
 import styles from './tables.module.css'
 
@@ -199,7 +199,7 @@ export function AttacksTable({
                       <Tooltip content="Удалить атаку">
                         <IconButton
                           aria-label={`Удалить атаку: ${attack.name || 'без названия'}`}
-                          icon={<RemoveIcon />}
+                          icon={<TrashIcon />}
                           size="sm"
                           variant="secondary"
                           onClick={() => onAttackRemove(attack.id)}

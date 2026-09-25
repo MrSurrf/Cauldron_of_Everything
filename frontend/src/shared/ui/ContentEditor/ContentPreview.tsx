@@ -5,8 +5,16 @@ import {
   type ReactNode,
 } from 'react'
 
+import { SelectionMarker } from '../SelectionMarker'
 import { Tooltip } from '../Tooltip'
+import { DiceIcon } from '../icons/DiceIcon'
+import { getDiceTypeFromExpression } from '../icons/dice'
+import { ContentPreviewWidgetDrag } from './ContentWidgetDragDrop'
 import { ResourceWidget } from './ResourceWidget'
+import { SectionWidget } from './SectionWidget'
+import { sectionFromBlock, sectionToSource } from './sectionContent'
+import { ItemWidget } from './ItemWidget'
+import { itemFromBlock, itemToSource } from './itemContent'
 import { resourceFromBlock, resourceToSource, type ResourceBlock } from './resourceContent'
 import type { ContentResourceValue } from './ResourceWidget'
 import {
@@ -33,7 +41,10 @@ type ContentPreviewProps = Pick<ContentEditorProps,
   | 'placeholder'
   | 'value'
   | 'evaluateResourceMaximum'
-> & { editorId?: string }
+> & {
+  dndEditorId?: string
+  editorId?: string
+}
 
 type ActiveRoll = {
   id: string
@@ -42,6 +53,7 @@ type ActiveRoll = {
 
 export function ContentPreview({
   disabled = false,
+  dndEditorId,
   editorId,
   evaluateResourceMaximum,
   readOnly = false,
@@ -56,6 +68,14 @@ export function ContentPreview({
   )
   const [activeRoll, setActiveRoll] =
     useState<ActiveRoll | null>(null)
+
+  function replaceBlock(block: ContentBlock, source: string) {
+    return value.slice(0, block.sourceRange.start) + source + value.slice(block.sourceRange.end)
+  }
+
+  function removeBlock(block: ContentBlock) {
+    if (!disabled && !readOnly) onValueChange(replaceBlock(block, ''))
+  }
 
   function updateResource(block: ResourceBlock, next: ContentResourceValue) {
     if (readOnly || disabled) return
@@ -133,7 +153,9 @@ export function ContentPreview({
                 })
               }}
             >
-              <span aria-hidden="true">◇</span>
+              <DiceIcon
+                type={getDiceTypeFromExpression(expression) ?? 'd20'}
+              />
               {expression}
             </button>
           </Tooltip>
@@ -221,7 +243,7 @@ export function ContentPreview({
   function renderBlocks(
     sourceBlocks: readonly ContentBlock[],
   ): ReactNode {
-    return sourceBlocks.map((block) => {
+    return sourceBlocks.map((block, blockIndex) => {
       const blockKey = `${block.sourceRange.start}-${block.kind}`
 
       if (block.kind === 'paragraph') {
@@ -261,17 +283,14 @@ export function ContentPreview({
             <ul key={blockKey} className={styles.checkList}>
               {block.items.map((item, index) => (
                 <li key={`${blockKey}-${index}`}>
-                  <input
-                    aria-label={
-                      item.checked
-                        ? 'Выполнено'
-                        : 'Не выполнено'
-                    }
-                    checked={item.checked}
-                    readOnly={true}
-                    tabIndex={-1}
-                    type="checkbox"
-                  />
+                  <span className={styles.checkMarker}>
+                    <SelectionMarker
+                      state={item.checked ? 'checked' : 'unchecked'}
+                    />
+                    <span className={editorStyles.srOnly}>
+                      {item.checked ? 'Выполнено' : 'Не выполнено'}
+                    </span>
+                  </span>
                   <span>
                     {renderInline(
                       item.text,
@@ -303,28 +322,71 @@ export function ContentPreview({
 
       if (block.kind === 'collapsible') {
         return (
-          <details key={blockKey} className={styles.collapsibleBlock}>
-            <summary>{block.title}</summary>
-            <div className={styles.directiveBody}>
-              {renderBlocks(block.body)}
-            </div>
-          </details>
+          <ContentPreviewWidgetDrag
+            key={blockKey}
+            disabled={disabled || readOnly}
+            descriptor={{
+              editorId: dndEditorId,
+              kind: block.kind,
+              label: 'вкладку',
+              source: block.rawSource,
+              sourceIndex: blockIndex,
+            }}
+          >
+            <SectionWidget editorId={editorId} disabled={disabled} readOnly={readOnly}
+              evaluateResourceMaximum={evaluateResourceMaximum} value={sectionFromBlock(block)}
+              onChange={next => { if (!disabled && !readOnly) onValueChange(replaceBlock(block, sectionToSource(next, block.attributes))) }}
+              onRemove={() => removeBlock(block)}
+              onStructuredResourceChange={onStructuredResourceChange ? (source, current, body, resource) => {
+                const next = { ...sectionFromBlock(block), body }
+                onStructuredResourceChange(source, current, replaceBlock(block, sectionToSource(next, block.attributes)), resource)
+              } : undefined} />
+          </ContentPreviewWidgetDrag>
         )
       }
 
-      return (
-        <ResourceWidget
+      if (block.kind === 'item') return (
+        <ContentPreviewWidgetDrag
           key={blockKey}
-          editorId={editorId}
-          disabled={disabled}
-          readOnly={readOnly}
-          evaluateMaximum={evaluateResourceMaximum}
-          value={resourceFromBlock(block)}
-          onChange={(next) => updateResource(block, next)}
-          onRemove={() => {
-            if (!disabled && !readOnly) onValueChange(value.slice(0, block.sourceRange.start) + value.slice(block.sourceRange.end))
+          disabled={disabled || readOnly}
+          descriptor={{
+            editorId: dndEditorId,
+            kind: block.kind,
+            label: 'предмет',
+            source: block.rawSource,
+            sourceIndex: blockIndex,
           }}
-        />
+        >
+          <ItemWidget editorId={editorId} disabled={disabled} readOnly={readOnly}
+            value={itemFromBlock(block)} onRemove={() => removeBlock(block)}
+            onChange={next => { if (!disabled && !readOnly) onValueChange(replaceBlock(block, itemToSource(next, block.attributes))) }} />
+        </ContentPreviewWidgetDrag>
+      )
+
+      return (
+        <ContentPreviewWidgetDrag
+          key={blockKey}
+          disabled={disabled || readOnly}
+          descriptor={{
+            editorId: dndEditorId,
+            kind: block.kind,
+            label: 'ресурс',
+            source: block.rawSource,
+            sourceIndex: blockIndex,
+          }}
+        >
+          <ResourceWidget
+            editorId={editorId}
+            disabled={disabled}
+            readOnly={readOnly}
+            evaluateMaximum={evaluateResourceMaximum}
+            value={resourceFromBlock(block)}
+            onChange={(next) => updateResource(block, next)}
+            onRemove={() => {
+              if (!disabled && !readOnly) onValueChange(value.slice(0, block.sourceRange.start) + value.slice(block.sourceRange.end))
+            }}
+          />
+        </ContentPreviewWidgetDrag>
       )
     })
   }

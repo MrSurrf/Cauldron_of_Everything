@@ -1,0 +1,82 @@
+.widget {
+  min-width: 0;
+  margin-block: 0.2em;
+  color: var(--color-text-primary);
+}
+
+.header {
+  display: flex;
+  min-width: 0;
+  min-height: 1.75rem;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-1);
+  border-block: var(--border-width-default) solid color-mix(in srgb, var(--section-color) 40%, var(--color-content-border));
+  background: color-mix(in srgb, var(--section-color) 12%, var(--color-surface-muted));
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+}
+
+.toggle {
+  display: grid;
+  flex: 0 0 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--section-color);
+  cursor: pointer;
+}
+
+.chevron {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.toggle[aria-expanded='true'] .chevron { transform: rotate(135deg); }
+.toggle:focus-visible { outline: 1px solid var(--section-color); }
+
+.title {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  padding: 2px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.title::placeholder { color: var(--color-text-secondary); }
+.title:focus:not(:read-only) { border-bottom-color: var(--section-color); }
+
+.tag {
+  max-width: 25%;
+  overflow: hidden;
+  color: var(--section-color);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.actions { display: flex; flex: 0 0 auto; opacity: 0; }
+.header:hover .actions, .header:focus-within .actions { opacity: 1; }
+.action[data-size='sm'] { --icon-button-size: 1.25rem; --icon-button-glyph-size: 0.85rem; }
+
+.body { min-width: 0; padding: var(--space-1) 0 var(--space-1) var(--space-1); border-left: 1px solid color-mix(in srgb, var(--section-color) 40%, transparent); }
+.settings { width: min(16rem, calc(100vw - var(--space-4))); }
+.settingsContent { display: grid; gap: var(--space-2); }
+.colors { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-1); }
+.swatch { width: 1.1rem; height: 1.1rem; padding: 0; border: 1px solid transparent; border-radius: 50%; background: var(--swatch-color); cursor: pointer; }
+.swatch[aria-pressed='true'], .swatch:focus-visible { outline: 1px solid var(--color-text-primary); outline-offset: 2px; }
+.settingsActions { display: flex; align-items: center; justify-content: space-between; }
+@media (hover: none) { .actions { opacity: 1; } }
+@media (forced-colors: active) { .header { border-color: CanvasText; } .swatch[aria-pressed='true'] { outline-color: Highlight; } }

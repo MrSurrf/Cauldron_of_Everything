@@ -1,3 +1,5 @@
+import type { VisionSense } from '../../../shared/model'
+
 export const ABILITY_KEYS = [
   'strength',
   'dexterity',
@@ -57,6 +59,8 @@ export type DerivedStats = {
   initiative: NumericFieldState
   speed: NumericFieldState
   passivePerception: NumericFieldState
+  carriedWeight: NumericFieldState
+  carryingCapacity: NumericFieldState
 }
 
 export type HitPointsState = {
@@ -233,6 +237,7 @@ export type CharacterSheetDocument = {
   savingThrows: Record<AbilityKey, ProficiencyState>
   skills: Record<string, SkillState>
   proficiencies: CharacterProficiencies
+  vision: VisionSense[]
   derivedStats: DerivedStats
   hitPoints: HitPointsState
   hitDice: HitDicePool[]

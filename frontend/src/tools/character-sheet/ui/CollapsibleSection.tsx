@@ -9,11 +9,11 @@ import {
   IconButton,
   TextInput,
   Tooltip,
+  TrashIcon,
 } from '../../../shared/ui'
 import {
   ArrowIcon,
   ChevronIcon,
-  RemoveIcon,
 } from './icons'
 import styles from './sections.module.css'
 import sectionStyles from './SheetSection/SheetSection.module.css'
@@ -182,7 +182,7 @@ export function CollapsibleSection({
             <Tooltip content={`Удалить секцию «${title}»`}>
               <IconButton
                 aria-label={`Удалить секцию «${title}»`}
-                icon={<RemoveIcon />}
+                icon={<TrashIcon />}
                 size="sm"
                 variant="secondary"
                 onClick={onRemove}

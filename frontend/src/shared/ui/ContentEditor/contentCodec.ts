@@ -65,6 +65,9 @@ export type ContentBlock =
   | (ContentDirectiveBlock & {
       kind: 'collapsible'
     })
+  | (ContentDirectiveBlock & {
+      kind: 'item'
+    })
 
 type SourceLine = {
   end: number
@@ -74,7 +77,7 @@ type SourceLine = {
 }
 
 const directivePattern =
-  /^:::(resource|collapsible)\[([^\]]*)\](?:\{([^}]*)\})?\s*$/i
+  /^:::(resource|collapsible|item)\[([^\]]*)\](?:\{([^}]*)\})?\s*$/i
 const headingPattern = /^(#{1,6})\s+(.+)$/
 const orderedItemPattern = /^\s*\d+[.)]\s+(.+)$/
 const checkItemPattern =
@@ -175,11 +178,16 @@ export function parseContentSource(
     const directive = line.text.match(directivePattern)
 
     if (directive) {
-      const closingIndex = lines.findIndex(
-        (candidate, candidateIndex) =>
-          candidateIndex > index &&
-          candidate.text.trim() === ':::',
-      )
+      let depth = 1
+      let closingIndex = -1
+      for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+        if (directivePattern.test(lines[cursor].text)) depth += 1
+        else if (lines[cursor].text.trim() === ':::') depth -= 1
+        if (depth === 0) {
+          closingIndex = cursor
+          break
+        }
+      }
 
       if (closingIndex !== -1) {
         const closingLine = lines[closingIndex]
@@ -192,6 +200,7 @@ export function parseContentSource(
         const kind = directive[1].toLowerCase() as
           | 'resource'
           | 'collapsible'
+          | 'item'
         const sourceRange = {
           end: closingLine.end,
           start: line.start,
@@ -213,7 +222,7 @@ export function parseContentSource(
             directive[2].trim() ||
             (kind === 'resource'
               ? 'Ресурс'
-              : 'Раскрываемый раздел'),
+              : kind === 'item' ? 'Предмет' : 'Вкладка'),
         }
 
         blocks.push({ ...common, kind })

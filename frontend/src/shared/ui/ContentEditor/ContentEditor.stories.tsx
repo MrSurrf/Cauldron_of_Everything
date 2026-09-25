@@ -14,6 +14,8 @@ import {
 
 import { ContentEditor } from './ContentEditor'
 import { emptyResource, resourceToSource } from './resourceContent'
+import { emptySection, sectionToSource } from './sectionContent'
+import { emptyItem, itemToSource } from './itemContent'
 
 function InteractiveEditor(
   props: Omit<
@@ -57,6 +59,19 @@ const meta = {
 export default meta
 
 type Story = StoryObj<typeof meta>
+
+export const NestedSections: Story = {
+  render: args => <InteractiveEditor {...args} />,
+  args: {
+    accessibleLabel: 'Разделы с виджетами',
+    value: sectionToSource({ ...emptySection, title: 'Походное снаряжение', tag: 'в дороге', color: 'green', body: [
+      'Обычный **форматированный** текст.',
+      resourceToSource({ ...emptyResource, title: 'Припасы', current: 3, maximum: '5', recovery: 'long' }),
+      itemToSource({ ...emptyItem, title: 'Верёвка', description: 'Пеньковая, 15 метров' }),
+      sectionToSource({ ...emptySection, title: 'Заметки путешественника', body: 'Вложенный раздел с броском [[roll:1d20]].' }),
+    ].join('\n\n') }),
+  },
+}
 
 export const StructuredNotes: Story = {
   render: (args) => (

@@ -11,6 +11,8 @@ export const FORMULA_FIELD_KEYS = {
   initiative: 'INITIATIVE',
   speed: 'SPEED',
   passivePerception: 'PASSIVE_PERCEPTION',
+  carriedWeight: 'CARRIED_WEIGHT',
+  carryingCapacity: 'CARRYING_CAPACITY',
   maximumHitPoints: 'MAX_HIT_POINTS',
   currentHitPoints: 'CURRENT_HIT_POINTS',
   temporaryHitPoints: 'TEMPORARY_HIT_POINTS',

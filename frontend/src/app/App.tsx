@@ -1,13 +1,7 @@
-import { SurveyApp } from '../tools/survey'
+import { AppRouter } from './routing/AppRouter'
 
-/**
- * Корневая оболочка приложения.
- *
- * Пока новый workspace находится в разработке, оболочка запускает существующий
- * опросник без изменения его пользовательского сценария.
- */
 function App() {
-  return <SurveyApp />
+  return <AppRouter />
 }
 
 export default App

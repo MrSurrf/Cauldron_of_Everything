@@ -5,7 +5,7 @@ import {
   type ChangeEvent,
 } from 'react'
 
-import { RemoveIcon } from '../icons'
+import { TrashIcon } from '../../../../shared/ui'
 import styles from './CharacterPortrait.module.css'
 
 export type CharacterPortraitProps = {
@@ -154,12 +154,10 @@ export function CharacterPortrait({
             type="button"
             onClick={handleRemove}
           >
-            <RemoveIcon />
+            <TrashIcon />
           </button>
         )}
 
-      <span className={styles.innerFrame} aria-hidden="true" />
-      <span className={styles.cornerOrnament} aria-hidden="true" />
     </div>
   )
 }

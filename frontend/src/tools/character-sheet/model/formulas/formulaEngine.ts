@@ -211,6 +211,21 @@ export function buildCharacterSheetFormulaFields(
       state: document.derivedStats.passivePerception,
       defaultFormula: ruleset.defaultFormulas.PASSIVE_PERCEPTION,
     },
+    [FORMULA_FIELD_KEYS.carriedWeight]: {
+      state: document.derivedStats.carriedWeight ?? {
+        mode: 'manual',
+        manualValue: 0,
+        formulaOverride: null,
+      },
+    },
+    [FORMULA_FIELD_KEYS.carryingCapacity]: {
+      state: document.derivedStats.carryingCapacity ?? {
+        mode: 'formula',
+        manualValue: 0,
+        formulaOverride: null,
+      },
+      defaultFormula: ruleset.defaultFormulas.CARRYING_CAPACITY,
+    },
     [FORMULA_FIELD_KEYS.maximumHitPoints]: { state: document.hitPoints.maximum },
     [FORMULA_FIELD_KEYS.currentHitPoints]: { state: document.hitPoints.current },
     [FORMULA_FIELD_KEYS.temporaryHitPoints]: { state: document.hitPoints.temporary },

@@ -228,6 +228,45 @@ describe('ContentEditor browser behavior', () => {
     expect(frame.getBoundingClientRect().height).toBe(frameHeight)
   })
 
+  it('рисует чек-листы тем же круглым маркером в просмотре и при вводе', async () => {
+    const preview = await mountEditor(
+      '- [ ] Не готово\n- [x] Готово',
+      { renderPreview: true, autoFocus: false },
+    )
+    const markers = Array.from(
+      preview.querySelectorAll<HTMLElement>('[data-selection-marker]'),
+    )
+
+    expect(preview.querySelector('input[type="checkbox"]')).toBeNull()
+    expect(markers).toHaveLength(2)
+    expect(markers.map(marker => marker.dataset.state)).toEqual([
+      'unchecked',
+      'checked',
+    ])
+    expect(markers.map(marker => marker.parentElement?.textContent?.trim()))
+      .toEqual(['Не выполнено', 'Выполнено'])
+    markers.forEach((marker) => {
+      expect(getComputedStyle(marker, '::before').borderRadius).not.toBe('0px')
+    })
+
+    await act(async () => {
+      preview.click()
+      await nextFrame()
+    })
+    const editor = mounted!.container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!
+    const editableItems = Array.from(
+      editor.querySelectorAll<HTMLElement>('li'),
+    )
+
+    expect(editableItems).toHaveLength(2)
+    expect(editor.querySelector('input[type="checkbox"]')).toBeNull()
+    editableItems.forEach((item) => {
+      expect(getComputedStyle(item, '::before').borderRadius).not.toBe('0px')
+    })
+  })
+
   it('сохраняет связанные ресурсы и раскрываемые карточки в общем режиме просмотра', async () => {
     const onStructuredResourceChange = vi.fn()
     const preview = await mountEditor([
@@ -249,9 +288,9 @@ describe('ContentEditor browser behavior', () => {
     expect(preview.querySelector('[data-resource-widget]')!.textContent).toContain('2/2')
     expect(onStructuredResourceChange).toHaveBeenCalledWith('resource:test', 2, expect.stringContaining('current="2"'))
     await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Закрыть настройки ресурса"]')!.click())
-    const details = preview.querySelector('details')!
-    await act(async () => details.querySelector('summary')!.click())
-    expect(details.open).toBe(true)
+    const section = preview.querySelector('[data-section-widget]')!
+    await act(async () => section.querySelector<HTMLButtonElement>('[aria-expanded]')!.click())
+    expect(section.getAttribute('data-expanded')).toBe('true')
     expect(preview.getAttribute('role')).toBe('region')
   })
 
@@ -340,7 +379,7 @@ describe('ContentEditor browser behavior', () => {
     expect(insertToolbar).not.toBeNull()
     const insertButtons = Array.from(insertToolbar!.querySelectorAll('button'))
     expect(insertButtons.map(button => button.textContent?.trim())).toEqual(['Ресурс', 'Вкладка', 'Предмет'])
-    expect(insertButtons[2]).toBeDisabled()
+    expect(insertButtons[2]).not.toBeDisabled()
     insertButtons.forEach(button => expect(getComputedStyle(button).fontSize).toBe('10px'))
     expect(insertToolbar!.getBoundingClientRect().left).toBeGreaterThanOrEqual(paragraph!.getBoundingClientRect().left)
     expect(insertToolbar!.getBoundingClientRect().right).toBeLessThanOrEqual(editor.getBoundingClientRect().right)
@@ -393,7 +432,7 @@ describe('ContentEditor browser behavior', () => {
       toolbar.querySelectorAll<HTMLButtonElement>('button')[1].click()
       await nextFrame()
     })
-    expect(editor.textContent).toContain('Новая вкладка')
-    expect(mounted!.container.querySelector('[data-saved-content]')!.textContent).toContain(':::collapsible[Новая вкладка]')
+    expect(editor.querySelector('[data-section-widget]')).not.toBeNull()
+    expect(mounted!.container.querySelector('[data-saved-content]')!.textContent).toContain(':::collapsible[]')
   })
 })

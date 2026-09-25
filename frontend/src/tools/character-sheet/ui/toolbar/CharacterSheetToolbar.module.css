@@ -25,29 +25,6 @@
     );
 }
 
-.toolbar::after {
-  content: '';
-
-  position: absolute;
-  right: var(--space-4);
-  bottom: -1px;
-  left: var(--space-4);
-
-  height: 1px;
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      color-mix(
-        in srgb,
-        var(--color-border-accent) 58%,
-        transparent
-      ),
-      transparent
-    );
-  pointer-events: none;
-}
-
 .titleGroup {
   display: grid;
   min-width: 0;

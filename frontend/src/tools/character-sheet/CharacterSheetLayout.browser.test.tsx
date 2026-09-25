@@ -777,4 +777,51 @@ describe('Character Sheet fixed desktop composition', () => {
     )
     expect(roundedWidth(pools[2])).toBe(roundedWidth(pools[0]))
   })
+
+  it('использует единый маркер навыков для бинарных чекбоксов и меняет его одним кликом', async () => {
+    const container = await mountCharacterSheet()
+    const savingThrow = container.querySelector<HTMLInputElement>(
+      '[aria-label="Владение спасброском: Сила"]',
+    )!
+    const savingThrowMarker = savingThrow.nextElementSibling as HTMLElement
+    const skillMarker = container.querySelector<HTMLElement>(
+      '[data-skill-row="athletics"] [data-selection-marker]',
+    )!
+
+    expect(savingThrow).toBeChecked()
+    expect(savingThrowMarker.dataset.state).toBe('checked')
+    expect(skillMarker.dataset.state).toBe('checked')
+
+    const savingThrowStyle = getComputedStyle(
+      savingThrowMarker,
+      '::before',
+    )
+    const skillStyle = getComputedStyle(skillMarker, '::before')
+
+    ;[
+      'width',
+      'height',
+      'border-radius',
+      'background-color',
+      'box-shadow',
+      'clip-path',
+    ].forEach((property) => {
+      expect(
+        savingThrowStyle.getPropertyValue(property),
+        property,
+      ).toBe(skillStyle.getPropertyValue(property))
+    })
+    expect(savingThrowStyle.borderRadius).not.toBe('0px')
+
+    await act(async () => {
+      await userEvent.click(savingThrow.closest('label')!)
+      await nextFrame()
+    })
+
+    expect(savingThrow).not.toBeChecked()
+    expect(savingThrowMarker.dataset.state).toBe('unchecked')
+    expect(
+      savingThrow.closest('[data-saving-throw-row]')?.getAttribute('data-rank'),
+    ).toBe('none')
+  })
 })

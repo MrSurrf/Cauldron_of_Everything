@@ -26,7 +26,10 @@ async function mount(source = resourceToSource(emptyResource), editing = false) 
   await act(async () => { await frame() })
 }
 async function click(element: Element) {
-  await act(async () => { await userEvent.click(element as HTMLElement); await frame() })
+  const target = element instanceof HTMLInputElement && element.type === 'checkbox'
+    ? element.closest('label') ?? element
+    : element
+  await act(async () => { await userEvent.click(target as HTMLElement); await frame() })
 }
 function field(label: string) {
   const element = Array.from(document.querySelectorAll('label')).find(e => e.textContent === label)!
@@ -91,7 +94,15 @@ describe('Resource widget', () => {
     const dialog = document.querySelector<HTMLDialogElement>('dialog')!
     expect(dialog.matches(':modal')).toBe(true)
     expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.dataset.placement).toBe('center')
+    dialog.getAnimations().forEach(animation => animation.finish())
+    const dialogRect = dialog.getBoundingClientRect()
+    expect(Math.abs(dialogRect.left + dialogRect.width / 2 - innerWidth / 2)).toBeLessThanOrEqual(1)
+    expect(Math.abs(dialogRect.top + dialogRect.height / 2 - innerHeight / 2)).toBeLessThanOrEqual(1)
     expect(getComputedStyle(dialog, '::backdrop').backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+    dialog.style.height = '12rem'
+    await act(async () => { await frame() })
+    expect(dialog.querySelector('[aria-label="Прокрутка окна"]')).not.toBeNull()
     outside.focus()
     expect(dialog.contains(document.activeElement)).toBe(true)
     await act(async () => {

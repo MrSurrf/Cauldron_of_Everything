@@ -18,6 +18,7 @@ import type {
   RulesetId,
   SheetAppearance,
 } from './characterSheet.types'
+import type { VisionSense } from '../../../shared/model'
 
 export type PersonalitySectionKey = keyof PersonalitySections
 
@@ -30,7 +31,7 @@ export type CharacterSheetAction =
   | { type: 'savingThrow/setRank'; ability: AbilityKey; rank: ProficiencyRank }
   | { type: 'skill/setRank'; skillId: string; rank: ProficiencyRank }
   | { type: 'proficiencies/patch'; patch: Partial<CharacterProficiencies> }
-  | { type: 'proficiencies/patch'; patch: Partial<CharacterProficiencies> }
+  | { type: 'vision/set'; value: VisionSense[] }
   | { type: 'deathSaves/set'; value: DeathSavesState }
   | { type: 'hitDice/add'; value: HitDicePool }
   | { type: 'hitDice/update'; id: string; patch: Partial<HitDicePool> }
@@ -103,6 +104,10 @@ export const characterSheetActions = {
   ): CharacterSheetAction => ({
     type: 'proficiencies/patch',
     patch,
+  }),
+  setVision: (value: VisionSense[]): CharacterSheetAction => ({
+    type: 'vision/set',
+    value,
   }),
   setAttacksContentText: (value: string): CharacterSheetAction => ({
     type: 'attacks/setContentText',

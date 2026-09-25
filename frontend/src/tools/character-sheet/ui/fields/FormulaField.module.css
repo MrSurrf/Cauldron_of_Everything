@@ -239,8 +239,7 @@
 }
 
 .field[data-presentation='shield'] {
-  --shield-border:
-    color-mix(
+  --shield-border: color-mix(
       in srgb,
       var(--color-content-border) 64%,
       var(--color-border-accent)

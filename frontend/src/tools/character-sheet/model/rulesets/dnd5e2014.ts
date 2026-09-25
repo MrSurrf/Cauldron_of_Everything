@@ -58,6 +58,7 @@ export const DND5E_2014_RULESET: CharacterRulesetDefinition = {
     INITIATIVE: 'DEX_MOD',
     ARMOR_CLASS: '10 + DEX_MOD',
     PASSIVE_PERCEPTION: '10 + SKILL_PERCEPTION',
+    CARRYING_CAPACITY: 'STR * 15',
   },
   skills: DND_5E_SKILLS,
   featureSections: [

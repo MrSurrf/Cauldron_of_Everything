@@ -1,4 +1,7 @@
-import { ScrollArea } from '../../../../shared/ui'
+import {
+  Checkbox,
+  ScrollArea,
+} from '../../../../shared/ui'
 import {
   FormulaField,
   type ComputedValueResult,
@@ -53,7 +56,7 @@ export function SavingThrowsList({
             if (
               target instanceof Element &&
               target.closest(
-                "button, input, textarea, select, a, [contenteditable='true'], [role='button']",
+                "button, input, textarea, select, a, [data-checkbox-root], [contenteditable='true'], [role='button']",
               )
             ) {
               return
@@ -64,32 +67,21 @@ export function SavingThrowsList({
             })
           }}
         >
-          <button
-            type="button"
-            className={styles.rankButton}
+          <Checkbox
             aria-label={`Владение спасброском: ${item.label}`}
-            aria-pressed={item.proficient}
+            checked={item.proficient}
+            rootClassName={styles.rankCheckbox}
             title={
               item.proficient
                 ? 'Убрать владение'
                 : 'Добавить владение'
             }
-            onClick={() => {
+            onCheckedChange={(proficient) => {
               onItemChange(item.id, {
-                proficient: !item.proficient,
+                proficient,
               })
             }}
-          >
-            <span
-              aria-hidden={true}
-              className={styles.rankMarker}
-              data-rank={
-                item.proficient
-                  ? 'proficient'
-                  : 'none'
-              }
-            />
-          </button>
+          />
 
           <FormulaField
             defaultFormula={item.defaultFormula}

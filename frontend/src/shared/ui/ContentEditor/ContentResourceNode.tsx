@@ -16,7 +16,18 @@ export function ContentResourceNode({ nodeKey, source }: { nodeKey: NodeKey; sou
   const block = parseContentSource(source)[0]
   if (!block || block.kind !== 'resource') return null
   return (
-    <ContentWidgetSelection nodeKey={nodeKey} label="ресурс" removeButton={false}>
+    <ContentWidgetSelection
+      nodeKey={nodeKey}
+      label="ресурс"
+      removeButton={false}
+      dragDescriptor={{
+        editorId: context.dndEditorId,
+        kind: 'resource',
+        label: 'ресурс',
+        nodeKey,
+        source,
+      }}
+    >
       <ResourceWidget
         value={resourceFromBlock(block)}
         editorId={context.editorId}

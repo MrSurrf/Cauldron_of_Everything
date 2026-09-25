@@ -1,5 +1,7 @@
 .panel {
   --panel-border: var(--color-content-border);
+  --panel-border-material: var(--panel-border);
+  --panel-inner-border-material: none;
   --panel-inner-border:
     color-mix(
       in srgb,
@@ -10,6 +12,12 @@
     var(--color-surface-default);
   --panel-surface-end:
     var(--color-background);
+  --panel-surface-material:
+    linear-gradient(
+      180deg,
+      var(--panel-surface-start),
+      var(--panel-surface-end)
+    );
   --panel-corner-cut: var(--radius-lg);
   --panel-inner-frame-inset: 0.375rem;
   --panel-content-padding: var(--space-5);
@@ -77,7 +85,7 @@
   z-index: 0;
   inset: 0;
 
-  background: var(--panel-border);
+  background: var(--panel-border-material);
   clip-path: var(--panel-frame-clip);
   filter:
     drop-shadow(
@@ -107,12 +115,7 @@
   position: absolute;
   inset: var(--border-width-default);
 
-  background:
-    linear-gradient(
-      180deg,
-      var(--panel-surface-start),
-      var(--panel-surface-end)
-    );
+  background: var(--panel-surface-material);
   clip-path: var(--panel-frame-clip);
 }
 
@@ -130,6 +133,7 @@
   inset: var(--panel-inner-frame-inset);
 
   background: var(--panel-inner-border);
+  background-image: var(--panel-inner-border-material);
   clip-path: var(--panel-frame-clip);
 }
 
@@ -149,12 +153,7 @@
   position: absolute;
   inset: var(--border-width-default);
 
-  background:
-    linear-gradient(
-      180deg,
-      var(--panel-surface-start),
-      var(--panel-surface-end)
-    );
+  background: var(--panel-surface-material);
   clip-path: var(--panel-frame-clip);
 }
 

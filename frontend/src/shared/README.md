@@ -10,3 +10,75 @@
 
 Инструменты могут зависеть от `shared`, но `shared` не должен зависеть от
 инструментов, workspace или предметных сущностей.
+
+## Цветовая дизайн-система
+
+Единственный источник истины — `styles/tokens.css`.
+
+Правила:
+
+- реальные HEX разрешены только в primitive palette;
+- semantic tokens обязаны ссылаться на primitive tokens либо вычисляться из них
+  через `color-mix()`;
+- локальные HEX в UI-компонентах запрещены;
+- новый оттенок нельзя добавлять, если роль уже покрыта существующим primitive;
+- исключение — документированная игровая палитра
+  `entities/creature/ui/DamageAffinityBadge/` и
+  `damageTypePresentation.ts`;
+- `tools/survey/` — legacy-зона и пока не подчиняется этому правилу.
+
+Правило проверяется командой `npm run lint:colors` и входит в общий
+`npm run lint`. Разрешённые пути перечислены явно в
+`scripts/check-color-tokens.mjs`.
+
+### Primitive palette
+
+- нейтральные поверхности: `black`, `black-900`, `navy-950`, `gray-900`,
+  `slate-700`, `slate-800`;
+- текст и рамки: `white`, `gray-300`, `gray-500`, `gray-600`, `gray-700`;
+- бренд: `purple-300`, `purple-400`, `purple-500`, `purple-700`, `purple-950`,
+  `purple-muted`;
+- состояния и механики: `cyan-300`, `blue-400`, `red-500`, `green-500`,
+  `yellow-500`;
+- `teal-muted` зарезервирован только для будущего декоративного перехода
+  рамки в правом нижнем углу крупных панелей. Он не используется для текста,
+  кнопок, иконок, статов, hover или игровых состояний.
+
+### Semantic aliases
+
+`--border-gradient-panel-decorative` — общий материал правого нижнего участка
+рамок крупных панелей. Он сохраняет структурный цвет по основной части рамки и
+добавляет `teal-muted` только в конце нижней и правой граней. Компоненты не
+должны собирать этот градиент локально или применять его к контенту и
+интерактивным состояниям.
+
+`--surface-gradient-panel-decorative` добавляет тому же углу холодную глубину
+поверхности не более 64 px с долей teal 10%. Рамочный переход занимает последние
+28% нижней и 18% правой грани и использует `teal-muted`. Последние 36 px у угла
+усилены существующим `teal-corner` без добавления нового оттенка.
+`--border-gradient-panel-corner-detail` выделяет 28 px существующего внутреннего
+контура: короткая вторая линия повторяет форму угла. Эти роли не являются
+свечением или интерфейсным акцентом. Материалы поверхности и внешней рамки
+подключаются к крупным панелям статблока и оболочке листа персонажа через
+переменные материала `Panel`. Дополнительный внутренний контур используется
+только в статблоке; в листе персонажа он отключён.
+
+`--color-background`, `--color-canvas-background`, `--color-surface-*`,
+`--color-content-border`, `--color-border-*`, `--color-text-*`,
+`--color-heading-primary`, `--color-brand*`, `--color-interactive*`,
+`--color-action-primary`, `--color-status-*` и
+`--color-temporary-hit-points` содержат только ссылки на primitive palette.
+
+Отдельный `--color-border-brand` удалён. Спокойные декоративные рамки строятся
+из `--color-content-border` и `--color-brand-muted` с помощью `color-mix()`.
+Так в палитре не появляется ещё один почти совпадающий HEX.
+
+Типографические роли сущностей находятся в
+`styles/entityTypography.module.css`: `pageTitle`, `creatureMeta`,
+`sectionTitle`, `subsectionLabel`, `primaryValue`, `bodyText`,
+`secondaryLabel`, `interactiveValue` и `semanticInfographic`.
+
+`#5E7DFF` оформлен как `--palette-blue-400` и используется через
+`--color-temporary-hit-points`: это отдельная игровая роль временных хитов.
+Локальный `#151020` компактной карточки удалён и заменён смесью существующих
+surface-токенов.
