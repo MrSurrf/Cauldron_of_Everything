@@ -78,3 +78,21 @@ class CreatureListApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.creature.id)
+
+    def test_slug_lookup_is_exact_even_for_similar_names(self):
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Горный орёл",
+            slug="mountain-eagle-2",
+            content_html="",
+            content_text="",
+        )
+
+        response = self.client.get(
+            "/api/encyclopedia/",
+            {"type": "creature", "slug": "mountain-eagle-2"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["slug"], "mountain-eagle-2")

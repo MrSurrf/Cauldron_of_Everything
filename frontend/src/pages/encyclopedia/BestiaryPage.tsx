@@ -308,10 +308,10 @@ export default function BestiaryPage() {
                 decoration="minimal"
                 size="md"
                 fullWidth
-                disabled={!selected.fullRecord}
-                title={selected.fullRecord ? undefined : 'Полная запись пока доступна только для Тараска'}
                 onClick={() => {
-                  if (selected.fullRecord) navigate('/encyclopedia/bestiary/tarrasque')
+                  navigate(selected.fullRecord
+                    ? '/encyclopedia/bestiary/tarrasque'
+                    : `/encyclopedia/bestiary/${encodeURIComponent(selected.slug)}`)
                 }}
               >
                 Открыть полную запись →

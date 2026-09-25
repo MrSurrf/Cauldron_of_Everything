@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
 import {
   CreatureFullView,
@@ -64,7 +64,7 @@ export default function BestiaryEntityPage() {
         <section className={styles.notFound}>
           <p>Бестиарий</p>
           <h1>Существо не найдено</h1>
-          <a href="/">Вернуться к опроснику</a>
+          <Link to="/encyclopedia/bestiary">Вернуться в бестиарий</Link>
         </section>
       </main>
     )

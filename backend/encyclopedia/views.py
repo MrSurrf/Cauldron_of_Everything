@@ -25,8 +25,8 @@ class EntityPagination(PageNumberPagination):
 class EntityListView(generics.ListAPIView):
     """
     GET /api/encyclopedia/ — список сущностей энциклопедии.
-    Параметры: ?type=spell (фильтр по типу), ?q=... (поиск по названию и тексту),
-    ?page=, ?page_size=.
+    Параметры: ?type=spell (фильтр по типу), ?slug=... (точная запись),
+    ?q=... (поиск по названию и тексту), ?page=, ?page_size=.
     """
 
     serializer_class = EntityListSerializer
@@ -41,6 +41,9 @@ class EntityListView(generics.ListAPIView):
         entity_type = self.request.query_params.get("type")
         if entity_type:
             queryset = queryset.filter(entity_type=entity_type)
+        slug = self.request.query_params.get("slug")
+        if slug:
+            queryset = queryset.filter(slug=slug)
         query = self.request.query_params.get("q", "").strip()
         if query:
             # Как в прежнем клиентском поиске: каждое слово может быть в любом поле.

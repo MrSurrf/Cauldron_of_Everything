@@ -319,13 +319,10 @@ export async function getCreatureBySlug(
   slug: string,
   signal?: AbortSignal,
 ): Promise<CreatureEntity | null> {
-  const query = slug
-    .replace(/-\d+$/, '')
-    .replaceAll('-', ' ')
   const search = new URLSearchParams({
     type: 'creature',
-    q: query,
-    page_size: '100',
+    slug,
+    page_size: '1',
   })
   const list = await requestJson<EncyclopediaListResponse>(
     `${API_BASE_URL}/api/encyclopedia/?${search}`,

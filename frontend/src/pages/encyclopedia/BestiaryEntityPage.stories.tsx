@@ -42,7 +42,7 @@ function mockApi(detail: typeof tarrasqueDetail) {
     http.get('*/api/encyclopedia/', ({ request }) => {
       const url = new URL(request.url)
       const matches = url.searchParams.get('type') === 'creature'
-        && url.searchParams.get('q') === 'tarrasque'
+        && url.searchParams.get('slug') === 'tarrasque'
 
       return HttpResponse.json({
         count: matches ? 1 : 0,
