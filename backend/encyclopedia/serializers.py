@@ -23,11 +23,31 @@ class EntityListSerializer(serializers.ModelSerializer):
             Entity.Type.FEAT: ["prerequisite"],
             Entity.Type.BACKGROUND: ["skill_proficiencies"],
         }
-        return {
+        summary = {
             key: obj.data[key]
             for key in keys_by_type.get(obj.entity_type, [])
             if obj.data.get(key) not in (None, "", [])
         }
+        if obj.entity_type != Entity.Type.CREATURE:
+            return summary
+
+        data = obj.data
+        for key in ("languages", "habitat", "environments", "speed", "movement"):
+            if data.get(key) not in (None, "", []):
+                summary[key] = data[key]
+
+        # Отсутствующий флаг не приравниваем к False: фильтр показывает «Не указано».
+        summary["named_npc"] = next(
+            (data[key] for key in ("named_npc", "is_named_npc", "namedNpc")
+             if isinstance(data.get(key), bool)),
+            None,
+        )
+        summary["is_homebrew"] = data.get("is_homebrew") is True or any(
+            marker in str(source).lower()
+            for source in obj.sources
+            for marker in ("homebrew", "хоумбрю", "домашн")
+        )
+        return summary
 
 
 class LinkedEntitySerializer(serializers.ModelSerializer):

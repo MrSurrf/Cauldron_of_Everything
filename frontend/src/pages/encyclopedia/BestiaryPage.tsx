@@ -87,26 +87,33 @@ export default function BestiaryPage() {
   const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<CatalogCreature | null>(null)
-  const [status, setStatus] = useState<'loading' | 'indexing' | 'ready' | 'error'>('loading')
-  const [progress, setProgress] = useState({ completed: 0, total: 0 })
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [searchResult, setSearchResult] = useState<{ query: string; creatures: CatalogCreature[] } | null>(null)
+  const [searchError, setSearchError] = useState<{ query: string; message: string } | null>(null)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [searchAttempt, setSearchAttempt] = useState(0)
+  const query = filters.query.trim()
+  const searchPending = Boolean(query && searchResult?.query !== query && searchError?.query !== query)
+  const tarrasqueMatches = useMemo(() =>
+    !query || filterCatalog([tarrasqueCatalogEntry], { ...emptyFilters(), query }).length > 0,
+  [query])
+  const searchableCatalog = useMemo(() => query
+    ? [...(searchResult?.query === query ? searchResult.creatures : []), ...(tarrasqueMatches ? [tarrasqueCatalogEntry] : [])]
+    : catalog,
+  [catalog, query, searchResult, tarrasqueMatches])
+  const facetFilters = useMemo(() => ({ ...filters, query: '' }), [filters])
   const selected = selectedDetail?.id === selectedId
     ? selectedDetail
-    : catalog.find((creature) => creature.id === selectedId) ?? null
-  const results = useMemo(() => filterCatalog(catalog, filters), [catalog, filters])
+    : catalog.find((creature) => creature.id === selectedId)
+      ?? searchResult?.creatures.find((creature) => creature.id === selectedId)
+      ?? null
+  const results = useMemo(() => filterCatalog(searchableCatalog, facetFilters), [searchableCatalog, facetFilters])
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
     const controller = new AbortController()
-    loadBestiary(
-      controller.signal,
-      (creatures) => {
-        setCatalog([...creatures, tarrasqueCatalogEntry])
-        setStatus('indexing')
-      },
-      (completed, total) => setProgress({ completed, total }),
-    ).then((creatures) => {
+    loadBestiary(controller.signal).then((creatures) => {
       setCatalog([...creatures, tarrasqueCatalogEntry])
       setStatus('ready')
     }).catch((cause: unknown) => {
@@ -118,15 +125,36 @@ export default function BestiaryPage() {
   }, [attempt])
 
   useEffect(() => {
-    if (status !== 'indexing' || selectedId === null || selectedId < 0) return
+    if (status !== 'ready' || selectedId === null || selectedId < 0 || selectedDetail?.id === selectedId) return
     const creature = catalog.find((item) => item.id === selectedId)
+      ?? searchResult?.creatures.find((item) => item.id === selectedId)
     if (!creature) return
     const controller = new AbortController()
     getBestiaryCreature(creature, controller.signal)
       .then(setSelectedDetail)
-      .catch(() => { /* Общая загрузка каталога сообщит об ошибке отдельно. */ })
+      .catch(() => { /* Список остаётся доступным, даже если detail не загрузился. */ })
     return () => controller.abort()
-  }, [catalog, selectedId, status])
+  }, [catalog, searchResult, selectedDetail, selectedId, status])
+
+  useEffect(() => {
+    if (status !== 'ready' || !query) return
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => {
+      loadBestiary(controller.signal, query)
+        .then((creatures) => {
+          setSearchResult({ query, creatures })
+          setSearchError(null)
+        })
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted) return
+          setSearchError({ query, message: cause instanceof Error ? cause.message : 'Не удалось выполнить поиск' })
+        })
+    }, 250)
+    return () => {
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [query, searchAttempt, status])
 
   function updateFilters(update: (current: FilterState) => FilterState) {
     setFilters(update)
@@ -194,10 +222,10 @@ export default function BestiaryPage() {
           {FACETS.map((facet) => (
             <FacetControl
               key={facet.key}
-              creatures={catalog}
+              creatures={searchableCatalog}
               facet={facet}
-              filters={filters}
-              disabled={status !== 'ready'}
+              filters={facetFilters}
+              disabled={status !== 'ready' || searchPending}
               onToggle={toggleFacet}
             />
           ))}
@@ -228,7 +256,12 @@ export default function BestiaryPage() {
       <div className={styles.layout}>
         <Panel className={styles.listPanel} padding="compact">
           {status === 'loading' && <p className={styles.loadStatus} role="status">Загружаем существ из базы данных…</p>}
-          {status === 'indexing' && <p className={styles.loadStatus} role="status">Загружаем данные для фильтров и поиска: {progress.completed} из {progress.total}. Список уже доступен.</p>}
+          {searchPending && <p className={styles.loadStatus} role="status">Ищем существ…</p>}
+          {searchError?.query === query && (
+            <div className={styles.loadStatus} role="alert">
+              Не удалось выполнить поиск: {searchError.message}. <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setSearchError(null); setSearchAttempt((value) => value + 1) }}>Повторить</Button>
+            </div>
+          )}
           {status === 'error' && (
             <div className={styles.loadStatus} role="alert">
               Не удалось загрузить существ: {error}. <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setError(''); setStatus('loading'); setAttempt((value) => value + 1) }}>Повторить</Button>
@@ -243,7 +276,7 @@ export default function BestiaryPage() {
             </div>
             <span className={styles.count} role="status">Найдено: {results.length}</span>
           </div>
-          {results.length === 0 && <p className={styles.empty}>Существа не найдены. Измените фильтры или запрос.</p>}
+          {results.length === 0 && !searchPending && searchError?.query !== query && <p className={styles.empty}>Существа не найдены. Измените фильтры или запрос.</p>}
           {results.length > 18 ? (
             <div className={styles.creatureGroups}>
               {groupByFirstLetter(visible).map(({ letter, entries }) => (

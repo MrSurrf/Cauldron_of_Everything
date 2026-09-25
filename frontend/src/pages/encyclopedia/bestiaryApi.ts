@@ -2,8 +2,7 @@ import type { CreatureEntity } from '../../entities/creature'
 import type { CatalogCreature } from './bestiaryCatalog'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
-const PAGE_SIZE = 100
-const DETAIL_CONCURRENCY = 8
+const PAGE_SIZE = 1000
 
 type JsonRecord = Record<string, unknown>
 type EntitySummary = {
@@ -64,9 +63,10 @@ function movementKinds(value: unknown): string[] {
   return result
 }
 
-function namedNpc(data: JsonRecord): boolean | null {
+function namedNpc(data: JsonRecord, listed: JsonRecord): boolean | null {
   for (const key of ['named_npc', 'is_named_npc', 'namedNpc']) {
     if (typeof data[key] === 'boolean') return data[key] as boolean
+    if (typeof listed[key] === 'boolean') return listed[key] as boolean
   }
   return null
 }
@@ -92,9 +92,10 @@ function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): Catal
   const creatureType = text(data.creature_type ?? listed.creature_type)
   const alignment = text(data.alignment ?? listed.alignment)
   const challengeRating = text(data.challenge_rating ?? listed.challenge_rating)
-  const languages = values(data.languages)
-  const habitats = values(data.habitat ?? data.environments)
-  const speed = speedText(data.speed ?? data.movement)
+  const languages = values(data.languages ?? listed.languages)
+  const habitats = values(data.habitat ?? data.environments ?? listed.habitat ?? listed.environments)
+  const movement = data.speed ?? data.movement ?? listed.speed ?? listed.movement
+  const speed = speedText(movement)
   const entity: CreatureEntity = {
     id: String(summary.id), entityType: 'creature', slug: summary.slug,
     name: summary.name, nameEn: summary.name_en,
@@ -109,9 +110,10 @@ function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): Catal
     id: summary.id, slug: summary.slug, name: summary.name, nameEn: summary.name_en || '',
     challengeRating, size, creatureType, alignment,
     sources: sourceNames,
-    homebrew: data.is_homebrew === true || sourceNames.some((source) => /homebrew|хоумбрю|домашн/i.test(source)),
-    namedNpc: namedNpc(data), languages, habitats,
-    movements: movementKinds(data.speed ?? data.movement),
+    homebrew: data.is_homebrew === true || listed.is_homebrew === true
+      || sourceNames.some((source) => /homebrew|хоумбрю|домашн/i.test(source)),
+    namedNpc: namedNpc(data, listed), languages, habitats,
+    movements: movementKinds(movement),
     contentText: detail?.content_text || '',
     entity,
   }
@@ -127,39 +129,18 @@ async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
 
 export async function loadBestiary(
   signal: AbortSignal,
-  onList: (creatures: CatalogCreature[]) => void,
-  onProgress: (completed: number, total: number) => void,
+  query = '',
 ): Promise<CatalogCreature[]> {
-  const first = await getJson<ListResponse>(`/api/encyclopedia/?type=creature&page_size=${PAGE_SIZE}`, signal)
+  const params = new URLSearchParams({ type: 'creature', page_size: String(PAGE_SIZE) })
+  if (query.trim()) params.set('q', query.trim())
+  const first = await getJson<ListResponse>(`/api/encyclopedia/?${params}`, signal)
   const pageCount = Math.ceil(first.count / PAGE_SIZE)
   const pages = await Promise.all(Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) =>
-    getJson<ListResponse>(`/api/encyclopedia/?type=creature&page_size=${PAGE_SIZE}&page=${index + 2}`, signal),
+    getJson<ListResponse>(`/api/encyclopedia/?${params}&page=${index + 2}`, signal),
   ))
   const summaries = [first, ...pages].flatMap((page) => page.results)
     .filter((item) => item.entity_type === 'creature' && item.slug !== 'tarrasque' && item.name.toLocaleLowerCase('ru-RU') !== 'тараск')
-  const catalog = summaries.map((item) => toCatalogCreature(item))
-  onList(catalog)
-  onProgress(0, catalog.length)
-
-  let cursor = 0
-  let completed = 0
-  let failed = false
-  await Promise.all(Array.from({ length: Math.min(DETAIL_CONCURRENCY, summaries.length) }, async () => {
-    while (!failed && !signal.aborted && cursor < summaries.length) {
-      const index = cursor++
-      let detail: EntityDetail
-      try {
-        detail = await getJson<EntityDetail>(`/api/encyclopedia/${summaries[index].id}/`, signal)
-      } catch (error) {
-        failed = true
-        throw error
-      }
-      if (detail.entity_type === 'creature') catalog[index] = toCatalogCreature(summaries[index], detail)
-      completed++
-      if (completed % 25 === 0 || completed === catalog.length) onProgress(completed, catalog.length)
-    }
-  }))
-  return catalog
+  return summaries.map((item) => toCatalogCreature(item))
 }
 
 export async function getBestiaryCreature(creature: CatalogCreature, signal: AbortSignal): Promise<CatalogCreature> {
@@ -176,6 +157,10 @@ export async function getBestiaryCreature(creature: CatalogCreature, signal: Abo
       size: creature.size,
       creature_type: creature.creatureType,
       alignment: creature.alignment,
+      languages: creature.languages,
+      habitat: creature.habitats,
+      named_npc: creature.namedNpc,
+      is_homebrew: creature.homebrew,
     },
   }, detail)
 }

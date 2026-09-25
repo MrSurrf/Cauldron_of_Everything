@@ -11,13 +11,14 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     msw: { handlers: [
-      http.get('*/api/encyclopedia/', () => HttpResponse.json({
-        count: 2,
-        results: [
-          { id: 101, entity_type: 'creature', name: 'Арло Киттоу', name_en: '', slug: 'arlo-kittow', sources: ['Бестиарий'], summary: { challenge_rating: '6', size: 'Средний', creature_type: 'Гуманоид' } },
-          { id: 102, entity_type: 'creature', name: 'Болотник', name_en: '', slug: 'bolotnik', sources: ['Бестиарий'], summary: { challenge_rating: '1', size: 'Большой', creature_type: 'Монстр' } },
-        ],
-      })),
+      http.get('*/api/encyclopedia/', ({ request }) => {
+        const searched = new URL(request.url).searchParams.has('q')
+        const results = [
+          { id: 101, entity_type: 'creature', name: 'Арло Киттоу', name_en: '', slug: 'arlo-kittow', sources: ['Бестиарий'], summary: { challenge_rating: '6', size: 'Средний', creature_type: 'Гуманоид', languages: ['Общий'], habitat: ['Город'], speed: '30 фт.', named_npc: true, is_homebrew: false } },
+          { id: 102, entity_type: 'creature', name: 'Болотник', name_en: '', slug: 'bolotnik', sources: ['Бестиарий'], summary: { challenge_rating: '1', size: 'Большой', creature_type: 'Монстр', habitat: ['Болото'], speed: 'плавание 30 фт.', named_npc: false, is_homebrew: false } },
+        ]
+        return HttpResponse.json({ count: searched ? 1 : 2, results: searched ? results.slice(0, 1) : results })
+      }),
       http.get('*/api/encyclopedia/:id/', ({ params }) => HttpResponse.json({
         id: Number(params.id), entity_type: 'creature',
         name: params.id === '101' ? 'Арло Киттоу' : 'Болотник',
@@ -47,7 +48,7 @@ export const Catalog: Story = {
     await expect(await canvas.findByRole('button', { name: /Арло Киттоу/ })).toBeVisible()
     await waitFor(() => expect(search).toBeEnabled())
     await userEvent.type(search, 'исследователь')
-    await expect(canvas.getByText('Найдено: 1')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('Найдено: 1')).toBeVisible())
     await expect(canvas.queryByRole('heading', { name: 'А', level: 3 })).not.toBeInTheDocument()
     await userEvent.clear(search)
     await userEvent.click(canvas.getByRole('button', { name: /Арло Киттоу/ }))

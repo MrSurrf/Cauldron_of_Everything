@@ -14,6 +14,13 @@ class EntityPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 100
 
+    def get_page_size(self, request):
+        # Для лёгкого индекса существ достаточно примерно трёх страниц.
+        if request.query_params.get("type") == Entity.Type.CREATURE:
+            self.page_size = 1000
+            self.max_page_size = 1000
+        return super().get_page_size(request)
+
 
 class EntityListView(generics.ListAPIView):
     """
@@ -27,17 +34,23 @@ class EntityListView(generics.ListAPIView):
     pagination_class = EntityPagination
 
     def get_queryset(self):
-        queryset = Entity.objects.all()
+        # Не извлекаем тяжёлые HTML и текст карточек при построении каталога.
+        queryset = Entity.objects.only(
+            "id", "entity_type", "name", "name_en", "slug", "sources", "data"
+        )
         entity_type = self.request.query_params.get("type")
         if entity_type:
             queryset = queryset.filter(entity_type=entity_type)
         query = self.request.query_params.get("q", "").strip()
         if query:
-            queryset = queryset.filter(
-                Q(name__icontains=query)
-                | Q(name_en__icontains=query)
-                | Q(content_text__icontains=query)
-            )
+            # Как в прежнем клиентском поиске: каждое слово может быть в любом поле.
+            words = query.split() if entity_type == Entity.Type.CREATURE else [query]
+            for word in words:
+                queryset = queryset.filter(
+                    Q(name__icontains=word)
+                    | Q(name_en__icontains=word)
+                    | Q(content_text__icontains=word)
+                )
         return queryset
 
 
