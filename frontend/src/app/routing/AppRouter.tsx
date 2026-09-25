@@ -16,6 +16,9 @@ const SurveyRoutePage = lazy(
 const DevHomePage = lazy(
   () => import('../../pages/dev/DevHomePage'),
 )
+const ProfilePage = lazy(
+  () => import('../../pages/profile/ProfilePage'),
+)
 const CharacterSheetRoutePage = lazy(
   () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
 )
@@ -66,6 +69,7 @@ export function AppRouter() {
             path="/survey"
             element={<SurveyRoutePage />}
           />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route
             path="/tools/character-sheet"
             element={<CharacterSheetRoutePage />}

@@ -22,8 +22,8 @@ export function DevHomeMenu() {
           <MenuButton icon={null} onClick={() => navigate('/tools/character-sheet')}>
             Лист персонажа
           </MenuButton>
-          <MenuButton icon={null} disabled title="Раздел в разработке">
-            Профиль (в разработке)
+          <MenuButton icon={null} onClick={() => navigate('/profile')}>
+            Профиль
           </MenuButton>
         </nav>
       </Panel>
