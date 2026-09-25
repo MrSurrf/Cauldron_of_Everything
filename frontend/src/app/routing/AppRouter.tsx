@@ -13,6 +13,12 @@ import styles from './AppRouter.module.css'
 const SurveyRoutePage = lazy(
   () => import('../../pages/survey/SurveyRoutePage'),
 )
+const DevHomePage = lazy(
+  () => import('../../pages/dev/DevHomePage'),
+)
+const CharacterSheetRoutePage = lazy(
+  () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
+)
 const BestiaryEntityPage = lazy(
   () =>
     import(
@@ -54,7 +60,15 @@ export function AppRouter() {
         <Routes>
           <Route
             path="/"
+            element={<DevHomePage />}
+          />
+          <Route
+            path="/survey"
             element={<SurveyRoutePage />}
+          />
+          <Route
+            path="/tools/character-sheet"
+            element={<CharacterSheetRoutePage />}
           />
           <Route
             path="/encyclopedia/bestiary"
