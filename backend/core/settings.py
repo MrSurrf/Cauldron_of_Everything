@@ -185,6 +185,14 @@ CORS_ALLOWED_ORIGINS = env.list(
     ],
 )
 
+# Белый список email, которым разрешён вход по коду (через запятую).
+# Пустой список — вход открыт для всех. Используется для временного закрытия dev-стенда.
+AUTH_ALLOWED_EMAILS = [
+    email.strip().lower()
+    for email in env.list('AUTH_ALLOWED_EMAILS', default=[])
+    if email.strip()
+]
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Cauldron of Everything API',
     'DESCRIPTION': 'API анкетирования: авторизация, вопросы, сохранение ответов',
