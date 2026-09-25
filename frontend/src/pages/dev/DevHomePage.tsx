@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 
 import { MenuButton, Panel } from '../../shared/ui'
-import { getAccessToken, SurveyLoginPage } from '../../tools/survey'
+import { getAccessToken } from '../../tools/survey'
+import AuthPage from '../auth/AuthPage'
 import styles from './DevHomePage.module.css'
 
 export function DevHomeMenu() {
@@ -38,7 +39,11 @@ export default function DevHomePage() {
   }
 
   if (!authenticated) {
-    return <SurveyLoginPage title="Вход в мастерскую" onLogin={() => setAuthenticated(true)} />
+    return (
+      <AuthPage
+        onLogin={() => setAuthenticated(true)}
+      />
+    )
   }
 
   return <DevHomeMenu />
