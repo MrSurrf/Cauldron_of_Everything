@@ -13,11 +13,23 @@ import styles from './AppRouter.module.css'
 const SurveyRoutePage = lazy(
   () => import('../../pages/survey/SurveyRoutePage'),
 )
+const DevHomePage = lazy(
+  () => import('../../pages/dev/DevHomePage'),
+)
+const CharacterSheetRoutePage = lazy(
+  () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
+)
 const BestiaryEntityPage = lazy(
   () =>
     import(
       '../../pages/encyclopedia/BestiaryEntityPage'
     ),
+)
+const BestiaryPage = lazy(
+  () => import('../../pages/encyclopedia/BestiaryPage'),
+)
+const MockTarrasquePage = lazy(
+  () => import('../../pages/encyclopedia/MockTarrasquePage'),
 )
 
 function RouteFallback() {
@@ -48,10 +60,30 @@ export function AppRouter() {
         <Routes>
           <Route
             path="/"
+            element={<DevHomePage />}
+          />
+          <Route
+            path="/survey"
             element={<SurveyRoutePage />}
           />
           <Route
+            path="/tools/character-sheet"
+            element={<CharacterSheetRoutePage />}
+          />
+          <Route
+            path="/encyclopedia/bestiary"
+            element={<BestiaryPage />}
+          />
+          <Route
+            path="/encyclopedia/bestiary/tarrasque"
+            element={<MockTarrasquePage />}
+          />
+          <Route
             path="/encyclopedia/bestiary/:slug"
+            element={<BestiaryEntityPage />}
+          />
+          <Route
+            path="/encyclopedia/creature/:slug"
             element={<BestiaryEntityPage />}
           />
           <Route

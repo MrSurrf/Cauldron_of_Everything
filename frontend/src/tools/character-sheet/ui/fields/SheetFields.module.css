@@ -1,8 +1,6 @@
 .compactFrame {
-  --input-border:
-    color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
-  --input-inner-border:
-    color-mix(in srgb, var(--input-border) 26%, transparent);
+  --input-border: color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-inner-border: transparent;
   --input-surface-start:
     color-mix(in srgb, var(--color-surface-default) 92%, transparent);
   --input-surface-end:
@@ -60,8 +58,7 @@
 }
 
 .plainInput:hover:not(:disabled) {
-  border-color:
-    color-mix(in srgb, var(--color-border-accent) 58%, var(--color-content-border));
+  border-color: color-mix(in srgb, var(--color-border-accent) 58%, var(--color-content-border));
 }
 
 .plainInput:focus-visible {
@@ -72,7 +69,7 @@
       transparent,
       color-mix(in srgb, var(--color-surface-accent) 42%, transparent)
     );
-  box-shadow: 0 1px 0 var(--color-border-accent);
+  box-shadow: 0 1px 0 var(--color-brand-muted);
 }
 
 .plainInput::placeholder {

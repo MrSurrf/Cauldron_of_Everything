@@ -8,9 +8,10 @@ import './LoginPage.css'
 
 type LoginPageProps = {
   onLogin: () => void
+  title?: string
 }
 
-function LoginPage({ onLogin }: LoginPageProps) {
+function LoginPage({ onLogin, title = 'Вход в анкету' }: LoginPageProps) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
@@ -49,7 +50,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="login-page">
       <div className="login-page__card">
-        <h1 className="login-page__title">Вход в анкету</h1>
+        <h1 className="login-page__title">{title}</h1>
 
         {step === 'email' ? (
           <form className="login-page__form" onSubmit={handleEmailSubmit}>

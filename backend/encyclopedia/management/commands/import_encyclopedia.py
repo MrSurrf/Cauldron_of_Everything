@@ -17,7 +17,6 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 from django.utils.text import slugify
 
 from encyclopedia.models import Entity, EntityLink
@@ -30,7 +29,7 @@ TECH_FIELDS = {"source_id", "source_key", "source_url", "source_section", "raw_f
 # href вида /<section>/<id>-<slug>/ (с опциональным доменом, якорем и query).
 HREF_RE = re.compile(r"^(?:https?://[^/]+)?/([a-z0-9_-]+)/(\d+)(?:-[^/#?]*)?/?(?:[#?].*)?$", re.IGNORECASE)
 
-BATCH_SIZE = 500
+BATCH_SIZE = 200
 
 
 class Command(BaseCommand):
@@ -69,10 +68,11 @@ class Command(BaseCommand):
             raise CommandError(f"JSON-файлы не найдены в {base_dir}")
         self.stdout.write(f"Найдено файлов: {len(files)}")
 
-        with transaction.atomic():
-            records = self._pass1_create_entities(files)
-            unresolved = self._pass2_rewrite_html(records)
-            links_count = self._pass3_create_links(records)
+        # Фиксируем небольшими порциями, а не одной транзакцией:
+        # гигантская транзакция может уронить Postgres с малым лимитом памяти.
+        records = self._pass1_create_entities(files)
+        unresolved = self._pass2_rewrite_html(records)
+        links_count = self._pass3_create_links(records)
 
         stats = Counter(r["entity_type"] for r in records)
         self.stdout.write(self.style.SUCCESS("Импорт завершён:"))
@@ -184,7 +184,12 @@ class Command(BaseCommand):
         unresolved = 0
 
         for anchor in soup.find_all("a"):
-            target_id = self._resolve_href(anchor.get("href") or anchor.get("data-source-href") or "")
+            href = anchor.get("href") or ""
+            if href.startswith("#"):
+                # Якорь на раздел внутри самой карточки — оставляем ссылку,
+                # технические атрибуты снимутся общей чисткой ниже.
+                continue
+            target_id = self._resolve_href(href or anchor.get("data-source-href") or "")
             if target_id:
                 anchor.attrs = {
                     "href": f"/encyclopedia/{self._type_by_id[target_id]}/{self._slug_by_id[target_id]}/",
@@ -196,9 +201,11 @@ class Command(BaseCommand):
                 anchor.replace_with_children()
 
         for tag in soup.find_all(True):
-            # Удаляем технические data-*, оставляя наш data-entity-id.
-            for attr in [a for a in tag.attrs if a.startswith("data-") and a != "data-entity-id"]:
-                del tag[attr]
+            # Удаляем только технические атрибуты миграции;
+            # прочие data-* (например data-type в формулах хитов) — контент, их оставляем.
+            for attr in ("data-source-href", "data-entity-key"):
+                if attr in tag.attrs:
+                    del tag[attr]
             classes = tag.get("class")
             if classes and "tooltipstered" in classes:
                 classes.remove("tooltipstered")

@@ -152,6 +152,17 @@ export const EmptyCharacterSheet: Story = {
         name: 'Особенности, умения и заметки',
       }),
     ).toHaveTextContent('Особенности персонажа, способности и заметки...')
+
+    // Чарлист не должен заменять штатную рамку кнопок масштаба редактора.
+    for (const button of canvas.getAllByRole('button', {
+      name: /^(Уменьшить|Увеличить) текст:/,
+    })) {
+      await expect(button).toHaveStyle({ borderTopWidth: '0px' })
+      await expect(
+        getComputedStyle(button, '::before').display,
+      ).not.toBe('none')
+      await expect(getComputedStyle(button).clipPath).toMatch(/^shape\(/)
+    }
   },
 }
 

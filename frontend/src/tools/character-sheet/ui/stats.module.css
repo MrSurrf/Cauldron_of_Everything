@@ -1,7 +1,6 @@
 .derivedStat {
   --stat-cut: var(--space-2);
-  --stat-border:
-    color-mix(
+  --stat-border: color-mix(
       in srgb,
       var(--color-content-border) 70%,
       var(--color-border-accent)
@@ -19,8 +18,7 @@
   overflow: hidden;
 
   border: var(--border-width-default) solid var(--stat-border);
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at 50% 50%,
       color-mix(in srgb, var(--color-surface-accent) 64%, transparent),
       transparent 68%
@@ -42,41 +40,6 @@
       0 var(--stat-cut)
     );
   color: var(--color-text-primary);
-}
-
-.derivedStat::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: var(--space-1);
-  border: var(--border-width-default) solid
-    color-mix(in srgb, var(--stat-border) 42%, transparent);
-  clip-path:
-    polygon(
-      var(--space-2) 0,
-      calc(100% - var(--space-2)) 0,
-      100% var(--space-2),
-      100% calc(100% - var(--space-2)),
-      calc(100% - var(--space-2)) 100%,
-      var(--space-2) 100%,
-      0 calc(100% - var(--space-2)),
-      0 var(--space-2)
-    );
-  pointer-events: none;
-}
-
-.derivedStat::after {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  left: 50%;
-  width: var(--space-3);
-  height: var(--border-width-default);
-  background: var(--color-border-accent);
-  box-shadow: 0 0 var(--space-2) var(--color-action-primary);
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 
 .derivedStat:focus-within {
@@ -118,9 +81,6 @@
   font-size: var(--sheet-large-value-size, var(--font-size-xl));
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  text-shadow:
-    0 0 var(--space-2)
-    color-mix(in srgb, var(--palette-white) 18%, transparent);
 }
 
 .suffix {
@@ -145,10 +105,8 @@
 }
 
 .compactFrame {
-  --input-border:
-    color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
-  --input-inner-border:
-    color-mix(in srgb, var(--input-border) 30%, transparent);
+  --input-border: color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-inner-border: transparent;
   --input-surface-start:
     color-mix(in srgb, var(--color-surface-default) 88%, transparent);
   --input-surface-end:
@@ -339,7 +297,7 @@
 .hitPointsField[data-hit-points-field='current'] input,
 .hitPointsField[data-hit-points-field='current'] output {
   text-shadow:
-    0 0 var(--space-1) var(--palette-purple-300),
+    0 0 var(--space-1) var(--color-brand),
     0 0 var(--space-3)
     color-mix(in srgb, var(--color-action-primary) 68%, transparent);
 }
@@ -401,17 +359,16 @@
   position: absolute;
   z-index: -1;
   inset: -0.1rem -0.125rem 0.2rem;
-  background:
-    linear-gradient(
+  background: linear-gradient(
       105deg,
-      var(--palette-blue-400, #5e7dff) 4%,
+      var(--color-temporary-hit-points) 4%,
       var(--palette-purple-300) 54%,
       var(--color-border-accent) 100%
     );
   filter:
     drop-shadow(
       0 0 0.12rem
-      color-mix(in srgb, var(--palette-blue-400, #5e7dff) 90%, transparent)
+      color-mix(in srgb, var(--color-temporary-hit-points) 90%, transparent)
     )
     drop-shadow(
       0 0 var(--space-2)
@@ -440,7 +397,7 @@
   background:
     radial-gradient(
       circle at 50% 62%,
-      color-mix(in srgb, var(--palette-blue-400, #5e7dff) 30%, transparent),
+      color-mix(in srgb, var(--color-temporary-hit-points) 30%, transparent),
       color-mix(in srgb, var(--color-action-primary) 12%, transparent) 52%,
       transparent 76%
     );
@@ -729,11 +686,6 @@
     clip-path: none;
     border-color: CanvasText;
     background: Canvas;
-  }
-
-  .derivedStat::before,
-  .derivedStat::after {
-    display: none;
   }
 
   .saveMark {

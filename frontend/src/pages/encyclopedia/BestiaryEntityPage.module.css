@@ -17,7 +17,8 @@
   color: var(--color-text-primary);
 }
 
-.notFound {
+.notFound,
+.status {
   display: grid;
   width: min(100%, 36rem);
   min-height: calc(100svh - var(--space-7) * 2);
@@ -26,7 +27,8 @@
   justify-items: start;
 }
 
-.notFound p {
+.notFound p,
+.status p {
   margin: 0;
   color: var(--palette-purple-300);
   font-size: var(--font-size-xs);
@@ -34,7 +36,8 @@
   text-transform: uppercase;
 }
 
-.notFound h1 {
+.notFound h1,
+.status h1 {
   margin: var(--space-2) 0 var(--space-5);
   font-family: var(--font-family-heading);
   font-size: clamp(2.5rem, 8vw, 5rem);
@@ -44,4 +47,26 @@
 
 .notFound a {
   color: var(--palette-purple-300);
+}
+
+.status span {
+  max-width: 36rem;
+  color: var(--color-text-secondary);
+}
+
+.retry {
+  margin-top: var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-default) solid var(--color-border-accent);
+  border-radius: var(--space-1);
+  background: var(--color-surface-accent);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.retry:hover,
+.retry:focus-visible {
+  background: var(--color-action-primary);
+  outline: 0;
 }

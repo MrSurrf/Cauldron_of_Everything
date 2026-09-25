@@ -243,6 +243,7 @@ Cauldron_of_Everything/
 - JWT: access — 60 минут, refresh — 7 дней.
 - Медиафайлы: `MEDIA_URL = 'media/'`, `MEDIA_ROOT = BASE_DIR / 'media'`.
 - `SURVEY_CONFIG_DIR` указывает на корневую папку `config/`.
+- `AUTH_ALLOWED_EMAILS` — белый список email для входа по коду (через запятую в env). Пустой — вход открыт всем; задан — коды отправляются только перечисленным адресам, остальные получают 403. Используется для временного закрытия dev-стенда.
 - `ENCYCLOPEDIA_DATA_DIR` указывает на `backend/Encyclopedia-data/Encyclopedia-data/parsed/` (сырой датасет энциклопедии, переопределяется через env).
 
 ---

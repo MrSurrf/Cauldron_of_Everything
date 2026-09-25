@@ -7,6 +7,7 @@ import {
   screen,
   userEvent,
   waitFor,
+  within,
 } from 'storybook/test'
 
 import { mockTarrasque } from '../model/mockTarrasque'
@@ -25,7 +26,7 @@ const meta = {
           minHeight: '100vh',
           padding: 'clamp(1rem, 4vw, 3rem)',
           background:
-            'radial-gradient(circle at 50% 0, #1b0d29, #020108 34rem)',
+            'radial-gradient(circle at 50% 0, var(--color-surface-accent), var(--color-background) 34rem)',
         }}
       >
         <Story />
@@ -50,14 +51,28 @@ export const Tarrasque: Story = {
       }),
     ).toBeVisible()
     await expect(
-      canvas.getByText('676 (33к20 + 330)'),
+      canvas.getByLabelText('Хиты 676 (33к20 + 330)'),
     ).toBeVisible()
+    await expect(
+      canvas.getByLabelText('Хиты 676 (33к20 + 330)'),
+    ).toHaveAttribute('data-creature-hp-frame', 'monster')
+    await userEvent.click(canvas.getByRole('button', { name: 'Бросить хиты 33к20 + 330' }))
+    await expect(canvas.getByText(/^Хиты: \d+$/)).toBeVisible()
+    await expect(canvas.getByText('676')).toBeVisible()
     await expect(
       canvas.getByLabelText('Класс доспеха 25, природный доспех'),
     ).toBeVisible()
     await expect(
       canvas.getByText('природный доспех'),
     ).toBeVisible()
+    const passport = within(canvas.getByRole('region', { name: 'Боевой паспорт' }))
+    await expect(passport.getByText('Скорость')).toBeVisible()
+    await expect(passport.getByText('Слепое зрение')).toBeVisible()
+    const information = within(canvas.getByRole('region', { name: 'Основная информация' }))
+    await expect(information.getByText('Иммунитеты к состояниям')).toBeVisible()
+    const mixed = within(canvas.getByRole('region', { name: 'Смешанные особенности' }))
+    await expect(mixed.getByRole('img', { name: /физический источник — сопротивление; магический источник — уязвимость/ }))
+      .toHaveAttribute('data-damage-type', 'force')
     await expect(
       canvas.queryByText('Спасброски'),
     ).not.toBeInTheDocument()

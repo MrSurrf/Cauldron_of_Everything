@@ -70,6 +70,25 @@ export type CreatureSection = {
   type: CreatureSectionType
   title: string
   html: string
+  introduction?: string
+  entries?: readonly CreatureFeature[]
+}
+
+/** Структурированные особенности для развёрнутого статблока; HTML остаётся запасным представлением. */
+export type CreatureFeature = {
+  id: string
+  name: string
+  description: string
+  subtitle?: string
+  usage?: string
+  attackBonus?: number
+  save?: { ability: CreatureAbilityKey; dc: number }
+  damage?: readonly { formula: string; type: DamageType; average?: number; note?: string }[]
+  range?: string
+  target?: string
+  effect?: string
+  conditions?: readonly string[]
+  rolls?: readonly { label: string; formula: string; successAt?: number }[]
 }
 
 export type CreatureEntity = BaseEntity<'creature'> & {
@@ -93,6 +112,7 @@ export type CreatureEntity = BaseEntity<'creature'> & {
   conditionImmunities?: readonly string[]
   vision?: readonly VisionSense[]
   senses?: readonly string[]
+  passivePerception?: number
   languages?: readonly string[]
   challengeRating?: string
   proficiencyBonus?: string

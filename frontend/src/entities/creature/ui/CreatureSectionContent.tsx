@@ -1,5 +1,4 @@
 import { RichContent } from '../../../shared/ui/RichContent'
-import { PlaceholderIcon } from '../../../shared/ui/icons/PlaceholderIcon'
 import styles from './CreatureFullView.module.css'
 
 export function CreatureSectionContent({ html }: { html: string }) {
@@ -18,7 +17,6 @@ export function CreatureSectionContent({ html }: { html: string }) {
     <div className={styles.sectionEntries}>
       {paragraphs.map((paragraph, index) => (
         <div className={styles.sectionBody} key={index}>
-          <span className={styles.sectionIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <RichContent className={styles.sectionContent} html={paragraph} />
         </div>
       ))}

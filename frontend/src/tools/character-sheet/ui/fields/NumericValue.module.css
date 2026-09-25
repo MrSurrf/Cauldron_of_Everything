@@ -61,11 +61,10 @@
   font-variant-numeric: tabular-nums;
   line-height: var(--sheet-single-line-height, var(--line-height-tight));
   text-align: center;
-  text-shadow: 0 0 var(--space-2) color-mix(in srgb, var(--palette-white) 14%, transparent);
 }
 
 .frame[data-framed='false'] .value:focus-visible {
-  box-shadow: inset 0 -1px var(--color-border-accent);
+  box-shadow: inset 0 -1px var(--color-interactive);
 }
 
 .value::placeholder,

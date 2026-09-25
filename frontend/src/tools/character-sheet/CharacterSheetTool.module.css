@@ -1,6 +1,5 @@
 .root {
-  --sheet-frame:
-    color-mix(
+  --sheet-frame: color-mix(
       in srgb,
       var(--color-content-border) 72%,
       var(--palette-purple-300)
@@ -11,8 +10,7 @@
       var(--color-content-border) 84%,
       transparent
     );
-  --sheet-accent-muted:
-    color-mix(
+  --sheet-accent-muted: color-mix(
       in srgb,
       var(--color-border-accent) 26%,
       transparent
@@ -54,7 +52,8 @@
   font-size: var(--sheet-body-size, var(--font-size-sm));
 }
 
-.root button[data-icon-only='true'][data-size] {
+/* Кнопки масштаба сохраняют общий дизайн ContentEditor. */
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button) {
   --icon-button-size: var(--sheet-icon-control-size);
   --icon-button-glyph-size: var(--sheet-icon-glyph-size);
   --button-min-height: var(--sheet-icon-control-size);
@@ -87,16 +86,15 @@
   filter: none;
 }
 
-.root button[data-icon-only='true'][data-size]::before,
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button)::before,
 .root
-  button[data-icon-only='true'][data-size]
+  button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button)
   > span[aria-hidden='true'] {
   display: none;
 }
 
-.root button[data-icon-only='true'][data-size]:hover:not(:disabled) {
-  border-color:
-    color-mix(
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button):hover:not(:disabled) {
+  border-color: color-mix(
       in srgb,
       var(--color-border-accent) 72%,
       var(--color-content-border)
@@ -118,7 +116,7 @@
     );
 }
 
-.root button[data-icon-only='true'][data-size]:focus-visible {
+.root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button):focus-visible {
   border-color: var(--color-border-accent);
   outline: var(--border-width-default) solid var(--palette-white);
   outline-offset: var(--border-width-default);
@@ -137,12 +135,10 @@
   --panel-border: var(--sheet-frame);
   --panel-surface-start: var(--color-canvas-background);
   --panel-surface-end: var(--color-background);
-  --panel-inner-border:
-    color-mix(
-      in srgb,
-      var(--sheet-frame) 42%,
-      transparent
-    );
+  --panel-border-material: var(--border-gradient-panel-decorative);
+  --panel-surface-material: var(--surface-gradient-panel-decorative);
+  --panel-inner-border: transparent;
+  --panel-inner-border-material: none;
 }
 
 .shell {
@@ -154,8 +150,7 @@
 
 .viewport {
   height: 100%;
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at 50% -10%,
       var(--sheet-accent-muted),
       transparent 36rem
@@ -194,7 +189,6 @@
 
 .statCard {
   --stat-card-cut: var(--space-2);
-  --stat-card-inner-inset: 0.22rem;
 
   position: relative;
   isolation: isolate;
@@ -206,8 +200,7 @@
   align-items: center;
 
   border: var(--border-width-default) solid var(--sheet-frame);
-  background:
-    linear-gradient(
+  background: linear-gradient(
       145deg,
       color-mix(
         in srgb,
@@ -219,13 +212,6 @@
         var(--color-surface-muted) 92%,
         transparent
       )
-    );
-  box-shadow:
-    inset 0 0 0 var(--stat-card-inner-inset)
-    color-mix(
-      in srgb,
-      var(--sheet-frame-muted) 34%,
-      transparent
     );
   clip-path:
     polygon(
@@ -308,8 +294,7 @@
 
 .armorClassStat::before {
   z-index: -2;
-  background:
-    linear-gradient(
+  background: linear-gradient(
       145deg,
       var(--palette-purple-300),
       var(--color-border-accent) 48%,
@@ -349,7 +334,6 @@
 .inspirationStats
   > .quickStat.inspirationStat[data-stat='inspiration'] {
   --stat-card-cut: var(--sheet-layout-gap);
-  --stat-card-inner-inset: var(--border-width-strong);
 
   grid-template-columns: 2.5rem minmax(0, 1fr);
   min-height: var(--sheet-row-height);
@@ -493,7 +477,6 @@
 .inspirationStats .quickStat,
 .movementStats .quickStat {
   --stat-card-cut: var(--space-1);
-  --stat-card-inner-inset: var(--border-width-strong);
 
   min-height: var(--sheet-row-height);
   height: var(--sheet-row-height);
@@ -599,12 +582,7 @@
 }
 
 .vitalsPanel {
-  --vitals-divider:
-    color-mix(
-      in srgb,
-      var(--color-border-accent) 72%,
-      var(--palette-purple-300)
-    );
+  --vitals-divider: var(--sheet-frame);
 
   position: relative;
   isolation: isolate;
@@ -613,8 +591,7 @@
   grid-template-columns: 11.5rem minmax(0, 1fr);
   overflow: hidden;
   border: var(--border-width-default) solid var(--sheet-frame);
-  background:
-    linear-gradient(
+  background: linear-gradient(
       180deg,
       color-mix(
         in srgb,
@@ -629,7 +606,7 @@
     );
   box-shadow:
     inset 0 0 var(--space-5)
-    color-mix(in srgb, var(--palette-black) 48%, transparent);
+    color-mix(in srgb, var(--color-background) 48%, transparent);
   clip-path:
     polygon(
       var(--space-2) 0,
@@ -661,26 +638,6 @@
   left: 0;
   width: var(--border-width-default);
   background: var(--vitals-divider);
-  box-shadow:
-    0 0 var(--space-2)
-    color-mix(in srgb, var(--color-action-primary) 58%, transparent);
-  pointer-events: none;
-}
-
-.deathSavesSlot::after {
-  content: '';
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  left: 0;
-  width: var(--space-2);
-  height: var(--space-2);
-  border: var(--border-width-default) solid var(--vitals-divider);
-  background: var(--color-surface-muted);
-  box-shadow:
-    0 0 var(--space-2)
-    color-mix(in srgb, var(--color-action-primary) 44%, transparent);
-  transform: translate(-50%, -50%) rotate(45deg);
   pointer-events: none;
 }
 
@@ -808,7 +765,6 @@
 .passiveStat {
   --sheet-large-value-size: var(--font-size-lg);
   --stat-card-cut: var(--sheet-layout-gap);
-  --stat-card-inner-inset: var(--border-width-strong);
 
   width: 100%;
   height: auto;

@@ -45,13 +45,12 @@
 .ability[data-save-open='true']::before {
   background: color-mix(in srgb, var(--color-surface-accent) 42%, var(--color-background));
   box-shadow: inset 0 0 var(--space-3)
-    color-mix(in srgb, var(--color-action-primary) 30%, transparent);
+    color-mix(in srgb, var(--color-brand-bright) 30%, transparent);
 }
 
 .ability dt {
   position: relative;
   z-index: 2;
-  color: var(--palette-purple-300);
   font-size: var(--font-size-xs);
   letter-spacing: 0.05em;
 }
@@ -67,19 +66,25 @@
 }
 
 .ability dd strong {
-  color: var(--color-text-primary);
+  color: var(--color-heading-primary);
   font-size: var(--font-size-lg);
 }
 
 .ability dd span {
-  color: var(--color-text-secondary);
+  color: var(--color-text-subtle);
   font-size: var(--font-size-xs);
 }
 
 .saveControl {
+  composes: interactiveValue from '../../../shared/styles/entityTypography.module.css';
   --save-corner: var(--space-2);
   --save-surface: var(--color-surface-accent);
-  --save-outline: var(--color-border-accent);
+  --save-outline:
+    color-mix(
+      in srgb,
+      var(--color-brand-muted) 28%,
+      var(--color-content-border)
+    );
   --save-shape: polygon(
     0 0, 100% 0,
     100% calc(100% - var(--save-corner)),
@@ -101,7 +106,6 @@
   outline: 0;
   background: transparent;
   clip-path: var(--save-shape);
-  color: var(--palette-purple-300);
   font-family: var(--font-family-body);
   cursor: pointer;
   overflow: hidden;
@@ -131,9 +135,9 @@
 }
 
 .ability[data-save-open='true'] .saveControl {
-  --save-surface: color-mix(in srgb, var(--color-action-primary) 18%, var(--color-surface-accent));
+  --save-surface: color-mix(in srgb, var(--color-interactive) 18%, var(--color-surface-accent));
   box-shadow: 0 var(--space-1) var(--space-3)
-    color-mix(in srgb, var(--color-action-primary) 28%, transparent);
+    color-mix(in srgb, var(--color-interactive) 28%, transparent);
 }
 
 .saveSummary,
@@ -183,13 +187,14 @@
 
 .saveControl:hover:not(:disabled),
 .saveControl:focus-visible {
-  --save-outline: var(--palette-purple-300);
-  color: var(--color-text-primary);
+  --save-outline: var(--color-interactive);
+  color: var(--color-interactive-hover);
   box-shadow: 0 0 var(--space-3)
-    color-mix(in srgb, var(--color-action-primary) 62%, transparent);
+    color-mix(in srgb, var(--color-interactive) 62%, transparent);
 }
 
 .saveControl:disabled {
+  color: var(--color-text-disabled);
   opacity: var(--disabled-opacity);
   cursor: not-allowed;
 }
@@ -199,7 +204,7 @@
 }
 
 .result {
-  color: inherit;
+  composes: primaryValue from '../../../shared/styles/entityTypography.module.css';
 }
 
 .result strong {

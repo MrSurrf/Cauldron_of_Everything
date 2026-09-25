@@ -4,7 +4,12 @@
 }
 
 .root :global([data-variant]) {
-  --panel-surface-start: #151020;
+  --panel-surface-start:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 54%,
+      var(--color-surface-default)
+    );
   --panel-surface-end: var(--color-background);
 }
 

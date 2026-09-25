@@ -31,6 +31,7 @@ export {
   EquippedIcon,
   PlaceholderIcon,
   SavingThrowIcon,
+  HeartIcon,
   TrashIcon,
   VisionIcon,
   getDiceTypeFromExpression,
