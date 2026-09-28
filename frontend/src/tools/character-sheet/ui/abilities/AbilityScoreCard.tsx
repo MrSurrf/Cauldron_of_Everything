@@ -34,6 +34,7 @@ export function AbilityScoreCard({
     <article
       className={styles.card}
       aria-label={label}
+      data-cursor-reveal="border"
     >
       <header className={styles.header}>
         <span className={styles.label}>

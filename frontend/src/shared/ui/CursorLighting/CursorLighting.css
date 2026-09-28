@@ -1,0 +1,57 @@
+.cursor-light {
+  position: fixed;
+  z-index: var(--z-index-tile-selected);
+  inset: 0;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cursor-light::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cursor-light-size);
+  height: var(--cursor-light-size);
+  margin-top: calc(var(--cursor-light-size) / -2);
+  margin-left: calc(var(--cursor-light-size) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-cursor-light), transparent 70%);
+  transform: translate3d(var(--cursor-light-x, 0px), var(--cursor-light-y, 0px), 0);
+}
+
+.cursor-light[data-active='true'] {
+  opacity: var(--cursor-light-opacity);
+}
+
+[data-cursor-reveal] {
+  /* Сброс наследования нужен в том числе для вложенных панелей. */
+  --cursor-reveal-x: -1000px;
+  --cursor-reveal-y: -1000px;
+  --cursor-reveal-active: 0;
+}
+
+[data-cursor-reveal][data-cursor-reveal='border'] {
+  border-image: radial-gradient(
+    circle var(--cursor-reveal-radius) at var(--cursor-reveal-x) var(--cursor-reveal-y),
+    color-mix(
+      in srgb,
+      var(--color-cursor-light) calc(var(--cursor-reveal-active) * var(--cursor-reveal-opacity) * 100%),
+      var(--cursor-reveal-border-color)
+    ),
+    var(--cursor-reveal-border-color)
+  ) 1;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active), (any-hover: none) {
+  .cursor-light {
+    display: none;
+  }
+
+  [data-cursor-reveal][data-cursor-reveal='border'] {
+    border-image: none;
+  }
+}

@@ -115,6 +115,7 @@ export function CharacterIdentity({
 
   return (
     <SheetSection
+      reveal={false}
       aria-label="Основные сведения о персонаже"
       className={styles.section}
     >

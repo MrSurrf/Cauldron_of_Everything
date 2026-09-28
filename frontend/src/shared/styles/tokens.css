@@ -170,6 +170,11 @@
       transparent
     );
   --motion-duration-fast: 160ms;
+  --color-cursor-light: var(--palette-cyan-300);
+  --cursor-light-size: 640px;
+  --cursor-light-opacity: 0.09;
+  --cursor-reveal-radius: 180px;
+  --cursor-reveal-opacity: 0.85;
   --motion-duration-normal: 240ms;
   --motion-easing-standard: ease;
 

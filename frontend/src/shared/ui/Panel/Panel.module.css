@@ -113,10 +113,21 @@
     );
 
   position: absolute;
+  z-index: 1;
   inset: var(--border-width-default);
 
   background: var(--panel-surface-material);
   clip-path: var(--panel-frame-clip);
+}
+
+.edgeLight {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle var(--cursor-reveal-radius) at var(--cursor-reveal-x) var(--cursor-reveal-y),
+    var(--color-cursor-light), transparent
+  );
+  opacity: calc(var(--cursor-reveal-active, 0) * var(--cursor-reveal-opacity));
 }
 
 .innerFrame {
@@ -130,6 +141,7 @@
     );
 
   position: absolute;
+  z-index: 2;
   inset: var(--panel-inner-frame-inset);
 
   background: var(--panel-inner-border);

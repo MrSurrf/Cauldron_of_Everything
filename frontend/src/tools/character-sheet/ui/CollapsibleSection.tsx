@@ -90,6 +90,7 @@ export function CollapsibleSection({
       data-actions-placement={actionsPlacement}
       data-content-layout={contentLayout}
       data-open={contentVisible}
+      data-cursor-reveal="border"
     >
       <header className={styles.header}>
         {collapsible && (
