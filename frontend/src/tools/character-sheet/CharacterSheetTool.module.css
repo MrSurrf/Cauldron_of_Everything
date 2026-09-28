@@ -150,7 +150,7 @@
 
 .viewport {
   height: 100%;
-  background: radial-gradient(
+  background: var(--cursor-background-image, none), radial-gradient(
       circle at 50% -10%,
       var(--sheet-accent-muted),
       transparent 36rem

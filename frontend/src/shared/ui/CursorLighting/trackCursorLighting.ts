@@ -1,16 +1,24 @@
 const surfaceSelector = '[data-cursor-reveal]'
+const backgroundSelector = 'main, [data-cursor-light-background]'
 
 /** Общий цикл обновления: сначала измерения видимых панелей, затем запись стилей. */
-export function trackCursorLighting(glow: HTMLElement) {
+export function trackCursorLighting() {
   const media = window.matchMedia(
     '(any-hover: hover) and (any-pointer: fine) and (prefers-reduced-motion: no-preference) and (forced-colors: none)',
   )
-  const radius = parseFloat(getComputedStyle(glow).getPropertyValue('--cursor-reveal-radius')) || 180
+  const radius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cursor-reveal-radius')) || 180
+  const backgrounds = new Set<HTMLElement>()
   const surfaces = new Set<HTMLElement>()
   const visible = new Set<HTMLElement>()
   const lit = new Set<HTMLElement>()
   let pointer: { x: number; y: number } | null = null
   let frame = 0
+
+  function resetBackground(background: HTMLElement) {
+    background.style.removeProperty('--cursor-light-x')
+    background.style.removeProperty('--cursor-light-y')
+    background.style.removeProperty('--cursor-light-active')
+  }
 
   function resetSurface(surface: HTMLElement) {
     surface.style.removeProperty('--cursor-reveal-x')
@@ -24,11 +32,19 @@ export function trackCursorLighting(glow: HTMLElement) {
     if (!pointer || !media.matches) return
     const { x, y } = pointer
     const measurements = [...visible].map(surface => ({ surface, rect: surface.getBoundingClientRect() }))
+    const backgroundMeasurements = [...backgrounds].map(background => ({
+      background,
+      rect: background.getBoundingClientRect(),
+      borderLeft: background.clientLeft,
+      borderTop: background.clientTop,
+    }))
     const nextLit = new Set<HTMLElement>()
 
-    glow.style.setProperty('--cursor-light-x', `${x}px`)
-    glow.style.setProperty('--cursor-light-y', `${y}px`)
-    glow.dataset.active = 'true'
+    for (const { background, rect, borderLeft, borderTop } of backgroundMeasurements) {
+      background.style.setProperty('--cursor-light-x', `${x - rect.left - borderLeft}px`)
+      background.style.setProperty('--cursor-light-y', `${y - rect.top - borderTop}px`)
+      background.style.setProperty('--cursor-light-active', '1')
+    }
     for (const { surface, rect } of measurements) {
       const dx = Math.max(rect.left - x, 0, x - rect.right)
       const dy = Math.max(rect.top - y, 0, y - rect.bottom)
@@ -52,7 +68,7 @@ export function trackCursorLighting(glow: HTMLElement) {
     pointer = null
     cancelAnimationFrame(frame)
     frame = 0
-    delete glow.dataset.active
+    for (const background of backgrounds) resetBackground(background)
     for (const surface of lit) resetSurface(surface)
   }
 
@@ -81,6 +97,18 @@ export function trackCursorLighting(glow: HTMLElement) {
   // Новые маршруты и раскрытые карточки подключаются автоматически.
   // Изменения style намеренно не наблюдаем: они записываются самим эффектом.
   function refreshSurfaces() {
+    for (const background of backgrounds) {
+      if (!background.isConnected) {
+        resize.unobserve(background)
+        backgrounds.delete(background)
+        resetBackground(background)
+      }
+    }
+    for (const background of document.querySelectorAll<HTMLElement>(backgroundSelector)) {
+      if (backgrounds.has(background)) continue
+      backgrounds.add(background)
+      resize.observe(background)
+    }
     for (const surface of surfaces) {
       if (!surface.isConnected) {
         intersection.unobserve(surface)

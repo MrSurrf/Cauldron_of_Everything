@@ -11,7 +11,10 @@ const meta = {
   tags: ['ai-generated'],
   parameters: { layout: 'fullscreen' },
   render: () => (
-    <div style={{ padding: 'var(--space-7)', minHeight: '100vh' }}>
+    <div data-cursor-light-background="" style={{
+      padding: 'var(--space-7)', minHeight: '100vh',
+      background: 'var(--cursor-background-image, none), var(--color-background)',
+    }}>
       <CursorLighting />
       <Panel aria-label="Панель со свечением" role="region">
         <p>Голубой свет проявляется на краю рядом с курсором.</p>
@@ -34,7 +37,7 @@ export const Reveal: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const panel = canvas.getByRole('region', { name: 'Панель со свечением' })
     const nested = canvas.getByRole('region', { name: 'Вложенная панель' })
-    const glow = canvasElement.querySelector<HTMLElement>('.cursor-light')!
+    const background = canvasElement.querySelector<HTMLElement>('[data-cursor-light-background]')!
     const sheet = canvas.getByRole('region', { name: 'Секция чарлиста' })
     const move = (x: number, y: number, pointerType = 'mouse') => {
       window.dispatchEvent(new PointerEvent('pointermove', {
@@ -44,12 +47,13 @@ export const Reveal: Story = {
     const rect = panel.getBoundingClientRect()
     move(rect.left + 20, rect.top + 1)
     await waitFor(() => {
-      expect(glow).toHaveAttribute('data-active', 'true')
+      expect(background.style.getPropertyValue('--cursor-light-active')).toBe('1')
       expect(panel.style.getPropertyValue('--cursor-reveal-x')).toBe('20px')
       expect(panel.style.getPropertyValue('--cursor-reveal-y')).toBe('1px')
     })
-    expect(getComputedStyle(glow).pointerEvents).toBe('none')
-    expect(getComputedStyle(glow).opacity).toBe('0.09')
+    expect(canvasElement.querySelector('.cursor-light')).toBeNull()
+    expect(getComputedStyle(background).backgroundImage).toContain('radial-gradient')
+    expect(background.style.getPropertyValue('--cursor-light-x')).toBe(`${rect.left + 20 - background.getBoundingClientRect().left}px`)
     expect(nested.style.getPropertyValue('--cursor-reveal-x')).not.toBe('20px')
     expect(getComputedStyle(sheet).borderImageSource).toContain('radial-gradient')
 
@@ -71,18 +75,18 @@ export const Reveal: Story = {
     }
 
     move(12, 12, 'touch')
-    expect(glow).not.toHaveAttribute('data-active')
+    expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
     expect(panel.style.getPropertyValue('--cursor-reveal-active')).toBe('')
     move(rect.left + 1, rect.top + 1)
-    await waitFor(() => expect(glow).toHaveAttribute('data-active', 'true'))
+    await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-active')).toBe('1'))
     window.dispatchEvent(new Event('blur'))
-    expect(glow).not.toHaveAttribute('data-active')
+    expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
 
     const button = canvas.getByRole('button', { name: 'Проверить взаимодействие' })
     await userEvent.click(button)
     await expect(button).toHaveFocus()
     document.documentElement.dispatchEvent(new Event('pointerleave'))
-    expect(glow).not.toHaveAttribute('data-active')
+    expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
     expect(panel.style.getPropertyValue('--cursor-reveal-active')).toBe('')
   },
 }

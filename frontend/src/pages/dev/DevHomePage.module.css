@@ -4,6 +4,7 @@
   padding: var(--space-5);
   place-items: center;
   background:
+    var(--cursor-background-image, none),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-background) 58%, transparent),

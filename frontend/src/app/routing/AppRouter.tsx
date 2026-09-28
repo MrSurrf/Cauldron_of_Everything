@@ -39,6 +39,7 @@ function RouteFallback() {
   return (
     <div
       className={styles.fallback}
+      data-cursor-light-background=""
       role="status"
     >
       Загрузка…

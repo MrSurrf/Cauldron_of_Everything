@@ -1,6 +1,7 @@
 /* Временные стили экрана входа — можно заменить целиком вместе с LoginPage.tsx */
 
 .login-page {
+  background-image: var(--cursor-background-image, none);
   min-height: 100vh;
   display: flex;
   align-items: center;

@@ -14,6 +14,7 @@
   overflow-x: hidden;
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover

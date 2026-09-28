@@ -4,7 +4,7 @@
   min-width: 320px;
   min-height: 100svh;
   place-items: center;
-  background: var(--color-background);
+  background: var(--cursor-background-image, none), var(--color-background);
   color: var(--color-text-secondary);
   font-family: var(--font-family-body);
 }

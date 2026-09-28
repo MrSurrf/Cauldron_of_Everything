@@ -4,6 +4,7 @@
   padding:
     clamp(var(--space-4), 5vw, var(--space-7));
   background:
+    var(--cursor-background-image, none),
     radial-gradient(
       circle at 50% -8rem,
       color-mix(

@@ -7,7 +7,7 @@
   justify-content: center;
   overflow: hidden;
 
-  background: #020108;
+  background: var(--cursor-background-image, none), #020108;
   color: #ffffff;
 }
 
@@ -21,6 +21,7 @@
   overflow: hidden;
 
   background:
+    var(--cursor-background-image, none),
     url('/tools/survey/start/background.png')
     center center / 100% 100%
     no-repeat;

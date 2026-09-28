@@ -91,6 +91,7 @@ export function CharacterSheetContent({
           <ScrollArea
             aria-label="Лист персонажа"
             className={styles.viewport}
+            data-cursor-light-background=""
             contentClassName={styles.document}
             orientation="both"
             rootClassName={styles.scrollArea}

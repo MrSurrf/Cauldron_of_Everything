@@ -4,5 +4,5 @@
   min-height: 42rem;
   padding: var(--space-2);
   overflow: hidden;
-  background: var(--color-canvas-background);
+  background: var(--cursor-background-image, none), var(--color-canvas-background);
 }
