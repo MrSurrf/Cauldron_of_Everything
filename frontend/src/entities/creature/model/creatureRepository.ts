@@ -6,6 +6,16 @@ import type {
   CreatureSection,
   CreatureSectionType,
 } from './creature'
+import {
+  abilityAliases,
+  buildDamageAffinities,
+  parseConditionList,
+  parseFeatureHtml,
+  parseSavingThrows,
+  parseSenses,
+  parseSignedBonusEntries,
+  parseSizeTypeAlignment,
+} from './creatureDataParsers'
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
@@ -28,17 +38,6 @@ type EncyclopediaEntityDetail = EncyclopediaEntitySummary & {
 
 type EncyclopediaListResponse = {
   results: EncyclopediaEntitySummary[]
-}
-
-const abilityAliases: Readonly<
-  Record<CreatureAbilityKey, readonly string[]>
-> = {
-  strength: ['strength', 'str', 'сила', 'сил'],
-  dexterity: ['dexterity', 'dex', 'ловкость', 'лов'],
-  constitution: ['constitution', 'con', 'телосложение', 'тел'],
-  intelligence: ['intelligence', 'int', 'интеллект', 'инт'],
-  wisdom: ['wisdom', 'wis', 'мудрость', 'мдр'],
-  charisma: ['charisma', 'cha', 'харизма', 'хар'],
 }
 
 const sectionTypes = new Set<CreatureSectionType>([
@@ -148,12 +147,22 @@ function toHitPoints(value: unknown): string | undefined {
     return total ?? formula
   }
 
-  return toText(value)
+  const text = toText(value)
+  return text ? normalizeDiceFormulaText(text) : undefined
+}
+
+/** Приводит «676 ( 33 к 20 + 330 )» к «676 (33к20 + 330)». */
+function normalizeDiceFormulaText(text: string): string {
+  return text
+    .replace(/(\d)\s+к\s+(\d)/g, '$1к$2')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\s+,/g, ',')
 }
 
 function toSpeed(value: unknown): string | undefined {
   const text = toText(value)
-  if (text) return text
+  if (text) return normalizeDiceFormulaText(text).replace(/футов/gi, 'фт.')
   if (!isRecord(value)) return undefined
 
   const parts = Object.entries(value)
@@ -230,25 +239,65 @@ function normalizeSectionType(
   return 'custom'
 }
 
+// Порядок секций статблока: собираются из выделенных *_html полей датасета,
+// а не из data.sections, где у первой секции нет заголовка, а типов нет вовсе.
+const sectionFieldOrder: readonly {
+  key: string
+  type: CreatureSectionType
+  title: string
+}[] = [
+  { key: 'traits_html', type: 'traits', title: 'Особенности' },
+  { key: 'actions_html', type: 'actions', title: 'Действия' },
+  { key: 'bonus_actions_html', type: 'bonus-actions', title: 'Бонусные действия' },
+  { key: 'reactions_html', type: 'reactions', title: 'Реакции' },
+  { key: 'legendary_actions_html', type: 'legendary-actions', title: 'Легендарные действия' },
+  { key: 'lair_actions_html', type: 'lair-actions', title: 'Действия логова' },
+  { key: 'regional_effects_html', type: 'regional-effects', title: 'Региональные эффекты' },
+  { key: 'description_html', type: 'description', title: 'Описание' },
+]
+
+function withParsedEntries(section: CreatureSection): CreatureSection {
+  if (section.type === 'description' || section.type === 'custom') return section
+
+  const parsed = parseFeatureHtml(section.html, section.id)
+  if (!parsed || parsed.entries.length === 0) return section
+
+  return {
+    ...section,
+    entries: parsed.entries,
+    introduction: parsed.introduction ?? section.introduction,
+  }
+}
+
 function toSections(
-  value: unknown,
+  data: JsonRecord,
   fallbackHtml: string,
   slug: string,
 ): readonly CreatureSection[] {
-  const sections = Array.isArray(value)
-    ? value.flatMap((section, index): CreatureSection[] => {
+  const fromFields = sectionFieldOrder.flatMap(({ key, type, title }): CreatureSection[] => {
+    const html = toText(data[key])
+    if (!html) return []
+
+    return [withParsedEntries({ id: `${slug}-${type}`, type, title, html })]
+  })
+  if (fromFields.length > 0) return fromFields
+
+  const sections = Array.isArray(data.sections)
+    ? data.sections.flatMap((section, index): CreatureSection[] => {
         if (!isRecord(section)) return []
 
-        const title = toText(pick(section, 'title', 'name')) ?? `Раздел ${index + 1}`
+        // У первой секции датасета title = null — это особенности.
+        const title = toText(pick(section, 'title', 'name'))
+          ?? (index === 0 ? 'Особенности' : `Раздел ${index + 1}`)
         const html = toText(pick(section, 'html', 'content_html', 'content'))
         if (!html) return []
 
-        return [{
+        return [withParsedEntries({
           id: toText(section.id) ?? `${slug}-section-${index + 1}`,
           type: normalizeSectionType(section.type, title),
           title,
           html,
-        }]
+        })]
       })
     : []
 
@@ -268,8 +317,48 @@ function toSections(
   return sections
 }
 
+function toSavingThrows(
+  value: unknown,
+): CreatureEntity['savingThrows'] {
+  const text = toText(value)
+  if (text) {
+    const parsed = parseSavingThrows(text)
+    if (parsed) return parsed
+  }
+
+  return toStringRecord(value) as CreatureEntity['savingThrows']
+}
+
+function toSkills(value: unknown): CreatureEntity['skills'] {
+  const text = toText(value)
+  if (text) {
+    const parsed = parseSignedBonusEntries(text)
+    if (parsed) return parsed
+  }
+
+  return toStringRecord(value)
+}
+
 function toCreatureEntity(detail: EncyclopediaEntityDetail): CreatureEntity {
   const data = isRecord(detail.data) ? detail.data : {}
+
+  const sensesText = toText(pick(data, 'senses'))
+  const parsedSenses = sensesText ? parseSenses(sensesText) : undefined
+
+  const vulnerabilitiesText = toText(pick(data, 'damage_vulnerabilities', 'damageVulnerabilities'))
+  const resistancesText = toText(pick(data, 'damage_resistances', 'damageResistances'))
+  const immunitiesText = toText(pick(data, 'damage_immunities', 'damageImmunities'))
+  const damageAffinities = buildDamageAffinities({
+    vulnerabilities: vulnerabilitiesText,
+    resistances: resistancesText,
+    immunities: immunitiesText,
+  })
+
+  // У части сущностей таксономия не разнесена по полям — читаем объединённую строку.
+  const sizeTypeAlignment = toText(pick(data, 'size_type_alignment'))
+  const taxonomyFallback = sizeTypeAlignment
+    ? parseSizeTypeAlignment(sizeTypeAlignment)
+    : undefined
 
   return {
     id: String(detail.id),
@@ -277,25 +366,46 @@ function toCreatureEntity(detail: EncyclopediaEntityDetail): CreatureEntity {
     slug: detail.slug,
     name: detail.name,
     nameEn: detail.name_en || undefined,
-    size: toText(pick(data, 'size')),
-    creatureType: toText(pick(data, 'creature_type', 'creatureType', 'type')),
-    alignment: toText(pick(data, 'alignment')),
+    size: toText(pick(data, 'size')) ?? taxonomyFallback?.size,
+    creatureType: toText(pick(data, 'creature_type', 'creatureType', 'type')) ?? taxonomyFallback?.creatureType,
+    alignment: toText(pick(data, 'alignment')) ?? taxonomyFallback?.alignment,
     armorClass: toArmorClass(pick(data, 'armor_class', 'armorClass', 'ac')),
     hitPoints: toHitPoints(pick(data, 'hit_points', 'hitPoints', 'hp')),
     speed: toSpeed(pick(data, 'speed', 'movement')),
     abilities: toAbilities(pick(data, 'abilities', 'ability_scores', 'stats')),
-    savingThrows: toStringRecord(pick(data, 'saving_throws', 'savingThrows', 'saves')),
-    skills: toStringRecord(pick(data, 'skills')),
-    damageVulnerabilities: toStringList(pick(data, 'damage_vulnerabilities', 'damageVulnerabilities')),
-    damageResistances: toStringList(pick(data, 'damage_resistances', 'damageResistances')),
-    damageImmunities: toStringList(pick(data, 'damage_immunities', 'damageImmunities')),
-    conditionImmunities: toStringList(pick(data, 'condition_immunities', 'conditionImmunities')),
-    senses: toStringList(pick(data, 'senses')),
+    savingThrows: toSavingThrows(pick(data, 'saving_throws', 'savingThrows', 'saves')),
+    skills: toSkills(pick(data, 'skills')),
+    // Распарсенные в бейджи строки примечаниями не дублируем;
+    // в примечания уходят только нераспознанные фрагменты.
+    damageVulnerabilities: vulnerabilitiesText
+      ? (damageAffinities.vulnerabilities.length > 0 ? damageAffinities.vulnerabilities : undefined)
+      : toStringList(pick(data, 'damage_vulnerabilities', 'damageVulnerabilities')),
+    damageResistances: resistancesText
+      ? (damageAffinities.resistances.length > 0 ? damageAffinities.resistances : undefined)
+      : toStringList(pick(data, 'damage_resistances', 'damageResistances')),
+    damageImmunities: immunitiesText
+      ? (damageAffinities.immunities.length > 0 ? damageAffinities.immunities : undefined)
+      : toStringList(pick(data, 'damage_immunities', 'damageImmunities')),
+    damageAffinities: damageAffinities.affinities.length > 0
+      ? damageAffinities.affinities
+      : undefined,
+    conditionImmunities: (() => {
+      const raw = pick(data, 'condition_immunities', 'conditionImmunities')
+      const text = toText(raw)
+      return (text ? parseConditionList(text) : undefined) ?? toStringList(raw)
+    })(),
+    vision: parsedSenses && parsedSenses.vision.length > 0
+      ? parsedSenses.vision
+      : undefined,
+    senses: sensesText
+      ? (parsedSenses && parsedSenses.notes.length > 0 ? parsedSenses.notes : undefined)
+      : toStringList(pick(data, 'senses')),
+    passivePerception: parsedSenses?.passivePerception,
     languages: toStringList(pick(data, 'languages')),
     challengeRating: toText(pick(data, 'challenge_rating', 'challengeRating', 'cr')),
     proficiencyBonus: toText(pick(data, 'proficiency_bonus', 'proficiencyBonus')),
     habitat: toStringList(pick(data, 'habitat', 'environments')),
-    sections: toSections(data.sections, detail.content_html || '', detail.slug),
+    sections: toSections(data, detail.content_html || '', detail.slug),
   }
 }
 
