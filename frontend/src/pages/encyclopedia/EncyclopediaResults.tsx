@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Panel, PlaceholderIcon } from '../../shared/ui'
 import { encyclopediaSections, sectionPath, typeLabel } from './encyclopediaSections'
+import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import { entryPath, fetchEncyclopedia } from './encyclopediaApi'
 import type { EncyclopediaEntry } from './encyclopediaApi'
 import styles from './EncyclopediaPage.module.css'
@@ -33,7 +34,7 @@ export function EncyclopediaResults({ query = '', type }: { query?: string; type
     <>
       {sections.length > 0 && <div className={styles.resultGrid}>
         {sections.map((section) => <Link className={styles.cardLink} to={sectionPath(section)} key={section.id}>
-          <Panel className={styles.card} padding="compact"><div className={styles.cardContent}><PlaceholderIcon /><div className={styles.cardCopy}><h3>{section.title}</h3><p>Раздел энциклопедии</p></div></div></Panel>
+          <Panel className={styles.card} padding="compact"><div className={styles.cardContent}><EncyclopediaSectionIcon sectionId={section.id} /><div className={styles.cardCopy}><h3>{section.title}</h3><p>Раздел энциклопедии</p></div></div></Panel>
         </Link>)}
       </div>}
       {!current && <p role="status">Ищем материалы…</p>}

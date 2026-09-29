@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { IconFrame, Panel, PlaceholderIcon, ScrollArea, TextInput } from '../../shared/ui'
 import { clearHistory, parseVisits, readHistorySnapshot, subscribeHistory } from '../../entities/encyclopedia'
 import { encyclopediaGroups, sectionPath } from './encyclopediaSections'
+import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import { EncyclopediaResults } from './EncyclopediaResults'
 import styles from './EncyclopediaPage.module.css'
 
@@ -74,7 +75,7 @@ export default function EncyclopediaPage() {
                 <Link className={`${styles.cardLink} ${styles.sectionCardLink}`} key={section.id} to={sectionPath(section)}>
                   <Panel className={styles.card} padding="compact">
                     <div className={styles.cardContent}>
-                      <IconFrame size="4rem" contentSize="2rem" glow={false} aria-hidden="true"><PlaceholderIcon /></IconFrame>
+                      <IconFrame size="4rem" contentSize="2.75rem" glow={false} aria-hidden="true"><EncyclopediaSectionIcon sectionId={section.id} /></IconFrame>
                       <div className={styles.cardCopy}><h3>{section.title}</h3><p>{section.description}</p></div>
                       <span className={styles.cardArrow} aria-hidden="true"><PlaceholderIcon /></span>
                     </div>

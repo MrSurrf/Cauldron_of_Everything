@@ -1,0 +1,8 @@
+.icon {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-brand-bright);
+  -webkit-mask: var(--section-icon-url) center / contain no-repeat;
+  mask: var(--section-icon-url) center / contain no-repeat;
+}
