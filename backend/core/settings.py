@@ -161,7 +161,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'core.permissions.IsSiteMember',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -185,8 +185,8 @@ CORS_ALLOWED_ORIGINS = env.list(
     ],
 )
 
-# Белый список email, которым разрешён вход по коду (через запятую).
-# Пустой список — вход открыт для всех. Используется для временного закрытия dev-стенда.
+# Белый список email для входа и доступа к API сайта (через запятую).
+# Пустой список снимает ограничение по email, но API всё равно требует авторизацию.
 AUTH_ALLOWED_EMAILS = [
     email.strip().lower()
     for email in env.list('AUTH_ALLOWED_EMAILS', default=[])

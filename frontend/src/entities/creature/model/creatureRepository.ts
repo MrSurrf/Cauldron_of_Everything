@@ -1,3 +1,4 @@
+import { authFetch } from '../../../shared/api/auth'
 import type {
   CreatureAbilityKey,
   CreatureAbilityScore,
@@ -410,7 +411,7 @@ function toCreatureEntity(detail: EncyclopediaEntityDetail): CreatureEntity {
 }
 
 async function requestJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, {
+  const response = await authFetch(url, {
     headers: { Accept: 'application/json' },
     signal,
   })

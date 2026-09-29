@@ -1,3 +1,5 @@
+import { authFetch } from '../../shared/api/auth'
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
 
 export type EncyclopediaEntry = {
@@ -10,7 +12,7 @@ export type EncyclopediaEntry = {
 }
 
 export async function fetchEncyclopedia<T>(path: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}/api/encyclopedia/${path}`, { signal, headers: { Accept: 'application/json' } })
+  const response = await authFetch(`${API_BASE_URL}/api/encyclopedia/${path}`, { signal, headers: { Accept: 'application/json' } })
   if (!response.ok) throw new Error(`Не удалось загрузить материалы (HTTP ${response.status}).`)
   return response.json() as Promise<T>
 }

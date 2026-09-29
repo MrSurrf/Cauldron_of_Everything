@@ -36,7 +36,7 @@ export async function sendSurveyResult(
 }
 
 export async function fetchSubmissions(): Promise<Submission[]> {
-  const response = await fetch(`${API_BASE_URL}/api/submissions/`)
+  const response = await authFetch(`${API_BASE_URL}/api/submissions/`)
 
   if (!response.ok) {
     throw new Error(

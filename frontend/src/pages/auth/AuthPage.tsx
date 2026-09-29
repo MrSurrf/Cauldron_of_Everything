@@ -13,7 +13,7 @@ import {
   requestCode,
   saveTokens,
   verifyCode,
-} from '../../tools/survey/auth'
+} from '../../shared/api/auth'
 import styles from './AuthPage.module.css'
 
 type AuthPageProps = {

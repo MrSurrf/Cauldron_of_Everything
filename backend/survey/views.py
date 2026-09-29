@@ -3,14 +3,15 @@ import logging
 import secrets
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from core.permissions import IsSiteMember, email_is_allowed
 
 from .models import Answer, EmailAuthCode, Question, SurveySubmission
 from .serializers import (
@@ -57,10 +58,10 @@ class RequestCodeView(generics.GenericAPIView):
         email = serializer.validated_data["email"].lower()
 
         # Временное ограничение доступа: если задан белый список — пускаем только его.
-        if settings.AUTH_ALLOWED_EMAILS and email not in settings.AUTH_ALLOWED_EMAILS:
+        if not email_is_allowed(email):
             logger.info("Отклонён вход для %s: email не в белом списке", email)
             return Response(
-                {"detail": "Доступ к анкете временно ограничен."},
+                {"detail": "Доступ к сайту временно ограничен."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -113,6 +114,12 @@ class VerifyCodeView(generics.GenericAPIView):
         email = serializer.validated_data["email"].lower()
         code = serializer.validated_data["code"]
 
+        if not email_is_allowed(email):
+            return Response(
+                {"detail": "Доступ к сайту временно ограничен."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         auth_code = (
             EmailAuthCode.objects.filter(email=email, is_used=False)
             .order_by("-created_at")
@@ -153,10 +160,22 @@ class VerifyCodeView(generics.GenericAPIView):
             user.set_unusable_password()
             user.save(update_fields=["password"])
 
+        if not user.is_active:
+            return Response({"detail": "Учётная запись отключена."}, status=status.HTTP_403_FORBIDDEN)
+
         refresh = RefreshToken.for_user(user)
         return Response(
             {"access": str(refresh.access_token), "refresh": str(refresh)}
         )
+
+
+class SessionView(APIView):
+    """Проверка JWT и текущего разрешения на доступ к сайту."""
+
+    permission_classes = [IsSiteMember]
+
+    def get(self, request):
+        return Response({"authenticated": True})
 
 
 class QuestionListView(generics.ListAPIView):
@@ -176,17 +195,13 @@ class SurveySubmissionListCreateView(generics.ListCreateAPIView):
         "character_name": "...",
         "answers": {"question_id": значение, ...}
     }.
-    GET открыт (страница результатов мастера), POST требует JWT —
-    отправлять результат могут только вошедшие по email-коду пользователи.
+    Чтение и запись требуют JWT и доступа по текущему белому списку.
     """
 
     serializer_class = SurveySubmissionSerializer
     queryset = SurveySubmission.objects.all().order_by("-created_at")
 
-    def get_permissions(self):
-        if self.request.method == "POST":
-            return [IsAuthenticated()]
-        return [AllowAny()]
+    permission_classes = [IsSiteMember]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

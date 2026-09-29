@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 
 import { SiteHeader } from '../layouts/SiteHeader'
+import { AccessGate } from './AccessGate'
 import styles from './AppRouter.module.css'
 
 const SurveyRoutePage = lazy(
@@ -73,6 +74,7 @@ function BestiaryRoute() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <AccessGate>
       <div className={styles.shell}>
         <SiteHeader />
         <div className={styles.content}>
@@ -120,6 +122,7 @@ export function AppRouter() {
           </Suspense>
         </div>
       </div>
+      </AccessGate>
     </BrowserRouter>
   )
 }
