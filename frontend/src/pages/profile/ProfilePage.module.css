@@ -1,5 +1,5 @@
 .page {
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   padding: var(--space-6) var(--space-5) var(--space-7);
   background: var(--cursor-background-image, none), var(--color-background);
   color: var(--color-text-secondary);

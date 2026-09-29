@@ -1,6 +1,6 @@
 .page {
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   padding:
     clamp(var(--space-4), 5vw, var(--space-7));
   background:
@@ -22,7 +22,7 @@
 .status {
   display: grid;
   width: min(100%, 36rem);
-  min-height: calc(100svh - var(--space-7) * 2);
+  min-height: calc(var(--app-viewport-height) - var(--space-7) * 2);
   margin-inline: auto;
   align-content: center;
   justify-items: start;

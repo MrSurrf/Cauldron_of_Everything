@@ -1,8 +1,18 @@
+.shell {
+  min-width: 320px;
+  min-height: 100svh;
+  background: var(--color-background);
+}
+
+.content {
+  min-height: var(--app-viewport-height);
+}
+
 .fallback,
 .notFound {
   display: grid;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   place-items: center;
   background: var(--cursor-background-image, none), var(--color-background);
   color: var(--color-text-secondary);

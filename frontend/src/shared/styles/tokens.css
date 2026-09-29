@@ -171,8 +171,8 @@
     );
   --motion-duration-fast: 160ms;
   --color-cursor-light: var(--palette-cyan-300);
-  --cursor-light-size: 640px;
-  --cursor-light-opacity: 0.09;
+  --cursor-light-size: 760px;
+  --cursor-light-opacity: 0.045;
   --cursor-reveal-radius: 180px;
   --cursor-reveal-opacity: 0.85;
   --motion-duration-normal: 240ms;
@@ -184,6 +184,10 @@
   --z-index-dropdown: 100;
   --z-index-overlay: 200;
   --z-index-tooltip: 300;
+
+  /* Общая оболочка сайта */
+  --site-header-height: 5.5rem;
+  --app-viewport-height: calc(100svh - var(--site-header-height));
 
   /* Плитки workspace */
   --tile-surface: var(--color-surface-default);
@@ -198,6 +202,12 @@
   --tile-shadow-dragging: var(--shadow-overlay);
   --tile-resize-handle-size: 1rem;
   --tile-dragging-opacity: 0.92;
+}
+
+@media (max-width: 50rem) {
+  :root {
+    --site-header-height: 4.5rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

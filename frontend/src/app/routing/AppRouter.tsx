@@ -6,8 +6,10 @@ import {
   BrowserRouter,
   Route,
   Routes,
+  useLocation,
 } from 'react-router-dom'
 
+import { SiteHeader } from '../layouts/SiteHeader'
 import styles from './AppRouter.module.css'
 
 const SurveyRoutePage = lazy(
@@ -57,46 +59,57 @@ function NotFoundPage() {
   )
 }
 
+function BestiaryRoute() {
+  const location = useLocation()
+
+  return <BestiaryPage key={location.search} />
+}
+
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<RouteFallback />}>
-        <Routes>
-          <Route
-            path="/"
-            element={<DevHomePage />}
-          />
-          <Route
-            path="/survey"
-            element={<SurveyRoutePage />}
-          />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route
-            path="/tools/character-sheet"
-            element={<CharacterSheetRoutePage />}
-          />
-          <Route
-            path="/encyclopedia/bestiary"
-            element={<BestiaryPage />}
-          />
-          <Route
-            path="/encyclopedia/bestiary/tarrasque"
-            element={<MockTarrasquePage />}
-          />
-          <Route
-            path="/encyclopedia/bestiary/:slug"
-            element={<BestiaryEntityPage />}
-          />
-          <Route
-            path="/encyclopedia/creature/:slug"
-            element={<BestiaryEntityPage />}
-          />
-          <Route
-            path="*"
-            element={<NotFoundPage />}
-          />
-        </Routes>
-      </Suspense>
+      <div className={styles.shell}>
+        <SiteHeader />
+        <div className={styles.content}>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route
+                path="/"
+                element={<DevHomePage />}
+              />
+              <Route
+                path="/survey"
+                element={<SurveyRoutePage />}
+              />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route
+                path="/tools/character-sheet"
+                element={<CharacterSheetRoutePage />}
+              />
+              <Route
+                path="/encyclopedia/bestiary"
+                element={<BestiaryRoute />}
+              />
+              <Route
+                path="/encyclopedia/bestiary/tarrasque"
+                element={<MockTarrasquePage />}
+              />
+              <Route
+                path="/encyclopedia/bestiary/:slug"
+                element={<BestiaryEntityPage />}
+              />
+              <Route
+                path="/encyclopedia/creature/:slug"
+                element={<BestiaryEntityPage />}
+              />
+              <Route
+                path="*"
+                element={<NotFoundPage />}
+              />
+            </Routes>
+          </Suspense>
+        </div>
+      </div>
     </BrowserRouter>
   )
 }

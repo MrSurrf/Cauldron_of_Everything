@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   CreatureCompactCard,
@@ -82,7 +82,11 @@ function FacetControl({
 
 export default function BestiaryPage() {
   const navigate = useNavigate()
-  const [filters, setFilters] = useState(emptyFilters)
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState(() => ({
+    ...emptyFilters(),
+    query: searchParams.get('search') ?? '',
+  }))
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
   const [selectedId, setSelectedId] = useState<number | null>(null)

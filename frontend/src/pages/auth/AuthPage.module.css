@@ -1,6 +1,6 @@
 .page {
   display: grid;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   padding: clamp(var(--space-4), 5vw, var(--space-7));
   place-items: center;
 
@@ -35,7 +35,7 @@
   --panel-surface-end: var(--color-background);
 
   width: min(100%, 72rem);
-  min-height: min(43rem, calc(100svh - var(--space-7)));
+  min-height: min(43rem, calc(var(--app-viewport-height) - var(--space-7)));
 }
 
 .layout {
@@ -216,7 +216,7 @@
   }
 
   .authPanel {
-    min-height: min(42rem, calc(100svh - var(--space-6)));
+    min-height: min(42rem, calc(var(--app-viewport-height) - var(--space-6)));
   }
 
   .layout {
@@ -238,7 +238,7 @@
   }
 
   .authPanel {
-    min-height: calc(100svh - var(--space-4));
+    min-height: calc(var(--app-viewport-height) - var(--space-4));
   }
 
   .authSide {

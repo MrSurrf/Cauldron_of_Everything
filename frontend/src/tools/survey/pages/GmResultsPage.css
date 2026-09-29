@@ -10,7 +10,7 @@
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   color: #ffffff;
   font-family: var(--gm-font);
@@ -266,7 +266,7 @@
       calc(100vw - 48px)
     );
 
-  height: 100svh;
+  height: var(--app-viewport-height);
   min-height: 0;
 
   margin: 0 auto;
@@ -629,7 +629,7 @@
 
   height:
     calc(
-      100svh - 96px
+      var(--app-viewport-height) - 96px
     );
 
   min-height: 460px;

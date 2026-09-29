@@ -1,7 +1,7 @@
 .root {
   width: 100%;
   min-width: 320px;
-  height: 100svh;
+  height: var(--app-viewport-height);
   min-height: 0;
   overflow: hidden;
 }

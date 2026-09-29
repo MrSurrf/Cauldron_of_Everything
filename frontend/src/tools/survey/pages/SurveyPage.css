@@ -9,7 +9,7 @@
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   overflow-x: hidden;
 
@@ -50,7 +50,7 @@
       calc(100vw - 48px)
     );
 
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   margin: 0 auto;
 
