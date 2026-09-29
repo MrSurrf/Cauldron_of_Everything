@@ -89,7 +89,6 @@
 .facetButton:focus-visible,
 .sortField select:focus-visible,
 .alphabet button:focus-visible,
-.creatureButton:focus-visible,
 .creatureButton:focus-visible {
   border-color: var(--color-interactive);
   outline: var(--border-width-default) solid var(--color-interactive);
@@ -205,9 +204,9 @@
 
 .creatureGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-  gap: var(--space-3);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--space-2);
 }
 
 .creatureGroups {
@@ -239,9 +238,10 @@
 }
 
 .creatureButton {
+  display: flex;
   min-width: 0;
   padding: 0;
-  border: var(--border-width-default) solid transparent;
+  border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   text-align: left;
@@ -253,7 +253,6 @@
 
 .creatureButton:hover > *,
 .creatureButton[data-selected='true'] > * {
-  border-color: var(--color-border-accent);
   background: var(--color-surface-accent);
 }
 

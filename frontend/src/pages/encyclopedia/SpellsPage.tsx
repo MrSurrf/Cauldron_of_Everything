@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recordVisit } from '../../entities/encyclopedia'
-import { Button, Checkbox, Panel, Popover, TextInput } from '../../shared/ui'
+import { Button, Checkbox, ListCard, Panel, Popover, TextInput } from '../../shared/ui'
 import { fetchEncyclopedia } from './encyclopediaApi'
 import { loadSpells, type CatalogSpell } from './spellCatalog'
 import {
@@ -125,17 +125,16 @@ export default function SpellsPage() {
       aria-pressed={selectedId === spell.id}
       onClick={() => { setSelectedId(spell.id); setDetail(null) }}
     >
-      <Panel className={styles.spellCard} padding="compact">
-        <span className={styles.cardInner}>
-          <span className={styles.spellLevel}>{spell.level ? `[${spell.level}]` : '—'}</span>
-          <span className={styles.spellName}>{spell.name}</span>
-          <span className={styles.spellSchool}>{spell.school || 'Школа не указана'}</span>
-          <span className={styles.spellTags}>
-            {spell.concentration === 'Да' && <span title="Концентрация">К</span>}
-            {spell.ritual === 'Да' && <span title="Ритуал">Р</span>}
-          </span>
-        </span>
-      </Panel>
+      <ListCard
+        name={spell.name}
+        metric={spell.level || '—'}
+        metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
+        tags={[
+          spell.school || 'Школа не указана',
+          ...(spell.concentration === 'Да' ? ['Концентрация'] : []),
+          ...(spell.ritual === 'Да' ? ['Ритуал'] : []),
+        ]}
+      />
     </button>
   }
 

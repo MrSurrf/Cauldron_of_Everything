@@ -1,6 +1,6 @@
 import type { CreatureEntity } from '../model/creature'
+import { ListCard } from '../../../shared/ui/ListCard'
 import { getCreatureTaxonomy } from './creatureFormatting'
-import styles from './CreatureReference.module.css'
 
 export type CreatureReferenceProps = {
   className?: string
@@ -11,39 +11,18 @@ export function CreatureReference({
   className,
   entity,
 }: CreatureReferenceProps) {
-  const rootClassName = [
-    styles.root,
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ')
   const taxonomy = getCreatureTaxonomy(entity)
+  const rating = entity.challengeRating?.split(' ')[0] || '—'
 
   return (
-    <span
-      className={rootClassName}
+    <ListCard
+      className={className}
       data-entity-id={entity.id}
       data-entity-type={entity.entityType}
-    >
-      <span
-        className={styles.mark}
-        aria-hidden="true"
-      >
-        {entity.name.slice(0, 1)}
-      </span>
-      <span className={styles.content}>
-        <strong>{entity.name}</strong>
-        {(taxonomy || entity.nameEn) && (
-          <small>
-            {taxonomy || entity.nameEn}
-          </small>
-        )}
-      </span>
-      {entity.challengeRating && (
-        <span className={styles.challenge}>
-          ПО {entity.challengeRating.split(' ')[0]}
-        </span>
-      )}
-    </span>
+      name={entity.name}
+      metric={`ПО ${rating}`}
+      metricLabel={`Показатель опасности: ${rating}`}
+      tags={[taxonomy || entity.nameEn || '']}
+    />
   )
 }

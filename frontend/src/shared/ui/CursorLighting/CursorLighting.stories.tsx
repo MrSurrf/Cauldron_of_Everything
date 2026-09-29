@@ -23,6 +23,11 @@ const meta = {
           Вложенная панель получает собственные координаты света.
         </Panel>
       </Panel>
+      <a href="#interactive-panel">
+        <Panel aria-label="Кликабельная карточка" role="region" padding="compact">
+          У ссылки остаётся только обычное состояние наведения.
+        </Panel>
+      </a>
       <SheetSection aria-label="Секция чарлиста" title="Секция чарлиста">
         Подсветка существующей границы.
       </SheetSection>
@@ -37,6 +42,7 @@ export const Reveal: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const panel = canvas.getByRole('region', { name: 'Панель со свечением' })
     const nested = canvas.getByRole('region', { name: 'Вложенная панель' })
+    const interactive = canvas.getByRole('region', { name: 'Кликабельная карточка' })
     const background = canvasElement.querySelector<HTMLElement>('[data-cursor-light-background]')!
     const sheet = canvas.getByRole('region', { name: 'Секция чарлиста' })
     const move = (x: number, y: number, pointerType = 'mouse') => {
@@ -73,6 +79,11 @@ export const Reveal: Story = {
     } finally {
       added.remove()
     }
+
+    const interactiveRect = interactive.getBoundingClientRect()
+    move(interactiveRect.left + 2, interactiveRect.top + 2)
+    await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-x')).toBe(`${interactiveRect.left + 2 - background.getBoundingClientRect().left}px`))
+    expect(interactive.style.getPropertyValue('--cursor-reveal-active')).toBe('')
 
     move(12, 12, 'touch')
     expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')

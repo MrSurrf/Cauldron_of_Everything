@@ -1,5 +1,15 @@
 const surfaceSelector = '[data-cursor-reveal]'
 const backgroundSelector = 'main, [data-cursor-light-background]'
+const interactiveSelector = [
+  'a[href]', 'button', 'input', 'select', 'textarea', 'label', 'summary',
+  '[contenteditable="true"]', '[role="button"]', '[role="link"]',
+  '[role="checkbox"]', '[role="radio"]', '[role="switch"]',
+  '[role="tab"]', '[role="option"]', '[role="menuitem"]',
+].join(', ')
+
+function isInteractiveSurface(surface: HTMLElement) {
+  return surface.closest(interactiveSelector) !== null
+}
 
 /** Общий цикл обновления: сначала измерения видимых панелей, затем запись стилей. */
 export function trackCursorLighting() {
@@ -46,6 +56,7 @@ export function trackCursorLighting() {
       background.style.setProperty('--cursor-light-active', '1')
     }
     for (const { surface, rect } of measurements) {
+      if (isInteractiveSurface(surface)) continue
       const dx = Math.max(rect.left - x, 0, x - rect.right)
       const dy = Math.max(rect.top - y, 0, y - rect.bottom)
       if (!rect.width || !rect.height || Math.hypot(dx, dy) > radius) continue
@@ -110,7 +121,7 @@ export function trackCursorLighting() {
       resize.observe(background)
     }
     for (const surface of surfaces) {
-      if (!surface.isConnected) {
+      if (!surface.isConnected || isInteractiveSurface(surface)) {
         intersection.unobserve(surface)
         resize.unobserve(surface)
         surfaces.delete(surface)
@@ -119,7 +130,7 @@ export function trackCursorLighting() {
       }
     }
     for (const surface of document.querySelectorAll<HTMLElement>(surfaceSelector)) {
-      if (surfaces.has(surface)) continue
+      if (surfaces.has(surface) || isInteractiveSurface(surface)) continue
       surfaces.add(surface)
       intersection.observe(surface)
       resize.observe(surface)
