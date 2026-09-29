@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useId,
   useRef,
 } from 'react'
@@ -51,6 +52,7 @@ export const ScrollArea = forwardRef<
     useRef<HTMLDivElement>(null)
   const contentRef =
     useRef<HTMLDivElement>(null)
+  const wheelTargetRef = useRef<{ position: number; time: number } | null>(null)
   const horizontalEnabled = includesAxis(
     orientation,
     'horizontal',
@@ -103,6 +105,57 @@ export const ScrollArea = forwardRef<
     },
     [ref],
   )
+
+  useEffect(() => {
+    if (orientation !== 'horizontal') return
+    const viewport = viewportRef.current
+    if (!viewport) return
+
+    function handleWheel(event: WheelEvent) {
+      if (!viewport || event.defaultPrevented || event.ctrlKey || event.shiftKey) return
+      // Тачпад уже передаёт горизонтальную ось браузеру напрямую.
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY) || event.deltaY === 0) return
+      // Вложенное вертикальное поле сохраняет собственную прокрутку.
+      let target = event.target
+      while (target instanceof Element && target !== viewport) {
+        if (target.scrollHeight > target.clientHeight + 1 &&
+            /auto|scroll/.test(getComputedStyle(target).overflowY)) return
+        target = target.parentElement
+      }
+
+      const maximum = viewport.scrollWidth - viewport.clientWidth
+      if (maximum <= 1 || viewport.scrollHeight > viewport.clientHeight + 1) return
+      const direction = Math.sign(event.deltaY)
+      const current = viewport.scrollLeft
+      if ((direction < 0 && current <= 1) || (direction > 0 && current >= maximum - 1)) {
+        wheelTargetRef.current = null
+        return
+      }
+
+      const lineHeight = Number.parseFloat(getComputedStyle(viewport).lineHeight)
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? Number.isFinite(lineHeight) ? lineHeight : 20
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? viewport.clientWidth : 1
+      const now = performance.now()
+      const pending = wheelTargetRef.current
+      const origin = pending && now - pending.time < 200 ? pending.position : current
+      const next = Math.min(maximum, Math.max(0, origin + event.deltaY * unit))
+      if (next === origin && Math.abs(current - next) <= 1) return
+
+      event.preventDefault()
+      wheelTargetRef.current = { position: next, time: now }
+      viewport.scrollTo({
+        left: next,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      })
+    }
+
+    viewport.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      viewport.removeEventListener('wheel', handleWheel)
+      wheelTargetRef.current = null
+    }
+  }, [orientation])
 
   return (
     <div
