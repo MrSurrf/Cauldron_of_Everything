@@ -64,11 +64,12 @@ export default function SpellsPage() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [detail, setDetail] = useState<SpellDetail | null>(null)
+  const [showFavorites, setShowFavorites] = useState(false)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const selected = catalog.find((spell) => spell.id === selectedId)
-  const results = useMemo(() => filterSpells(catalog, filters), [catalog, filters])
+  const selected = showFavorites ? undefined : catalog.find((spell) => spell.id === selectedId)
+  const results = useMemo(() => showFavorites ? [] : filterSpells(catalog, filters), [catalog, filters, showFavorites])
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
@@ -124,6 +125,7 @@ export default function SpellsPage() {
       data-selected={selectedId === spell.id}
       aria-pressed={selectedId === spell.id}
       onClick={() => { setSelectedId(spell.id); setDetail(null) }}
+      onDoubleClick={() => navigate(`/encyclopedia/entry/${spell.id}`)}
     >
       <ListCard
         name={spell.name}
@@ -141,14 +143,17 @@ export default function SpellsPage() {
   return <main className={base.page}>
     <h1 className={base.visuallyHidden}>Заклинания</h1>
     <Panel className={`${base.filtersPanel} ${styles.filtersPanel}`} padding="compact">
-      <div className={base.sourceTabs} role="group" aria-label="Происхождение заклинаний">
+      <div className={base.sourceTabs} role="group" aria-label="Подборка заклинаний">
         {(['official', 'homebrew'] as const).map((mode) => <button
           className={base.sourceTab} key={mode} type="button"
-          data-active={filters.sourceMode === mode}
-          aria-pressed={filters.sourceMode === mode}
+          data-active={!showFavorites && filters.sourceMode === mode}
+          aria-pressed={!showFavorites && filters.sourceMode === mode}
           disabled={status !== 'ready'}
-          onClick={() => updateFilters((current) => ({ ...current, sourceMode: mode }))}
+          onClick={() => { setShowFavorites(false); updateFilters((current) => ({ ...current, sourceMode: mode })) }}
         >{mode === 'official' ? 'Официальные' : 'Homebrew'}</button>)}
+        <button className={base.sourceTab} type="button" data-active={showFavorites}
+          disabled={status !== 'ready'}
+          aria-pressed={showFavorites} onClick={() => setShowFavorites(true)}>Избранное</button>
       </div>
       <form className={styles.filters} onSubmit={submitSearch}>
         <div className={`${base.filterGrid} ${styles.filterGrid}`}>
@@ -198,7 +203,8 @@ export default function SpellsPage() {
           </div>
           <span className={base.count} role="status">Найдено: {results.length}</span>
         </div>
-        {status === 'ready' && results.length === 0 && <p className={base.empty}>Заклинания не найдены. Измените фильтры или запрос.</p>}
+        {showFavorites ? <p className={base.empty}>В избранном пока ничего нет.</p>
+          : status === 'ready' && results.length === 0 && <p className={base.empty}>Заклинания не найдены. Измените фильтры или запрос.</p>}
         {filters.sort === 'name' && results.length > 18
           ? <div className={base.creatureGroups}>{groupByLetter(visible).map(({ letter, entries }) =>
             <section className={base.letterGroup} key={letter} aria-label={`Заклинания на букву ${letter}`}>
@@ -213,7 +219,9 @@ export default function SpellsPage() {
       </Panel>
       <Panel className={base.previewPanel} padding="compact">
         <h2>Выбрано заклинание</h2>
-        {!selected && <p className={base.previewHint}>Выберите заклинание в списке, чтобы открыть его карточку.</p>}
+        {!selected && <p className={base.previewHint}>{showFavorites
+          ? 'Избранных заклинаний пока нет.'
+          : 'Выберите заклинание в списке, чтобы открыть его карточку.'}</p>}
         {selected && <div className={styles.preview}>
           <h3>{selected.name}</h3>
           {selected.nameEn && <p className={styles.nameEn}>{selected.nameEn}</p>}

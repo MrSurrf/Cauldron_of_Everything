@@ -85,6 +85,13 @@ function hitPoints(value: unknown): string | undefined {
   return text(hp.average ?? hp.value ?? hp.total ?? value) || undefined
 }
 
+function descriptionExcerpt(value: unknown): string {
+  const html = text(value)
+  if (!html) return ''
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  return (document.querySelector('p')?.textContent ?? document.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
 function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): CatalogCreature {
   const data = record(detail?.data)
   const listed = record(summary.summary)
@@ -116,6 +123,7 @@ function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): Catal
     namedNpc: namedNpc(data, listed), languages, habitats,
     movements: movementKinds(movement),
     contentText: detail?.content_text || '',
+    descriptionExcerpt: descriptionExcerpt(data.description_html),
     entity,
   }
 }

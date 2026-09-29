@@ -12,6 +12,7 @@ type ResultPage = { count: number; results: EncyclopediaEntry[] }
 export function EncyclopediaResults({ query = '', type }: { query?: string; type?: string }) {
   const [page, setPage] = useState(1)
   const [attempt, setAttempt] = useState(0)
+  const [showFavorites, setShowFavorites] = useState(false)
   const [state, setState] = useState<{ request: string; data?: ResultPage; error?: string } | null>(null)
   const request = `${query}:${type ?? ''}:${page}:${attempt}`
   const current = state?.request === request ? state : null
@@ -32,6 +33,13 @@ export function EncyclopediaResults({ query = '', type }: { query?: string; type
 
   return (
     <>
+      <div className={styles.resultTabs} role="group" aria-label="Подборка материалов">
+        <button type="button" aria-pressed={!showFavorites} data-active={!showFavorites}
+          onClick={() => setShowFavorites(false)}>Все</button>
+        <button type="button" aria-pressed={showFavorites} data-active={showFavorites}
+          onClick={() => setShowFavorites(true)}>Избранное</button>
+      </div>
+      {showFavorites ? <p className={styles.empty}>В избранном пока ничего нет.</p> : <>
       {sections.length > 0 && <div className={styles.resultGrid}>
         {sections.map((section) => <Link className={styles.cardLink} to={sectionPath(section)} key={section.id}>
           <Panel className={styles.card} padding="compact"><div className={styles.cardContent}><EncyclopediaSectionIcon sectionId={section.id} /><div className={styles.cardCopy}><h3>{section.title}</h3><p>Раздел энциклопедии</p></div></div></Panel>
@@ -53,6 +61,7 @@ export function EncyclopediaResults({ query = '', type }: { query?: string; type
         <span>Страница {page}</span>
         <Button size="md" variant="secondary" disabled={!current?.data || page * 24 >= current.data.count} onClick={() => setPage((value) => value + 1)}>Далее</Button>
       </div>}
+      </>}
     </>
   )
 }

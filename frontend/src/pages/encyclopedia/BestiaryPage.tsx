@@ -95,6 +95,7 @@ export default function BestiaryPage() {
   const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<CatalogCreature | null>(null)
+  const [showFavorites, setShowFavorites] = useState(false)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [searchResult, setSearchResult] = useState<{ query: string; creatures: CatalogCreature[] } | null>(null)
   const [searchError, setSearchError] = useState<{ query: string; message: string } | null>(null)
@@ -107,16 +108,18 @@ export default function BestiaryPage() {
     !query || filterCatalog([tarrasqueCatalogEntry], { ...emptyFilters(), query }).length > 0,
   [query])
   const searchableCatalog = useMemo(() => query
-    ? [...(searchResult?.query === query ? searchResult.creatures : []), ...(tarrasqueMatches ? [tarrasqueCatalogEntry] : [])]
+    ? [...(searchResult && searchResult.query === query ? searchResult.creatures : []), ...(tarrasqueMatches ? [tarrasqueCatalogEntry] : [])]
     : catalog,
   [catalog, query, searchResult, tarrasqueMatches])
   const facetFilters = useMemo(() => ({ ...filters, query: '' }), [filters])
-  const selected = selectedDetail?.id === selectedId
-    ? selectedDetail
-    : catalog.find((creature) => creature.id === selectedId)
-      ?? searchResult?.creatures.find((creature) => creature.id === selectedId)
-      ?? null
-  const results = useMemo(() => filterCatalog(searchableCatalog, facetFilters), [searchableCatalog, facetFilters])
+  const selected = showFavorites ? null : (
+    selectedDetail?.id === selectedId
+      ? selectedDetail
+      : catalog.find((creature) => creature.id === selectedId)
+        ?? searchResult?.creatures.find((creature) => creature.id === selectedId)
+        ?? null
+  )
+  const results = useMemo(() => showFavorites ? [] : filterCatalog(searchableCatalog, facetFilters), [searchableCatalog, facetFilters, showFavorites])
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
@@ -191,6 +194,9 @@ export default function BestiaryPage() {
         data-selected={selected?.id === creature.id}
         aria-pressed={selected?.id === creature.id}
         onClick={() => setSelectedId(creature.id)}
+        onDoubleClick={() => navigate(creature.fullRecord
+          ? '/encyclopedia/bestiary/tarrasque'
+          : `/encyclopedia/bestiary/${encodeURIComponent(creature.slug)}`)}
       >
         <CreatureReference entity={creature.entity} />
       </button>
@@ -201,20 +207,23 @@ export default function BestiaryPage() {
     <main className={styles.page}>
       <h1 className={styles.visuallyHidden}>Бестиарий</h1>
       <Panel className={styles.filtersPanel} padding="compact">
-        <div className={styles.sourceTabs} role="group" aria-label="Происхождение существ">
+        <div className={styles.sourceTabs} role="group" aria-label="Подборка существ">
           {(['official', 'homebrew'] as SourceMode[]).map((mode) => (
             <button
               key={mode}
               className={styles.sourceTab}
-              data-active={filters.sourceMode === mode}
+              data-active={!showFavorites && filters.sourceMode === mode}
               type="button"
               disabled={status !== 'ready'}
-              aria-pressed={filters.sourceMode === mode}
-              onClick={() => updateFilters((current) => ({ ...current, sourceMode: mode }))}
+              aria-pressed={!showFavorites && filters.sourceMode === mode}
+              onClick={() => { setShowFavorites(false); updateFilters((current) => ({ ...current, sourceMode: mode })) }}
             >
               {mode === 'official' ? 'Официальные' : 'Homebrew'}
             </button>
           ))}
+          <button className={styles.sourceTab} type="button" data-active={showFavorites}
+            disabled={status !== 'ready'}
+            aria-pressed={showFavorites} onClick={() => setShowFavorites(true)}>Избранное</button>
         </div>
         <div className={styles.filterGrid}>
           <TextInput
@@ -265,7 +274,7 @@ export default function BestiaryPage() {
         <Panel className={styles.listPanel} padding="compact">
           {status === 'loading' && <p className={styles.loadStatus} role="status">Загружаем существ из базы данных…</p>}
           {searchPending && <p className={styles.loadStatus} role="status">Ищем существ…</p>}
-          {searchError?.query === query && (
+          {searchError && searchError.query === query && (
             <div className={styles.loadStatus} role="alert">
               Не удалось выполнить поиск: {searchError.message}. <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setSearchError(null); setSearchAttempt((value) => value + 1) }}>Повторить</Button>
             </div>
@@ -284,7 +293,8 @@ export default function BestiaryPage() {
             </div>
             <span className={styles.count} role="status">Найдено: {results.length}</span>
           </div>
-          {results.length === 0 && !searchPending && searchError?.query !== query && <p className={styles.empty}>Существа не найдены. Измените фильтры или запрос.</p>}
+          {showFavorites ? <p className={styles.empty}>В избранном пока ничего нет.</p>
+            : results.length === 0 && !searchPending && searchError?.query !== query && <p className={styles.empty}>Существа не найдены. Измените фильтры или запрос.</p>}
           {results.length > 18 ? (
             <div className={styles.creatureGroups}>
               {groupByFirstLetter(visible).map(({ letter, entries }) => (
@@ -306,10 +316,24 @@ export default function BestiaryPage() {
 
         <Panel className={styles.previewPanel} padding="compact">
           <h2>Выбрано существо</h2>
-          {!selected && <p className={styles.previewHint}>Выберите существо в списке, чтобы открыть его карточку.</p>}
+          {!selected && <p className={styles.previewHint}>{showFavorites
+            ? 'Избранных существ пока нет.'
+            : 'Выберите существо в списке, чтобы открыть его карточку.'}</p>}
           {selected && (
             <>
               <CreatureCompactCard entity={selected.entity} />
+              <section className={styles.previewSection}>
+                <h3>Описание</h3>
+                <p>{selected.descriptionExcerpt || (selected.fullRecord ? selected.contentText : 'Описание пока недоступно.')}</p>
+              </section>
+              <section className={styles.previewSection}>
+                <h3>Быстрые действия</h3>
+                <div className={styles.quickActions}>
+                  <Button variant="secondary" decoration="minimal" size="sm" disabled>Добавить в избранное</Button>
+                  <Button variant="secondary" decoration="minimal" size="sm" disabled>Копировать ссылку</Button>
+                  <Button variant="secondary" decoration="minimal" size="sm" disabled>Добавить на доску</Button>
+                </div>
+              </section>
               <Button
                 className={styles.fullRecordButton}
                 variant="secondary"

@@ -58,6 +58,9 @@
 .recentContent h3 { font-family: var(--font-family-body); font-size: var(--font-size-md); margin-bottom: var(--space-1); }
 .empty { margin: var(--space-2) 0; color: var(--color-text-subtle); line-height: var(--line-height-normal); }
 .results { margin-block: var(--space-5); }
+.resultTabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.resultTabs button { padding: var(--space-2) var(--space-4); border: var(--border-width-default) solid var(--color-content-border); border-radius: var(--radius-sm); background: var(--color-surface-muted); color: var(--color-text-secondary); font: inherit; cursor: pointer; }
+.resultTabs button[data-active='true'] { border-color: var(--color-border-accent); background: var(--color-surface-accent); color: var(--color-heading-primary); }
 .resultGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-3); margin-block: var(--space-4); }
 .resultGrid .cardLink { width: auto; }
 .resultGrid .cardContent { grid-template-columns: var(--icon-size-lg) minmax(0, 1fr); min-height: 4rem; }

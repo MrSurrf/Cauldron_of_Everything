@@ -31,7 +31,7 @@ export function DevHomeMenu() {
             Профиль
           </MenuButton>
           <MenuButton icon={null} onClick={() => setGuideOpen(true)}>
-            Guide — знакомство с Виззом
+            Guide — знакомство с Виззом и Сукки
           </MenuButton>
         </nav>
       </Panel>
