@@ -4,10 +4,12 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { MenuButton, Panel } from '../../shared/ui'
 import { getAccessToken } from '../../tools/survey'
 import AuthPage from '../auth/AuthPage'
+import { GuideDemo } from './guide/GuideDemo'
 import styles from './DevHomePage.module.css'
 
 export function DevHomeMenu() {
   const navigate = useNavigate()
+  const [guideOpen, setGuideOpen] = useState(false)
 
   return (
     <main className={styles.page}>
@@ -28,8 +30,12 @@ export function DevHomeMenu() {
           <MenuButton icon={null} onClick={() => navigate('/profile')}>
             Профиль
           </MenuButton>
+          <MenuButton icon={null} onClick={() => setGuideOpen(true)}>
+            Guide — знакомство с Виззом
+          </MenuButton>
         </nav>
       </Panel>
+      {guideOpen && <GuideDemo onClose={() => setGuideOpen(false)} />}
     </main>
   )
 }

@@ -215,6 +215,7 @@ export function SiteHeader() {
               `${styles.navControl} ${isActive ? styles.navControlActive : ''}`
             }
             to="/encyclopedia"
+            data-guide-target="encyclopedia"
             onClick={closeNavigation}
           >
             Энциклопедия
@@ -249,6 +250,7 @@ export function SiteHeader() {
                   type="button"
                   aria-expanded={isOpen}
                   aria-controls={`header-menu-${menu.id}`}
+                  data-guide-target={menu.id}
                   onClick={() => setOpenMenu(isOpen ? null : menu.id)}
                 >
                   <span>{menu.label}</span>
@@ -294,6 +296,7 @@ export function SiteHeader() {
             className={`${styles.iconButton} ${styles.mobileMenuButton}`}
             type="button"
             aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            data-guide-target="mobile-menu"
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((isOpen) => !isOpen)}
           >
@@ -312,6 +315,7 @@ export function SiteHeader() {
           <NavLink
             className={styles.profileLink}
             to="/profile"
+            data-guide-target="profile"
             aria-label="Открыть профиль"
             onClick={closeNavigation}
           >

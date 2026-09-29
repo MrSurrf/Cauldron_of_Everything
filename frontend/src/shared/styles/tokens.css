@@ -96,6 +96,7 @@
   /* Типографика */
   --font-family-body: 'Gilroy', Arial, sans-serif;
   --font-family-heading: 'Greengoth Regular', Georgia, serif;
+  --font-family-dialogue: 'Clacon2', monospace;
   --font-size-2xs: 0.625rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

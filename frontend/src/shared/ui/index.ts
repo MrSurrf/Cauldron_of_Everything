@@ -1,4 +1,7 @@
 export { Button } from './Button'
+export { DialogueBubble } from './DialogueBubble'
+export type { DialogueBubbleProps } from './DialogueBubble'
+export { GuideArrow } from './GuideArrow'
 export type {
   ButtonDecoration,
   ButtonProps,
