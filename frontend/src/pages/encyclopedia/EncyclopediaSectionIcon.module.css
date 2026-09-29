@@ -9,8 +9,11 @@
 
 .category {
   --section-icon-height: 2.75rem;
-  display: block;
+  display: grid;
+  justify-items: center;
+  align-items: start;
   width: 4rem;
+  height: 4rem;
 }
 
 /* Тонкий силуэт бестиария требует небольшой оптической компенсации. */
