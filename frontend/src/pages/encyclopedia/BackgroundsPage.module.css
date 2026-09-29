@@ -1,0 +1,32 @@
+.filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.6fr) minmax(9rem, 1fr) minmax(12rem, 1.4fr) auto auto;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.list { margin-top: var(--space-4); }
+.toolbar { padding-bottom: var(--space-3); color: var(--color-text-secondary); }
+.sourceHeading {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-accent);
+  color: var(--color-brand-bright);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+.cards { margin: 0; padding: 0; list-style: none; }
+.cards > li { min-width: 0; }
+.cardLink { height: 100%; text-decoration: none; }
+.cardLink:focus-visible { outline: var(--border-width-default) solid var(--color-interactive); outline-offset: 2px; }
+
+@media (max-width: 1000px) {
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters > :first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+}

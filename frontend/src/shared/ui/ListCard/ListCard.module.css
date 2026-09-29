@@ -15,6 +15,10 @@
   font-family: var(--font-family-body);
 }
 
+.withoutMetric {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .root::after {
   content: '';
   position: absolute;
