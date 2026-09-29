@@ -64,14 +64,14 @@ export default function EncyclopediaPage() {
           <section key={group.id} className={styles.section} aria-labelledby={`encyclopedia-${group.id}`}>
             <h2 id={`encyclopedia-${group.id}`}><span aria-hidden="true"><PlaceholderIcon /></span>{group.title}</h2>
             <ScrollArea
-              orientation="horizontal"
+              orientation="vertical"
               aria-label={group.title}
-              rootClassName={styles.row}
-              contentClassName={styles.cards}
+              rootClassName={styles.sectionScroller}
+              contentClassName={styles.sectionGrid}
               data-group={group.id}
             >
               {group.sections.map((section) => (
-                <Link className={styles.cardLink} key={section.id} to={sectionPath(section)}>
+                <Link className={`${styles.cardLink} ${styles.sectionCardLink}`} key={section.id} to={sectionPath(section)}>
                   <Panel className={styles.card} padding="compact">
                     <div className={styles.cardContent}>
                       <IconFrame size="4rem" contentSize="2rem" glow={false} aria-hidden="true"><PlaceholderIcon /></IconFrame>

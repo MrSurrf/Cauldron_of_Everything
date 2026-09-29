@@ -20,7 +20,20 @@
 .row { height: auto; }
 .cards { display: flex; gap: var(--space-4); padding: var(--space-1); }
 .cardLink { display: block; width: clamp(17rem, 17vw, 20rem); flex: 0 0 auto; color: inherit; text-decoration: none; scroll-snap-align: start; }
-[data-group='magic'] .cardLink, [data-group='rules'] .cardLink { width: clamp(20rem, 21.8vw, 24rem); }
+.sectionScroller {
+  --section-card-height: 8.5rem;
+  height: auto;
+  max-height: calc(3 * var(--section-card-height) + 2 * var(--space-4) + 2 * var(--space-1));
+}
+.sectionGrid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  grid-auto-rows: var(--section-card-height);
+  gap: var(--space-4);
+  padding: var(--space-1);
+}
+.sectionCardLink { width: 100%; min-width: 0; }
 .card { height: 100%; --panel-border: var(--color-border-default); }
 .cardContent { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 5.5rem; padding: var(--space-1); }
 .cardCopy { min-width: 0; }
@@ -56,7 +69,7 @@
   .intro p { font-size: var(--font-size-md); }
   .shortcut { display: none; }
   .search input { padding-right: 4rem !important; }
-  .cardLink, [data-group='magic'] .cardLink, [data-group='rules'] .cardLink { width: min(19rem, 80vw); }
+  .sectionCardLink { width: 100%; }
   .cardContent { grid-template-columns: auto minmax(0, 1fr); }
   .cardContent > .cardArrow { display: none; }
   .history { --panel-content-padding: var(--space-3); }
