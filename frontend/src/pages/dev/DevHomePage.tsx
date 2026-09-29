@@ -16,6 +16,9 @@ export function DevHomeMenu() {
         <h1>Мастерская</h1>
         <p className={styles.intro}>Выберите инструмент для проверки.</p>
         <nav className={styles.menu} aria-label="Инструменты разработки">
+          <MenuButton icon={null} onClick={() => navigate('/encyclopedia')}>
+            Энциклопедия
+          </MenuButton>
           <MenuButton icon={null} onClick={() => navigate('/encyclopedia/bestiary')}>
             Бестиарий
           </MenuButton>

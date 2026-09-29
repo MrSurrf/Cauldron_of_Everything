@@ -9,6 +9,7 @@
 }
 
 .surface {
+  --header-corner-cut: var(--space-3);
   position: absolute;
   z-index: -1;
   inset: 0;
@@ -29,6 +30,26 @@
     radial-gradient(circle at 0 100%, transparent 0 1rem, black 1.0625rem),
     radial-gradient(circle at 100% 100%, transparent 0 1rem, black 1.0625rem);
   -webkit-mask-composite: source-in;
+  transition:
+    inset var(--motion-duration-normal) var(--motion-easing-standard),
+    clip-path var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.header:not([data-scrolled]) .surface {
+  inset: var(--space-1) var(--space-2) 0;
+  clip-path:
+    polygon(
+      var(--header-corner-cut) 0,
+      calc(100% - var(--header-corner-cut)) 0,
+      100% var(--header-corner-cut),
+      100% calc(100% - var(--header-corner-cut)),
+      calc(100% - var(--header-corner-cut)) 100%,
+      var(--header-corner-cut) 100%,
+      0 calc(100% - var(--header-corner-cut)),
+      0 var(--header-corner-cut)
+    );
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 .surface::before,

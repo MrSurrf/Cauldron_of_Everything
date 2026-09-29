@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { recordVisit } from '../../entities/encyclopedia'
 
 import {
   CreatureFullView,
@@ -24,6 +25,8 @@ export default function BestiaryEntityPage() {
 
     getCreatureBySlug(slug, controller.signal)
       .then((entity) => {
+        if (controller.signal.aborted) return
+        if (entity) recordVisit({ path: `/encyclopedia/creature/${encodeURIComponent(slug)}`, title: entity.name, category: 'Бестиарий' })
         setState(entity
           ? { status: 'ready', slug, entity }
           : { status: 'not-found', slug })

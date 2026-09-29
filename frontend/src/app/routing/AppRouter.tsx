@@ -36,6 +36,9 @@ const BestiaryPage = lazy(
 const MockTarrasquePage = lazy(
   () => import('../../pages/encyclopedia/MockTarrasquePage'),
 )
+const EncyclopediaPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaPage'))
+const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
+const EncyclopediaEntryPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaEntryPage'))
 
 function RouteFallback() {
   return (
@@ -82,6 +85,9 @@ export function AppRouter() {
                 element={<SurveyRoutePage />}
               />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/encyclopedia" element={<EncyclopediaPage />} />
+              <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
+              <Route path="/encyclopedia/:sectionId" element={<EncyclopediaSectionPage />} />
               <Route
                 path="/tools/character-sheet"
                 element={<CharacterSheetRoutePage />}

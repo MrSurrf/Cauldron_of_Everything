@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { recordVisit } from '../../entities/encyclopedia'
 
 import {
   CreatureCompactCard,
@@ -81,6 +82,9 @@ function FacetControl({
 }
 
 export default function BestiaryPage() {
+  useEffect(() => {
+    recordVisit({ path: '/encyclopedia/bestiary', title: 'Бестиарий', category: 'Справочники' })
+  }, [])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState(() => ({

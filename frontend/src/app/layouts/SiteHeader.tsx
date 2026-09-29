@@ -128,9 +128,19 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement>(null)
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(() => window.scrollY > 8)
   const [searchQuery, setSearchQuery] = useState(
     () => new URLSearchParams(location.search).get('search') ?? '',
   )
+
+  useEffect(() => {
+    function updateScrollState() {
+      setIsScrolled(window.scrollY > 8)
+    }
+
+    window.addEventListener('scroll', updateScrollState, { passive: true })
+    return () => window.removeEventListener('scroll', updateScrollState)
+  }, [])
 
   useEffect(() => {
     function closeOnOutsidePointer(event: PointerEvent) {
@@ -163,8 +173,8 @@ export function SiteHeader() {
     const query = searchQuery.trim()
     navigate(
       query
-        ? `/encyclopedia/bestiary?search=${encodeURIComponent(query)}`
-        : '/encyclopedia/bestiary',
+        ? `/encyclopedia?search=${encodeURIComponent(query)}`
+        : '/encyclopedia',
     )
   }
 
@@ -174,7 +184,11 @@ export function SiteHeader() {
   }
 
   return (
-    <header ref={headerRef} className={styles.header}>
+    <header
+      ref={headerRef}
+      className={styles.header}
+      data-scrolled={isScrolled || undefined}
+    >
       <div className={styles.surface} aria-hidden={true} />
 
       <div className={styles.inner}>
@@ -200,7 +214,7 @@ export function SiteHeader() {
             className={({ isActive }) =>
               `${styles.navControl} ${isActive ? styles.navControlActive : ''}`
             }
-            to="/encyclopedia/bestiary"
+            to="/encyclopedia"
             onClick={closeNavigation}
           >
             Энциклопедия
