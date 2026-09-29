@@ -21,7 +21,6 @@
 .cards { display: flex; gap: var(--space-4); padding: var(--space-1); }
 .cardLink { display: block; width: clamp(17rem, 17vw, 20rem); flex: 0 0 auto; color: inherit; text-decoration: none; scroll-snap-align: start; }
 [data-group='magic'] .cardLink, [data-group='rules'] .cardLink { width: clamp(20rem, 21.8vw, 24rem); }
-.row > [role='region'] { scroll-snap-type: x proximity; }
 .card { height: 100%; --panel-border: var(--color-border-default); }
 .cardContent { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 5.5rem; padding: var(--space-1); }
 .cardCopy { min-width: 0; }

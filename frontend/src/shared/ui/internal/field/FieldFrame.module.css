@@ -311,6 +311,12 @@
   height: 0;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .multiline {
+    scroll-behavior: smooth;
+  }
+}
+
 .control::placeholder {
   color:
     color-mix(
