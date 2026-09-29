@@ -8,12 +8,20 @@
 }
 
 .category {
+  --section-icon-height: 2.75rem;
   display: block;
   width: 4rem;
 }
 
+/* Тонкий силуэт бестиария требует небольшой оптической компенсации. */
+.category[data-section='bestiary'] {
+  --section-icon-height: 3rem;
+}
+
 .category .icon {
-  width: 3rem;
+  width: calc(var(--section-icon-height) * var(--section-icon-ratio));
+  height: var(--section-icon-height);
+  aspect-ratio: auto;
   -webkit-mask-position: left top;
   mask-position: left top;
 }

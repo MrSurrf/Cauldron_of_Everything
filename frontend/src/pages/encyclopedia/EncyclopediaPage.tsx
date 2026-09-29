@@ -77,7 +77,6 @@ export default function EncyclopediaPage() {
                     <div className={styles.cardContent}>
                       <EncyclopediaSectionIcon sectionId={section.id} variant="category" />
                       <div className={styles.cardCopy}><h3>{section.title}</h3><p>{section.description}</p></div>
-                      <span className={styles.cardArrow} aria-hidden="true"><PlaceholderIcon /></span>
                     </div>
                   </Panel>
                 </Link>
@@ -105,7 +104,6 @@ export default function EncyclopediaPage() {
                       <div className={styles.recentContent}>
                         <IconFrame size="2.75rem" contentSize="1.25rem" glow={false} aria-hidden="true"><PlaceholderIcon /></IconFrame>
                         <div className={styles.cardCopy}><h3>{visit.title}</h3><p>{visit.category}</p></div>
-                        <span className={styles.cardArrow} aria-hidden="true"><PlaceholderIcon /></span>
                       </div>
                     </Panel>
                   </Link>
