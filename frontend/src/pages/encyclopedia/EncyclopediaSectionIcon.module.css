@@ -6,3 +6,14 @@
   -webkit-mask: var(--section-icon-url) center / contain no-repeat;
   mask: var(--section-icon-url) center / contain no-repeat;
 }
+
+.category {
+  display: block;
+  width: 4rem;
+}
+
+.category .icon {
+  width: 3rem;
+  -webkit-mask-position: left top;
+  mask-position: left top;
+}

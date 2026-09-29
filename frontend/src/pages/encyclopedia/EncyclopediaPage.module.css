@@ -36,6 +36,7 @@
 .sectionCardLink { width: 100%; min-width: 0; }
 .card { height: 100%; --panel-border: var(--color-border-default); }
 .cardContent { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 5.5rem; padding: var(--space-1); }
+.sectionCardLink .cardContent { align-items: start; align-content: start; }
 .cardCopy { min-width: 0; }
 .cardCopy h3 { margin: 0 0 var(--space-2); color: var(--color-heading-primary); font: 400 var(--font-size-lg)/1.2 var(--font-family-heading); overflow-wrap: anywhere; }
 .cardCopy p { margin: 0; color: var(--color-text-subtle); font-size: var(--font-size-sm); line-height: var(--line-height-normal); }

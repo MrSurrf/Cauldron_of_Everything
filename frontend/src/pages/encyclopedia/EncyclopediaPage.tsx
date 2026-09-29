@@ -75,7 +75,7 @@ export default function EncyclopediaPage() {
                 <Link className={`${styles.cardLink} ${styles.sectionCardLink}`} key={section.id} to={sectionPath(section)}>
                   <Panel className={styles.card} padding="compact">
                     <div className={styles.cardContent}>
-                      <IconFrame size="4rem" contentSize="2.75rem" glow={false} aria-hidden="true"><EncyclopediaSectionIcon sectionId={section.id} /></IconFrame>
+                      <EncyclopediaSectionIcon sectionId={section.id} variant="category" />
                       <div className={styles.cardCopy}><h3>{section.title}</h3><p>{section.description}</p></div>
                       <span className={styles.cardArrow} aria-hidden="true"><PlaceholderIcon /></span>
                     </div>
