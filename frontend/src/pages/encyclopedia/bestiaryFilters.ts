@@ -1,4 +1,5 @@
 import type { CatalogCreature } from './bestiaryCatalog'
+import { catalogNameKey } from './catalogAlphabet'
 
 export const FACETS = [
   { key: 'size', label: 'Размер' },
@@ -53,7 +54,7 @@ function facetValues(creature: CatalogCreature, key: FacetKey): string[] {
 
 function matches(creature: CatalogCreature, filters: FilterState, ignoredFacet?: FacetKey): boolean {
   if (creature.homebrew !== (filters.sourceMode === 'homebrew')) return false
-  if (filters.letter && !normalize(creature.name).startsWith(normalize(filters.letter))) return false
+  if (filters.letter && !normalize(catalogNameKey(creature.name)).startsWith(normalize(filters.letter))) return false
   const words = normalize(filters.query).split(/\s+/).filter(Boolean)
   if (words.length) {
     const haystack = normalize(`${creature.name} ${creature.nameEn} ${creature.contentText}`)
@@ -84,7 +85,7 @@ export function filterCatalog(creatures: readonly CatalogCreature[], filters: Fi
       const difference = aRating - bRating
       if (difference) return filters.sort === 'challenge-asc' ? difference : -difference
     }
-    return alphabetic.compare(a.name, b.name) || a.id - b.id
+    return alphabetic.compare(catalogNameKey(a.name), catalogNameKey(b.name)) || a.id - b.id
   })
 }
 

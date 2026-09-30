@@ -14,7 +14,7 @@ export type {
   DamageAffinityState,
   DamageType,
 } from './model/creature'
-export { getCreatureBySlug } from './model/creatureRepository'
+export { getCreatureBySlug, getCreatureById, searchCreatures } from './model/creatureRepository'
 export { mockTarrasque } from './model/mockTarrasque'
 export { CreatureCompactCard } from './ui/CreatureCompactCard'
 export type { CreatureCompactCardProps } from './ui/CreatureCompactCard'

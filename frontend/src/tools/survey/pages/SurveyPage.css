@@ -9,11 +9,12 @@
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   overflow-x: hidden;
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover
@@ -49,7 +50,7 @@
       calc(100vw - 48px)
     );
 
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   margin: 0 auto;
 

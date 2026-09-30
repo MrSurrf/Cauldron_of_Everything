@@ -1,4 +1,5 @@
 import type { CreatureEntity } from '../../entities/creature'
+import { authFetch } from '../../shared/api/auth'
 import type { CatalogCreature } from './bestiaryCatalog'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
@@ -84,6 +85,13 @@ function hitPoints(value: unknown): string | undefined {
   return text(hp.average ?? hp.value ?? hp.total ?? value) || undefined
 }
 
+function descriptionExcerpt(value: unknown): string {
+  const html = text(value)
+  if (!html) return ''
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  return (document.querySelector('p')?.textContent ?? document.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
 function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): CatalogCreature {
   const data = record(detail?.data)
   const listed = record(summary.summary)
@@ -115,12 +123,13 @@ function toCatalogCreature(summary: EntitySummary, detail?: EntityDetail): Catal
     namedNpc: namedNpc(data, listed), languages, habitats,
     movements: movementKinds(movement),
     contentText: detail?.content_text || '',
+    descriptionExcerpt: descriptionExcerpt(data.description_html),
     entity,
   }
 }
 
 async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await authFetch(`${API_BASE_URL}${path}`, {
     headers: { Accept: 'application/json' }, signal,
   })
   if (!response.ok) throw new Error(`API энциклопедии ответил ${response.status}`)

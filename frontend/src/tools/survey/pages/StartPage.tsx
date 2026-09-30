@@ -23,7 +23,7 @@ function StartPage({ onStart }: StartPageProps) {
 
   return (
     <main className="start-page font-body">
-      <div className="start-page__scene">
+      <div className="start-page__scene" data-cursor-light-background="">
         <img
           className="start-page__head"
           src="/tools/survey/start/head.png"

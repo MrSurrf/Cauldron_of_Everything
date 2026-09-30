@@ -1,3 +1,4 @@
+import { authFetch } from '../../../shared/api/auth'
 import type {
   CreatureAbilityKey,
   CreatureAbilityScore,
@@ -28,6 +29,7 @@ type EncyclopediaEntitySummary = {
   name: string
   name_en: string
   slug: string
+  summary?: unknown
 }
 
 type EncyclopediaEntityDetail = EncyclopediaEntitySummary & {
@@ -36,6 +38,7 @@ type EncyclopediaEntityDetail = EncyclopediaEntitySummary & {
 }
 
 type EncyclopediaListResponse = {
+  count: number
   results: EncyclopediaEntitySummary[]
 }
 
@@ -409,7 +412,7 @@ function toCreatureEntity(detail: EncyclopediaEntityDetail): CreatureEntity {
 }
 
 async function requestJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, {
+  const response = await authFetch(url, {
     headers: { Accept: 'application/json' },
     signal,
   })
@@ -450,4 +453,20 @@ export async function getCreatureBySlug(
 
   if (detail.entity_type !== 'creature') return null
   return toCreatureEntity(detail)
+}
+
+/** Постраничный поиск существ для каталогов и инструментов. */
+export async function searchCreatures(query: string, page = 1, signal?: AbortSignal) {
+  const params = new URLSearchParams({ type: 'creature', q: query.trim(), page: String(page), page_size: '40' })
+  const list = await requestJson<EncyclopediaListResponse>(`${API_BASE_URL}/api/encyclopedia/?${params}`, signal)
+  return {
+    count: list.count,
+    entities: list.results.filter(item => item.entity_type === 'creature').map(item =>
+      toCreatureEntity({ ...item, data: item.summary, content_html: '' })),
+  }
+}
+
+export async function getCreatureById(id: string, signal?: AbortSignal): Promise<CreatureEntity | null> {
+  const detail = await requestJson<EncyclopediaEntityDetail>(`${API_BASE_URL}/api/encyclopedia/${encodeURIComponent(id)}/`, signal)
+  return detail.entity_type === 'creature' ? toCreatureEntity(detail) : null
 }

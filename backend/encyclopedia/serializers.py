@@ -15,7 +15,12 @@ class EntityListSerializer(serializers.ModelSerializer):
     def get_summary(self, obj):
         """Ключевые поля типа для превью в списке (уровень, редкость, CR и т.п.)."""
         keys_by_type = {
-            Entity.Type.SPELL: ["level", "school", "ritual", "concentration"],
+            Entity.Type.SPELL: [
+                "level", "school", "ritual", "concentration", "classes", "class",
+                "subclasses", "subclass", "components", "casting_time", "cast_time",
+                "time", "damage_type", "damage_types", "damage", "duration",
+                "is_homebrew",
+            ],
             Entity.Type.CREATURE: ["challenge_rating", "size", "creature_type", "alignment"],
             Entity.Type.ITEM: ["rarity", "classification", "requires_attunement"],
             Entity.Type.RACE: ["size", "speed"],

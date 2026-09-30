@@ -16,6 +16,7 @@ export type CatalogCreature = {
   habitats: string[]
   movements: string[]
   contentText: string
+  descriptionExcerpt?: string
   fullRecord?: boolean
   entity: CreatureEntity
 }

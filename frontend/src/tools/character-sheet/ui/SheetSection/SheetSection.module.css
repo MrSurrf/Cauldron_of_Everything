@@ -1,4 +1,5 @@
 .section {
+  --cursor-reveal-border-color: var(--section-border);
   --section-cut: var(--space-2);
   --section-border: color-mix(
       in srgb,

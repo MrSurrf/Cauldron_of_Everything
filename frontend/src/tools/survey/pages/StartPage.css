@@ -2,25 +2,26 @@
   display: flex;
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
   align-items: center;
   justify-content: center;
   overflow: hidden;
 
-  background: #020108;
+  background: var(--cursor-background-image, none), #020108;
   color: #ffffff;
 }
 
 .start-page__scene {
   position: relative;
 
-  width: min(100vw, calc(100svh * 16 / 9));
-  height: min(100svh, calc(100vw * 9 / 16));
+  width: min(100vw, calc(var(--app-viewport-height) * 16 / 9));
+  height: min(var(--app-viewport-height), calc(100vw * 9 / 16));
   aspect-ratio: 16 / 9;
 
   overflow: hidden;
 
   background:
+    var(--cursor-background-image, none),
     url('/tools/survey/start/background.png')
     center center / 100% 100%
     no-repeat;
@@ -277,7 +278,7 @@
 @media (max-width: 760px) {
   .start-page__scene {
     width: 100vw;
-    height: 100svh;
+    height: var(--app-viewport-height);
     aspect-ratio: auto;
 
     background-size: cover;
