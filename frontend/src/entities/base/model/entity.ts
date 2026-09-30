@@ -1,4 +1,4 @@
-export type EntityType = 'creature'
+export type EntityType = 'creature' | 'class' | 'race' | 'background' | 'feat' | 'spell' | 'item' | 'sidekick' | 'reference' | 'character' | 'npc' | 'campaign'
 
 export type EntityReference = {
   entityId: string

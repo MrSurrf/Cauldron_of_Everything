@@ -13,6 +13,16 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('Проверка доступа к сайту', () => {
+  it('отказ в конкретной кампании не разлогинивает, но 401 по-прежнему закрывает сессию', async () => {
+    saveTokens({ access: 'token', refresh: 'refresh' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 403 })))
+    const denied = await authFetch('/api/campaigns/foreign/table/public/', {}, { forbiddenScope: 'resource' })
+    expect(denied.status).toBe(403)
+    expect(localStorage.getItem('surveyAuth.access')).toBe('token')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })))
+    await authFetch('/api/campaigns/foreign/table/public/', {}, { forbiddenScope: 'resource' })
+    expect(localStorage.getItem('surveyAuth.access')).toBeNull()
+  })
   it('не разрешает вход без токенов', async () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)

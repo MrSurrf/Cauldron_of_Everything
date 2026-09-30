@@ -113,6 +113,7 @@ export async function checkSession(signal?: AbortSignal): Promise<boolean> {
 export async function authFetch(
   input: string,
   init: RequestInit = {},
+  options: { forbiddenScope?: 'site' | 'resource' } = {},
 ): Promise<Response> {
   const withAuth = (token: string | null): RequestInit => {
     const headers = new Headers(init.headers)
@@ -131,6 +132,8 @@ export async function authFetch(
     }
   }
 
-  if ((response.status === 401 || response.status === 403) && getAccessToken() === token) clearTokens()
+  // Отказ к отдельной кампании/персонажу не означает отзыв доступа ко всему сайту.
+  // Для существующих запросов и checkSession сохраняется прежнее поведение.
+  if ((response.status === 401 || (response.status === 403 && options.forbiddenScope !== 'resource')) && getAccessToken() === token) clearTokens()
   return response
 }
