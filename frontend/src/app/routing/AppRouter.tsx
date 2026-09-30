@@ -22,6 +22,7 @@ const DevHomePage = lazy(
 const ProfilePage = lazy(
   () => import('../../pages/profile/ProfilePage'),
 )
+const CampaignTableRoutePage = lazy(() => import('../../pages/campaign-table/CampaignTableRoutePage'))
 const CharacterSheetRoutePage = lazy(
   () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
 )
@@ -89,6 +90,7 @@ export function AppRouter() {
                 element={<SurveyRoutePage />}
               />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/my-table" element={<CampaignTableRoutePage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />

@@ -119,6 +119,10 @@ export default function SpellsPage() {
   }
 
   function renderSpell(spell: CatalogSpell) {
+    const hasConcentration = spell.concentration === 'Да'
+    const hasRitual = spell.ritual === 'Да'
+    const hasMarkers = hasConcentration || hasRitual
+
     return <button
       className={base.creatureButton}
       type="button"
@@ -128,17 +132,19 @@ export default function SpellsPage() {
       onClick={() => { setSelectedId(spell.id); setDetail(null) }}
       onDoubleClick={() => navigate(`/encyclopedia/entry/${spell.id}`)}
     >
-      <ListCard
-        className={base.catalogCard}
-        name={spell.name}
-        metric={spell.level || '—'}
-        metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
-        tags={[
-          spell.school || 'Школа не указана',
-          ...(spell.concentration === 'Да' ? ['Концентрация'] : []),
-          ...(spell.ritual === 'Да' ? ['Ритуал'] : []),
-        ]}
-      />
+      <span className={styles.spellListItem} data-has-markers={hasMarkers || undefined}>
+        <ListCard
+          className={`${base.catalogCard} ${styles.spellCard}`}
+          name={spell.name}
+          metric={spell.level || '—'}
+          metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
+          tags={[spell.school || 'Школа не указана']}
+        />
+        {hasMarkers && <span className={styles.spellMarkers} aria-label="Особые свойства заклинания">
+          {hasConcentration && <span title="Концентрация" aria-label="Концентрация">К</span>}
+          {hasRitual && <span title="Ритуал" aria-label="Ритуал">Р</span>}
+        </span>}
+      </span>
     </button>
   }
 

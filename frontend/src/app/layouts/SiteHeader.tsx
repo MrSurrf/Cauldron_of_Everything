@@ -65,9 +65,9 @@ const HEADER_MENUS: readonly HeaderMenu[] = [
   {
     id: 'my-table',
     label: 'Мой стол',
-    pathPrefixes: ['/profile'],
+    pathPrefixes: ['/profile', '/my-table'],
     items: [
-      { label: 'Мои кампании', description: 'Игры и приключения' },
+      { label: 'Пространство кампании', description: 'Схемы, существа и связи', to: '/my-table' },
       {
         label: 'Профиль игрока',
         description: 'Настройки и публичная страница',
