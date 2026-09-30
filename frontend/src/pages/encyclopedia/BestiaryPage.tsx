@@ -9,6 +9,7 @@ import {
 import { Button, Checkbox, Panel, Popover, TextInput } from '../../shared/ui'
 import type { CatalogCreature } from './bestiaryCatalog'
 import { getBestiaryCreature, loadBestiary } from './bestiaryApi'
+import { catalogFirstLetter } from './catalogAlphabet'
 import { tarrasqueCatalogEntry } from './mockBestiary'
 import {
   emptyFilters,
@@ -25,7 +26,7 @@ const PAGE_SIZE = 120
 function groupByFirstLetter(creatures: readonly CatalogCreature[]) {
   const groups = new Map<string, CatalogCreature[]>()
   for (const creature of creatures) {
-    const letter = creature.name.charAt(0).toLocaleUpperCase('ru-RU') || '#'
+    const letter = catalogFirstLetter(creature.name)
     const group = groups.get(letter) ?? []
     group.push(creature)
     groups.set(letter, group)
@@ -198,7 +199,7 @@ export default function BestiaryPage() {
           ? '/encyclopedia/bestiary/tarrasque'
           : `/encyclopedia/bestiary/${encodeURIComponent(creature.slug)}`)}
       >
-        <CreatureReference entity={creature.entity} />
+        <CreatureReference className={styles.catalogCard} entity={creature.entity} />
       </button>
     )
   }
@@ -229,6 +230,7 @@ export default function BestiaryPage() {
           <TextInput
             className={styles.searchInput}
             fieldClassName={styles.searchField}
+            rootClassName={styles.compactControl}
             aria-label="Поиск по названию и содержанию карточки"
             type="search"
             placeholder="Поиск по названию и содержанию карточки"
@@ -261,7 +263,7 @@ export default function BestiaryPage() {
           <Button
             variant="secondary"
             decoration="minimal"
-            size="md"
+            size="sm"
             disabled={status !== 'ready'}
             onClick={() => updateFilters(() => emptyFilters())}
           >

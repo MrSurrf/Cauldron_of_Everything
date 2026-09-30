@@ -1,4 +1,5 @@
 import type { CatalogSpell } from './spellCatalog'
+import { catalogNameKey } from './catalogAlphabet'
 
 export const SPELL_FACETS = [
   { key: 'level', label: 'Уровень' },
@@ -48,7 +49,7 @@ function values(spell: CatalogSpell, key: SpellFacetKey): string[] {
 function matches(spell: CatalogSpell, filters: SpellFilters, ignoredFacet?: SpellFacetKey): boolean {
   if (spell.homebrew !== (filters.sourceMode === 'homebrew')) return false
   if (filters.excludeTce && spell.sources.some((source) => /\bTCE\b|таш[иy]|tasha/i.test(source))) return false
-  if (filters.letter && !normalize(spell.name).startsWith(normalize(filters.letter))) return false
+  if (filters.letter && !normalize(catalogNameKey(spell.name)).startsWith(normalize(filters.letter))) return false
   const words = normalize(filters.query).split(/\s+/).filter(Boolean)
   if (words.length && !words.every((word) => normalize(`${spell.name} ${spell.nameEn}`).includes(word))) return false
   return SPELL_FACETS.every(({ key }) =>
@@ -67,7 +68,7 @@ export function filterSpells(spells: readonly CatalogSpell[], filters: SpellFilt
       const difference = collator.compare(a.school, b.school)
       if (difference) return difference
     }
-    return collator.compare(a.name, b.name) || a.id - b.id
+    return collator.compare(catalogNameKey(a.name), catalogNameKey(b.name)) || a.id - b.id
   })
 }
 

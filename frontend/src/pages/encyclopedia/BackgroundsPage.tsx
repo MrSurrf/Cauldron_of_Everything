@@ -65,11 +65,11 @@ export default function BackgroundsPage() {
           aria-pressed={showFavorites} onClick={() => setShowFavorites(true)}>Избранное</button>
       </div>
       <form className={styles.filters} onSubmit={submit}>
-        <TextInput type="search" aria-label="Поиск по разделу" placeholder="Поиск по разделу" value={search} disabled={status !== 'ready'} onChange={event => setSearch(event.target.value)} />
-        <Combobox label="Навыки" options={skillOptions} value={skill} onValueChange={setSkill} disabled={status !== 'ready'} />
-        <Combobox label="Источник" options={sourceOptions} value={source} onValueChange={setSource} disabled={status !== 'ready'} />
-        <Button size="md" icon={null} type="submit" disabled={status !== 'ready'}>Найти</Button>
-        <Button size="md" variant="secondary" decoration="minimal" icon={null} disabled={status !== 'ready'} onClick={() => { setSearch(''); setQuery(''); setSource(null); setSkill(null) }}>Сбросить</Button>
+        <TextInput rootClassName={base.compactControl} type="search" aria-label="Поиск по разделу" placeholder="Поиск по разделу" value={search} disabled={status !== 'ready'} onChange={event => setSearch(event.target.value)} />
+        <Combobox rootClassName={base.compactControl} label="Навыки" options={skillOptions} value={skill} onValueChange={setSkill} disabled={status !== 'ready'} />
+        <Combobox rootClassName={base.compactControl} label="Источник" options={sourceOptions} value={source} onValueChange={setSource} disabled={status !== 'ready'} />
+        <Button size="sm" icon={null} type="submit" disabled={status !== 'ready'}>Найти</Button>
+        <Button size="sm" variant="secondary" decoration="minimal" icon={null} disabled={status !== 'ready'} onClick={() => { setSearch(''); setQuery(''); setSource(null); setSkill(null) }}>Сбросить</Button>
       </form>
     </Panel>
     <Panel className={`${base.listPanel} ${styles.list}`} padding="compact">
@@ -82,7 +82,7 @@ export default function BackgroundsPage() {
           <h2 className={styles.sourceHeading}>{group.source}</h2>
           <ul className={`${base.creatureGrid} ${styles.cards}`}>{group.entries.map(entry => <li key={entry.id}>
             <Link to={entryPath(entry)} className={`${base.creatureButton} ${styles.cardLink}`}>
-              <ListCard name={entry.name} tags={entry.skills} />
+              <ListCard className={base.catalogCard} name={entry.name} tags={entry.skills} />
             </Link>
           </li>)}</ul>
         </section>)}</div>

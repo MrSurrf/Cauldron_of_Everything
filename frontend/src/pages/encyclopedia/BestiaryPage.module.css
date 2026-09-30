@@ -1,6 +1,6 @@
 .page {
   min-height: var(--app-viewport-height);
-  padding: clamp(var(--space-3), 2vw, var(--space-6));
+  padding: var(--space-3) clamp(var(--space-3), 1.25vw, var(--space-5)) var(--space-5);
   background: var(--cursor-background-image, none), var(--color-canvas-background);
   color: var(--color-text-primary);
 }
@@ -26,7 +26,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .sourceTab,
@@ -39,12 +39,12 @@
 }
 
 .sourceTab {
-  min-height: var(--control-height-lg);
+  min-height: var(--control-height-sm);
   border: var(--border-width-default) solid var(--color-content-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface-muted);
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
 }
 
 .sourceTab[data-active='true'] {
@@ -57,7 +57,7 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   align-items: stretch;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .searchField {
@@ -69,12 +69,23 @@
   width: 100%;
 }
 
+.compactControl {
+  min-height: var(--control-height-sm);
+  --input-corner-cut: var(--radius-sm);
+  --input-inner-frame-inset: var(--space-1);
+  --field-font-size: var(--font-size-sm);
+}
+
+.compactControl input {
+  padding-left: var(--space-3);
+}
+
 .facetButton,
 .sortField select {
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: var(--control-height-md);
+  min-height: var(--control-height-sm);
   padding: 0 var(--space-3);
   align-items: center;
   justify-content: space-between;
@@ -153,7 +164,7 @@
 
 .layout {
   display: grid;
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
   grid-template-columns: minmax(0, 1fr) minmax(19rem, 22rem);
   align-items: start;
   gap: var(--space-3);
@@ -162,7 +173,7 @@
 .listToolbar {
   display: flex;
   min-width: 0;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -178,7 +189,7 @@
 
 .alphabet button {
   min-width: 1.8rem;
-  min-height: var(--control-height-md);
+  min-height: var(--control-height-sm);
   padding: 0 var(--space-1);
   border: var(--border-width-default) solid transparent;
   border-radius: var(--radius-sm);
@@ -204,14 +215,15 @@
 
 .creatureGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 17rem));
   align-items: stretch;
+  justify-content: start;
   gap: var(--space-2);
 }
 
 .creatureGroups {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
 
 .letterGroup {
@@ -220,12 +232,12 @@
 
 .letterHeading {
   display: flex;
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-2);
   align-items: center;
   gap: var(--space-3);
   color: var(--color-brand-bright);
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: 400;
   line-height: var(--line-height-tight);
 }
@@ -249,6 +261,27 @@
 
 .creatureButton > * {
   width: 100%;
+}
+
+.catalogCard {
+  min-height: 2.625rem;
+  padding: var(--space-1) var(--space-2);
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: var(--space-1);
+}
+
+.catalogCard > span:last-child {
+  gap: 0;
+}
+
+.catalogCard small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogCard[class*='withoutMetric'] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .creatureButton:hover > *,
@@ -342,9 +375,6 @@ select:disabled {
     grid-column: auto;
   }
 
-  .creatureGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 760px) {

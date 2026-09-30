@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recordVisit } from '../../entities/encyclopedia'
 import { Button, Checkbox, ListCard, Panel, Popover, TextInput } from '../../shared/ui'
 import { fetchEncyclopedia } from './encyclopediaApi'
+import { catalogFirstLetter } from './catalogAlphabet'
 import { loadSpells, type CatalogSpell } from './spellCatalog'
 import {
   emptySpellFilters, filterSpells, spellFacetOptions, SPELL_FACETS,
@@ -18,7 +19,7 @@ type SpellDetail = { id: number; content_text?: string }
 function groupByLetter(spells: readonly CatalogSpell[]) {
   const groups = new Map<string, CatalogSpell[]>()
   for (const spell of spells) {
-    const letter = spell.name.charAt(0).toLocaleUpperCase('ru-RU') || '#'
+    const letter = catalogFirstLetter(spell.name)
     groups.set(letter, [...(groups.get(letter) ?? []), spell])
   }
   return [...groups].map(([letter, entries]) => ({ letter, entries }))
@@ -128,6 +129,7 @@ export default function SpellsPage() {
       onDoubleClick={() => navigate(`/encyclopedia/entry/${spell.id}`)}
     >
       <ListCard
+        className={base.catalogCard}
         name={spell.name}
         metric={spell.level || '—'}
         metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
@@ -159,6 +161,7 @@ export default function SpellsPage() {
         <div className={`${base.filterGrid} ${styles.filterGrid}`}>
           <TextInput
             className={base.searchInput} fieldClassName={`${base.searchField} ${styles.searchField}`}
+            rootClassName={base.compactControl}
             type="search" aria-label="Поиск по разделу" placeholder="Поиск по разделу"
             value={searchDraft} disabled={status !== 'ready'}
             onChange={(event) => setSearchDraft(event.target.value)}
@@ -168,24 +171,26 @@ export default function SpellsPage() {
             disabled={status !== 'ready'} onToggle={toggleFacet}
           />)}
         </div>
-        <div className={styles.filterActions}>
-          <Checkbox
-            label="Исключить TCE" checked={filters.excludeTce}
-            disabled={status !== 'ready'}
-            onCheckedChange={(checked) => updateFilters((current) => ({ ...current, excludeTce: checked }))}
-          />
-          <Button variant="secondary" decoration="minimal" size="md" disabled={status !== 'ready'}
-            onClick={() => { setSearchDraft(''); updateFilters(() => emptySpellFilters()) }}>Сбросить фильтры</Button>
-          <Button variant="primary" size="md" type="submit" icon={null} disabled={status !== 'ready'}>Поиск</Button>
+        <div className={styles.filterFooter}>
+          <div className={styles.sortTabs} role="group" aria-label="Сортировка заклинаний">
+            {([['name', 'Название'], ['level', 'Уровень'], ['school', 'Школа']] as const).map(([sort, label]) =>
+              <button key={sort} type="button" data-active={filters.sort === sort} disabled={status !== 'ready'}
+                aria-pressed={filters.sort === sort}
+                onClick={() => updateFilters((current) => ({ ...current, sort: sort as SpellSort, letter: '' }))}
+              >{label}</button>)}
+          </div>
+          <div className={styles.filterActions}>
+            <Checkbox
+              label="Исключить TCE" checked={filters.excludeTce}
+              disabled={status !== 'ready'}
+              onCheckedChange={(checked) => updateFilters((current) => ({ ...current, excludeTce: checked }))}
+            />
+            <Button variant="secondary" decoration="minimal" size="sm" disabled={status !== 'ready'}
+              onClick={() => { setSearchDraft(''); updateFilters(() => emptySpellFilters()) }}>Сбросить фильтры</Button>
+            <Button variant="primary" size="sm" type="submit" icon={null} disabled={status !== 'ready'}>Поиск</Button>
+          </div>
         </div>
       </form>
-      <div className={styles.sortTabs} role="group" aria-label="Сортировка заклинаний">
-        {([['name', 'Название'], ['level', 'Уровень'], ['school', 'Школа']] as const).map(([sort, label]) =>
-          <button key={sort} type="button" data-active={filters.sort === sort} disabled={status !== 'ready'}
-            aria-pressed={filters.sort === sort}
-            onClick={() => updateFilters((current) => ({ ...current, sort: sort as SpellSort, letter: '' }))}
-          >{label}</button>)}
-      </div>
     </Panel>
 
     <div className={base.layout}>

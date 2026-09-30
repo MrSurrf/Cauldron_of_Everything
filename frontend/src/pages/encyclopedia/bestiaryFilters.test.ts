@@ -23,6 +23,8 @@ const catalog: CatalogCreature[] = [
     contentText: 'Использует древнее заклинание.' },
 ]
 
+const punctuated = { ...base, id: 4, slug: 'demogorgon', name: '«Демогоргон»', challengeRating: '26' }
+
 describe('фасетный поиск бестиария', () => {
   it('оставляет локальным только полный статблок Тараска', () => {
     expect(tarrasqueCatalogEntry.fullRecord).toBe(true)
@@ -49,9 +51,14 @@ describe('фасетный поиск бестиария', () => {
   })
 
   it('сортирует по русскому алфавиту, затем по дробному показателю опасности', () => {
-    expect(filterCatalog(catalog, emptyFilters()).map(({ name }) => name))
-      .toEqual(['Аббат', 'Болотник', 'Ведьма'])
-    expect(filterCatalog(catalog, { ...emptyFilters(), sort: 'challenge-asc' })
-      .map(({ name }) => name)).toEqual(['Ведьма', 'Аббат', 'Болотник'])
+    expect(filterCatalog([...catalog, punctuated], emptyFilters()).map(({ name }) => name))
+      .toEqual(['Аббат', 'Болотник', 'Ведьма', '«Демогоргон»'])
+    expect(filterCatalog([...catalog, punctuated], { ...emptyFilters(), sort: 'challenge-asc' })
+      .map(({ name }) => name)).toEqual(['Ведьма', 'Аббат', 'Болотник', '«Демогоргон»'])
+  })
+
+  it('игнорирует начальную пунктуацию при фильтрации по букве', () => {
+    expect(filterCatalog([...catalog, punctuated], { ...emptyFilters(), letter: 'Д' }).map(({ name }) => name))
+      .toEqual(['«Демогоргон»'])
   })
 })
