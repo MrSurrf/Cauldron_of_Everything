@@ -51,6 +51,10 @@ async function geometry(values) {
 try {
   await page.goto(`${baseUrl}/my-table`)
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).waitFor()
+  assert.equal(await page.getByRole('complementary', { name: 'Схемы кампании' }).count(), 0)
+  const boardWidth = (await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width
+  const libraryWidth = (await page.getByRole('complementary', { name: 'Библиотека' }).boundingBox()).width
+  assert.ok(boardWidth / (boardWidth + libraryWidth) > 0.66 && boardWidth / (boardWidth + libraryWidth) < 0.74)
   const canvas = page.locator('.react-flow')
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).dragTo(canvas, { targetPosition: { x: 80, y: 100 } })
   await waitForNodes(1)
@@ -140,18 +144,20 @@ try {
 
   // Все разделы внутри workspace, без навигации на другую страницу.
   for (const [title, type] of [['Классы', 'class'], ['Расы', 'race'], ['Предыстории', 'background'], ['Черты', 'feat'], ['Заклинания', 'spell'], ['Магические предметы', 'item'], ['Справочные материалы', 'reference']]) {
-    await page.getByRole('tab', { name: title, exact: true }).click()
+    await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption(type)
     await page.getByRole('button', { name: `Открыть: Материал ${type}`, exact: true }).waitFor()
   }
-  await page.getByRole('tab', { name: 'Мои персонажи', exact: true }).click()
+  await page.getByRole('tab', { name: 'Моё', exact: true }).click()
   await page.getByRole('button', { name: 'Открыть: Герой', exact: true }).dragTo(tower, { targetPosition: { x: 160, y: 130 } })
   await tower.getByRole('button', { name: 'Герой', exact: true }).waitFor()
-  await page.getByRole('tab', { name: 'Кампании', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('campaign')
   await page.getByRole('alert').getByText('Источник ещё не подключён к серверу.').waitFor()
   assert.equal(new URL(page.url()).pathname, '/my-table')
-  await page.getByRole('tab', { name: 'Заклинания', exact: true }).click()
+  await page.getByRole('tab', { name: 'Энциклопедия', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('spell')
   await page.getByRole('searchbox', { name: 'Поиск в библиотеке', exact: true }).fill('Материал')
   await page.getByRole('separator', { name: 'Ширина библиотеки', exact: true }).press('ArrowLeft')
+  const resizedLibraryWidth = Number(await page.getByRole('separator', { name: 'Ширина библиотеки' }).getAttribute('aria-valuenow'))
   await location.getByRole('button', { name: 'Изменить', exact: true }).click()
   await page.getByRole('separator', { name: 'Ширина карточки', exact: true }).press('ArrowLeft')
   await closeCard()
@@ -161,7 +167,13 @@ try {
   await page.getByRole('button', { name: 'Открыть: Материал spell', exact: true }).waitFor()
   assert.deepEqual(await saved(), before)
   assert.equal(await page.getByRole('searchbox', { name: 'Поиск в библиотеке' }).inputValue(), 'Материал')
-  assert.equal(await page.getByRole('separator', { name: 'Ширина библиотеки' }).getAttribute('aria-valuenow'), '356')
+  assert.equal(Number(await page.getByRole('separator', { name: 'Ширина библиотеки' }).getAttribute('aria-valuenow')), resizedLibraryWidth)
+  await page.getByRole('button', { name: 'Свернуть библиотеку' }).click()
+  assert.equal(await page.getByRole('complementary', { name: 'Библиотека' }).count(), 0)
+  const expandedBoardWidth = (await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width
+  assert.ok(expandedBoardWidth > boardWidth + 200)
+  await page.getByRole('button', { name: 'Библиотека', exact: true }).click()
+  await page.getByRole('button', { name: 'Открыть: Материал spell', exact: true }).waitFor()
 
   // Публичная вкладка не читает закрытый документ и не подгружает библиотеку/оригиналы.
   publicDocument = structuredClone(before)
@@ -174,21 +186,23 @@ try {
   apiRequests.length = 0
   await page.goto(`${baseUrl}/my-table?table=public&campaign=allowed`)
   await page.getByRole('heading', { name: 'Общая таверна', exact: true }).waitFor()
-  await page.getByRole('button', { name: 'Открыть', exact: true }).click()
+  await page.locator('.react-flow__node[data-id="public-location"]').getByRole('button', { name: 'Открыть', exact: true }).click()
   await page.getByText('Только материалы, разрешённые сервером для публичного стола.').waitFor()
   assert.equal(await page.getByRole('button', { name: 'Изменить', exact: true }).count(), 0)
   assert.ok(apiRequests.every(path => path === '/api/auth/session/' || path === '/api/campaigns/allowed/table/public/'))
   assert.deepEqual(await saved(), before)
-  await page.getByRole('button', { name: 'Закрытый стол', exact: true }).click()
+  await page.getByRole('button', { name: 'Закрытый', exact: true }).click()
   await page.getByRole('heading', { name: 'Крипта', exact: true }).waitFor()
 
   // Мобильная раскладка и независимые схемы.
   await page.setViewportSize({ width: 390, height: 844 })
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await page.getByRole('button', { name: 'Выбрать схему: Основная схема' }).click()
   await page.getByRole('textbox', { name: 'Название новой схемы' }).fill('Подземелье')
-  await page.getByRole('button', { name: '+ Создать схему', exact: true }).click()
+  await page.getByRole('button', { name: 'Создать', exact: true }).click()
   await waitForNodes(0)
   await page.reload()
+  await page.getByRole('button', { name: 'Выбрать схему: Подземелье' }).click()
   await page.getByRole('textbox', { name: 'Название схемы', exact: true }).waitFor()
   assert.equal(await page.getByRole('textbox', { name: 'Название схемы', exact: true }).inputValue(), 'Подземелье')
   await page.getByRole('navigation', { name: 'Выбор схемы' }).getByRole('button', { name: /Основная схема/ }).click()

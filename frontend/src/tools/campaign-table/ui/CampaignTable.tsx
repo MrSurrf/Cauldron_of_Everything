@@ -3,7 +3,7 @@ import type { CSSProperties, DragEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { addEdge, applyEdgeChanges, applyNodeChanges, Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react'
 import type { XYPosition } from '@xyflow/react'
-import { Button, Panel, TextInput } from '../../../shared/ui'
+import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
 import { canContain, createDiagram, createInstance, createLocation, createTable, LEGACY_STORAGE_KEY, moveToLocation, parseTable, removeInstances, serializeTable, TABLE_STORAGE_KEY } from '../model/table'
@@ -31,14 +31,18 @@ function locationAt(diagram: Diagram, position: XYPosition) {
     && position.y >= node.position.y && position.x <= node.position.x + (node.width ?? 340) && position.y <= node.position.y + (node.height ?? 260))?.id
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, readOnly }: {
+function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
   table: TableState; diagram: Diagram; readOnly: boolean
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
+  onSelectDiagram: (id: string) => void; onCreateDiagram: (name: string) => void
+  libraryCollapsed: boolean; onToggleLibrary: () => void
 }) {
   const flow = useReactFlow<TableNode, TableEdge>()
   const canvasRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [schemesOpen, setSchemesOpen] = useState(false)
+  const [newName, setNewName] = useState('')
   const center = () => {
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
@@ -84,9 +88,20 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, readOnly }: {
   const hidden = new Set(diagram.nodes.filter(node => node.data.locationId).map(node => node.id))
   return <TableContext.Provider value={{ diagram, readOnly, open, edit, remove, release, duplicate }}>
     <section className={styles.board} aria-label="Схема кампании">
-      <header className={styles.boardHeader}><div>
-        {readOnly ? <h2>{diagram.name}</h2> : <TextInput aria-label="Название схемы" value={diagram.name} onChange={event => onChange(current => ({ ...current, name: event.target.value }))} />}
-        <p>{diagram.nodes.length} узлов · {diagram.edges.length} связей</p></div>
+      <header className={styles.boardHeader}><div className={styles.schemeHeading}>
+        <Popover aria-label="Схемы кампании" open={schemesOpen} onOpenChange={setSchemesOpen} content={<div className={styles.schemeMenu}>
+          <nav aria-label="Выбор схемы">{table.diagrams.map(item => <button type="button" key={item.id} aria-current={item.id === diagram.id ? 'page' : undefined}
+            onClick={() => { onSelectDiagram(item.id); setSchemesOpen(false) }}><span>{item.name}</span><small>{item.nodes.length}</small></button>)}</nav>
+          {!readOnly && <><label>Название схемы<TextInput aria-label="Название схемы" value={diagram.name}
+            onChange={event => onChange(current => ({ ...current, name: event.target.value }))} /></label>
+            <form onSubmit={event => { event.preventDefault(); if (!newName.trim()) return; onCreateDiagram(newName.trim()); setNewName(''); setSchemesOpen(false) }}>
+              <TextInput aria-label="Название новой схемы" placeholder="Новая схема" value={newName} maxLength={80} onChange={event => setNewName(event.target.value)} />
+              <Button size="sm" type="submit" disabled={!newName.trim()}>Создать</Button>
+            </form></>}
+        </div>}><Button size="sm" variant="secondary" aria-label={`Выбрать схему: ${diagram.name}`}>{diagram.name} <span aria-hidden="true">⌄</span></Button></Popover>
+        <span className={styles.schemeCount}>{diagram.nodes.length} узлов · {diagram.edges.length} связей</span>
+        {!readOnly && libraryCollapsed && <Button size="sm" variant="secondary" onClick={onToggleLibrary}>Библиотека</Button>}
+      </div>
         <div className={styles.actions}>
           {!readOnly && <Button size="sm" variant="secondary" onClick={() => {
             const node = createLocation(center()); onChange(current => ({ ...current, nodes: [...current.nodes, node] })); edit(node.id)
@@ -125,44 +140,49 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, readOnly }: {
         </ReactFlow>
         {!diagram.nodes.length && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Перетащите материал из библиотеки на холст. Соедините точки по краям узлов или создайте локацию для существ.'}</p></div>}
       </div>
-      <footer className={styles.boardFooter}>{readOnly ? 'Публичный стол · только просмотр' : 'Перетаскивание — перемещение · Колесо — масштаб · Delete — удалить · Нажмите на связь, чтобы подписать её'}</footer>
     </section>
-    {!readOnly && <LibrarySidebar section={table.layout.section} query={table.layout.query} width={table.layout.libraryWidth}
-      onSection={section => onLayout({ section, query: '' })} onQuery={query => onLayout({ query })} onResize={libraryWidth => onLayout({ libraryWidth })} onOpen={openReference} onAdd={add} />}
+    {!readOnly && !libraryCollapsed && <LibrarySidebar section={table.layout.section} query={table.layout.query} width={table.layout.libraryWidth}
+      onCollapse={onToggleLibrary} onSection={section => onLayout({ section, query: '' })}
+      onQuery={query => onLayout({ query })} onResize={libraryWidth => onLayout({ libraryWidth })} onOpen={openReference} onAdd={add} />}
     {selection && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
       selection={selection} width={table.layout.inspectorWidth} onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={() => setSelection(null)} onChange={onChange} onOpen={openReference} onAdd={add} />}
   </TableContext.Provider>
 }
 
 function Workspace({ table, commit, readOnly = false }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean }) {
-  const [newName, setNewName] = useState('')
+  const [libraryCollapsed, setLibraryCollapsed] = useState(false)
   const active = table.diagrams.find(diagram => diagram.id === table.activeId)!
   const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram) => {
     if (!readOnly) commit(current => ({ ...current, diagrams: current.diagrams.map(diagram => diagram.id === active.id ? update(diagram) : diagram) }))
   }, [commit, active.id, readOnly])
-  return <div className={styles.workspace} data-public={readOnly} style={{ '--library-width': `${table.layout.libraryWidth}px`, '--inspector-width': `${table.layout.inspectorWidth}px` } as CSSProperties}>
-    <aside className={styles.diagrams} aria-label="Схемы кампании">
-      <div className={styles.sectionHeading}><h2>Схемы</h2><span>{table.diagrams.length}</span></div>
-      <nav className={styles.diagramList} aria-label="Выбор схемы">
-        {table.diagrams.map(diagram => <button type="button" key={diagram.id} aria-current={diagram.id === active.id ? 'page' : undefined}
-          onClick={() => commit(current => ({ ...current, activeId: diagram.id }))}><span aria-hidden="true">◇</span><span>{diagram.name}<small>{diagram.nodes.length} узлов</small></span></button>)}
-      </nav>
-      {!readOnly && <form className={styles.newDiagram} onSubmit={event => {
-        event.preventDefault(); if (!newName.trim()) return
-        const diagram = createDiagram(newName.trim())
-        commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })); setNewName('')
-      }}>
-        <TextInput aria-label="Название новой схемы" placeholder="Название схемы" value={newName} maxLength={80} rootClassName={styles.search} onChange={event => setNewName(event.target.value)} />
-        <Button type="submit" size="sm" variant="secondary" decoration="minimal" disabled={!newName.trim()}>+ Создать схему</Button>
-      </form>}
-      <Panel padding="compact" className={styles.note}><p>{readOnly ? 'Сервер предоставил только публичный документ.' : 'Локальный черновик в этом браузере. Не публикуется и не синхронизируется. Не используйте общий профиль браузера для приватных заметок.'}</p></Panel>
-    </aside>
+  return <div className={styles.workspace} data-public={readOnly} data-collapsed={libraryCollapsed}
+    style={{ '--library-width': table.layout.libraryWidth === 336 ? '30%' : `${table.layout.libraryWidth}px`, '--inspector-width': `${table.layout.inspectorWidth}px` } as CSSProperties}>
     <ReactFlowProvider key={active.id}><DiagramCanvas table={table} diagram={active} onChange={changeDiagram} readOnly={readOnly}
+      libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
+      onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
+      onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
       onLayout={layout => commit(current => ({ ...current, layout: { ...current.layout, ...layout } }))} /></ReactFlowProvider>
   </div>
 }
 
-function PrivateTable() {
+function TableToolbar({ publicMode, status, onPrivate, onPublic, draftId, onDraftId, onOpenPublic }: {
+  publicMode: boolean; status: string; onPrivate: () => void; onPublic: () => void
+  draftId?: string; onDraftId?: (value: string) => void; onOpenPublic?: () => void
+}) {
+  return <header className={styles.heading}>
+    <h1>Мой стол</h1><span className={styles.saveStatus} role="status">{status}</span>
+    <div className={styles.tableModes} role="group" aria-label="Режим стола">
+      <Button size="sm" variant={publicMode ? 'secondary' : 'primary'} aria-pressed={!publicMode} onClick={onPrivate}>Закрытый</Button>
+      <Button size="sm" variant={publicMode ? 'primary' : 'secondary'} aria-pressed={publicMode} onClick={onPublic}>Публичный</Button>
+    </div>
+    {publicMode && <form className={styles.publicForm} onSubmit={event => { event.preventDefault(); onOpenPublic?.() }}>
+      <TextInput aria-label="ID кампании" placeholder="ID кампании" value={draftId ?? ''} onChange={event => onDraftId?.(event.target.value)} />
+      <Button size="sm" type="submit" disabled={!draftId?.trim()}>Открыть</Button>
+    </form>}
+  </header>
+}
+
+function PrivateTable({ onPrivate, onPublic }: { onPrivate: () => void; onPublic: () => void }) {
   const [initial] = useState(loadTable)
   const [table, setTable] = useState(initial.table)
   const currentRef = useRef(table)
@@ -174,7 +194,7 @@ function PrivateTable() {
     try { localStorage.setItem(TABLE_STORAGE_KEY, serializeTable(next)); setSaveError('') }
     catch { setSaveError('Изменения не сохранены: хранилище браузера недоступно или заполнено.') }
   }, [initial.error])
-  return <><span className={styles.saveStatus} role="status">{saveError ? 'Не сохранено' : 'Закрытый черновик · сохраняется в этом браузере'}</span>
+  return <><TableToolbar publicMode={false} status={saveError ? 'Не сохранено' : 'Сохранено в этом браузере'} onPrivate={onPrivate} onPublic={onPublic} />
     {saveError && <p role="alert" className={styles.error}>{saveError}</p>}<Workspace table={table} commit={commit} /></>
 }
 
@@ -201,14 +221,10 @@ export function CampaignTable() {
   const campaignId = params.get('campaign') ?? ''
   const [draftId, setDraftId] = useState(campaignId)
   return <main className={styles.page}>
-    <header className={styles.heading}><div><p>Пространство кампании</p><h1>Мой стол</h1></div>
-      <div className={styles.actions} role="group" aria-label="Режим стола">
-        <Button size="sm" variant={publicMode ? 'secondary' : 'primary'} aria-pressed={!publicMode} onClick={() => setParams({})}>Закрытый стол</Button>
-        <Button size="sm" variant={publicMode ? 'primary' : 'secondary'} aria-pressed={publicMode} onClick={() => setParams({ table: 'public', ...(campaignId ? { campaign: campaignId } : {}) })}>Публичный стол</Button>
-      </div>
-    </header>
-    {publicMode ? <><form className={styles.publicForm} onSubmit={event => { event.preventDefault(); if (draftId.trim()) setParams({ table: 'public', campaign: draftId.trim() }) }}>
-      <TextInput aria-label="ID кампании" placeholder="ID кампании" value={draftId} onChange={event => setDraftId(event.target.value)} /><Button size="sm" type="submit" disabled={!draftId.trim()}>Открыть публичный стол</Button>
-    </form><PublicTable key={campaignId} campaignId={campaignId} /></> : <PrivateTable />}
+    {publicMode ? <><TableToolbar publicMode status="Просмотр с сервера" onPrivate={() => setParams({})}
+      onPublic={() => setParams({ table: 'public', ...(campaignId ? { campaign: campaignId } : {}) })}
+      draftId={draftId} onDraftId={setDraftId} onOpenPublic={() => { if (draftId.trim()) setParams({ table: 'public', campaign: draftId.trim() }) }} />
+      <PublicTable key={campaignId} campaignId={campaignId} /></> : <PrivateTable onPrivate={() => setParams({})}
+        onPublic={() => setParams({ table: 'public', ...(campaignId ? { campaign: campaignId } : {}) })} />}
   </main>
 }
