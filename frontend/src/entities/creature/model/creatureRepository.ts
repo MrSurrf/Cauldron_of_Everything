@@ -23,7 +23,6 @@ const API_BASE_URL = (
 ).replace(/\/$/, '')
 
 type JsonRecord = Record<string, unknown>
-
 type EncyclopediaEntitySummary = {
   entity_type: string
   id: number
