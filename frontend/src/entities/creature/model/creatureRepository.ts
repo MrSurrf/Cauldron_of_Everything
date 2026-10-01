@@ -202,6 +202,7 @@ function readAbilityScore(value: unknown): CreatureAbilityScore | undefined {
 }
 
 
+
 function toAbilities(value: unknown): CreatureEntity['abilities'] {
   if (!isRecord(value)) return undefined
 
