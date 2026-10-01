@@ -63,6 +63,7 @@
   "document": {
     "version": 2,
     "activeId": "diagram-public",
+    "entities": [{ "id": "location-public", "slug": "location-public", "entityType": "location", "name": "Таверна", "description": "Общее описание" }],
     "layout": { "libraryWidth": 336, "inspectorWidth": 380, "section": "creature", "query": "" },
     "diagrams": [{
       "id": "diagram-public",
@@ -74,7 +75,7 @@
         "position": { "x": 100, "y": 100 },
         "width": 340,
         "height": 260,
-        "data": { "title": "Таверна", "description": "Общее описание", "facts": "", "state": "" }
+        "data": { "localEntityId": "location-public", "title": "Таверна", "description": "", "facts": "", "state": "" }
       }],
       "edges": []
     }]
@@ -82,6 +83,8 @@
 }
 ```
 
+Публичная проекция должна содержать только разрешённые сервером Entity и их
+размещения; закрытые описания и записи нельзя включать в `entities`.
 Frontend требует `visibility: public`, валидирует формат документа и открывает
 его только для чтения. Он **не читает localStorage закрытого стола**, не открывает
 библиотеку, не загружает исходные Entity/персонажей по ссылкам из публичного

@@ -59,6 +59,23 @@ export function placeCanvasObject(table: CampaignTable, diagramId: string, objec
     diagrams: table.diagrams.map(item => item.id === diagramId
       ? { ...item, nodes: [...item.nodes, { ...object.node, data: { ...object.node.data, title } }] } : item) }
 }
+export function updateCanvasEntity(table: CampaignTable, id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description'>>): CampaignTable {
+  if (changes.name !== undefined && !changes.name.trim()) return table
+  if (!table.entities?.some(entity => entity.id === id)) return table
+  return { ...table, entities: table.entities.map(entity => entity.id === id ? { ...entity, ...changes, name: changes.name?.trim() ?? entity.name } : entity) }
+}
+export function materializeLegacyLocations(table: CampaignTable): CampaignTable {
+  const entities = [...(table.entities ?? [])]
+  let changed = false
+  const diagrams = table.diagrams.map(diagram => ({ ...diagram, nodes: diagram.nodes.map(node => {
+    if (node.type !== 'location' || node.data.localEntityId || !node.data.title.trim()) return node
+    const id = `local-location-${diagram.id}-${node.id}`
+    entities.push({ id, slug: id, entityType: 'location', name: node.data.title, description: node.data.description })
+    changed = true
+    return { ...node, data: { ...node.data, localEntityId: id, description: '' } }
+  }) }))
+  return changed ? { ...table, entities, diagrams } : table
+}
 export function canContain(node: TableNode): boolean {
   return node.type === 'entity' && ['creature', 'character', 'npc'].includes(node.data.reference?.entityType ?? '')
 }

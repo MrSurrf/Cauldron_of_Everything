@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createCanvasObject, createDiagram, createInstance, createLocation, createTable, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable } from './table'
+import { createCanvasObject, createDiagram, createInstance, createLocation, createTable, materializeLegacyLocations, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
 
 const reference: LibraryReference = { source: 'encyclopedia', entityId: '42', entityType: 'creature', name: 'Призрак', slug: 'ghost', facts: ['ПО 4'] }
@@ -24,6 +24,28 @@ describe('сохранение пространства кампании', () =>
     const shared = parseTable(serializeTable({ ...restored, diagrams: [...restored.diagrams, second] }))
     expect(shared.diagrams[1].nodes[0].data.localEntityId).toBe(note.entity.id)
     expect(placeCanvasObject(restored, table.activeId, createCanvasObject('note', { x: 0, y: 0 }), '')).toBe(restored)
+  })
+  it('редактирует Entity, не меняя размещение и display state ноды', () => {
+    const table = createTable()
+    const location = createCanvasObject('location', { x: 75, y: 135 })
+    const placed = placeCanvasObject(table, table.activeId, location, 'Крипта')
+    const originalNode = placed.diagrams[0].nodes[0]
+    const updated = updateCanvasEntity(placed, location.entity.id, { name: 'Новая крипта', description: 'Подземелье' })
+    expect(updated.entities?.[0]).toMatchObject({ name: 'Новая крипта', description: 'Подземелье' })
+    expect(updated.diagrams[0].nodes[0]).toEqual(originalNode)
+    expect(parseTable(serializeTable(updated)).entities?.[0].name).toBe('Новая крипта')
+    expect(updateCanvasEntity(updated, location.entity.id, { name: '  ' })).toBe(updated)
+  })
+  it('переносит старую локацию в Entity без потери описания и координат', () => {
+    const table = createTable()
+    const legacy = createLocation({ x: 30, y: 45 })
+    legacy.data.description = 'Подземелье'
+    table.diagrams[0].nodes.push(legacy)
+    const migrated = materializeLegacyLocations(table)
+    expect(migrated.entities?.[0]).toMatchObject({ entityType: 'location', name: legacy.data.title, description: 'Подземелье' })
+    expect(migrated.diagrams[0].nodes[0].position).toEqual({ x: 30, y: 45 })
+    expect(migrated.diagrams[0].nodes[0].data.description).toBe('')
+    expect(materializeLegacyLocations(migrated)).toBe(migrated)
   })
   it('восстанавливает независимые экземпляры, геометрию, подписи и layout', () => {
     const table = createTable()

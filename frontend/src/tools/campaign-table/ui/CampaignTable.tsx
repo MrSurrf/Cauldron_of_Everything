@@ -6,10 +6,11 @@ import type { XYPosition } from '@xyflow/react'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
-import { canContain, createCanvasObject, createDiagram, createInstance, createTable, LEGACY_STORAGE_KEY, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, TABLE_STORAGE_KEY } from '../model/table'
+import { canContain, createCanvasObject, createDiagram, createInstance, createTable, LEGACY_STORAGE_KEY, materializeLegacyLocations, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity } from '../model/table'
 import type { CanvasEntity } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { MindMapNode } from './MindMapNode'
+import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE, TableContext } from './tableContext'
 import { TableInspector } from './TableInspector'
@@ -18,11 +19,11 @@ import '@xyflow/react/dist/style.css'
 import styles from './CampaignTable.module.css'
 
 const nodeTypes = { entity: MindMapNode, location: MindMapNode, note: MindMapNode }
-type CreationAnchor = { x: number; y: number; menuX: number; menuY: number; position: XYPosition }
+type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
 function loadTable() {
   try {
     const raw = localStorage.getItem(TABLE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
-    return { table: raw ? parseTable(raw) : createTable(), error: '' }
+    return { table: raw ? materializeLegacyLocations(parseTable(raw)) : createTable(), error: '' }
   } catch {
     return { table: createTable(), error: 'Не удалось восстановить схемы. Автосохранение отключено, чтобы не затереть прежние данные.' }
   }
@@ -33,11 +34,12 @@ function locationAt(diagram: Diagram, position: XYPosition) {
     && position.y >= node.position.y && position.x <= node.position.x + (node.width ?? 340) && position.y <= node.position.y + (node.height ?? 260))?.id
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
+function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
   table: TableState; diagram: Diagram; readOnly: boolean
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
   onPlaceObject: (object: { entity: CanvasEntity; node: TableNode }, name: string) => void
+  onUpdateEntity: (id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description'>>) => void
   onSelectDiagram: (id: string) => void; onCreateDiagram: (name: string) => void
   libraryCollapsed: boolean; onToggleLibrary: () => void
 }) {
@@ -46,8 +48,8 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
   const creationRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
-  const [creationOpen, setCreationOpen] = useState(false)
   const [draft, setDraft] = useState<{ entity: CanvasEntity; node: TableNode } | null>(null)
+  const [editorEntityId, setEditorEntityId] = useState<string | null>(null)
   const [schemesOpen, setSchemesOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const center = () => {
@@ -58,26 +60,25 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
     if (!anchor) return
     const close = (event: PointerEvent) => {
       if (event.target instanceof Node && !creationRef.current?.contains(event.target)) {
-        setAnchor(null); setCreationOpen(false)
+        setAnchor(null)
       }
     }
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
   }, [anchor])
-  function showCreationAt(clientX: number, clientY: number, open = false) {
+  function showCreationAt(clientX: number, clientY: number) {
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect || readOnly) return
     const x = clientX - rect.left
     const y = clientY - rect.top
-    setAnchor({ x, y, menuX: Math.max(8, Math.min(x + 18, rect.width - 212)),
-      menuY: Math.max(8, Math.min(y + 18, rect.height - 176)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
-    setCreationOpen(open)
+    setAnchor({ menuX: Math.max(8, Math.min(x + 8, rect.width - 212)),
+      menuY: Math.max(8, Math.min(y + 8, rect.height - 176)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
     setSelection(null)
   }
   function beginCreation(type: 'location' | 'note') {
     if (!anchor) return
     setDraft(createCanvasObject(type, anchor.position))
-    setAnchor(null); setCreationOpen(false)
+    setAnchor(null)
   }
   function add(reference: LibraryReference, position?: XYPosition) {
     if (readOnly) return
@@ -91,7 +92,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
   function drop(event: DragEvent<HTMLDivElement>) {
     if (readOnly) return
     event.preventDefault()
-    setAnchor(null); setCreationOpen(false)
+    setAnchor(null)
     const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
     const instance = event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
     if (instance) { onChange(current => moveToLocation(current, instance, locationAt(current, position), position)); return }
@@ -105,7 +106,11 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
     } catch { /* Чужой payload не создаёт узел. */ }
   }
   const open = (id: string) => setSelection({ kind: 'node', id, editing: false })
-  const edit = (id: string) => setSelection({ kind: 'node', id, editing: true })
+  const edit = (id: string) => {
+    const localId = diagram.nodes.find(node => node.id === id)?.data.localEntityId
+    if (localId && table.entities?.some(entity => entity.id === localId)) setEditorEntityId(localId)
+    else setSelection({ kind: 'node', id, editing: true })
+  }
   const openReference = (reference: LibraryReference) => setSelection({ kind: 'library', reference })
   const remove = (id: string) => { if (!readOnly) onChange(current => removeInstances(current, new Set([id]))) }
   const release = (id: string) => { if (!readOnly) onChange(current => moveToLocation(current, id)) }
@@ -119,12 +124,26 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
     edit(copy.id)
   }
   const hidden = new Set(diagram.nodes.filter(node => node.data.locationId).map(node => node.id))
-  const visibleNodes = draft ? [...diagram.nodes, draft.node] : diagram.nodes
-  return <TableContext.Provider value={{ diagram, readOnly, open, edit, remove, release, duplicate,
+  const localEntities = new Map(table.entities?.map(entity => [entity.id, entity]) ?? [])
+  const displayDiagram = { ...diagram, nodes: diagram.nodes.map(node => {
+    const entity = localEntities.get(node.data.localEntityId ?? '')
+    return entity ? { ...node, data: { ...node.data, title: entity.name } } : node
+  }) }
+  const visibleNodes = draft ? [...displayDiagram.nodes, draft.node] : displayDiagram.nodes
+  const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
+  const selectedEntity = localEntities.get(selectedNode?.data.localEntityId ?? '')
+  const editedEntity = localEntities.get(editorEntityId ?? '')
+  const closeSelection = () => {
+    const id = selectedNode?.id
+    setSelection(null)
+    if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
+  }
+  return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
       cancel: () => setDraft(null) } : undefined }}>
-    <section className={styles.board} aria-label="Схема кампании">
+    {editedEntity ? <LocalEntityEditor key={editedEntity.id} entity={editedEntity} diagramName={diagram.name} readOnly={readOnly}
+      onBack={() => setEditorEntityId(null)} onUpdate={changes => onUpdateEntity(editedEntity.id, changes)} /> : <section className={styles.board} aria-label="Схема кампании">
       <header className={styles.boardHeader}><div className={styles.schemeHeading}>
         <Popover aria-label="Схемы кампании" open={schemesOpen} onOpenChange={setSchemesOpen} content={<div className={styles.schemeMenu}>
           <nav aria-label="Выбор схемы">{table.diagrams.map(item => <button type="button" key={item.id} aria-current={item.id === diagram.id ? 'page' : undefined}
@@ -169,35 +188,38 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSe
           onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
           onConnect={readOnly ? undefined : connection => onChange(current => ({ ...current, edges: addEdge(connection, current.edges) }))}
           isValidConnection={connection => connection.source !== connection.target}
-          onNodeClick={(_, node) => { setAnchor(null); setCreationOpen(false); if (node.id !== draft?.node.id) open(node.id) }}
-          onEdgeClick={(_, edge) => { setAnchor(null); setCreationOpen(false); setSelection({ kind: 'edge', id: edge.id }) }}
-          onPaneClick={event => { setSelection(null); showCreationAt(event.clientX, event.clientY) }}
-          onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY, true) }}
-          onMoveStart={() => { setAnchor(null); setCreationOpen(false) }}
+          onNodeClick={(_, node) => { setAnchor(null); if (node.id !== draft?.node.id) open(node.id) }}
+          onNodeDoubleClick={(_, node) => { const id = node.data.localEntityId; if (id && localEntities.has(id)) setEditorEntityId(id) }}
+          onEdgeClick={(_, edge) => { setAnchor(null); setSelection({ kind: 'edge', id: edge.id }) }}
+          onPaneClick={() => { setSelection(null); setAnchor(null) }}
+          onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY) }}
+          onMoveStart={() => setAnchor(null)}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
           deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} aria-label="Холст кампании"
         >
           <Background gap={24} size={1} color="var(--color-border-default)" /><Controls showInteractive={false} />
         </ReactFlow>
         {anchor && !readOnly && !draft && <div ref={creationRef} className={styles.creationLayer}>
-          <button type="button" className={styles.creationPlus} style={{ left: anchor.x, top: anchor.y }} aria-label="Создать объект здесь"
-            aria-expanded={creationOpen} onClick={() => setCreationOpen(value => !value)}>+</button>
-          {creationOpen && <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
+          <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
             style={{ left: anchor.menuX, top: anchor.menuY }}>
             <span>Создать</span>
             <button type="button" role="menuitem" onClick={() => beginCreation('location')}>Локация</button>
             <button type="button" role="menuitem" onClick={() => beginCreation('note')}>Заметка</button>
             <span>Добавить существующее</span>
             <button type="button" role="menuitem" disabled>Пока недоступно</button>
-          </div>}
+          </div>
         </div>}
-        {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите на пустое место холста или перетащите материал из библиотеки.'}</p></div>}
+        {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите правой кнопкой на холст или перетащите материал из библиотеки.'}</p></div>}
       </div>
-    </section>
+    </section>}
+    {selectedNode && selectedEntity && !editedEntity && <LocalEntityInspector key={selectedEntity.id} entity={selectedEntity}
+      node={selectedNode} diagram={displayDiagram} width={table.layout.inspectorWidth} readOnly={readOnly}
+      onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={closeSelection}
+      onOpenFull={() => setEditorEntityId(selectedEntity.id)} onUpdate={changes => onUpdateEntity(selectedEntity.id, changes)} />}
     {!readOnly && !libraryCollapsed && <LibrarySidebar section={table.layout.section} query={table.layout.query} width={table.layout.libraryWidth}
       onCollapse={onToggleLibrary} onSection={section => onLayout({ section, query: '' })}
       onQuery={query => onLayout({ query })} onResize={libraryWidth => onLayout({ libraryWidth })} onOpen={openReference} onAdd={add} />}
-    {selection && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
+    {selection && !selectedEntity && !editedEntity && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
       selection={selection} width={table.layout.inspectorWidth} onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={() => setSelection(null)} onChange={onChange} onOpen={openReference} onAdd={add} />}
   </TableContext.Provider>
 }
@@ -215,6 +237,7 @@ function Workspace({ table, commit, readOnly = false }: { table: TableState; com
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
       onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
       onPlaceObject={(object, name) => commit(current => placeCanvasObject(current, active.id, object, name))}
+      onUpdateEntity={(id, changes) => { if (!readOnly) commit(current => updateCanvasEntity(current, id, changes)) }}
       onLayout={layout => commit(current => ({ ...current, layout: { ...current.layout, ...layout } }))} /></ReactFlowProvider>
   </div>
 }
@@ -258,7 +281,7 @@ function PublicTable({ campaignId }: { campaignId: string }) {
   useEffect(() => {
     if (!campaignId) return
     const controller = new AbortController()
-    void loadPublicTable(campaignId, controller.signal).then(value => { if (!controller.signal.aborted) setTable(value) }).catch((reason: unknown) => {
+    void loadPublicTable(campaignId, controller.signal).then(value => { if (!controller.signal.aborted) setTable(materializeLegacyLocations(value)) }).catch((reason: unknown) => {
       if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Публичный стол недоступен.')
     })
     return () => controller.abort()
