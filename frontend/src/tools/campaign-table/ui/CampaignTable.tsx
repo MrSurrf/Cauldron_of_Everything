@@ -29,9 +29,26 @@ function loadTable() {
   }
 }
 
-function locationAt(diagram: Diagram, position: XYPosition) {
-  return [...diagram.nodes].reverse().find(node => node.type === 'location' && position.x >= node.position.x
-    && position.y >= node.position.y && position.x <= node.position.x + (node.width ?? 340) && position.y <= node.position.y + (node.height ?? 260))?.id
+function locationAt(diagram: Diagram, position: XYPosition, measured: (id: string) => { width?: number; height?: number } | undefined) {
+  return [...diagram.nodes].reverse().find(node => {
+    if (node.type !== 'location') return false
+    const size = measured(node.id)
+    return position.x >= node.position.x && position.y >= node.position.y
+      && position.x <= node.position.x + (size?.width ?? node.width ?? 340)
+      && position.y <= node.position.y + (size?.height ?? node.height ?? 260)
+  })?.id
+}
+
+function compactNode(node: TableNode): TableNode {
+  const originalWidth = node.type === 'location' ? 340 : 260
+  const originalHeight = node.type === 'location' ? 260 : 150
+  return { ...node, width: node.width === originalWidth ? 232 : node.width,
+    height: node.height === originalHeight ? undefined : node.height }
+}
+
+function focusIsEditing() {
+  const focused = document.activeElement
+  return focused instanceof Element && Boolean(focused.closest('input, textarea, select, [contenteditable], [role="textbox"], [role="menu"], button'))
 }
 
 function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
@@ -56,6 +73,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
   }
+  const findLocation = (current: Diagram, position: XYPosition) => locationAt(current, position, id => flow.getNode(id)?.measured)
   useEffect(() => {
     if (!anchor) return
     const close = (event: PointerEvent) => {
@@ -86,7 +104,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     const node = createInstance(reference, position ?? { x: origin.x - 130 + diagram.nodes.length % 5 * 24, y: origin.y - 75 + diagram.nodes.length % 5 * 24 })
     onChange(current => {
       const next = { ...current, nodes: [...current.nodes, node] }
-      return position && canContain(node) ? moveToLocation(next, node.id, locationAt(current, position)) : next
+      return position && canContain(node) ? moveToLocation(next, node.id, findLocation(current, position)) : next
     })
   }
   function drop(event: DragEvent<HTMLDivElement>) {
@@ -95,7 +113,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     setAnchor(null)
     const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
     const instance = event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
-    if (instance) { onChange(current => moveToLocation(current, instance, locationAt(current, position), position)); return }
+    if (instance) { onChange(current => moveToLocation(current, instance, findLocation(current, position), position)); return }
     try {
       const reference = JSON.parse(event.dataTransfer.getData(ENTITY_DRAG_TYPE)) as LibraryReference
       // Проверяем внешние DnD-данные тем же валидатором, что и сохранение.
@@ -105,7 +123,11 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
       add(reference, position)
     } catch { /* Чужой payload не создаёт узел. */ }
   }
-  const open = (id: string) => setSelection({ kind: 'node', id, editing: false })
+  const open = (id: string) => {
+    const localId = diagram.nodes.find(node => node.id === id)?.data.localEntityId
+    if (localId && table.entities?.some(entity => entity.id === localId)) setEditorEntityId(localId)
+    else setSelection({ kind: 'node', id, editing: false })
+  }
   const edit = (id: string) => {
     const localId = diagram.nodes.find(node => node.id === id)?.data.localEntityId
     if (localId && table.entities?.some(entity => entity.id === localId)) setEditorEntityId(localId)
@@ -127,7 +149,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const localEntities = new Map(table.entities?.map(entity => [entity.id, entity]) ?? [])
   const displayDiagram = { ...diagram, nodes: diagram.nodes.map(node => {
     const entity = localEntities.get(node.data.localEntityId ?? '')
-    return entity ? { ...node, data: { ...node.data, title: entity.name } } : node
+    return entity ? { ...node, data: { ...node.data, title: entity.name, description: entity.description } } : node
   }) }
   const visibleNodes = draft ? [...displayDiagram.nodes, draft.node] : displayDiagram.nodes
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
@@ -167,7 +189,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
         }
       }}>
-        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...node, hidden: hidden.has(node.id), draggable: node.id === draft?.node.id ? false : node.draggable }))}
+        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...compactNode(node), hidden: hidden.has(node.id), draggable: node.id === draft?.node.id ? false : node.draggable }))}
           edges={diagram.edges.map(edge => ({ ...edge, hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly} nodesConnectable={!readOnly} edgesReconnectable={false}
@@ -180,22 +202,24 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
               return { ...next, nodes: applyNodeChanges(persistedChanges.filter(change => change.type !== 'remove'), next.nodes) }
             })
           }}
-          onNodeDragStop={readOnly ? undefined : (_, node) => {
-            if (canContain(node)) onChange(current => moveToLocation(current, node.id, locationAt(current, {
-              x: node.position.x + (node.width ?? 260) / 2, y: node.position.y + (node.height ?? 150) / 2,
-            })))
+          onNodeDragStop={readOnly ? undefined : (event, node) => {
+            if (canContain(node)) {
+              const position = 'clientX' in event ? flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
+                : { x: node.position.x + (node.width ?? 260) / 2, y: node.position.y + (node.height ?? 150) / 2 }
+              onChange(current => moveToLocation(current, node.id, findLocation(current, position)))
+            }
           }}
           onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
           onConnect={readOnly ? undefined : connection => onChange(current => ({ ...current, edges: addEdge(connection, current.edges) }))}
           isValidConnection={connection => connection.source !== connection.target}
-          onNodeClick={(_, node) => { setAnchor(null); if (node.id !== draft?.node.id) open(node.id) }}
-          onNodeDoubleClick={(_, node) => { const id = node.data.localEntityId; if (id && localEntities.has(id)) setEditorEntityId(id) }}
+          onNodeClick={(_, node) => { setAnchor(null); if (node.id !== draft?.node.id) setSelection({ kind: 'node', id: node.id, editing: false }) }}
+          onNodeDoubleClick={(_, node) => { if (node.id !== draft?.node.id) open(node.id) }}
           onEdgeClick={(_, edge) => { setAnchor(null); setSelection({ kind: 'edge', id: edge.id }) }}
           onPaneClick={() => { setSelection(null); setAnchor(null) }}
           onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY) }}
           onMoveStart={() => setAnchor(null)}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
-          deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} aria-label="Холст кампании"
+          deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} onBeforeDelete={async () => !focusIsEditing()} aria-label="Холст кампании"
         >
           <Background gap={24} size={1} color="var(--color-border-default)" /><Controls showInteractive={false} />
         </ReactFlow>
