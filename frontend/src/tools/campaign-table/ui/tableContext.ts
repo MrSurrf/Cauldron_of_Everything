@@ -4,6 +4,7 @@ import type { Diagram } from '../model/table'
 export type TableActions = {
   diagram: Diagram
   readOnly: boolean
+  draft?: { id: string; type: 'location' | 'note'; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void
   edit: (id: string) => void
   remove: (id: string) => void

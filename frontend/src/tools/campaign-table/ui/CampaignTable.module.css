@@ -64,6 +64,10 @@
 .mindNode header { overflow: hidden; flex-shrink: 0; }
 .mindNode header > span { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
 .mindNode h3 { font: 400 var(--font-size-lg)/1.2 var(--font-family-heading); margin: var(--space-1) 0 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.draftNode { justify-content: flex-start; border-color: var(--color-border-accent); }
+.draftNode > span { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.draftNode input { min-width: 0; width: 100%; box-sizing: border-box; padding: var(--space-2); background: var(--color-surface-default); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-sm); color: var(--color-text-primary); font: inherit; }
+.draftNode input:focus { outline: var(--border-width-default) solid var(--color-brand-bright); }
 .nodeFacts, .nodeState { margin: 0; font-size: var(--font-size-xs); color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
 .nodeState { color: var(--color-brand-bright); }
 .mindNode footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); margin-top: auto; flex-shrink: 0; }
@@ -77,6 +81,15 @@
 .emptyCanvas > span { color: var(--color-brand); font-size: 3rem; }
 .emptyCanvas h3 { margin: var(--space-3) 0; font: 400 var(--font-size-xl)/1.2 var(--font-family-heading); }
 .emptyCanvas p { margin: 0; max-width: 25rem; font-size: var(--font-size-sm); line-height: var(--line-height-normal); color: var(--color-text-subtle); }
+.creationLayer { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.creationPlus { position: absolute; display: grid; place-items: center; width: 2rem; height: 2rem; transform: translate(-50%, -50%); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-sm); background: var(--color-surface-accent); color: var(--color-brand-bright); font-size: var(--font-size-lg); line-height: 1; cursor: pointer; pointer-events: auto; box-shadow: var(--shadow-panel); }
+.creationPlus:hover, .creationPlus[aria-expanded='true'] { color: var(--color-text-primary); box-shadow: var(--focus-ring); }
+.creationMenu { position: absolute; display: grid; gap: var(--space-1); width: 12rem; padding: var(--space-2); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-sm); background: var(--color-surface-default); box-shadow: var(--shadow-panel); pointer-events: auto; }
+.creationMenu > span { padding: var(--space-1) var(--space-2); color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.creationMenu > span:not(:first-child) { border-top: var(--border-width-default) solid var(--color-content-border); }
+.creationMenu > button { padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-primary); font: inherit; font-size: var(--font-size-sm); text-align: left; cursor: pointer; }
+.creationMenu > button:hover:not(:disabled), .creationMenu > button:focus-visible { background: var(--color-surface-accent); color: var(--color-heading-primary); }
+.creationMenu > button:disabled { color: var(--color-text-subtle); cursor: default; }
 .catalog { flex: 1; min-height: 6rem; overflow-y: auto; }
 .catalogRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1); align-items: center; margin-bottom: var(--space-2); }
 .creature { display: block; width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; border-radius: var(--radius-sm); text-align: left; cursor: grab; }

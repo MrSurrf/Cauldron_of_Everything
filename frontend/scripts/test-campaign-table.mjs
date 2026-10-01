@@ -48,6 +48,14 @@ async function editNode(id) {
 async function geometry(values) {
   for (const [key, value] of Object.entries(values)) await page.getByRole('spinbutton', { name: `Узел: ${key}`, exact: true }).fill(String(value))
 }
+async function createOnCanvas(canvas, type, name, position) {
+  await canvas.click({ position })
+  await page.getByRole('button', { name: 'Создать объект здесь' }).click()
+  await page.getByRole('menuitem', { name: type, exact: true }).click()
+  const title = page.getByRole('textbox', { name: 'Название нового объекта' })
+  await title.fill(name)
+  await title.press('Enter')
+}
 try {
   await page.goto(`${baseUrl}/my-table`)
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).waitFor()
@@ -56,6 +64,14 @@ try {
   const libraryWidth = (await page.getByRole('complementary', { name: 'Библиотека' }).boundingBox()).width
   assert.ok(boardWidth / (boardWidth + libraryWidth) > 0.66 && boardWidth / (boardWidth + libraryWidth) < 0.74)
   const canvas = page.locator('.react-flow')
+  await canvas.click({ position: { x: 310, y: 330 } })
+  await page.getByRole('button', { name: 'Создать объект здесь' }).click()
+  assert.equal(await page.getByRole('menuitem', { name: 'Пока недоступно' }).isDisabled(), true)
+  await canvas.click({ position: { x: 700, y: 350 } })
+  assert.equal(await page.getByRole('menu', { name: 'Действия с холстом' }).count(), 0)
+  await canvas.click({ button: 'right', position: { x: 360, y: 370 } })
+  await page.getByRole('menu', { name: 'Действия с холстом' }).waitFor()
+  await canvas.click({ position: { x: 750, y: 500 } })
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).dragTo(canvas, { targetPosition: { x: 80, y: 100 } })
   await waitForNodes(1)
   let state = await saved()
@@ -112,10 +128,11 @@ try {
   assert.ok((await saved()).diagrams[0].nodes[0].width > widthBefore)
 
   // Контейнер, перенос экземпляра и HTML DnD из библиотеки внутрь локации.
-  await page.getByRole('button', { name: '+ Локация', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название экземпляра', exact: true }).fill('Крипта')
-  await geometry({ x: 60, y: 420, width: 330, height: 230 })
+  await createOnCanvas(canvas, 'Локация', 'Крипта', { x: 60, y: 420 })
   const locationId = (await saved()).diagrams[0].nodes.find(node => node.type === 'location').id
+  const placedLocation = (await saved()).diagrams[0].nodes.find(node => node.id === locationId)
+  assert.notEqual(placedLocation.data.localEntityId, locationId)
+  assert.ok(Math.abs(placedLocation.position.x - 60) < 5 && Math.abs(placedLocation.position.y - 420) < 5)
   await closeCard()
   const location = page.locator(`.react-flow__node[data-id="${locationId}"]`)
   const ghostRect = await first.boundingBox(); const locationRect = await location.boundingBox()
@@ -129,9 +146,7 @@ try {
   state = await saved()
   assert.equal(state.diagrams[0].nodes.filter(node => node.data.locationId === locationId).length, 2)
   const skeletonId = state.diagrams[0].nodes.find(node => node.data.title === 'Скелет').id
-  await page.getByRole('button', { name: '+ Локация', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название экземпляра', exact: true }).fill('Башня')
-  await geometry({ x: 460, y: 440, width: 330, height: 240 })
+  await createOnCanvas(canvas, 'Локация', 'Башня', { x: 460, y: 440 })
   await closeCard()
   state = await saved()
   const towerId = state.diagrams[0].nodes.find(node => node.data.title === 'Башня').id
@@ -201,6 +216,17 @@ try {
   await page.getByRole('textbox', { name: 'Название новой схемы' }).fill('Подземелье')
   await page.getByRole('button', { name: 'Создать', exact: true }).click()
   await waitForNodes(0)
+  await canvas.click({ position: { x: 120, y: 100 } })
+  await page.getByRole('button', { name: 'Создать объект здесь' }).click()
+  await page.getByRole('menuitem', { name: 'Заметка', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Название нового объекта' }).fill('Черновик')
+  await page.getByRole('textbox', { name: 'Название нового объекта' }).press('Escape')
+  assert.equal((await saved()).diagrams[1].nodes.length, 0)
+  assert.equal((await saved()).entities.some(entity => entity.entityType === 'note'), false)
+  await createOnCanvas(canvas, 'Заметка', 'Секрет', { x: 120, y: 100 })
+  await waitForNodes(1)
+  assert.equal((await saved()).entities.find(entity => entity.entityType === 'note').name, 'Секрет')
+  assert.equal((await saved()).diagrams[1].nodes[0].type, 'note')
   await page.reload()
   await page.getByRole('button', { name: 'Выбрать схему: Подземелье' }).click()
   await page.getByRole('textbox', { name: 'Название схемы', exact: true }).waitFor()
@@ -209,11 +235,12 @@ try {
   await page.getByRole('heading', { name: 'Крипта', exact: true }).waitFor()
   await page.screenshot({ path: join(tmpdir(), 'campaign-table-mobile.png'), fullPage: true })
 
+  const persistedBeforeFailure = await saved()
   // Повреждённое сохранение не стирается, quota показывает предупреждение.
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('Quota exceeded') } })
   await page.getByRole('button', { name: 'Добавить на холст: Материал spell', exact: true }).click()
   await page.getByRole('alert').getByText(/Изменения не сохранены/).waitFor()
-  assert.deepEqual(await saved(), { ...before, diagrams: [...before.diagrams, (await saved()).diagrams[1]] })
+  assert.deepEqual(await saved(), persistedBeforeFailure)
   await page.reload()
   await page.evaluate(key => localStorage.setItem(key, '{broken'), storageKey)
   await page.reload()

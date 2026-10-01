@@ -1,9 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { createDiagram, createInstance, createLocation, createTable, moveToLocation, parseTable, removeInstances, serializeTable } from './table'
+import { createCanvasObject, createDiagram, createInstance, createLocation, createTable, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable } from './table'
 import type { LibraryReference } from './library'
 
 const reference: LibraryReference = { source: 'encyclopedia', entityId: '42', entityType: 'creature', name: 'Призрак', slug: 'ghost', facts: ['ПО 4'] }
 describe('сохранение пространства кампании', () => {
+  it('создаёт Entity отдельно от размещения локации и заметки', () => {
+    const table = createTable()
+    const location = createCanvasObject('location', { x: 75, y: 135 })
+    const note = createCanvasObject('note', { x: 420, y: 500 })
+    const placed = placeCanvasObject(placeCanvasObject(table, table.activeId, location, 'Крипта'), table.activeId, note, 'Ключ')
+    const restored = parseTable(serializeTable(placed))
+    expect(restored.entities).toHaveLength(2)
+    expect(restored.entities?.map(entity => entity.entityType)).toEqual(['location', 'note'])
+    expect(restored.diagrams[0].nodes[0].data.localEntityId).toBe(location.entity.id)
+    expect(restored.diagrams[0].nodes[0].id).not.toBe(location.entity.id)
+    expect(restored.diagrams[0].nodes[0].position).toEqual({ x: 75, y: 135 })
+    expect(restored.diagrams[0].nodes[1].position).toEqual({ x: 420, y: 500 })
+    const withoutLocation = removeInstances(restored.diagrams[0], new Set([location.node.id]))
+    expect(withoutLocation.nodes).toHaveLength(1)
+    expect(restored.entities).toHaveLength(2)
+    const second = createDiagram('Другая схема')
+    second.nodes = [{ ...restored.diagrams[0].nodes[1], id: crypto.randomUUID(), position: { x: 20, y: 30 } }]
+    const shared = parseTable(serializeTable({ ...restored, diagrams: [...restored.diagrams, second] }))
+    expect(shared.diagrams[1].nodes[0].data.localEntityId).toBe(note.entity.id)
+    expect(placeCanvasObject(restored, table.activeId, createCanvasObject('note', { x: 0, y: 0 }), '')).toBe(restored)
+  })
   it('восстанавливает независимые экземпляры, геометрию, подписи и layout', () => {
     const table = createTable()
     const first = table.diagrams[0]

@@ -6,7 +6,8 @@ import type { XYPosition } from '@xyflow/react'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
-import { canContain, createDiagram, createInstance, createLocation, createTable, LEGACY_STORAGE_KEY, moveToLocation, parseTable, removeInstances, serializeTable, TABLE_STORAGE_KEY } from '../model/table'
+import { canContain, createCanvasObject, createDiagram, createInstance, createTable, LEGACY_STORAGE_KEY, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, TABLE_STORAGE_KEY } from '../model/table'
+import type { CanvasEntity } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { MindMapNode } from './MindMapNode'
 import { LibrarySidebar } from './LibrarySidebar'
@@ -16,7 +17,8 @@ import type { Selection } from './TableInspector'
 import '@xyflow/react/dist/style.css'
 import styles from './CampaignTable.module.css'
 
-const nodeTypes = { entity: MindMapNode, location: MindMapNode }
+const nodeTypes = { entity: MindMapNode, location: MindMapNode, note: MindMapNode }
+type CreationAnchor = { x: number; y: number; menuX: number; menuY: number; position: XYPosition }
 function loadTable() {
   try {
     const raw = localStorage.getItem(TABLE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
@@ -31,21 +33,51 @@ function locationAt(diagram: Diagram, position: XYPosition) {
     && position.y >= node.position.y && position.x <= node.position.x + (node.width ?? 340) && position.y <= node.position.y + (node.height ?? 260))?.id
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
+function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
   table: TableState; diagram: Diagram; readOnly: boolean
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
+  onPlaceObject: (object: { entity: CanvasEntity; node: TableNode }, name: string) => void
   onSelectDiagram: (id: string) => void; onCreateDiagram: (name: string) => void
   libraryCollapsed: boolean; onToggleLibrary: () => void
 }) {
   const flow = useReactFlow<TableNode, TableEdge>()
   const canvasRef = useRef<HTMLDivElement>(null)
+  const creationRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
+  const [creationOpen, setCreationOpen] = useState(false)
+  const [draft, setDraft] = useState<{ entity: CanvasEntity; node: TableNode } | null>(null)
   const [schemesOpen, setSchemesOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const center = () => {
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
+  }
+  useEffect(() => {
+    if (!anchor) return
+    const close = (event: PointerEvent) => {
+      if (event.target instanceof Node && !creationRef.current?.contains(event.target)) {
+        setAnchor(null); setCreationOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [anchor])
+  function showCreationAt(clientX: number, clientY: number, open = false) {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect || readOnly) return
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+    setAnchor({ x, y, menuX: Math.max(8, Math.min(x + 18, rect.width - 212)),
+      menuY: Math.max(8, Math.min(y + 18, rect.height - 176)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
+    setCreationOpen(open)
+    setSelection(null)
+  }
+  function beginCreation(type: 'location' | 'note') {
+    if (!anchor) return
+    setDraft(createCanvasObject(type, anchor.position))
+    setAnchor(null); setCreationOpen(false)
   }
   function add(reference: LibraryReference, position?: XYPosition) {
     if (readOnly) return
@@ -59,6 +91,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, on
   function drop(event: DragEvent<HTMLDivElement>) {
     if (readOnly) return
     event.preventDefault()
+    setAnchor(null); setCreationOpen(false)
     const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
     const instance = event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
     if (instance) { onChange(current => moveToLocation(current, instance, locationAt(current, position), position)); return }
@@ -86,7 +119,11 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, on
     edit(copy.id)
   }
   const hidden = new Set(diagram.nodes.filter(node => node.data.locationId).map(node => node.id))
-  return <TableContext.Provider value={{ diagram, readOnly, open, edit, remove, release, duplicate }}>
+  const visibleNodes = draft ? [...diagram.nodes, draft.node] : diagram.nodes
+  return <TableContext.Provider value={{ diagram, readOnly, open, edit, remove, release, duplicate,
+    draft: draft ? { id: draft.node.id, type: draft.entity.entityType,
+      commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
+      cancel: () => setDraft(null) } : undefined }}>
     <section className={styles.board} aria-label="Схема кампании">
       <header className={styles.boardHeader}><div className={styles.schemeHeading}>
         <Popover aria-label="Схемы кампании" open={schemesOpen} onOpenChange={setSchemesOpen} content={<div className={styles.schemeMenu}>
@@ -103,9 +140,6 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, on
         {!readOnly && libraryCollapsed && <Button size="sm" variant="secondary" onClick={onToggleLibrary}>Библиотека</Button>}
       </div>
         <div className={styles.actions}>
-          {!readOnly && <Button size="sm" variant="secondary" onClick={() => {
-            const node = createLocation(center()); onChange(current => ({ ...current, nodes: [...current.nodes, node] })); edit(node.id)
-          }}>+ Локация</Button>}
           <Button size="sm" variant="secondary" decoration="minimal" onClick={() => void flow.fitView({ padding: 0.25, maxZoom: 1 })}>Показать всё</Button>
         </div>
       </header>
@@ -114,15 +148,19 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, on
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
         }
       }}>
-        <ReactFlow<TableNode, TableEdge> nodes={diagram.nodes.map(node => ({ ...node, hidden: hidden.has(node.id) }))}
+        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...node, hidden: hidden.has(node.id), draggable: node.id === draft?.node.id ? false : node.draggable }))}
           edges={diagram.edges.map(edge => ({ ...edge, hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly} nodesConnectable={!readOnly} edgesReconnectable={false}
-          onNodesChange={readOnly ? undefined : changes => onChange(current => {
-            const removed = new Set(changes.filter(change => change.type === 'remove').map(change => change.id))
-            const next = removed.size ? removeInstances(current, removed) : current
-            return { ...next, nodes: applyNodeChanges(changes.filter(change => change.type !== 'remove'), next.nodes) }
-          })}
+          onNodesChange={readOnly ? undefined : changes => {
+            const persistedChanges = changes.filter(change => !('id' in change) || change.id !== draft?.node.id)
+            if (!persistedChanges.length) return
+            onChange(current => {
+              const removed = new Set(persistedChanges.filter(change => change.type === 'remove').map(change => change.id))
+              const next = removed.size ? removeInstances(current, removed) : current
+              return { ...next, nodes: applyNodeChanges(persistedChanges.filter(change => change.type !== 'remove'), next.nodes) }
+            })
+          }}
           onNodeDragStop={readOnly ? undefined : (_, node) => {
             if (canContain(node)) onChange(current => moveToLocation(current, node.id, locationAt(current, {
               x: node.position.x + (node.width ?? 260) / 2, y: node.position.y + (node.height ?? 150) / 2,
@@ -131,14 +169,29 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onSelectDiagram, on
           onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
           onConnect={readOnly ? undefined : connection => onChange(current => ({ ...current, edges: addEdge(connection, current.edges) }))}
           isValidConnection={connection => connection.source !== connection.target}
-          onNodeClick={(_, node) => open(node.id)} onEdgeClick={(_, edge) => setSelection({ kind: 'edge', id: edge.id })}
-          onPaneClick={() => setSelection(null)}
+          onNodeClick={(_, node) => { setAnchor(null); setCreationOpen(false); if (node.id !== draft?.node.id) open(node.id) }}
+          onEdgeClick={(_, edge) => { setAnchor(null); setCreationOpen(false); setSelection({ kind: 'edge', id: edge.id }) }}
+          onPaneClick={event => { setSelection(null); showCreationAt(event.clientX, event.clientY) }}
+          onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY, true) }}
+          onMoveStart={() => { setAnchor(null); setCreationOpen(false) }}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
           deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} aria-label="Холст кампании"
         >
           <Background gap={24} size={1} color="var(--color-border-default)" /><Controls showInteractive={false} />
         </ReactFlow>
-        {!diagram.nodes.length && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Перетащите материал из библиотеки на холст. Соедините точки по краям узлов или создайте локацию для существ.'}</p></div>}
+        {anchor && !readOnly && !draft && <div ref={creationRef} className={styles.creationLayer}>
+          <button type="button" className={styles.creationPlus} style={{ left: anchor.x, top: anchor.y }} aria-label="Создать объект здесь"
+            aria-expanded={creationOpen} onClick={() => setCreationOpen(value => !value)}>+</button>
+          {creationOpen && <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
+            style={{ left: anchor.menuX, top: anchor.menuY }}>
+            <span>Создать</span>
+            <button type="button" role="menuitem" onClick={() => beginCreation('location')}>Локация</button>
+            <button type="button" role="menuitem" onClick={() => beginCreation('note')}>Заметка</button>
+            <span>Добавить существующее</span>
+            <button type="button" role="menuitem" disabled>Пока недоступно</button>
+          </div>}
+        </div>}
+        {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите на пустое место холста или перетащите материал из библиотеки.'}</p></div>}
       </div>
     </section>
     {!readOnly && !libraryCollapsed && <LibrarySidebar section={table.layout.section} query={table.layout.query} width={table.layout.libraryWidth}
@@ -161,6 +214,7 @@ function Workspace({ table, commit, readOnly = false }: { table: TableState; com
       libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
       onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
+      onPlaceObject={(object, name) => commit(current => placeCanvasObject(current, active.id, object, name))}
       onLayout={layout => commit(current => ({ ...current, layout: { ...current.layout, ...layout } }))} /></ReactFlowProvider>
   </div>
 }

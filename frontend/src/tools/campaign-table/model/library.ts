@@ -12,7 +12,7 @@ export const LIBRARY_SECTIONS = [
 ] as const
 export type LibrarySection = typeof LIBRARY_SECTIONS[number][0]
 export const entityLabel = (type: EntityType | 'location') => ({
-  location: 'Локация', npc: 'NPC', creature: 'Существо', class: 'Класс', race: 'Раса', background: 'Предыстория',
+  location: 'Локация', note: 'Заметка', npc: 'NPC', creature: 'Существо', class: 'Класс', race: 'Раса', background: 'Предыстория',
   feat: 'Черта', spell: 'Заклинание', item: 'Предмет', sidekick: 'Спутник', reference: 'Справочный материал', character: 'Персонаж', campaign: 'Кампания',
 })[type]
 

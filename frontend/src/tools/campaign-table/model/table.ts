@@ -1,7 +1,10 @@
 import type { Edge, Node, Viewport, XYPosition } from '@xyflow/react'
+import type { BaseEntity } from '../../../entities/base'
 import type { LibraryReference, LibrarySection } from './library'
 
+export type CanvasEntity = BaseEntity<'location' | 'note'> & { description: string }
 export type InstanceData = {
+  localEntityId?: string
   reference?: LibraryReference
   title: string
   description: string
@@ -9,13 +12,14 @@ export type InstanceData = {
   state: string
   locationId?: string
 }
-export type TableNode = Node<InstanceData, 'entity' | 'location'>
+export type TableNode = Node<InstanceData, 'entity' | 'location' | 'note'>
 export type TableEdge = Edge<{ description?: string }> & { label?: string }
 export type Diagram = { id: string; name: string; nodes: TableNode[]; edges: TableEdge[]; viewport: Viewport }
 export type CampaignTable = {
   version: 2
   activeId: string
   diagrams: Diagram[]
+  entities?: CanvasEntity[]
   layout: { libraryWidth: number; inspectorWidth: number; section: LibrarySection; query: string }
 }
 export const LEGACY_STORAGE_KEY = 'cauldron.campaign-table.v1'
@@ -26,7 +30,7 @@ export function createDiagram(name = 'Основная схема'): Diagram {
 }
 export function createTable(): CampaignTable {
   const diagram = createDiagram()
-  return { version: 2, activeId: diagram.id, diagrams: [diagram],
+  return { version: 2, activeId: diagram.id, diagrams: [diagram], entities: [],
     layout: { libraryWidth: 336, inspectorWidth: 380, section: 'creature', query: '' } }
 }
 export function createInstance(reference: LibraryReference, position: XYPosition): TableNode {
@@ -36,6 +40,24 @@ export function createInstance(reference: LibraryReference, position: XYPosition
 export function createLocation(position: XYPosition): TableNode {
   return { id: crypto.randomUUID(), type: 'location', position, width: 340, height: 260,
     data: { title: 'Новая локация', description: '', facts: '', state: '' } }
+}
+export function createCanvasObject(type: 'location' | 'note', position: XYPosition): { entity: CanvasEntity; node: TableNode } {
+  const entityId = crypto.randomUUID()
+  const entity: CanvasEntity = { id: entityId, slug: entityId, entityType: type, name: '', description: '' }
+  const node: TableNode = {
+    id: crypto.randomUUID(), type, position, width: type === 'location' ? 340 : 260, height: type === 'location' ? 260 : 150,
+    data: { localEntityId: entityId, title: '', description: '', facts: '', state: '' },
+  }
+  return { entity, node }
+}
+export function placeCanvasObject(table: CampaignTable, diagramId: string, object: { entity: CanvasEntity; node: TableNode }, name: string): CampaignTable {
+  const title = name.trim()
+  const diagram = table.diagrams.find(item => item.id === diagramId)
+  if (!title || !diagram || diagram.nodes.some(node => node.id === object.node.id)
+    || table.entities?.some(entity => entity.id === object.entity.id)) return table
+  return { ...table, entities: [...(table.entities ?? []), { ...object.entity, name: title }],
+    diagrams: table.diagrams.map(item => item.id === diagramId
+      ? { ...item, nodes: [...item.nodes, { ...object.node, data: { ...object.node.data, title } }] } : item) }
 }
 export function canContain(node: TableNode): boolean {
   return node.type === 'entity' && ['creature', 'character', 'npc'].includes(node.data.reference?.entityType ?? '')
@@ -75,6 +97,16 @@ export function parseTable(raw: string): CampaignTable {
   const invalid = () => { throw new Error('Сохранённые схемы имеют неподдерживаемый или повреждённый формат.') }
   if (!record(value) || (value.version !== 1 && value.version !== 2) || !Array.isArray(value.diagrams) || !value.diagrams.length) return invalid()
   const legacy = value.version === 1
+  const localEntities = new Map<string, Record<string, unknown>>()
+  if (value.entities != null) {
+    if (!Array.isArray(value.entities)) return invalid()
+    for (const entity of value.entities) {
+      if (!record(entity) || !text(entity.id) || !entity.id || localEntities.has(entity.id)
+        || !['location', 'note'].includes(String(entity.entityType)) || !text(entity.slug)
+        || !text(entity.name) || !entity.name.trim() || !text(entity.description)) return invalid()
+      localEntities.set(entity.id, entity)
+    }
+  }
   const diagramIds = new Set<string>()
   for (const diagram of value.diagrams) {
     if (!record(diagram) || !text(diagram.id) || !diagram.id || diagramIds.has(diagram.id) || !text(diagram.name)
@@ -93,9 +125,12 @@ export function parseTable(raw: string): CampaignTable {
         } }
       }
       const data = node.data as Record<string, unknown>
-      if (!['entity', 'location'].includes(String(node.type)) || !text(data.title) || !text(data.description) || !text(data.facts) || !text(data.state)
+      if (!['entity', 'location', 'note'].includes(String(node.type)) || !text(data.title) || !text(data.description) || !text(data.facts) || !text(data.state)
         || (data.locationId !== undefined && (!text(data.locationId) || !data.locationId))
+        || (data.localEntityId !== undefined && (!text(data.localEntityId) || !data.localEntityId))
         || (node.width != null && (!finite(node.width) || node.width < 160)) || (node.height != null && (!finite(node.height) || node.height < 80))) return invalid()
+      if (data.localEntityId && localEntities.get(data.localEntityId)?.entityType !== node.type) return invalid()
+      if (node.type === 'note' && !data.localEntityId) return invalid()
       if (node.type === 'entity') {
         const ref = data.reference
         if (!record(ref) || !text(ref.entityId) || !ref.entityId || !text(ref.entityType) || !text(ref.name) || !text(ref.slug)
