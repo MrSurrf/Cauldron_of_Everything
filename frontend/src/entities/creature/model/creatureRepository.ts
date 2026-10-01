@@ -22,6 +22,7 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 ).replace(/\/$/, '')
 
+
 type JsonRecord = Record<string, unknown>
 type EncyclopediaEntitySummary = {
   entity_type: string
@@ -199,6 +200,7 @@ function readAbilityScore(value: unknown): CreatureAbilityScore | undefined {
     modifier: Number.isFinite(modifier) ? modifier : undefined,
   }
 }
+
 
 function toAbilities(value: unknown): CreatureEntity['abilities'] {
   if (!isRecord(value)) return undefined
