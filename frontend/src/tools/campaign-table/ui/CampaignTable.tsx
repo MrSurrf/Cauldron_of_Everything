@@ -166,7 +166,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   }
   return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
     diagrams: table.diagrams, connectionSource: linking ? connectionSource : null,
-    startConnection: id => { if (!readOnly) { setConnectionSource(id); setConnectionTarget(null); setConnectionPointer(null); setAnchor(null); setSelection(null) } },
+    startConnection: (id, pointer) => { if (!readOnly) { setConnectionSource(id); setConnectionTarget(null); setConnectionPointer(pointer ? flow.screenToFlowPosition(pointer) : null); setAnchor(null); setSelection(null) } },
     placeOnDiagram: (id, diagramId) => { const node = diagram.nodes.find(item => item.id === id); if (node && !readOnly) onPlaceExisting(node.data.entityId, diagramId) },
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },

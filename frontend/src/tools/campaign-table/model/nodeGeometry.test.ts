@@ -30,6 +30,6 @@ describe('присоединение к контуру', () => {
     expect(Number.isFinite(points.target.y)).toBe(true)
     expect(points.source).not.toEqual(center(shape))
     expect(points.source).not.toEqual(points.target)
-    if (nodeVisuals[type].badge) expect(shape).toMatchObject({ x: 30, y: 24, width: 120, height: 120 })
+    if (nodeVisuals[type].badge) expect(shape).toMatchObject({ x: 30, y: 0, width: 120, height: 120 })
   })
 })

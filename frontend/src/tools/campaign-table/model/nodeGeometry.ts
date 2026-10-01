@@ -8,7 +8,7 @@ export const nodeVisuals = {
   playerCharacter: { shape: 'circle', width: 180, badge: true },
   npc: { shape: 'circle', width: 180, badge: true },
   creature: { shape: 'octagon', width: 180, badge: true },
-  location: { shape: 'rectangle', width: 240, badge: false },
+  location: { shape: 'rectangle', width: 280, badge: false },
   quest: { shape: 'quest', width: 280, badge: false },
   faction: { shape: 'shield', width: 180, badge: true },
   item: { shape: 'square', width: 160, badge: true },
@@ -33,7 +33,7 @@ export function contourBox(type: EntityType, position: XYPosition, width: number
   const visual = nodeVisual(type)
   if (!visual.badge) return { ...position, width, height, shape: visual.shape }
   const size = Math.min(width - 32, 120)
-  return { x: position.x + (width - size) / 2, y: position.y + 24, width: size, height: size, shape: visual.shape }
+  return { x: position.x + (width - size) / 2, y: position.y, width: size, height: size, shape: visual.shape }
 }
 export function center(box: ShapeBox): XYPosition { return { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
 // Пересечение луча от центра к соседу с внешним контуром (не bounding box).

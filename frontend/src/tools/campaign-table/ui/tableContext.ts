@@ -6,7 +6,7 @@ export type TableActions = {
   readOnly: boolean
   diagrams: { id: string; name: string }[]
   connectionSource: string | null
-  startConnection: (id: string) => void
+  startConnection: (id: string, pointer?: { x: number; y: number }) => void
   placeOnDiagram: (id: string, diagramId: string) => void
   draft?: { id: string; type: NodeEntityType; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void

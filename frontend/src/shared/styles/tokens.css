@@ -53,6 +53,14 @@
   --color-status-success: var(--palette-green-500);
   --color-status-warning: var(--palette-yellow-500);
 
+  /* Бумажная заметка на карте кампании — отдельный материал из референса. */
+  --palette-parchment: #ead2af;
+  --palette-parchment-fold: #c4aa87;
+  --palette-parchment-ink: #211b26;
+  --color-note-paper: var(--palette-parchment);
+  --color-note-fold: var(--palette-parchment-fold);
+  --color-note-ink: var(--palette-parchment-ink);
+
   /*
    * Decorative material for large panel frames only.
    * Teal remains confined to the lower-right corner and is not a data accent.
@@ -96,6 +104,7 @@
   /* Типографика */
   --font-family-body: 'Gilroy', Arial, sans-serif;
   --font-family-heading: 'Greengoth Regular', Georgia, serif;
+  --font-family-node: Georgia, 'Times New Roman', serif;
   --font-family-dialogue: 'Clacon2', monospace;
   --font-size-2xs: 0.625rem;
   --font-size-xs: 0.75rem;

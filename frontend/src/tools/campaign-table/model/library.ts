@@ -30,6 +30,10 @@ export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   const facts = ['challenge_rating', 'level', 'school', 'rarity', 'creature_type', 'size', 'hit_die', 'prerequisite']
     .flatMap(key => typeof data[key] === 'string' || typeof data[key] === 'number'
       ? [`${key === 'challenge_rating' ? 'ПО ' : key === 'level' ? 'Уровень ' : ''}${data[key]}`] : [])
+  if (entry.entity_type === 'item') {
+    const cost = data.cost ?? data.price
+    if (typeof cost === 'string' || typeof cost === 'number') facts.push(`Стоимость ${cost}`)
+  }
   return { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type as EntityType,
     slug: entry.slug, name: entry.name, facts }
 }

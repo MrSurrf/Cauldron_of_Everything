@@ -150,7 +150,7 @@ try {
   assert.ok(Math.abs(placedLocation.position.x - 60) < 5 && Math.abs(placedLocation.position.y - 420) < 5)
   await closeCard()
   const location = page.locator(`.react-flow__node[data-id="${locationId}"]`)
-  assert.ok((await location.boundingBox()).height < 100)
+  assert.ok((await location.boundingBox()).height < 220)
   const ghostRect = await first.boundingBox(); const locationRect = await location.boundingBox()
   await moveBetween({ x: ghostRect.x + 80, y: ghostRect.y + 20 }, { x: locationRect.x + 95, y: locationRect.y + 40 })
   await closeCard()
@@ -271,7 +271,7 @@ try {
   assert.equal((await saved()).entities.some(entity => entity.entityType === 'note'), false)
   await createOnCanvas(canvas, 'Заметка', 'Секрет', { x: 120, y: 100 })
   await waitForNodes(1)
-  assert.ok((await page.locator('.react-flow__node').first().boundingBox()).height < 100)
+  assert.ok((await page.locator('.react-flow__node').first().boundingBox()).height < 160)
   assert.equal((await saved()).entities.find(entity => entity.entityType === 'note').name, 'Секрет')
   assert.equal((await saved()).diagrams[1].nodes[0].type, 'note')
   const noteId = (await saved()).diagrams[1].nodes[0].id

@@ -60,7 +60,6 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
     {!visual.badge && <NodeOutline shape={visual.shape} />}
     <div className={styles.nodeTopline}>
-      <span className={styles.nodeType}>{entityLabel(data.entityType)}</span>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}
           onClick={event => { event.stopPropagation(); setMembersOpen(value => !value); setMenuOpen(false) }}>{members.length} внутри</button>
@@ -91,6 +90,19 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
       </div>
     </div>
     <NodeView type={data.entityType} title={data.title} summary={summary} state={data.state} />
+    {!actions.readOnly && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
+      <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
+        aria-label={`Соединить ${label}: ${data.title}`} title={`Соединить ${label}`}
+        onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
+        onClick={event => {
+          // Во время соединения клик по точке другой ноды обрабатывается общим onNodeClick.
+          if (connectionSource && connectionSource !== id) return
+          event.stopPropagation()
+          if (!connectionSource) {
+            setMenuOpen(false); setMembersOpen(false)
+            actions.startConnection(id, { x: event.clientX, y: event.clientY })
+          }
+        }} />)}
     <Handle id="out" type="source" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
   </article>
 }

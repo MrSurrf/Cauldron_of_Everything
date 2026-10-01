@@ -10,7 +10,7 @@ export function NodeOutline({ shape }: { shape: NodeShape }) {
   return <svg className={styles.nodeOutline} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     {shape === 'circle' ? <circle cx="50" cy="50" r="50" vectorEffect="non-scaling-stroke" />
       : <polygon points={polygons[shape].map(([x, y]) => `${x * 100},${y * 100}`).join(' ')} vectorEffect="non-scaling-stroke" />}
-    {shape === 'note' && <path d="M87 0 V20 H100" fill="none" vectorEffect="non-scaling-stroke" />}
+    {shape === 'note' && <path className={styles.noteFold} d="M87 0 V20 H100 Z" vectorEffect="non-scaling-stroke" />}
   </svg>
 }
 // Нейтральные пиктограммы типов: не подменяют отсутствующие портреты или данные.
@@ -33,17 +33,27 @@ function Caption({ title, summary, state }: NodeViewProps) {
     {state && <p className={styles.nodeState}>{state}</p>}</div>
 }
 function Badge({ type, ...props }: NodeViewProps & { type: keyof typeof glyphs }) {
-  return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} /><Glyph type={type} /></div><Caption {...props} /></>
+  const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
+  return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
+    {type !== 'spell' && type !== 'faction' && <Glyph type={type} />}
+    {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}
+    {level !== undefined && <span className={styles.spellLevel} aria-label={`Уровень заклинания: ${level}`}><span>{level}</span></span>}
+  </div><Caption {...props} summary={type === 'spell' ? '' : props.summary} /></>
 }
 export const CharacterNode = (props: NodeViewProps) => <Badge type="playerCharacter" {...props} />
 export const NpcNode = (props: NodeViewProps) => <Badge type="npc" {...props} />
-export const CreatureNode = (props: NodeViewProps) => <Badge type="creature" {...props} />
+export const CreatureNode = (props: NodeViewProps) => {
+  const parts = props.summary.split(' · ').filter(part => !/^(крошечный|маленький|средний|большой|огромный|громадный|tiny|small|medium|large|huge|gargantuan)$/i.test(part.trim()))
+  const challenge = parts.filter(part => /^ПО\s/i.test(part))
+  const species = parts.filter(part => !/^ПО\s/i.test(part))
+  return <Badge type="creature" {...props} summary={[...species, ...challenge].join(' · ')} />
+}
 export const SpellNode = (props: NodeViewProps) => <Badge type="spell" {...props} />
 export const ItemNode = (props: NodeViewProps) => <Badge type="item" {...props} />
 export const FactionNode = (props: NodeViewProps) => <Badge type="faction" {...props} />
-export const LocationNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="location" /><Caption {...props} /></div>
-export const QuestNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="quest" /><Caption {...props} /></div>
-export const NoteNode = (props: NodeViewProps) => <Caption {...props} />
+export const LocationNode = (props: NodeViewProps) => <><img className={styles.locationImage} src="/tools/survey/start/background.png" alt="" draggable={false} /><Caption {...props} /></>
+export const QuestNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="quest" /><Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span></div>
+export const NoteNode = (props: NodeViewProps) => <><span className={styles.noteIcon} aria-hidden="true">▤</span><Caption {...props} /></>
 const views = { playerCharacter: CharacterNode, npc: NpcNode, creature: CreatureNode, spell: SpellNode, item: ItemNode,
   faction: FactionNode, location: LocationNode, quest: QuestNode, note: NoteNode } satisfies Record<NodeEntityType, ComponentType<NodeViewProps>>
 export function NodeView({ type, ...props }: NodeViewProps & { type: EntityType }) {

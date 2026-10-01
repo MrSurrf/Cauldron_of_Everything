@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 const key = 'cauldron.campaign-table.v2'
 const types = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note']
 const names = ['Элора', 'Боромир', 'Кровавый волк', 'Чёрный Предел', 'Тени в подземелье', 'Златокрылые', 'Зелье исцеления', 'Огненный шар', 'Странная руна']
-const facts = ['Плут · Ур. 5', 'Трактирщик', 'ПО 4 · Средний', '', '', 'Торговый союз', 'Необычный предмет', 'Уровень 3 · Эвокация', '']
+const facts = ['Плут · Ур. 5', 'Трактирщик', 'ПО 4 · Зверь · Средний', '', '', 'Торговый союз', 'Необычный · 50 зм', 'Уровень 3 · Эвокация', '']
 const entities = types.map((entityType, i) => ({ id: `entity-${entityType}`, slug: entityType, entityType, name: names[i], facts: facts[i], state: '',
   description: entityType === 'location' ? 'Город-крепость' : entityType === 'quest' ? 'Исследовать подземелье под городом' : entityType === 'note' ? 'Та же символика встречалась в руинах к северу от города…' : '' }))
 const nodes = types.map((type, i) => ({ id: type, type: ['location', 'note'].includes(type) ? type : 'entity',
@@ -53,40 +53,64 @@ try {
   for (const type of types) {
     assert.equal(await node(type).locator('article').getAttribute('data-entity-type'), type)
     assert.equal(await node(type).locator('.react-flow__handle').first().evaluate(el => getComputedStyle(el).opacity), '0')
+    assert.equal(await node(type).getByRole('button', { name: /^Соединить / }).count(), 4)
   }
   assert.equal(await node('playerCharacter').locator('circle').count(), 1)
   assert.equal(await node('npc').locator('circle').count(), 1)
   assert.equal(await node('spell').locator('article').getAttribute('data-shape'), 'diamond')
-  assert.ok((await node('location').boundingBox()).height < 110)
-  assert.ok((await node('note').boundingBox()).height < 130)
+  assert.ok((await node('location').boundingBox()).height < 220)
+  assert.ok((await node('note').boundingBox()).height < 210)
+  assert.equal(await node('location').locator('img').evaluate(image => image.complete && image.naturalWidth > 0), true)
+  assert.equal(await node('spell').getByLabel('Уровень заклинания: 3').textContent(), '3')
+  assert.equal(await node('faction').locator('svg path').count(), 0)
+  assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
+  await node('faction').getByRole('heading').dblclick()
+  await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
+  await page.getByRole('tab', { name: 'Основная схема', exact: true }).click()
+  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await page.mouse.move(1550, 970)
+  assert.equal(await node('location').getByRole('button', { name: /^Соединить справа:/ }).evaluate(el => getComputedStyle(el).opacity), '0')
+  await node('location').hover()
+  assert.equal(await node('location').getByRole('button', { name: /^Соединить справа:/ }).evaluate(el => getComputedStyle(el).opacity), '1')
+  await page.screenshot({ path: join(tmpdir(), 'campaign-hover-ports.png') })
   await page.mouse.move(1550, 970)
   await page.screenshot({ path: join(tmpdir(), 'campaign-node-types.png') })
 
   // Круглые узлы: горизонтальное присоединение; движение перестраивает обе точки.
   const edge = page.locator('.react-flow__edge[data-id="characters"] .react-flow__edge-path')
   const horizontal = await edge.getAttribute('d')
-  assert.deepEqual(horizontal.match(/-?\d+(?:\.\d+)?/g).map(Number), [220, 134, 480, 134])
+  assert.deepEqual(horizontal.match(/-?\d+(?:\.\d+)?/g).map(Number), [220, 110, 480, 110])
   await moveNode('npc', 0, 120)
   const moved = await edge.getAttribute('d')
   assert.notEqual(moved, horizontal)
   const points = moved.match(/-?\d+(?:\.\d+)?/g).map(Number)
-  assert.ok(Math.abs(Math.hypot(points[0] - 160, points[1] - 134) - 60) < 0.01)
+  assert.ok(Math.abs(Math.hypot(points[0] - 160, points[1] - 110) - 60) < 0.01)
   const npcPosition = (await saved()).diagrams[0].nodes.find(node => node.id === 'npc').position
-  assert.ok(Math.abs(Math.hypot(points[2] - (npcPosition.x + 90), points[3] - (npcPosition.y + 84)) - 60) < 0.01,
+  assert.ok(Math.abs(Math.hypot(points[2] - (npcPosition.x + 90), points[3] - (npcPosition.y + 60)) - 60) < 0.01,
     JSON.stringify({ points, npcPosition }))
 
   // Режим связи: подсветка и точка предпросмотра, отмена без ребра.
-  await menu('creature')
-  await node('creature').getByRole('menuitem', { name: 'Связать с…' }).click()
+  // Любая из четырёх точек запускает общий режим и не двигает ноду.
+  for (const side of ['сверху', 'справа', 'снизу', 'слева']) {
+    const position = (await saved()).diagrams[0].nodes.find(item => item.id === 'creature').position
+    await node('creature').hover()
+    await node('creature').getByRole('button', { name: `Соединить ${side}: Кровавый волк`, exact: true }).click()
+    await page.getByRole('status').filter({ hasText: 'Выберите второй узел' }).waitFor()
+    assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'creature').position, position)
+    await page.keyboard.press('Escape')
+  }
+  await node('creature').hover()
+  await node('creature').getByRole('button', { name: /^Соединить снизу:/ }).click()
   await node('spell').hover()
   assert.equal(await node('spell').locator('article').getAttribute('data-connecting'), 'true')
   await page.getByRole('status').filter({ hasText: 'Выберите второй узел' }).waitFor()
   await page.screenshot({ path: join(tmpdir(), 'campaign-contour-preview.png') })
   await page.keyboard.press('Escape')
   assert.equal((await saved()).diagrams[0].edges.length, 4)
-  await menu('creature')
-  await node('creature').getByRole('menuitem', { name: 'Связать с…' }).click()
-  await node('spell').getByRole('heading').click()
+  await node('creature').hover()
+  await node('creature').getByRole('button', { name: /^Соединить слева:/ }).click()
+  await node('spell').hover()
+  await node('spell').getByRole('button', { name: /^Соединить справа:/ }).click()
   assert.equal((await saved()).diagrams[0].edges.length, 5)
 
   // Одна Entity на двух схемах, правки названия общие, геометрия независимая.
