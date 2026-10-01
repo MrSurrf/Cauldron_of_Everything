@@ -36,6 +36,7 @@ await page.route('**/api/**', async route => {
   return route.fulfill({ status: 404, json: {} })
 })
 async function saved() { return page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey) }
+function entityFor(state, node) { return state.entities.find(entity => entity.id === node.data.entityId) }
 async function waitForNodes(count) { await page.waitForFunction(expected => document.querySelectorAll('.react-flow__node').length === expected, count) }
 async function closeCard() { const close = page.getByRole('button', { name: 'Закрыть карточку', exact: true }); if (await close.count()) await close.click() }
 async function moveBetween(from, to) {
@@ -82,10 +83,11 @@ try {
   await canvas.click({ position: { x: 750, y: 500 } })
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).dragTo(canvas, { targetPosition: { x: 80, y: 100 } })
   await waitForNodes(1)
-  assert.ok((await page.locator('.react-flow__node').first().boundingBox()).height < 100)
+  assert.ok((await page.locator('.react-flow__node').first().boundingBox()).height < 240)
   let state = await saved()
   const ghostId = state.diagrams[0].nodes[0].id
-  assert.equal(state.diagrams[0].nodes[0].data.reference.entityId, '41')
+  assert.equal(entityFor(state, state.diagrams[0].nodes[0]).reference.entityId, '41')
+  assert.deepEqual(Object.keys(state.diagrams[0].nodes[0].data), ['entityId'])
   assert.ok(Math.abs(state.diagrams[0].nodes[0].position.x - 80) < 5)
   await editNode(ghostId)
   await page.getByRole('textbox', { name: 'Название экземпляра', exact: true }).fill('Тайный призрак')
@@ -102,8 +104,9 @@ try {
   await page.getByRole('textbox', { name: 'Состояние экземпляра', exact: true }).fill('45 хитов')
   await geometry({ x: 440, y: 120 })
   await closeCard()
-  assert.equal((await saved()).diagrams[0].nodes[0].data.state, '12 хитов')
-  assert.equal((await saved()).diagrams[0].nodes[1].data.state, '45 хитов')
+  state = await saved()
+  assert.equal(entityFor(state, state.diagrams[0].nodes[0]).state, '12 хитов')
+  assert.equal(entityFor(state, state.diagrams[0].nodes[1]).state, '45 хитов')
   assert.equal(entries[0].name, 'Призрак')
 
   // Настоящее перемещение и соединение двух узлов.
@@ -112,8 +115,11 @@ try {
   const secondRect = await second.boundingBox()
   await moveBetween({ x: secondRect.x + 80, y: secondRect.y + 20 }, { x: secondRect.x + 100, y: secondRect.y + 160 })
   await closeCard()
-  const sourceRect = await first.locator('.source').boundingBox(); const targetRect = await second.locator('.target').boundingBox()
-  await moveBetween({ x: sourceRect.x + sourceRect.width / 2, y: sourceRect.y + sourceRect.height / 2 }, { x: targetRect.x + targetRect.width / 2, y: targetRect.y + targetRect.height / 2 })
+  assert.equal(await first.locator('.source').evaluate(el => getComputedStyle(el).opacity), '0')
+  await first.hover()
+  await first.getByRole('button', { name: /^Действия:/ }).click()
+  await first.getByRole('menuitem', { name: 'Связать с…' }).click()
+  await second.getByRole('heading', { name: 'Второй призрак', exact: true }).click()
   await page.locator('.react-flow__edge').waitFor()
   await page.locator('.react-flow__edge').click()
   await page.getByRole('textbox', { name: 'Подпись связи', exact: true }).fill('Охраняет')
@@ -140,7 +146,7 @@ try {
   await createOnCanvas(canvas, 'Локация', 'Крипта', { x: 60, y: 420 })
   const locationId = (await saved()).diagrams[0].nodes.find(node => node.type === 'location').id
   const placedLocation = (await saved()).diagrams[0].nodes.find(node => node.id === locationId)
-  assert.notEqual(placedLocation.data.localEntityId, locationId)
+  assert.notEqual(placedLocation.data.entityId, locationId)
   assert.ok(Math.abs(placedLocation.position.x - 60) < 5 && Math.abs(placedLocation.position.y - 420) < 5)
   await closeCard()
   const location = page.locator(`.react-flow__node[data-id="${locationId}"]`)
@@ -157,11 +163,11 @@ try {
   await location.getByRole('button', { name: 'Скелет', exact: true }).waitFor()
   state = await saved()
   assert.equal(state.diagrams[0].nodes.filter(node => node.data.locationId === locationId).length, 2)
-  const skeletonId = state.diagrams[0].nodes.find(node => node.data.title === 'Скелет').id
-  await createOnCanvas(canvas, 'Локация', 'Башня', { x: 460, y: 440 })
+  const skeletonId = state.diagrams[0].nodes.find(node => entityFor(state, node).name === 'Скелет').id
+  await createOnCanvas(canvas, 'Локация', 'Башня', { x: 460, y: 540 })
   await closeCard()
   state = await saved()
-  const towerId = state.diagrams[0].nodes.find(node => node.data.title === 'Башня').id
+  const towerId = state.diagrams[0].nodes.find(node => entityFor(state, node).name === 'Башня').id
   const tower = page.locator(`.react-flow__node[data-id="${towerId}"]`)
   await showMembers(location, 2)
   await location.getByRole('button', { name: 'Скелет', exact: true }).locator('..').dragTo(tower, { targetPosition: { x: 120, y: 35 } })
@@ -201,14 +207,14 @@ try {
   await page.getByRole('region', { name: 'Описание Entity', exact: true }).click()
   await page.getByRole('textbox', { name: 'Описание Entity', exact: true }).fill('Подземный зал')
   state = await saved()
-  assert.equal(state.entities.find(entity => entity.id === state.diagrams[0].nodes.find(node => node.id === locationId).data.localEntityId).name, 'Старая крипта')
-  assert.equal(state.diagrams[0].nodes.find(node => node.id === locationId).data.title, 'Крипта')
+  assert.equal(entityFor(state, state.diagrams[0].nodes.find(node => node.id === locationId)).name, 'Старая крипта')
+  assert.equal(state.diagrams[0].nodes.find(node => node.id === locationId).data.title, undefined)
   await location.getByRole('heading', { name: 'Старая крипта', exact: true }).dblclick()
   await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
   assert.equal(await page.getByRole('complementary', { name: 'Инспектор объекта' }).count(), 0)
   await page.getByRole('region', { name: 'Полное описание Entity', exact: true }).click()
   await page.getByRole('textbox', { name: 'Полное описание Entity', exact: true }).fill('Тайное подземелье')
-  assert.match((await saved()).entities.find(entity => entity.id === state.diagrams[0].nodes.find(node => node.id === locationId).data.localEntityId).description, /Тайное подземелье/)
+  assert.match((await saved()).entities.find(entity => entity.id === state.diagrams[0].nodes.find(node => node.id === locationId).data.entityId).description, /Тайное подземелье/)
   await page.screenshot({ path: join(tmpdir(), 'campaign-local-editor.png') })
   await page.getByRole('tab', { name: 'Основная схема', exact: true }).click()
   await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
@@ -229,6 +235,8 @@ try {
 
   // Публичная вкладка не читает закрытый документ и не подгружает библиотеку/оригиналы.
   publicDocument = structuredClone(before)
+  publicDocument.version = 2
+  publicDocument.entities = []
   publicDocument.diagrams = [{ id: 'public', name: 'Общая схема', nodes: [{ id: 'public-location', type: 'location', position: { x: 50, y: 50 }, width: 340, height: 240, data: { title: 'Общая таверна', description: 'Публичное описание', state: '', facts: '' } }], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }]
   publicDocument.activeId = 'public'
   await page.goto(`${baseUrl}/my-table?table=public&campaign=denied`)
@@ -279,7 +287,7 @@ try {
   await page.getByRole('region', { name: 'Описание Entity', exact: true }).click()
   await page.getByRole('textbox', { name: 'Описание Entity', exact: true }).fill('Скрытая заметка')
   assert.match((await saved()).entities.find(entity => entity.entityType === 'note').description, /Скрытая заметка/)
-  assert.equal((await saved()).diagrams[1].nodes[0].data.description, '')
+  assert.equal((await saved()).diagrams[1].nodes[0].data.description, undefined)
   await page.getByRole('button', { name: 'Открыть полностью' }).click()
   await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
   await page.getByRole('tab', { name: 'Подземелье', exact: true }).click()

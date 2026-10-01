@@ -6,10 +6,13 @@ import type { XYPosition } from '@xyflow/react'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
-import { canContain, createCanvasObject, createDiagram, createInstance, createTable, LEGACY_STORAGE_KEY, materializeLegacyLocations, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity } from '../model/table'
-import type { CanvasEntity } from '../model/table'
+import { entityLabel } from '../model/library'
+import { canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, moveToLocation, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
+import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
-import { MindMapNode } from './MindMapNode'
+import { NodeRenderer } from './NodeRenderer'
+import { ConnectionPreview, ContourEdge } from './ContourEdge'
+import { nodeVisual } from '../model/nodeGeometry'
 import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE, TableContext } from './tableContext'
@@ -18,12 +21,14 @@ import type { Selection } from './TableInspector'
 import '@xyflow/react/dist/style.css'
 import styles from './CampaignTable.module.css'
 
-const nodeTypes = { entity: MindMapNode, location: MindMapNode, note: MindMapNode }
+const nodeTypes = { entity: NodeRenderer, location: NodeRenderer, note: NodeRenderer }
+const edgeTypes = { contour: ContourEdge }
+const creatableTypes = ['location', 'note', 'playerCharacter', 'npc', 'quest', 'faction'] as const
 type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
 function loadTable() {
   try {
     const raw = localStorage.getItem(TABLE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
-    return { table: raw ? materializeLegacyLocations(parseTable(raw)) : createTable(), error: '' }
+    return { table: raw ? parseTable(raw) : createTable(), error: '' }
   } catch {
     return { table: createTable(), error: 'Не удалось восстановить схемы. Автосохранение отключено, чтобы не затереть прежние данные.' }
   }
@@ -40,10 +45,7 @@ function locationAt(diagram: Diagram, position: XYPosition, measured: (id: strin
 }
 
 function compactNode(node: TableNode): TableNode {
-  const originalWidth = node.type === 'location' ? 340 : 260
-  const originalHeight = node.type === 'location' ? 260 : 150
-  return { ...node, width: node.width === originalWidth ? 232 : node.width,
-    height: node.height === originalHeight ? undefined : node.height }
+  return { ...node, width: node.width ?? nodeVisual(node.data.entityType).width }
 }
 
 function focusIsEditing() {
@@ -51,11 +53,13 @@ function focusIsEditing() {
   return focused instanceof Element && Boolean(focused.closest('input, textarea, select, [contenteditable], [role="textbox"], [role="menu"], button'))
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
+function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
   table: TableState; diagram: Diagram; readOnly: boolean
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
-  onPlaceObject: (object: { entity: CanvasEntity; node: TableNode }, name: string) => void
+  onPlaceObject: (object: { entity: CanvasEntity; node: EntityNode }, name: string) => void
+  onDuplicate: (id: string, placementId: string) => void
+  onPlaceExisting: (entityId: string, diagramId: string) => void
   onUpdateEntity: (id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description'>>) => void
   onSelectDiagram: (id: string) => void; onCreateDiagram: (name: string) => void
   libraryCollapsed: boolean; onToggleLibrary: () => void
@@ -65,10 +69,21 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const creationRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
-  const [draft, setDraft] = useState<{ entity: CanvasEntity; node: TableNode } | null>(null)
+  const [draft, setDraft] = useState<{ entity: CanvasEntity; node: EntityNode } | null>(null)
+  const [connectionSource, setConnectionSource] = useState<string | null>(null)
+  const [connectionTarget, setConnectionTarget] = useState<string | null>(null)
+  const [connectionPointer, setConnectionPointer] = useState<XYPosition | null>(null)
   const [editorEntityId, setEditorEntityId] = useState<string | null>(null)
   const [schemesOpen, setSchemesOpen] = useState(false)
   const [newName, setNewName] = useState('')
+  const linking = connectionSource !== null && diagram.nodes.some(node => node.id === connectionSource && !node.data.locationId)
+  const cancelConnection = () => { setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) }
+  useEffect(() => {
+    if (!connectionSource) return
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) } }
+    document.addEventListener('keydown', escape)
+    return () => document.removeEventListener('keydown', escape)
+  }, [connectionSource])
   const center = () => {
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
@@ -87,13 +102,14 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   function showCreationAt(clientX: number, clientY: number) {
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect || readOnly) return
+    cancelConnection()
     const x = clientX - rect.left
     const y = clientY - rect.top
     setAnchor({ menuX: Math.max(8, Math.min(x + 8, rect.width - 212)),
-      menuY: Math.max(8, Math.min(y + 8, rect.height - 176)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
+      menuY: Math.max(8, Math.min(y + 8, rect.height - 320)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
     setSelection(null)
   }
-  function beginCreation(type: 'location' | 'note') {
+  function beginCreation(type: NodeEntityType) {
     if (!anchor) return
     setDraft(createCanvasObject(type, anchor.position))
     setAnchor(null)
@@ -101,11 +117,9 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   function add(reference: LibraryReference, position?: XYPosition) {
     if (readOnly) return
     const origin = center()
-    const node = createInstance(reference, position ?? { x: origin.x - 130 + diagram.nodes.length % 5 * 24, y: origin.y - 75 + diagram.nodes.length % 5 * 24 })
-    onChange(current => {
-      const next = { ...current, nodes: [...current.nodes, node] }
-      return position && canContain(node) ? moveToLocation(next, node.id, findLocation(current, position)) : next
-    })
+    const object = createInstance(reference, position ?? { x: origin.x - 90 + diagram.nodes.length % 5 * 24, y: origin.y - 75 + diagram.nodes.length % 5 * 24 })
+    if (position && canContain(resolveNode(object.node, object.entity))) object.node.data.locationId = findLocation(diagram, position)
+    onPlaceObject(object, object.entity.name)
   }
   function drop(event: DragEvent<HTMLDivElement>) {
     if (readOnly) return
@@ -115,22 +129,18 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     const instance = event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
     if (instance) { onChange(current => moveToLocation(current, instance, findLocation(current, position), position)); return }
     try {
-      const reference = JSON.parse(event.dataTransfer.getData(ENTITY_DRAG_TYPE)) as LibraryReference
-      // Проверяем внешние DnD-данные тем же валидатором, что и сохранение.
-      const test = createTable()
-      test.diagrams[0].nodes = [createInstance(reference, position)]
-      parseTable(serializeTable(test))
-      add(reference, position)
+      const reference: unknown = JSON.parse(event.dataTransfer.getData(ENTITY_DRAG_TYPE))
+      if (validReference(reference)) add(reference, position)
     } catch { /* Чужой payload не создаёт узел. */ }
   }
   const open = (id: string) => {
-    const localId = diagram.nodes.find(node => node.id === id)?.data.localEntityId
-    if (localId && table.entities?.some(entity => entity.id === localId)) setEditorEntityId(localId)
+    const data = diagram.nodes.find(node => node.id === id)?.data
+    if (data && !data.reference) setEditorEntityId(data.entityId)
     else setSelection({ kind: 'node', id, editing: false })
   }
   const edit = (id: string) => {
-    const localId = diagram.nodes.find(node => node.id === id)?.data.localEntityId
-    if (localId && table.entities?.some(entity => entity.id === localId)) setEditorEntityId(localId)
+    const data = diagram.nodes.find(node => node.id === id)?.data
+    if (data && !data.reference) setEditorEntityId(data.entityId)
     else setSelection({ kind: 'node', id, editing: true })
   }
   const openReference = (reference: LibraryReference) => setSelection({ kind: 'library', reference })
@@ -138,22 +148,16 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const release = (id: string) => { if (!readOnly) onChange(current => moveToLocation(current, id)) }
   const duplicate = (id: string) => {
     if (readOnly) return
-    const original = diagram.nodes.find(node => node.id === id)
-    if (!original) return
-    const copy: TableNode = { ...structuredClone(original), id: crypto.randomUUID(), selected: false,
-      position: { x: original.position.x + 40, y: original.position.y + 40 } }
-    onChange(current => ({ ...current, nodes: [...current.nodes, copy] }))
-    edit(copy.id)
+    const placementId = crypto.randomUUID()
+    onDuplicate(id, placementId)
+    if (diagram.nodes.find(node => node.id === id)?.data.reference) setSelection({ kind: 'node', id: placementId, editing: true })
   }
   const hidden = new Set(diagram.nodes.filter(node => node.data.locationId).map(node => node.id))
   const localEntities = new Map(table.entities?.map(entity => [entity.id, entity]) ?? [])
-  const displayDiagram = { ...diagram, nodes: diagram.nodes.map(node => {
-    const entity = localEntities.get(node.data.localEntityId ?? '')
-    return entity ? { ...node, data: { ...node.data, title: entity.name, description: entity.description } } : node
-  }) }
-  const visibleNodes = draft ? [...displayDiagram.nodes, draft.node] : displayDiagram.nodes
+  const displayDiagram = diagram
+  const visibleNodes = draft ? [...diagram.nodes, resolveNode(draft.node, draft.entity)] : diagram.nodes
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
-  const selectedEntity = localEntities.get(selectedNode?.data.localEntityId ?? '')
+  const selectedEntity = selectedNode && !selectedNode.data.reference ? localEntities.get(selectedNode.data.entityId) : undefined
   const editedEntity = localEntities.get(editorEntityId ?? '')
   const closeSelection = () => {
     const id = selectedNode?.id
@@ -161,7 +165,10 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
   }
   return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
-    draft: draft ? { id: draft.node.id, type: draft.entity.entityType,
+    diagrams: table.diagrams, connectionSource: linking ? connectionSource : null,
+    startConnection: id => { if (!readOnly) { setConnectionSource(id); setConnectionTarget(null); setConnectionPointer(null); setAnchor(null); setSelection(null) } },
+    placeOnDiagram: (id, diagramId) => { const node = diagram.nodes.find(item => item.id === id); if (node && !readOnly) onPlaceExisting(node.data.entityId, diagramId) },
+    draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
       cancel: () => setDraft(null) } : undefined }}>
     {editedEntity ? <LocalEntityEditor key={editedEntity.id} entity={editedEntity} diagramName={diagram.name} readOnly={readOnly}
@@ -184,15 +191,16 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           <Button size="sm" variant="secondary" decoration="minimal" onClick={() => void flow.fitView({ padding: 0.25, maxZoom: 1 })}>Показать всё</Button>
         </div>
       </header>
-      <div ref={canvasRef} className={styles.canvas} onDrop={drop} onDragOver={event => {
+      <div ref={canvasRef} className={styles.canvas} data-linking={linking} onDrop={drop}
+        onPointerMove={event => { if (linking) setConnectionPointer(flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })) }} onDragOver={event => {
         if (!readOnly && event.dataTransfer.types.some(type => [ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE].includes(type))) {
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
         }
       }}>
         <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...compactNode(node), hidden: hidden.has(node.id), draggable: node.id === draft?.node.id ? false : node.draggable }))}
-          edges={diagram.edges.map(edge => ({ ...edge, hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes}
+          edges={diagram.edges.map(edge => ({ ...edge, type: 'contour', sourceHandle: 'out', targetHandle: 'in', hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
-          nodesDraggable={!readOnly} nodesConnectable={!readOnly} edgesReconnectable={false}
+          nodesDraggable={!readOnly && !linking} nodesConnectable={false} edgesReconnectable={false}
           onNodesChange={readOnly ? undefined : changes => {
             const persistedChanges = changes.filter(change => !('id' in change) || change.id !== draft?.node.id)
             if (!persistedChanges.length) return
@@ -210,25 +218,35 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
             }
           }}
           onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
-          onConnect={readOnly ? undefined : connection => onChange(current => ({ ...current, edges: addEdge(connection, current.edges) }))}
-          isValidConnection={connection => connection.source !== connection.target}
-          onNodeClick={(_, node) => { setAnchor(null); if (node.id !== draft?.node.id) setSelection({ kind: 'node', id: node.id, editing: false }) }}
-          onNodeDoubleClick={(_, node) => { if (node.id !== draft?.node.id) open(node.id) }}
+          onNodeClick={(_, node) => {
+            setAnchor(null)
+            if (linking && !readOnly) {
+              if (node.id !== connectionSource && node.id !== draft?.node.id) {
+                onChange(current => ({ ...current, edges: addEdge({ id: crypto.randomUUID(), source: connectionSource!, target: node.id }, current.edges) })); cancelConnection()
+              }
+              return
+            }
+            if (node.id !== draft?.node.id) setSelection({ kind: 'node', id: node.id, editing: false })
+          }}
+          onNodeMouseEnter={(_, node) => { if (linking && node.id !== connectionSource && node.id !== draft?.node.id) setConnectionTarget(node.id) }}
+          onNodeMouseLeave={() => setConnectionTarget(null)}
+          onNodeDoubleClick={(_, node) => { if (!linking && node.id !== draft?.node.id) open(node.id) }}
           onEdgeClick={(_, edge) => { setAnchor(null); setSelection({ kind: 'edge', id: edge.id }) }}
-          onPaneClick={() => { setSelection(null); setAnchor(null) }}
+          onPaneClick={() => { setSelection(null); setAnchor(null); cancelConnection() }}
           onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY) }}
           onMoveStart={() => setAnchor(null)}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
           deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} onBeforeDelete={async () => !focusIsEditing()} aria-label="Холст кампании"
         >
           <Background gap={24} size={1} color="var(--color-border-default)" /><Controls showInteractive={false} />
+          {linking && <ConnectionPreview source={connectionSource!} target={connectionTarget} pointer={connectionPointer} />}
         </ReactFlow>
+        {linking && <div className={styles.connectionMode} role="status">Выберите второй узел <button type="button" onClick={cancelConnection}>Отмена · Esc</button></div>}
         {anchor && !readOnly && !draft && <div ref={creationRef} className={styles.creationLayer}>
           <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
             style={{ left: anchor.menuX, top: anchor.menuY }}>
             <span>Создать</span>
-            <button type="button" role="menuitem" onClick={() => beginCreation('location')}>Локация</button>
-            <button type="button" role="menuitem" onClick={() => beginCreation('note')}>Заметка</button>
+            {creatableTypes.map(type => <button key={type} type="button" role="menuitem" onClick={() => beginCreation(type)}>{entityLabel(type)}</button>)}
             <span>Добавить существующее</span>
             <button type="button" role="menuitem" disabled>Пока недоступно</button>
           </div>
@@ -250,9 +268,9 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
 
 function Workspace({ table, commit, readOnly = false }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean }) {
   const [libraryCollapsed, setLibraryCollapsed] = useState(false)
-  const active = table.diagrams.find(diagram => diagram.id === table.activeId)!
+  const active = resolveDiagram(table, table.diagrams.find(diagram => diagram.id === table.activeId)!)
   const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram) => {
-    if (!readOnly) commit(current => ({ ...current, diagrams: current.diagrams.map(diagram => diagram.id === active.id ? update(diagram) : diagram) }))
+    if (!readOnly) commit(current => updateDiagram(current, active.id, update))
   }, [commit, active.id, readOnly])
   return <div className={styles.workspace} data-public={readOnly} data-collapsed={libraryCollapsed}
     style={{ '--library-width': table.layout.libraryWidth === 336 ? '30%' : `${table.layout.libraryWidth}px`, '--inspector-width': `${table.layout.inspectorWidth}px` } as CSSProperties}>
@@ -260,8 +278,10 @@ function Workspace({ table, commit, readOnly = false }: { table: TableState; com
       libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
       onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
-      onPlaceObject={(object, name) => commit(current => placeCanvasObject(current, active.id, object, name))}
+      onPlaceObject={(object, name) => { if (!readOnly) commit(current => placeCanvasObject(current, active.id, object, name)) }}
       onUpdateEntity={(id, changes) => { if (!readOnly) commit(current => updateCanvasEntity(current, id, changes)) }}
+      onDuplicate={(id, placementId) => { if (!readOnly) commit(current => duplicatePlacement(current, active.id, id, placementId)) }}
+      onPlaceExisting={(entityId, diagramId) => { if (!readOnly) commit(current => placeExistingEntity(current, diagramId, entityId, { x: 100, y: 100 })) }}
       onLayout={layout => commit(current => ({ ...current, layout: { ...current.layout, ...layout } }))} /></ReactFlowProvider>
   </div>
 }
@@ -305,7 +325,7 @@ function PublicTable({ campaignId }: { campaignId: string }) {
   useEffect(() => {
     if (!campaignId) return
     const controller = new AbortController()
-    void loadPublicTable(campaignId, controller.signal).then(value => { if (!controller.signal.aborted) setTable(materializeLegacyLocations(value)) }).catch((reason: unknown) => {
+    void loadPublicTable(campaignId, controller.signal).then(value => { if (!controller.signal.aborted) setTable(value) }).catch((reason: unknown) => {
       if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Публичный стол недоступен.')
     })
     return () => controller.abort()

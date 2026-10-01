@@ -61,9 +61,9 @@
   "visibility": "public",
   "revision": 1,
   "document": {
-    "version": 2,
+    "version": 3,
     "activeId": "diagram-public",
-    "entities": [{ "id": "location-public", "slug": "location-public", "entityType": "location", "name": "Таверна", "description": "Общее описание" }],
+    "entities": [{ "id": "location-public", "slug": "location-public", "entityType": "location", "name": "Таверна", "description": "Общее описание", "facts": "", "state": "" }],
     "layout": { "libraryWidth": 336, "inspectorWidth": 380, "section": "creature", "query": "" },
     "diagrams": [{
       "id": "diagram-public",
@@ -73,9 +73,8 @@
         "id": "instance-public",
         "type": "location",
         "position": { "x": 100, "y": 100 },
-        "width": 340,
-        "height": 260,
-        "data": { "localEntityId": "location-public", "title": "Таверна", "description": "", "facts": "", "state": "" }
+        "width": 240,
+        "data": { "entityId": "location-public" }
       }],
       "edges": []
     }]
@@ -103,7 +102,7 @@ Frontend требует `visibility: public`, валидирует формат 
    источников, search query и другие приватные поля в публичный ответ.
    `description`, `state`, `facts` публичного узла — только явно опубликованные значения.
 4. Проверить ссылки контейнеров и рёбра после фильтрации. Нельзя оставлять ID
-   скрытых объектов в `localEntityId`, `locationId`, `source`, `target` или `reference`.
+   скрытых объектов в `entityId`, `locationId`, `source`, `target` или `reference`.
 5. Отдавать `Cache-Control: private, no-store`; не помещать приватные документы
    в общедоступный кэш, логи или ответы об ошибках. Повторять проверки на каждом запросе.
 
@@ -112,28 +111,34 @@ Frontend не может заменить серверную авторизац�
 Он доступен тому, у кого есть доступ к этому браузерному профилю. Не утверждать,
 что требования серверных прав реализованы до появления и проверки API.
 
-## Формат закрытого документа v2 и последующая серверная запись
+## Формат документа v3 и последующая серверная запись
 
-Точный TypeScript-контракт и валидатор: `model/table.ts`. Созданные на холсте
-локации и заметки находятся в `document.entities[]` как Entity уровня стола:
-`{ id, entityType: location|note, slug, name, description }`. Один и тот же
-объект может быть размещён на разных схемах. Каждый узел имеет собственный UUID,
-`position`, `width`, `height` и `data`:
+Точный TypeScript-контракт и валидатор: `model/table.ts`. Все содержательные данные
+находятся в `document.entities[]`: `{ id, entityType, slug, name, description, facts,
+state, reference? }`. Поддерживаются `playerCharacter`, `npc`, `creature`, `location`,
+`quest`, `faction`, `item`, `spell`, `note` и прежние разделы библиотеки.
+Входной API-тип `character` преобразуется в `playerCharacter`; NPC остаётся отдельным типом.
 
-- `type: entity` — `reference` на существующую Entity плюс **локальные**
-  `title`, `description`, `facts`, `state`; оригинал не редактируется.
-- `reference`: `{ source: encyclopedia|character|campaign, entityId, entityType,
-  name, slug, facts: string[] }`. Идентичные ссылки допустимы у разных экземпляров.
-- `type: location|note` — размещение локальной Entity; `data.localEntityId`
-  ссылается на `document.entities[].id`, а `data.title` может служить названием
-  отображения на этой схеме. Старые локации без ссылки продолжают читаться.
-- `data.locationId` — UUID контейнера в той же схеме, только для creature/character/npc.
+- Каждый узел содержит только собственный UUID, `type: entity|location|note`,
+  `position`, необязательные `width`/`height`, `data: { entityId, locationId? }`.
+  `data.entityId` ссылается на Entity уровня стола. Размеры отсутствуют для авторазмера.
+  Содержательные поля в `node.data` отклоняются валидатором.
+- `reference` принадлежит Entity: `{ source: encyclopedia|character|campaign,
+  entityId, entityType, name, slug, facts: string[] }`. Оригинал не изменяется.
+  Новый DnD из библиотеки создаёт независимую Entity-экземпляр со ссылкой на оригинал.
+  Размещение на другой схеме использует ту же Entity; правки отражаются во всех её размещениях.
+- `data.locationId` — существующая группировка размещений в той же схеме, только для creature/playerCharacter/npc.
   Дети хранятся плоско, визуально показаны списком. Вложенные локации запрещены.
-- Ребро: `{ id, source, target, sourceHandle: out, targetHandle: in, label?,
+- Ребро: `{ id, source, target, label?,
   data?: { description?: string } }`. Нет связей между схемами или с отсутствующими узлами.
 - `description` использует формат существующего ContentEditor, не сырой доверенный HTML.
 - Удаление контейнера извлекает детей на холст; удаление экземпляра удаляет его
   рёбра, но никогда не Entity. Дублирование контейнера создаёт пустой контейнер.
+
+Формат v1/v2 читается через изолированный legacy-валидатор и миграцию. ID узлов,
+координаты, изменённые размеры, подписи и локальные правки сохраняются. Ключ
+localStorage не меняется: `cauldron.campaign-table.v2`. Новая запись имеет `version: 3`.
+Точки контура и технические якоря React Flow вычисляются только в UI, в документ не входят.
 
 Предлагаемые **будущие**, пока не вызываемые frontend запросы:
 

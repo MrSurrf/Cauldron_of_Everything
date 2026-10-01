@@ -1,138 +1,115 @@
 import { describe, expect, it } from 'vitest'
-import { createCanvasObject, createDiagram, createInstance, createLocation, createTable, materializeLegacyLocations, moveToLocation, parseTable, placeCanvasObject, removeInstances, serializeTable, updateCanvasEntity } from './table'
+import { changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
 
 const reference: LibraryReference = { source: 'encyclopedia', entityId: '42', entityType: 'creature', name: 'Призрак', slug: 'ghost', facts: ['ПО 4'] }
-describe('сохранение пространства кампании', () => {
-  it('создаёт Entity отдельно от размещения локации и заметки', () => {
-    const table = createTable()
-    const location = createCanvasObject('location', { x: 75, y: 135 })
-    const note = createCanvasObject('note', { x: 420, y: 500 })
-    const placed = placeCanvasObject(placeCanvasObject(table, table.activeId, location, 'Крипта'), table.activeId, note, 'Ключ')
-    const restored = parseTable(serializeTable(placed))
-    expect(restored.entities).toHaveLength(2)
-    expect(restored.entities?.map(entity => entity.entityType)).toEqual(['location', 'note'])
-    expect(restored.diagrams[0].nodes[0].data.localEntityId).toBe(location.entity.id)
-    expect(restored.diagrams[0].nodes[0].id).not.toBe(location.entity.id)
+function fixture() {
+  let table = createTable()
+  const a = createCanvasObject('location', { x: 10, y: 20 })
+  const b = createCanvasObject('location', { x: 500, y: 400 })
+  const creature = createInstance(reference, { x: 100, y: 200 })
+  for (const object of [a, b, creature]) table = placeCanvasObject(table, table.activeId, object, object.entity.name || 'Крипта')
+  return { table, a, b, creature }
+}
+describe('нормализованный документ кампании', () => {
+  it.each(NODE_ENTITY_TYPES)('поддерживает %s отдельно от размещения', type => {
+    const table = createTable(), object = createCanvasObject(type, { x: 75, y: 135 })
+    const restored = parseTable(serializeTable(placeCanvasObject(table, table.activeId, object, 'Объект')))
+    expect(restored.entities[0].entityType).toBe(type)
+    expect(restored.diagrams[0].nodes[0].data).toEqual({ entityId: object.entity.id })
+    expect(restored.diagrams[0].nodes[0].id).not.toBe(object.entity.id)
     expect(restored.diagrams[0].nodes[0].position).toEqual({ x: 75, y: 135 })
-    expect(restored.diagrams[0].nodes[1].position).toEqual({ x: 420, y: 500 })
-    const withoutLocation = removeInstances(restored.diagrams[0], new Set([location.node.id]))
-    expect(withoutLocation.nodes).toHaveLength(1)
-    expect(restored.entities).toHaveLength(2)
+  })
+  it('разделяет одну Entity между схемами, редактирует содержимое без изменения размещений', () => {
+    const { table, creature } = fixture()
     const second = createDiagram('Другая схема')
-    second.nodes = [{ ...restored.diagrams[0].nodes[1], id: crypto.randomUUID(), position: { x: 20, y: 30 } }]
-    const shared = parseTable(serializeTable({ ...restored, diagrams: [...restored.diagrams, second] }))
-    expect(shared.diagrams[1].nodes[0].data.localEntityId).toBe(note.entity.id)
-    expect(placeCanvasObject(restored, table.activeId, createCanvasObject('note', { x: 0, y: 0 }), '')).toBe(restored)
+    const shared = placeExistingEntity({ ...table, diagrams: [...table.diagrams, second] }, second.id, creature.entity.id, { x: -90, y: 40 })
+    const updated = changeDiagram(shared, shared.activeId, diagram => ({ ...diagram, nodes: diagram.nodes.map(node => node.id === creature.node.id
+      ? { ...node, data: { ...node.data, title: 'Хранитель', state: '12 хитов' } } : node) }))
+    expect(updated.entities).toHaveLength(3)
+    expect(updated.entities[2]).toMatchObject({ name: 'Хранитель', state: '12 хитов' })
+    expect(updated.diagrams).toEqual(shared.diagrams)
+    expect(resolveDiagram(updated, updated.diagrams[1]).nodes[0].data.title).toBe('Хранитель')
+    expect(parseTable(serializeTable(updated))).toEqual(updated)
   })
-  it('редактирует Entity, не меняя размещение и display state ноды', () => {
-    const table = createTable()
-    const location = createCanvasObject('location', { x: 75, y: 135 })
-    const placed = placeCanvasObject(table, table.activeId, location, 'Крипта')
-    const originalNode = placed.diagrams[0].nodes[0]
-    const updated = updateCanvasEntity(placed, location.entity.id, { name: 'Новая крипта', description: 'Подземелье' })
-    expect(updated.entities?.[0]).toMatchObject({ name: 'Новая крипта', description: 'Подземелье' })
-    expect(updated.diagrams[0].nodes[0]).toEqual(originalNode)
-    expect(parseTable(serializeTable(updated)).entities?.[0].name).toBe('Новая крипта')
-    expect(updateCanvasEntity(updated, location.entity.id, { name: '  ' })).toBe(updated)
-  })
-  it('переносит старую локацию в Entity без потери описания и координат', () => {
-    const table = createTable()
-    const legacy = createLocation({ x: 30, y: 45 })
-    legacy.data.description = 'Подземелье'
-    table.diagrams[0].nodes.push(legacy)
-    const migrated = materializeLegacyLocations(table)
-    expect(migrated.entities?.[0]).toMatchObject({ entityType: 'location', name: legacy.data.title, description: 'Подземелье' })
-    expect(migrated.diagrams[0].nodes[0].position).toEqual({ x: 30, y: 45 })
-    expect(migrated.diagrams[0].nodes[0].data.description).toBe('')
-    expect(materializeLegacyLocations(migrated)).toBe(migrated)
-  })
-  it('восстанавливает независимые экземпляры, геометрию, подписи и layout', () => {
-    const table = createTable()
-    const first = table.diagrams[0]
-    first.nodes = [createInstance(reference, { x: -125, y: 400 }), createInstance(reference, { x: 1200, y: -20 })]
-    first.nodes[0].data.title = 'Раненый призрак'
-    first.nodes[0].data.state = '12 хитов'
-    first.nodes[0].data.description = 'Секрет мастера'
-    first.nodes[0].width = 400
-    first.edges = [{ id: 'ab', source: first.nodes[0].id, target: first.nodes[1].id, sourceHandle: 'out', targetHandle: 'in', label: 'Охраняет', data: { description: 'До рассвета' } }]
-    first.viewport = { x: 110, y: -40, zoom: 0.75 }
-    const second = createDiagram('Подземелье')
-    table.diagrams.push(second); table.activeId = second.id
-    table.layout = { libraryWidth: 400, inspectorWidth: 500, section: 'spell', query: 'Свет' }
-    expect(parseTable(serializeTable(table))).toEqual(table)
-    expect(first.nodes[1].data.title).toBe('Призрак')
-    first.nodes[0].data.reference!.facts.push('Локальная пометка')
+  it('сохраняет независимые экземпляры из библиотеки и их оригинал', () => {
+    const { table, creature } = fixture()
+    const copied = duplicatePlacement(table, table.activeId, creature.node.id)
+    const duplicate = copied.diagrams[0].nodes.at(-1)!
+    const edited = updateCanvasEntity(copied, duplicate.data.entityId, { name: 'Другой', state: 'Ранен' })
+    expect(duplicate.data.entityId).not.toBe(creature.entity.id)
+    expect(edited.entities.find(entity => entity.id === creature.entity.id)?.name).toBe('Призрак')
+    expect(edited.entities.at(-1)?.reference).toEqual(reference)
+    expect(reference.name).toBe('Призрак')
     expect(reference.facts).toEqual(['ПО 4'])
-    expect(first.nodes[1].data.reference!.facts).toEqual(['ПО 4'])
+    expect(duplicatePlacement(table, table.activeId, table.diagrams[0].nodes[0].id).entities).toHaveLength(3)
   })
-  it('не сохраняет временное выделение React Flow', () => {
-    const table = createTable()
-    table.diagrams[0].nodes.push({ ...createInstance(reference, { x: 0, y: 0 }), selected: true, dragging: true, measured: { width: 260, height: 150 } })
-    const restored = parseTable(serializeTable(table)).diagrams[0].nodes[0]
-    expect(restored).not.toHaveProperty('selected')
-    expect(restored).not.toHaveProperty('dragging')
-    expect(restored).not.toHaveProperty('measured')
-    expect(restored.width).toBe(260)
+  it('переносит экземпляры между локациями и освобождает их при удалении контейнера', () => {
+    const { table, a, b, creature } = fixture()
+    let diagram = resolveDiagram(table, table.diagrams[0])
+    diagram.edges = [{ id: 'e', source: creature.node.id, target: a.node.id, label: 'Охраняет' }]
+    diagram = moveToLocation(diagram, creature.node.id, a.node.id)
+    expect(diagram.nodes[2].data.locationId).toBe(a.node.id)
+    diagram = moveToLocation(diagram, creature.node.id, b.node.id)
+    expect(diagram.nodes[2].data.locationId).toBe(b.node.id)
+    expect(moveToLocation(diagram, a.node.id, b.node.id)).toBe(diagram)
+    const released = removeInstances(diagram, new Set([b.node.id]))
+    expect(released.nodes[1].data.locationId).toBeUndefined()
+    expect(released.edges).toHaveLength(1)
+    expect(removeInstances(released, new Set([creature.node.id])).edges).toHaveLength(0)
+    expect(table.entities).toHaveLength(3)
   })
-  it('мигрирует v1 без потери существ, схем и связей', () => {
+  it('сохраняет геометрию, связи, viewport, но не временный view model', () => {
+    const { table, a, creature } = fixture()
+    const updated = changeDiagram(table, table.activeId, diagram => ({ ...diagram,
+      nodes: diagram.nodes.map(node => ({ ...node, position: { x: -100, y: 420 }, width: 300, height: 210, selected: true, dragging: true, measured: { width: 300, height: 210 } })),
+      edges: [{ id: 'e', source: a.node.id, target: creature.node.id, label: 'Подпись', data: { description: 'До рассвета' } }], viewport: { x: 110, y: -40, zoom: 0.75 } }))
+    const restored = parseTable(serializeTable(updated))
+    expect(restored.diagrams[0].nodes[0]).toMatchObject({ position: { x: -100, y: 420 }, width: 300, height: 210, data: { entityId: a.entity.id } })
+    expect(restored.diagrams[0].nodes[0]).not.toHaveProperty('selected')
+    expect(restored.diagrams[0].nodes[0]).not.toHaveProperty('measured')
+    expect(restored.diagrams[0].nodes[0].data).not.toHaveProperty('title')
+    expect(restored.diagrams[0].edges).toEqual(updated.diagrams[0].edges)
+    expect(restored.diagrams[0].viewport).toEqual(updated.diagrams[0].viewport)
+  })
+  it('мигрирует v1 и не смешивает playerCharacter с NPC', () => {
     const old = { version: 1, activeId: 'd', diagrams: [{ id: 'd', name: 'Старая схема', viewport: { x: 12, y: 14, zoom: 0.7 }, edges: [],
       nodes: [{ id: 'n', type: 'creature', position: { x: 20, y: -40 }, data: { creature: { id: '42', name: 'Призрак', slug: 'ghost' } } }] }] }
     const migrated = parseTable(JSON.stringify(old))
-    expect(migrated.version).toBe(2)
-    expect(migrated.diagrams[0].nodes[0].data.reference?.entityId).toBe('42')
+    expect(migrated.version).toBe(3)
+    expect(migrated.entities[0].reference?.entityId).toBe('42')
     expect(migrated.diagrams[0].nodes[0].position).toEqual({ x: 20, y: -40 })
     expect(migrated.diagrams[0].viewport.zoom).toBe(0.7)
+    expect(createInstance({ ...reference, entityType: 'character' }, { x: 0, y: 0 }).entity.entityType).toBe('playerCharacter')
+    expect(createInstance({ ...reference, entityType: 'npc' }, { x: 0, y: 0 }).entity.entityType).toBe('npc')
   })
-  it('переносит существ между локациями и извлекает, сохраняя экземпляр и связи', () => {
-    let diagram = createDiagram()
-    const creature = createInstance(reference, { x: 0, y: 0 })
-    const a = createLocation({ x: 10, y: 20 }); const b = createLocation({ x: 500, y: 400 })
-    diagram.nodes = [a, b, creature]
-    diagram.edges = [{ id: 'e', source: creature.id, target: a.id }]
-    diagram = moveToLocation(diagram, creature.id, a.id)
-    expect(diagram.nodes[2].data.locationId).toBe(a.id)
-    diagram = moveToLocation(diagram, creature.id, b.id)
-    expect(diagram.nodes[2].data.locationId).toBe(b.id)
-    const table = createTable(); table.diagrams = [diagram]; table.activeId = diagram.id
-    expect(parseTable(serializeTable(table)).diagrams[0]).toEqual(diagram)
-    diagram = moveToLocation(diagram, creature.id)
-    expect(diagram.nodes[2].data.locationId).toBeUndefined()
-    expect(diagram.nodes[2].id).toBe(creature.id)
-    expect(diagram.edges).toHaveLength(1)
+  it('мигрирует v2: Entity, независимые существа, содержимое, размеры и связи', () => {
+    const data = { title: 'Изменённое имя', description: 'Секрет', facts: 'ПО 4', state: 'Ранен', reference }
+    const old = { ...createTable(), version: 2, activeId: 'd', entities: [{ id: 'local', slug: 'local', entityType: 'location', name: 'Настоящее имя', description: 'Описание' }], diagrams: [
+      { id: 'd', name: 'Схема', viewport: { x: 0, y: 0, zoom: 1 }, nodes: [
+        { id: 'a', type: 'location', position: { x: 10, y: 20 }, width: 340, height: 260, data: { title: 'Старое имя', description: '', facts: '', state: '', localEntityId: 'local' } },
+        { id: 'b', type: 'entity', position: { x: -30, y: 40 }, width: 300, height: 180, data: { ...data, locationId: 'a' } },
+        { id: 'c', type: 'entity', position: { x: 80, y: 90 }, data },
+      ], edges: [{ id: 'e', source: 'a', target: 'b', sourceHandle: 'out', targetHandle: 'in', label: 'Охраняет' }] },
+    ] }
+    const migrated = parseTable(JSON.stringify(old))
+    expect(migrated.entities).toHaveLength(3)
+    expect(migrated.entities[0].name).toBe('Настоящее имя')
+    expect(migrated.entities[1]).toMatchObject({ name: data.title, description: data.description, state: data.state })
+    expect(migrated.entities[1].id).not.toBe(migrated.entities[2].id)
+    expect(migrated.diagrams[0].nodes[1]).toMatchObject({ position: { x: -30, y: 40 }, width: 300, height: 180, data: { locationId: 'a' } })
+    expect(migrated.diagrams[0].edges[0].label).toBe('Охраняет')
+    expect(parseTable(serializeTable(migrated))).toEqual(migrated)
   })
-  it('не допускает вложенных локаций и заклинаний в контейнере', () => {
-    const diagram = createDiagram()
-    const a = createLocation({ x: 0, y: 0 }); const b = createLocation({ x: 400, y: 0 })
-    const spell = createInstance({ ...reference, entityType: 'spell' }, { x: 0, y: 0 })
-    diagram.nodes = [a, b, spell]
-    expect(moveToLocation(diagram, a.id, b.id)).toBe(diagram)
-    expect(moveToLocation(diagram, spell.id, a.id)).toBe(diagram)
-    expect(moveToLocation(diagram, spell.id, 'missing')).toBe(diagram)
-  })
-  it('при удалении контейнера освобождает содержимое, удаление экземпляра убирает только его связи', () => {
-    const diagram = createDiagram()
-    const location = createLocation({ x: 0, y: 0 }); const creature = createInstance(reference, { x: 0, y: 0 })
-    const other = createInstance(reference, { x: 500, y: 400 })
-    creature.data.locationId = location.id
-    diagram.nodes = [location, creature, other]
-    diagram.edges = [{ id: 'e', source: creature.id, target: other.id }]
-    const released = removeInstances(diagram, new Set([location.id]))
-    expect(released.nodes).toHaveLength(2)
-    expect(released.nodes[0].data.locationId).toBeUndefined()
-    expect(released.edges).toHaveLength(1)
-    const removed = removeInstances(released, new Set([creature.id]))
-    expect(removed.nodes.map(node => node.id)).toEqual([other.id])
-    expect(removed.edges).toHaveLength(0)
-  })
-  it('отклоняет повреждённые ссылки, вложенность и неизвестную версию', () => {
-    const table = createTable()
-    table.diagrams[0].edges.push({ id: 'broken', source: 'missing', target: 'missing-too' })
-    expect(() => parseTable(serializeTable(table))).toThrow()
-    expect(() => parseTable(JSON.stringify({ ...createTable(), version: 3 }))).toThrow()
-    expect(() => parseTable(JSON.stringify({ ...createTable(), version: '2' }))).toThrow()
-    const node = createInstance(reference, { x: 0, y: 0 }); node.data.locationId = 'missing'
-    table.diagrams[0].edges = []; table.diagrams[0].nodes = [node]
-    expect(() => parseTable(serializeTable(table))).toThrow()
+  it('отклоняет повреждённые ссылки, содержательные данные в ноде и неизвестные версии', () => {
+    const { table } = fixture()
+    const broken = structuredClone(table)
+    broken.diagrams[0].nodes[0].data.entityId = 'missing'
+    expect(() => parseTable(JSON.stringify(broken))).toThrow()
+    expect(() => parseTable(JSON.stringify({ ...table, version: 4 }))).toThrow()
+    Object.assign(table.diagrams[0].nodes[0].data, { title: 'Недопустимая копия' })
+    expect(() => parseTable(JSON.stringify(table))).toThrow()
+    const invalidEdge = createTable(); invalidEdge.diagrams[0].edges = [{ id: 'x', source: 'missing', target: 'missing-too' }]
+    expect(() => parseTable(serializeTable(invalidEdge))).toThrow()
   })
 })

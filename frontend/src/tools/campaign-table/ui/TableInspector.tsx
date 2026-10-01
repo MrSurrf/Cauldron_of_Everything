@@ -101,7 +101,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
           {canContain(node) && <label>Расположение<select aria-label="Локация экземпляра" value={node.data.locationId ?? ''} onChange={event => onChange(current => moveToLocation(current, node.id, event.target.value || undefined))}>
             <option value="">На холсте</option>{diagram.nodes.filter(item => item.type === 'location').map(item => <option key={item.id} value={item.id}>{item.data.title}</option>)}
           </select></label>}
-          <p className={styles.hint}>Изменяется только этот экземпляр. Оригинал в библиотеке остаётся прежним.</p>
+          <p className={styles.hint}>Изменяется Entity этого экземпляра во всех её размещениях. Оригинал в библиотеке остаётся прежним.</p>
           <Button size="sm" variant="secondary" onClick={() => actions.remove(node.id)}>{node.type === 'location' ? 'Удалить локацию, освободить содержимое' : 'Удалить экземпляр'}</Button>
         </div> : <>
           {node.data.facts && <p>{node.data.facts}</p>}{node.data.state && <p>{node.data.state}</p>}

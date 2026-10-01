@@ -1,10 +1,14 @@
 import { createContext, useContext } from 'react'
-import type { Diagram } from '../model/table'
+import type { Diagram, NodeEntityType } from '../model/table'
 
 export type TableActions = {
   diagram: Diagram
   readOnly: boolean
-  draft?: { id: string; type: 'location' | 'note'; commit: (name: string) => void; cancel: () => void }
+  diagrams: { id: string; name: string }[]
+  connectionSource: string | null
+  startConnection: (id: string) => void
+  placeOnDiagram: (id: string, diagramId: string) => void
+  draft?: { id: string; type: NodeEntityType; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void
   edit: (id: string) => void
   remove: (id: string) => void
