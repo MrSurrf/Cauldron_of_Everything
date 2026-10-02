@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     # local
     'survey',
     'encyclopedia',
+    'accounts',
 ]
 
 MIDDLEWARE = [

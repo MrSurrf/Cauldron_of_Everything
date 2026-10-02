@@ -2,50 +2,113 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent } from 'react'
 
 import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
+import { getProfile, patchProfile } from '../../shared/api/account'
+import type { ProfilePayload } from '../../shared/api/account'
 import { CharacterPortrait } from '../../tools/character-sheet'
 import { EmptyBadges, ProfileAvatar, ProfileFacts, ProfilePreview, ProfileSection, ProfileStats, TagList } from './ProfileParts'
 import { activityFilters, activityItems, gameSystems, genres, initialProfile, playStyles, privacyFields, profileTabs, themes, visibilityOptions } from './profileModel'
 import type { ProfileData, ProfileTab } from './profileModel'
+import { bindProfileCacheToAuth, readProfileCache, writeProfileCache } from './profileCache'
 import styles from './ProfilePage.module.css'
+
+// Сервер хранит только поля ProfilePayload; портрет пока живёт локально (object URL).
+function toPayload(profile: ProfileData): ProfilePayload {
+  return {
+    name: profile.name,
+    tagline: profile.tagline,
+    city: profile.city,
+    title: profile.title,
+    role: profile.role,
+    bio: profile.bio,
+    quote: profile.quote,
+    theme: profile.theme,
+    visibility: profile.visibility,
+    messages: profile.messages,
+    systems: profile.systems,
+    styles: profile.styles,
+    genres: profile.genres,
+    links: profile.links,
+    privacy: profile.privacy,
+  }
+}
 
 export default function ProfilePage() {
   const [tab, setTab] = useState<ProfileTab>('about')
   const [editing, setEditing] = useState(false)
-  const [saved, setSaved] = useState<ProfileData>(initialProfile)
-  const [draft, setDraft] = useState<ProfileData>(initialProfile)
+  const [saved, setSaved] = useState<ProfileData>(() => readProfileCache() ?? initialProfile)
+  const [draft, setDraft] = useState<ProfileData>(() => readProfileCache() ?? initialProfile)
   const [filter, setFilter] = useState('Все')
   const [notice, setNotice] = useState('')
+  const [saving, setSaving] = useState(false)
   const [portraitRevision, setPortraitRevision] = useState(0)
   const imageUrls = useRef<string[]>([])
+  const editingRef = useRef(false)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   const profile = editing ? draft : saved
   const theme = themes.find(item => item.value === profile.theme) ?? themes[0]
 
   useEffect(() => () => imageUrls.current.forEach(url => URL.revokeObjectURL(url)), [])
 
+  // Загрузка профиля с сервера: он источник истины, кэш — только для мгновенного показа.
+  useEffect(() => {
+    bindProfileCacheToAuth()
+    let cancelled = false
+    async function load() {
+      try {
+        const remote = await getProfile()
+        // Пока шёл запрос, пользователь мог начать редактирование — не перетираем его черновик.
+        if (cancelled || editingRef.current) return
+        const merged: ProfileData = { ...initialProfile, ...remote.data }
+        setSaved(merged)
+        setDraft(merged)
+        writeProfileCache(merged)
+      } catch {
+        if (!cancelled) setNotice('Не удалось загрузить профиль с сервера.')
+      }
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [])
+
   function update<K extends keyof ProfileData>(key: K, value: ProfileData[K]) {
     setDraft(current => ({ ...current, [key]: value }))
   }
 
   function startEditing() {
+    editingRef.current = true
     setDraft(saved)
     setEditing(true)
     setNotice('')
   }
 
-  function finishEditing(save: boolean) {
+  async function finishEditing(save: boolean) {
     if (save) {
       if (!draft.name.trim()) {
         setNotice('Укажите имя профиля перед сохранением.')
         setTab('about')
         return
       }
-      setSaved({ ...draft, name: draft.name.trim() })
+      const next = { ...draft, name: draft.name.trim() }
+      setSaving(true)
+      try {
+        await patchProfile(toPayload(next))
+        writeProfileCache(next)
+        setSaved(next)
+        setEditing(false)
+        editingRef.current = false
+        setNotice('Изменения сохранены.')
+      } catch {
+        // Остаёмся в режиме редактирования, чтобы черновик не потерялся.
+        setNotice('Не удалось сохранить изменения. Попробуйте ещё раз.')
+      } finally {
+        setSaving(false)
+      }
     } else {
       setDraft(saved)
+      setEditing(false)
+      editingRef.current = false
+      setNotice('Изменения отменены.')
     }
-    setEditing(false)
-    setNotice(save ? 'Изменения сохранены.' : 'Изменения отменены.')
   }
 
   function selectPhoto(file: File) {
@@ -95,8 +158,8 @@ export default function ProfilePage() {
           <div className={styles.heroActions}>
             {editing ? <>
               <span className={styles.modeLabel}>Редактирование профиля</span>
-              <Button size="sm" variant="secondary" icon={null} onClick={() => finishEditing(false)}>Отмена</Button>
-              <Button size="sm" icon={null} onClick={() => finishEditing(true)}>Сохранить изменения</Button>
+              <Button size="sm" variant="secondary" icon={null} onClick={() => void finishEditing(false)}>Отмена</Button>
+              <Button size="sm" icon={null} disabled={saving} onClick={() => void finishEditing(true)}>{saving ? 'Сохранение…' : 'Сохранить изменения'}</Button>
             </> : <Button size="sm" variant="secondary" icon={<EditIcon />} onClick={startEditing}>Редактировать профиль</Button>}
           </div>
           <div className={styles.heroIdentity}>
