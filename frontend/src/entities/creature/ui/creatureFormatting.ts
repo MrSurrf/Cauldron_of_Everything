@@ -80,3 +80,6 @@ export function formatCreatureSpeeds(speed: CreatureEntity['speed']) {
     }
   })
 }
+export function hasCreatureCombatPassport(entity: CreatureEntity) {
+  return Boolean(entity.armorClass || entity.hitPoints || entity.speed || entity.vision?.length || entity.senses?.length || entity.passivePerception != null)
+}

@@ -4,7 +4,8 @@ import type { NodeProps } from '@xyflow/react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
 import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
-import { EditIcon, TrashIcon } from '../../../shared/ui'
+import { EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
+import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
 import styles from './CampaignTable.module.css'
@@ -21,6 +22,8 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [creatureExpanded, setCreatureExpanded] = useState(false)
+  const [cardAlign, setCardAlign] = useState<'left' | 'right'>('left')
   const menuRef = useRef<HTMLDivElement>(null)
   const membersRef = useRef<HTMLDivElement>(null)
   const connectionSource = actions.connectionSource
@@ -54,7 +57,7 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const localEntity = !data.reference
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
   return <article className={styles.mindNode} data-badge={visual.badge} data-shape={visual.shape} data-entity-type={data.entityType}
-    data-selected={selected} data-has-state={Boolean(data.state)} data-connecting={Boolean(connectionSource && connectionSource !== id)}
+    data-selected={selected} data-card-align={cardAlign} data-connecting={Boolean(connectionSource && connectionSource !== id)}
     aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
       minWidth={190} minHeight={80} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
@@ -77,12 +80,29 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
         </div>}
       </div>}
       <div ref={menuRef} className={`${styles.nodeActions} nodrag`} onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-        {!actions.readOnly && <div className={styles.nodeQuickActions}>
+        <div className={styles.nodeQuickActions}>
+          {data.entityType === 'creature' && <Tooltip content={creatureExpanded ? 'Скрыть подробности' : 'Показать больше'}>
+            <button type="button" className={styles.nodeMenuTrigger} aria-label={creatureExpanded ? 'Скрыть подробности' : 'Показать больше'} aria-expanded={creatureExpanded}
+              onClick={event => {
+                event.stopPropagation(); setMenuOpen(false)
+                const node = event.currentTarget.closest('.react-flow__node')
+                const rect = node?.getBoundingClientRect(), canvas = node?.closest('.react-flow')?.getBoundingClientRect()
+                if (rect && canvas) {
+                  const cardWidth = 23 * parseFloat(getComputedStyle(document.documentElement).fontSize) * rect.width / visual.width
+                  setCardAlign(rect.left + cardWidth > canvas.right ? 'right' : 'left')
+                }
+                setCreatureExpanded(value => !value)
+              }}>
+              <svg className={styles.nodeExpandArrow} data-expanded={creatureExpanded} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+          </Tooltip>}
+          {!actions.readOnly && <>
           <button type="button" className={styles.nodeMenuTrigger} aria-label={`Редактировать: ${data.title}`} title="Редактировать"
             onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.edit(id) }}><EditIcon /></button>
           <button type="button" className={styles.nodeMenuTrigger} aria-label={`Удалить со схемы: ${data.title}`} title="Удалить со схемы"
             onClick={event => { event.stopPropagation(); actions.remove(id) }}><TrashIcon /></button>
-        </div>}
+          </>}
+        </div>
         {menuOpen && <div className={styles.nodeMenu} role="menu" aria-label={`Действия с узлом: ${data.title}`}>
           <button type="button" role="menuitem" onClick={event => { event.stopPropagation(); setMenuOpen(false); openEntity() }}>Открыть</button>
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.edit(id) }}>Редактировать</button>
@@ -96,7 +116,8 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
         </div>}
       </div>
     </div>
-    <NodeView type={data.entityType} title={data.title} summary={summary} state={data.state} />
+    <NodeView type={data.entityType} title={data.title} summary={summary} />
+    {data.entityType === 'creature' && creatureExpanded && <NodeCreatureCard data={data} />}
     {!actions.readOnly && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
       <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
         aria-label={`Соединить ${label}: ${data.title}`} title={`Соединить ${label}`}

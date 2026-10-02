@@ -68,7 +68,8 @@ try {
     await node(type).getByRole('heading').click()
     assert.equal(await node(type).locator('.react-flow__resize-control').count(), 0)
     assert.equal(await node(type).evaluate(element => getComputedStyle(element).outlineStyle), 'none')
-    await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+    const inspectorClose = page.getByRole('button', { name: 'Закрыть Inspector' })
+    await (await inspectorClose.count() ? inspectorClose : page.getByRole('button', { name: 'Закрыть карточку' })).click()
   }
   await node('quest').getByRole('heading').click()
   await page.getByRole('button', { name: 'Закрыть Inspector' }).click()

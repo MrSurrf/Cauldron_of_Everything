@@ -1,6 +1,7 @@
 import { Panel } from '../../../shared/ui/Panel'
 import type { CreatureEntity } from '../model/creature'
-import { getCreatureTaxonomy } from './creatureFormatting'
+import { getCreatureTaxonomy, hasCreatureCombatPassport } from './creatureFormatting'
+import { CreatureCombatPassport } from './CreatureCombatPassport'
 import styles from './CreatureCompactCard.module.css'
 
 export type CreatureCompactCardProps = {
@@ -55,26 +56,10 @@ export function CreatureCompactCard({
           <p className={styles.taxonomy}>{taxonomy}</p>
         )}
 
-        <dl className={styles.stats}>
-          {entity.armorClass && (
-            <div>
-              <dt>КД</dt>
-              <dd>{entity.armorClass.value}</dd>
-            </div>
-          )}
-          {entity.hitPoints && (
-            <div>
-              <dt>Хиты</dt>
-              <dd>{entity.hitPoints.split(' ')[0]}</dd>
-            </div>
-          )}
-          {entity.speed && (
-            <div>
-              <dt>Скорость</dt>
-              <dd>{entity.speed}</dd>
-            </div>
-          )}
-        </dl>
+        {hasCreatureCombatPassport(entity) && <section className={styles.passport} aria-label="Боевой паспорт">
+          <h3>Боевой паспорт</h3>
+          <div className={styles.passportBody}><CreatureCombatPassport entity={entity} /></div>
+        </section>}
       </Panel>
     </article>
   )

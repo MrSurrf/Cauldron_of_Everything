@@ -6,7 +6,8 @@ import type { XYPosition } from '@xyflow/react'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
-import { entityLabel } from '../model/library'
+import { canPlaceReference, entityLabel } from '../model/library'
+import { hasInstanceEditor } from '../model/instanceStatBlock'
 import { canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, moveToLocation, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
 import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
@@ -133,7 +134,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     setAnchor(null)
   }
   function add(reference: LibraryReference, position?: XYPosition) {
-    if (readOnly) return
+    if (readOnly || !canPlaceReference(reference)) return
     const origin = center()
     const object = createInstance(reference, position ?? { x: origin.x - 90 + diagram.nodes.length % 5 * 24, y: origin.y - 75 + diagram.nodes.length % 5 * 24 })
     if (position && canContain(resolveNode(object.node, object.entity))) object.node.data.locationId = findLocation(diagram, position)
@@ -153,12 +154,12 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   }
   const open = (id: string) => {
     const data = diagram.nodes.find(node => node.id === id)?.data
-    if (data && !data.reference) setEditorEntityId(data.entityId)
+    if (data && !data.reference && !hasInstanceEditor(data.entityType)) setEditorEntityId(data.entityId)
     else setSelection({ kind: 'node', id, editing: false })
   }
   const edit = (id: string) => {
     const data = diagram.nodes.find(node => node.id === id)?.data
-    if (data && !data.reference) setEditorEntityId(data.entityId)
+    if (data && !data.reference && !hasInstanceEditor(data.entityType)) setEditorEntityId(data.entityId)
     else setSelection({ kind: 'node', id, editing: true })
   }
   const openReference = (reference: LibraryReference) => setSelection({ kind: 'library', reference })
@@ -175,7 +176,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const displayDiagram = diagram
   const visibleNodes = draft ? [...diagram.nodes, resolveNode(draft.node, draft.entity)] : diagram.nodes
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
-  const selectedEntity = selectedNode && !selectedNode.data.reference ? localEntities.get(selectedNode.data.entityId) : undefined
+  const selectedEntity = selectedNode && !selectedNode.data.reference && !hasInstanceEditor(selectedNode.data.entityType) ? localEntities.get(selectedNode.data.entityId) : undefined
   const editedEntity = localEntities.get(editorEntityId ?? '')
   const closeSelection = () => {
     const id = selectedNode?.id

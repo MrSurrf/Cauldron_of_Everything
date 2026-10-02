@@ -5,7 +5,7 @@ import { nodeVisual, polygons } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import styles from './CampaignTable.module.css'
 
-export type NodeViewProps = { title: string; summary: string; state: string }
+export type NodeViewProps = { title: string; summary: string }
 export function NodeOutline({ shape }: { shape: NodeShape }) {
   return <svg className={styles.nodeOutline} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     {shape === 'circle' ? <circle cx="50" cy="50" r="50" vectorEffect="non-scaling-stroke" />
@@ -28,9 +28,8 @@ const glyphs = {
 function Glyph({ type }: { type: keyof typeof glyphs }) {
   return <svg className={styles.nodeGlyph} viewBox="0 0 100 100" aria-hidden="true"><path d={glyphs[type]} /></svg>
 }
-function Caption({ title, summary, state }: NodeViewProps) {
-  return <div className={styles.nodeCaption}><h3>{title}</h3>{summary && <p className={styles.nodeSummary}>{summary}</p>}
-    {state && <p className={styles.nodeState}>{state}</p>}</div>
+function Caption({ title, summary }: NodeViewProps) {
+  return <div className={styles.nodeCaption}><h3>{title}</h3>{summary && <p className={styles.nodeSummary}>{summary}</p>}</div>
 }
 function Badge({ type, ...props }: NodeViewProps & { type: keyof typeof glyphs }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined

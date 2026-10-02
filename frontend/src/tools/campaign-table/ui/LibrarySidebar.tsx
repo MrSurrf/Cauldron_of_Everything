@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, ListCard, TextInput } from '../../../shared/ui'
-import { LIBRARY_SECTIONS, searchLibrary } from '../model/library'
+import { canPlaceReference, LIBRARY_SECTIONS, searchLibrary } from '../model/library'
 import type { LibraryReference, LibrarySection } from '../model/library'
 import { ENTITY_DRAG_TYPE } from './tableContext'
 import { ResizeGrip } from './ResizeGrip'
@@ -72,10 +72,11 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
       {current?.error && <div role="alert"><p>{current.error}</p><Button size="sm" onClick={() => setAttempt(value => value + 1)}>Повторить</Button></div>}
       {current && !current.error && !current.entries.length && <p role="status">{section === 'reference' ? 'Справочные материалы в энциклопедии пока не опубликованы.' : 'Записи не найдены.'}</p>}
       {current?.entries.map(reference => <div key={`${reference.source}:${reference.entityId}`} className={styles.catalogRow}>
-        <button type="button" className={styles.creature} draggable aria-label={`Открыть: ${reference.name}`} onClick={() => onOpen(reference)} onDragStart={event => {
+        <button type="button" className={styles.creature} draggable={canPlaceReference(reference)} aria-label={`Открыть: ${reference.name}`} onClick={() => onOpen(reference)} onDragStart={event => {
+          if (!canPlaceReference(reference)) { event.preventDefault(); return }
           event.dataTransfer.setData(ENTITY_DRAG_TYPE, JSON.stringify(reference)); event.dataTransfer.effectAllowed = 'copy'
         }}><ListCard name={reference.name} tags={reference.facts} /></button>
-        <Button size="sm" variant="secondary" decoration="minimal" aria-label={`Добавить на холст: ${reference.name}`} onClick={() => onAdd(reference)}>+</Button>
+        {canPlaceReference(reference) && <Button size="sm" variant="secondary" decoration="minimal" aria-label={`Добавить на холст: ${reference.name}`} onClick={() => onAdd(reference)}>+</Button>}
       </div>)}
     </div>
     <div className={styles.pagination}>

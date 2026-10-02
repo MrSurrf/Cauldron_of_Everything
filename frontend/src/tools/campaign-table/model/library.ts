@@ -11,6 +11,8 @@ export const LIBRARY_SECTIONS = [
   ['character', 'Мои персонажи'], ['campaign', 'Кампании'],
 ] as const
 export type LibrarySection = typeof LIBRARY_SECTIONS[number][0]
+export const canPlaceReference = (reference: LibraryReference) => reference.source !== 'encyclopedia'
+  || ['creature', 'spell', 'item'].includes(reference.entityType)
 export const entityLabel = (type: EntityType | 'location') => ({
   playerCharacter: 'Игровой персонаж', quest: 'Квест', faction: 'Фракция',
   location: 'Локация', note: 'Заметка', npc: 'NPC', creature: 'Существо', class: 'Класс', race: 'Раса', background: 'Предыстория',

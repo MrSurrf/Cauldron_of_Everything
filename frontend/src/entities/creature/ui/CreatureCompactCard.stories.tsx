@@ -40,5 +40,10 @@ export const Tarrasque: Story = {
     await expect(card).toBeVisible()
     await expect(card.textContent).toContain('Tarrasque')
     await expect(card.textContent).toContain('30')
+    const passport = canvas.getByRole('region', { name: 'Боевой паспорт' })
+    await expect(passport).toBeVisible()
+    await expect(passport.textContent).toContain('Слепое зрение')
+    await expect(passport.textContent).toContain('Пассивная внимательность')
+    await expect(passport.textContent).toContain('плавание')
   },
 }

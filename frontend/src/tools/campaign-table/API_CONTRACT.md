@@ -115,9 +115,19 @@ Frontend не может заменить серверную авторизац�
 
 Точный TypeScript-контракт и валидатор: `model/table.ts`. Все содержательные данные
 находятся в `document.entities[]`: `{ id, entityType, slug, name, description, facts,
-state, reference? }`. Поддерживаются `playerCharacter`, `npc`, `creature`, `location`,
+state, reference?, statBlock? }`. Поддерживаются `playerCharacter`, `npc`, `creature`, `location`,
 `quest`, `faction`, `item`, `spell`, `note` и прежние разделы библиотеки.
 Входной API-тип `character` преобразуется в `playerCharacter`; NPC остаётся отдельным типом.
+
+Поле `state` теперь только совместимое наследие старых документов, в UI не используется.
+Содержательная копия экземпляра хранится в необязательном `Entity.statBlock`:
+`{kind: "creature", entity: CreatureEntity}`, `{kind: "spell"|"item", entry: EncyclopediaEntry}`
+или `{kind: "playerCharacter", document: CharacterSheetDocument}`. Node не содержит статблок.
+Редактирование и дублирование этих копий не отправляют запись в API энциклопедии/персонажей.
+`GET /api/characters/{id}/` может передавать существующий лист в `document`; без него
+используется пустой лист текущего редактора с доступным названием и описанием материала.
+При публикации сервер обязан фильтровать все поля `statBlock` так же, как остальные
+материалы Entity; нельзя автоматически публиковать закрытую копию целиком.
 
 - Каждый узел содержит только собственный UUID, `type: entity|location|note`,
   `position`, необязательные `width`/`height`, `data: { entityId, locationId? }`.

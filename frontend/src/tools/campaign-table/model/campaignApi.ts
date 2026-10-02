@@ -1,5 +1,6 @@
 import { authFetch } from '../../../shared/api/auth'
 import type { LibraryReference } from './library'
+import type { CharacterSheetDocument } from '../../character-sheet'
 import { parseTable } from './table'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
@@ -12,6 +13,7 @@ export async function campaignRequest<T>(path: string, signal: AbortSignal): Pro
 }
 export type OwnedMaterial = {
   id: string; name: string; slug: string; description: string; facts: string[]; entityType: 'character' | 'npc' | 'campaign'
+  document?: CharacterSheetDocument
 }
 export function ownedReference(entry: OwnedMaterial, source: 'character' | 'campaign'): LibraryReference {
   return { source, entityId: String(entry.id), entityType: entry.entityType, name: entry.name, slug: entry.slug, facts: entry.facts }
