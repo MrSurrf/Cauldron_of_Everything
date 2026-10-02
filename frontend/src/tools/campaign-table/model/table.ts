@@ -2,6 +2,8 @@ import type { Edge, Node, Viewport, XYPosition } from '@xyflow/react'
 import type { BaseEntity, EntityType } from '../../../entities/base'
 import type { LibraryReference, LibrarySection } from './library'
 import { parseTable as parseLegacyTable } from './legacyTable'
+import { validStatBlock } from './instanceStatBlock'
+import type { InstanceStatBlock } from './instanceStatBlock'
 
 export const NODE_ENTITY_TYPES = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note'] as const
 export type NodeEntityType = typeof NODE_ENTITY_TYPES[number]
@@ -12,6 +14,7 @@ export type CanvasEntity = BaseEntity & {
   facts: string
   state: string
   reference?: LibraryReference
+  statBlock?: InstanceStatBlock
 }
 export type PlacementData = { entityId: string; locationId?: string }
 export type EntityNode = Node<PlacementData, 'entity' | 'location' | 'note'>
@@ -25,6 +28,7 @@ export type CampaignTable = {
 export type InstanceData = PlacementData & {
   entityType: EntityType; reference?: LibraryReference
   title: string; description: string; facts: string; state: string
+  statBlock?: InstanceStatBlock
 }
 export type TableNode = Node<InstanceData, EntityNode['type']>
 export type Diagram = Omit<StoredDiagram, 'nodes'> & { nodes: TableNode[] }
@@ -76,7 +80,7 @@ export function updateCanvasEntity(table: CampaignTable, id: string, changes: Pa
 }
 export function resolveNode(node: EntityNode, entity: CanvasEntity): TableNode {
   return { ...node, data: { ...node.data, entityType: entity.entityType, title: entity.name,
-    description: entity.description, facts: entity.facts, state: entity.state, reference: entity.reference } }
+    description: entity.description, facts: entity.facts, state: entity.state, reference: entity.reference, statBlock: entity.statBlock } }
 }
 export function resolveDiagram(table: CampaignTable, diagram: StoredDiagram): Diagram {
   const entities = new Map(table.entities.map(entity => [entity.id, entity]))
@@ -99,8 +103,8 @@ export function changeDiagram(table: CampaignTable, id: string, update: (diagram
     const data = node.data
     const entity = entities.get(data.entityId)
     if (!entity) throw new Error('Размещение ссылается на отсутствующую Entity')
-    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts || previous.state !== data.state)) {
-      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description, facts: data.facts, state: data.state })
+    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts || previous.state !== data.state || previous.statBlock !== data.statBlock)) {
+      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description, facts: data.facts, state: data.state, statBlock: data.statBlock })
     }
   }
   return { ...table, entities: [...entities.values()], diagrams: table.diagrams.map(diagram => diagram.id === id
@@ -116,7 +120,10 @@ export function duplicatePlacement(table: CampaignTable, diagramId: string, node
   const id = entity.reference ? crypto.randomUUID() : entity.id
   const copy = { ...structuredClone(node), id: placementId, selected: false,
     position: { x: node.position.x + 40, y: node.position.y + 40 }, data: { ...node.data, entityId: id } }
-  return { ...table, entities: id === entity.id ? table.entities : [...table.entities, { ...structuredClone(entity), id, slug: id }],
+  const entityCopy = { ...structuredClone(entity), id, slug: id }
+  if (entityCopy.statBlock?.kind === 'creature') entityCopy.statBlock.entity.id = id
+  if (entityCopy.statBlock?.kind === 'playerCharacter') entityCopy.statBlock.document.id = id
+  return { ...table, entities: id === entity.id ? table.entities : [...table.entities, entityCopy],
     diagrams: table.diagrams.map(item => item.id === diagramId ? { ...item, nodes: [...item.nodes, copy] } : item) }
 }
 export function canContain(node: TableNode): boolean {
@@ -184,7 +191,8 @@ export function parseTable(raw: string): CampaignTable {
   for (const entity of value.entities) {
     if (!record(entity) || !text(entity.id) || !entity.id || entities.has(entity.id) || !entityTypes.includes(entity.entityType as EntityType)
       || !text(entity.slug) || !text(entity.name) || !entity.name.trim() || !text(entity.description) || !text(entity.facts) || !text(entity.state)
-      || (entity.reference !== undefined && !validReference(entity.reference))) return invalid()
+      || (entity.reference !== undefined && !validReference(entity.reference))
+      || (entity.statBlock !== undefined && !validStatBlock(entity.statBlock, String(entity.entityType)))) return invalid()
     entities.set(entity.id, entity as CanvasEntity)
   }
   const diagramIds = new Set<string>()

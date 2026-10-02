@@ -34,6 +34,35 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-muted) var(--color-surface-muted);
+}
+
+/* Нативная прокрутка в панелях, списках и полях; ScrollArea сохраняет свои контролы. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: var(--color-surface-muted);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-muted);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-bright);
+}
+
+*::-webkit-scrollbar-button { display: none; }
+
+@media (forced-colors: active) {
+  * { scrollbar-color: auto; }
 }
 
 html,

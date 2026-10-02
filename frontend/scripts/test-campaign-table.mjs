@@ -29,7 +29,7 @@ await page.route('**/api/**', async route => {
     return route.fulfill({ json: { count: results.length, results } })
   }
   const entry = entries.find(item => url.pathname === `/api/encyclopedia/${item.id}/`)
-  if (entry) return route.fulfill({ json: { ...entry, content_html: '<p>Описание оригинала</p>', data: { ...entry.summary, armor_class: 13, hit_points: '45 (10к8)', speed: '30 фт.' } } })
+  if (entry) return route.fulfill({ json: { ...entry, content_html: '<p>Описание оригинала</p>', data: { ...entry.summary, armor_class: 13, hit_points: '45 (10к8)', speed: '30 фт., полёт 60 фт.', senses: 'Тёмное зрение 60 фт., пассивное Восприятие 12' } } })
   if (url.pathname === '/api/characters/') return route.fulfill({ json: { count: 1, results: [{ id: 'hero', entityType: 'character', name: 'Герой', slug: 'hero', facts: ['Воин'], description: 'Описание героя' }] } })
   if (url.pathname === '/api/campaigns/allowed/table/public/') return route.fulfill({ json: { visibility: 'public', document: publicDocument } })
   if (url.pathname.includes('/table/public/')) return route.fulfill({ status: 403, json: {} })
@@ -46,14 +46,15 @@ async function editNode(id) {
   await closeCard()
   const node = page.locator(`.react-flow__node[data-id="${id}"]`)
   await node.hover()
-  await node.getByRole('button', { name: /^Действия:/ }).click()
-  await node.getByRole('menuitem', { name: 'Редактировать', exact: true }).click()
+  await node.getByRole('button', { name: /^Редактировать:/ }).click()
 }
 async function showMembers(node, count) {
   const trigger = node.getByRole('button', { name: `Содержимое: ${count}` })
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click()
 }
 async function geometry(values) {
+  const details = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Размещение на схеме' }) })
+  if (await details.count() && !(await details.getAttribute('open'))) await details.locator('summary').click()
   for (const [key, value] of Object.entries(values)) await page.getByRole('spinbutton', { name: `Узел: ${key}`, exact: true }).fill(String(value))
 }
 async function createOnCanvas(canvas, type, name, position) {
@@ -91,8 +92,10 @@ try {
   assert.ok(Math.abs(state.diagrams[0].nodes[0].position.x - 80) < 5)
   await editNode(ghostId)
   await page.getByRole('textbox', { name: 'Название экземпляра', exact: true }).fill('Тайный призрак')
-  await page.getByRole('textbox', { name: 'Состояние экземпляра', exact: true }).fill('12 хитов')
-  await geometry({ width: 290, height: 180 })
+  assert.equal(await page.getByRole('textbox', { name: 'Состояние экземпляра', exact: true }).count(), 0)
+  await page.getByRole('textbox', { name: 'Хиты', exact: true }).fill('12 (3к8)')
+  await page.getByRole('spinbutton', { name: 'Класс доспеха: Значение', exact: true }).fill('18')
+  assert.equal(await page.getByRole('spinbutton', { name: 'Узел: width', exact: true }).count(), 0)
   await page.getByRole('region', { name: 'Описание экземпляра', exact: true }).click()
   const description = page.getByRole('textbox', { name: 'Описание экземпляра', exact: true })
   await description.fill('Секрет мастера')
@@ -101,23 +104,41 @@ try {
   state = await saved()
   const copyId = state.diagrams[0].nodes[1].id
   await page.getByRole('textbox', { name: 'Название экземпляра', exact: true }).fill('Второй призрак')
-  await page.getByRole('textbox', { name: 'Состояние экземпляра', exact: true }).fill('45 хитов')
+  await page.getByRole('textbox', { name: 'Хиты', exact: true }).fill('45 (10к8)')
   await geometry({ x: 440, y: 120 })
   await closeCard()
   state = await saved()
-  assert.equal(entityFor(state, state.diagrams[0].nodes[0]).state, '12 хитов')
-  assert.equal(entityFor(state, state.diagrams[0].nodes[1]).state, '45 хитов')
+  assert.equal(entityFor(state, state.diagrams[0].nodes[0]).statBlock.entity.hitPoints, '12 (3к8)')
+  assert.equal(entityFor(state, state.diagrams[0].nodes[1]).statBlock.entity.hitPoints, '45 (10к8)')
   assert.equal(entries[0].name, 'Призрак')
 
   // Настоящее перемещение и соединение двух узлов.
   const first = page.locator(`.react-flow__node[data-id="${ghostId}"]`)
   const second = page.locator(`.react-flow__node[data-id="${copyId}"]`)
+  // Раскрытие использует общий боевой паспорт и не меняет Entity или геометрию.
+  const beforeExpansion = await saved()
+  const beforeSize = await first.boundingBox()
+  await first.hover()
+  await first.getByRole('button', { name: 'Показать больше', exact: true }).click()
+  const expanded = first.getByRole('region', { name: 'Карточка существа: Тайный призрак' })
+  await expanded.getByRole('region', { name: 'Боевой паспорт' }).waitFor()
+  assert.ok((await expanded.textContent()).includes('Пассивная внимательность'))
+  assert.ok((await expanded.textContent()).includes('Тёмное зрение'))
+  assert.ok((await expanded.textContent()).includes('60 фт.'))
+  assert.ok((await expanded.textContent()).includes('18'))
+  assert.ok((await expanded.textContent()).includes('12'))
+  assert.equal((await first.boundingBox()).width, beforeSize.width)
+  assert.equal((await first.boundingBox()).height, beforeSize.height)
+  assert.deepEqual(await saved(), beforeExpansion)
+  await page.screenshot({ path: join(tmpdir(), 'campaign-creature-expanded.png') })
+  await first.getByRole('button', { name: 'Скрыть подробности', exact: true }).click()
+  assert.equal(await expanded.count(), 0)
   const secondRect = await second.boundingBox()
   await moveBetween({ x: secondRect.x + 80, y: secondRect.y + 20 }, { x: secondRect.x + 100, y: secondRect.y + 160 })
   await closeCard()
   assert.equal(await first.locator('.source').evaluate(el => getComputedStyle(el).opacity), '0')
   await first.hover()
-  await first.getByRole('button', { name: /^Действия:/ }).click()
+  await first.getByRole('heading').click({ button: 'right' })
   await first.getByRole('menuitem', { name: 'Связать с…' }).click()
   await second.getByRole('heading', { name: 'Второй призрак', exact: true }).click()
   await page.locator('.react-flow__edge').waitFor()
@@ -126,21 +147,17 @@ try {
   await closeCard()
   assert.equal((await saved()).diagrams[0].edges[0].label, 'Охраняет')
 
-  // Карточка — существующий CreatureFullView, оригинал не подменяется экземпляром.
+  // Карточка схемы показывает локальный полный статблок, библиотека — оригинал.
   await first.getByRole('heading', { name: 'Тайный призрак', exact: true }).dblclick()
-  await page.getByRole('complementary', { name: 'Карточка и редактор' }).getByRole('heading', { name: 'Призрак', exact: true }).waitFor()
+  await page.getByRole('complementary', { name: 'Карточка и редактор' }).getByRole('heading', { name: 'Тайный призрак', exact: true }).last().waitFor()
+  await page.getByRole('complementary', { name: 'Карточка и редактор' }).getByLabel('Класс доспеха 18').waitFor()
   await page.screenshot({ path: join(tmpdir(), 'campaign-table-card.png') })
   await closeCard()
 
-  // Размер узла меняется мышью через NodeResizer, а не только числовыми полями.
+  // У существа фиксированная форма, resize-контролов нет даже при выделении.
   await first.getByRole('heading', { name: 'Тайный призрак', exact: true }).click()
   await closeCard()
-  const resize = first.locator('.react-flow__resize-control.bottom.right.handle')
-  const handle = await resize.boundingBox()
-  assert.ok(handle)
-  const widthBefore = (await saved()).diagrams[0].nodes[0].width
-  await moveBetween({ x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 }, { x: handle.x + handle.width / 2 + 20, y: handle.y + handle.height / 2 + 15 })
-  assert.ok((await saved()).diagrams[0].nodes[0].width > widthBefore)
+  assert.equal(await first.locator('.react-flow__resize-control').count(), 0)
 
   // Контейнер, перенос экземпляра и HTML DnD из библиотеки внутрь локации.
   await createOnCanvas(canvas, 'Локация', 'Крипта', { x: 60, y: 420 })
@@ -151,6 +168,18 @@ try {
   await closeCard()
   const location = page.locator(`.react-flow__node[data-id="${locationId}"]`)
   assert.ok((await location.boundingBox()).height < 220)
+  await location.getByRole('heading').click()
+  const resize = location.locator('.react-flow__resize-control.bottom.right.handle')
+  const handle = await resize.boundingBox()
+  assert.ok(handle.width >= 24)
+  const originalWidth = (await location.boundingBox()).width
+  await moveBetween({ x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 }, { x: handle.x + handle.width / 2 + 40, y: handle.y + handle.height / 2 + 20 })
+  const resizedWidth = (await saved()).diagrams[0].nodes.find(node => node.id === locationId).width
+  assert.ok(resizedWidth > originalWidth)
+  await page.keyboard.press('Control+z')
+  assert.equal((await saved()).diagrams[0].nodes.find(node => node.id === locationId).width, undefined)
+  await page.keyboard.press('Control+Shift+z')
+  assert.equal((await saved()).diagrams[0].nodes.find(node => node.id === locationId).width, resizedWidth)
   const ghostRect = await first.boundingBox(); const locationRect = await location.boundingBox()
   await moveBetween({ x: ghostRect.x + 80, y: ghostRect.y + 20 }, { x: locationRect.x + 95, y: locationRect.y + 40 })
   await closeCard()
@@ -193,7 +222,8 @@ try {
   await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('spell')
   await page.getByRole('searchbox', { name: 'Поиск в библиотеке', exact: true }).fill('Материал')
   await page.getByRole('separator', { name: 'Ширина библиотеки', exact: true }).press('ArrowLeft')
-  const resizedLibraryWidth = Number(await page.getByRole('separator', { name: 'Ширина библиотеки' }).getAttribute('aria-valuenow'))
+  const resizedLibraryWidth = (await saved()).layout.libraryWidth
+  await page.waitForFunction(width => document.querySelector('[aria-label="Ширина библиотеки"]')?.getAttribute('aria-valuenow') === String(width), resizedLibraryWidth)
   await closeCard()
   const boardBeforeInspector = (await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width
   await location.getByRole('heading', { name: 'Крипта', exact: true }).click()
@@ -307,8 +337,7 @@ try {
   await waitForNodes(2)
   const menuNote = page.locator('.react-flow__node').filter({ has: page.getByRole('heading', { name: 'Удалить меню', exact: true }) })
   await menuNote.hover()
-  await menuNote.getByRole('button', { name: 'Действия: Удалить меню' }).click()
-  await menuNote.getByRole('menuitem', { name: 'Удалить со схемы' }).click()
+  await menuNote.getByRole('button', { name: 'Удалить со схемы: Удалить меню' }).click()
   await waitForNodes(1)
   await page.reload()
   await page.getByRole('button', { name: 'Выбрать схему: Подземелье' }).click()

@@ -96,6 +96,60 @@ afterEach(async () => {
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('сохраняет исходную раскладку в узкой панели и прокручивает лист в обе стороны', async () => {
+    const container = await mountCharacterSheet()
+    await act(async () => {
+      container.style.height = '640px'
+      await nextFrame()
+    })
+    const viewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
+    const sheetPage = container.querySelector<HTMLElement>('[data-character-sheet-page]')!
+    const body = container.querySelector<HTMLElement>('[data-character-sheet-layout="body"]')!
+    const columns = Array.from(body.children).map(element => {
+      const rect = element.getBoundingClientRect()
+      const origin = body.getBoundingClientRect()
+      return { x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }
+    })
+    for (const width of [320, 520, 700, 800, 1100]) {
+      await act(async () => {
+        container.style.width = `${width}px`
+        await nextFrame()
+        await nextFrame()
+      })
+      if (width < 1000) expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+      expect(viewport.clientHeight).toBeGreaterThan(0)
+      expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(container.getBoundingClientRect().bottom + 1)
+      expect(getComputedStyle(viewport).scrollbarWidth).toBe('none')
+      expect(roundedWidth(sheetPage)).toBe(964)
+      Array.from(body.children).forEach((element, index) => {
+        const rect = element.getBoundingClientRect()
+        const origin = body.getBoundingClientRect()
+        expect({ x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }).toEqual(columns[index])
+      })
+    }
+    await act(async () => {
+      container.style.width = '520px'
+      await nextFrame()
+      await nextFrame()
+    })
+    await act(async () => {
+      viewport.scrollTo({ left: viewport.scrollWidth, top: viewport.scrollHeight, behavior: 'instant' })
+      await nextFrame()
+    })
+    const lastSection = container.querySelector<HTMLElement>('[data-character-sheet-personality="flaws"]')!
+    expect(viewport.scrollLeft).toBeGreaterThan(0)
+    expect(lastSection.getBoundingClientRect().right).toBeLessThanOrEqual(viewport.getBoundingClientRect().right + 1)
+    expect(lastSection.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1)
+  })
+
+  it('оформляет нативную прокрутку вложенных полей общими токенами', async () => {
+    const container = await mountCharacterSheet()
+    const field = document.createElement('textarea')
+    container.append(field)
+    expect(getComputedStyle(field).scrollbarWidth).toBe('thin')
+    expect(getComputedStyle(field).scrollbarColor).not.toBe('auto')
+    expect(getComputedStyle(document.documentElement).scrollbarColor).toBe(getComputedStyle(field).scrollbarColor)
+  })
   it('пересчитывает максимум виджета по характеристикам листа и сохраняет связанные ресурсы', async () => {
     const initialDocument = createMockCharacterSheet()
     initialDocument.equipmentContentText = ':::resource[Заряды]{current=1 maximum-formula="%5BPROF%5D*2" recovery=short}\n:::'

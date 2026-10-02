@@ -1,21 +1,18 @@
 import type { ReactNode } from 'react'
 import typography from '../../../shared/styles/entityTypography.module.css'
-import { visionTypeLabels } from '../../../shared/model'
 import { Panel } from '../../../shared/ui/Panel'
 import { IconButton } from '../../../shared/ui/IconButton'
 import { Popover } from '../../../shared/ui/Popover'
 import { RichContent } from '../../../shared/ui/RichContent'
 import { PlaceholderIcon } from '../../../shared/ui/icons/PlaceholderIcon'
-import { VisionIcon } from '../../../shared/ui/icons/VisionIcon'
 import type { CreatureEntity, DamageAffinityState } from '../model/creature'
 import {
   formatCreatureSkills,
-  formatCreatureSpeeds,
   getCreatureTaxonomy,
+  hasCreatureCombatPassport,
 } from './creatureFormatting'
 import { CreatureAbilitiesPanel } from './CreatureAbilitiesPanel'
-import { CreatureArmorClassBadge } from './CreatureArmorClassBadge'
-import { CreatureHitPointsBadge } from './CreatureHitPointsBadge'
+import { CreatureCombatPassport } from './CreatureCombatPassport'
 import { DamageAffinityBadge, DamageAffinityLegend } from './DamageAffinityBadge'
 import { CreatureFeatureSections } from './CreatureFeatureSections'
 import styles from './CreatureFullView.module.css'
@@ -104,9 +101,6 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
     },
     { label: 'Языки', value: entity.languages?.join(', ') },
   ].filter((detail) => detail.value)
-  const speeds = formatCreatureSpeeds(entity.speed)
-  const hasSenses = Boolean(entity.vision?.length || entity.senses?.length || entity.passivePerception != null)
-  const hasVitals = Boolean(entity.armorClass || entity.hitPoints)
   const challenge = entity.challengeRating?.match(/^\s*([^()]+?)\s*(?:\((.*)\))?\s*$/)
 
   return (
@@ -149,71 +143,9 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
       </header>
 
       <div className={styles.main}>
-        {(hasVitals || speeds.length > 0 || hasSenses) && (
+        {hasCreatureCombatPassport(entity) && (
           <StatBlockSection id={`${entity.id}-passport-title`} title="Боевой паспорт">
-            <div className={styles.passport} data-has-vitals={hasVitals}>
-              {hasVitals && (
-                <dl className={styles.vitals}>
-                  {entity.armorClass && (
-                    <div className={`${styles.armorClassVital} ${styles.armorAlignment}`}>
-                      <dt className={styles.srOnly}>Класс доспеха</dt>
-                      <dd><CreatureArmorClassBadge armorClass={entity.armorClass} /></dd>
-                    </div>
-                  )}
-                  {entity.hitPoints && (
-                    <div className={styles.armorClassVital}>
-                      <dt className={styles.srOnly}>Хиты</dt>
-                      <dd>
-                        <CreatureHitPointsBadge creatureType={entity.creatureType} hitPoints={entity.hitPoints} />
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              )}
-              {(speeds.length > 0 || hasSenses) && (
-                <dl className={styles.mobility}>
-                  {speeds.length > 0 && (
-                    <div>
-                      <DetailLabel>Скорость</DetailLabel>
-                      <dd className={styles.speedList}>
-                        {speeds.map((speed, index) => (
-                          <span className={styles.speed} key={index}>
-                            <strong>{speed.value}</strong>
-                            {speed.label && <small>{speed.label}</small>}
-                          </span>
-                        ))}
-                      </dd>
-                    </div>
-                  )}
-                  {hasSenses && (
-                    <div>
-                      <DetailLabel>Чувства</DetailLabel>
-                      <dd className={styles.sensesList}>
-                        {entity.vision?.map((sense) => (
-                          <span className={styles.visionSense} key={`${sense.type}-${sense.range ?? 'unlimited'}`}>
-                            <VisionIcon type={sense.type} />
-                            <span>
-                              <span>{visionTypeLabels[sense.type]}</span>
-                              {sense.range != null && <strong>{sense.range} фт.</strong>}
-                            </span>
-                          </span>
-                        ))}
-                        {entity.senses?.map((sense) => (
-                          <span className={styles.senseNote} key={sense}>{sense}</span>
-                        ))}
-                        {entity.passivePerception != null && (
-                          <span className={styles.passivePerception}>
-                            <VisionIcon type="normal" />
-                            <span>Пассивная внимательность</span>
-                            <strong>{entity.passivePerception}</strong>
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              )}
-            </div>
+            <CreatureCombatPassport entity={entity} />
           </StatBlockSection>
         )}
 

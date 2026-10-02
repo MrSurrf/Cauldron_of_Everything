@@ -34,7 +34,7 @@ await page.route('**/api/**', route => {
 })
 const node = type => page.locator(`.react-flow__node[data-id="${type}"]`)
 async function saved() { return page.evaluate(key => JSON.parse(localStorage.getItem(key)), key) }
-async function menu(type) { await node(type).hover(); await node(type).getByRole('button', { name: /^Действия:/ }).click() }
+async function menu(type) { await node(type).getByRole('heading').click({ button: 'right' }) }
 async function scheme(name) {
   await page.getByRole('button', { name: /^Выбрать схему:/ }).click()
   await page.getByRole('navigation', { name: 'Выбор схемы' }).getByRole('button', { name: new RegExp(name) }).click()
@@ -64,11 +64,27 @@ try {
   assert.equal(await node('spell').getByLabel('Уровень заклинания: 3').textContent(), '3')
   assert.equal(await node('faction').locator('svg path').count(), 0)
   assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
+  for (const type of ['playerCharacter', 'npc', 'creature', 'spell', 'item', 'faction']) {
+    await node(type).getByRole('heading').click()
+    assert.equal(await node(type).locator('.react-flow__resize-control').count(), 0)
+    assert.equal(await node(type).evaluate(element => getComputedStyle(element).outlineStyle), 'none')
+    const inspectorClose = page.getByRole('button', { name: 'Закрыть Inspector' })
+    await (await inspectorClose.count() ? inspectorClose : page.getByRole('button', { name: 'Закрыть карточку' })).click()
+  }
+  await node('quest').getByRole('heading').click()
+  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await node('quest').getByRole('heading').click()
+  const resizeHandle = node('quest').locator('.react-flow__resize-control.bottom.right.handle')
+  const hitbox = await resizeHandle.boundingBox()
+  assert.ok(hitbox.width >= 24 && hitbox.height >= 24, JSON.stringify({ hitbox, style: await resizeHandle.getAttribute('style') }))
+  assert.equal(await node('quest').locator('.react-flow__resize-control.line').first().evaluate(el => getComputedStyle(el).borderTopWidth), '0px')
+  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
   await node('faction').getByRole('heading').dblclick()
   await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
   await page.getByRole('tab', { name: 'Основная схема', exact: true }).click()
   await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
   await page.mouse.move(1550, 970)
+  await page.waitForFunction(() => document.querySelector('[data-cursor-light-background]')?.style.getPropertyValue('--cursor-light-active') === '1')
   assert.equal(await node('location').getByRole('button', { name: /^Соединить справа:/ }).evaluate(el => getComputedStyle(el).opacity), '0')
   await node('location').hover()
   assert.equal(await node('location').getByRole('button', { name: /^Соединить справа:/ }).evaluate(el => getComputedStyle(el).opacity), '1')
@@ -88,6 +104,21 @@ try {
   const npcPosition = (await saved()).diagrams[0].nodes.find(node => node.id === 'npc').position
   assert.ok(Math.abs(Math.hypot(points[2] - (npcPosition.x + 90), points[3] - (npcPosition.y + 60)) - 60) < 0.01,
     JSON.stringify({ points, npcPosition }))
+  await page.keyboard.press('Control+z')
+  assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, { x: 450, y: 50 })
+  await page.keyboard.press('Control+Shift+z')
+  assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, npcPosition)
+  // В поле текста работают собственные команды редактора, не история графа.
+  await node('npc').getByRole('heading').click()
+  await page.getByRole('textbox', { name: 'Название Entity' }).fill('Новое имя NPC')
+  await page.keyboard.press('Control+z')
+  assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, npcPosition)
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await page.keyboard.press('Meta+z')
+  assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, { x: 450, y: 50 })
+  await page.keyboard.press('Meta+Shift+z')
+  assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, npcPosition)
 
   // Режим связи: подсветка и точка предпросмотра, отмена без ребра.
   // Любая из четырёх точек запускает общий режим и не двигает ноду.
@@ -111,6 +142,18 @@ try {
   await node('creature').getByRole('button', { name: /^Соединить слева:/ }).click()
   await node('spell').hover()
   await node('spell').getByRole('button', { name: /^Соединить справа:/ }).click()
+  assert.equal((await saved()).diagrams[0].edges.length, 5)
+  await page.keyboard.press('Control+z')
+  assert.equal((await saved()).diagrams[0].edges.length, 4)
+  await page.keyboard.press('Control+Shift+z')
+  assert.equal((await saved()).diagrams[0].edges.length, 5)
+
+  // Прямое удаление иконкой, восстановление ноды вместе со связями.
+  await node('creature').hover()
+  await node('creature').getByRole('button', { name: /^Удалить со схемы:/ }).click()
+  assert.equal((await saved()).diagrams[0].nodes.length, 8)
+  await page.keyboard.press('Control+z')
+  assert.equal((await saved()).diagrams[0].nodes.length, 9)
   assert.equal((await saved()).diagrams[0].edges.length, 5)
 
   // Одна Entity на двух схемах, правки названия общие, геометрия независимая.

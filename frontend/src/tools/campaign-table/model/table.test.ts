@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
+import { canPlaceReference } from './library'
 
 const reference: LibraryReference = { source: 'encyclopedia', entityId: '42', entityType: 'creature', name: 'Призрак', slug: 'ghost', facts: ['ПО 4'] }
 function fixture() {
@@ -12,6 +13,30 @@ function fixture() {
   return { table, a, b, creature }
 }
 describe('нормализованный документ кампании', () => {
+  it('сохраняет полный статблок в Entity, дублирует независимо и не меняет оригинал', () => {
+    const { table, creature } = fixture()
+    const original = { kind: 'creature' as const, entity: { id: '42', slug: 'ghost', entityType: 'creature' as const, name: 'Призрак', hitPoints: '45', sections: [] } }
+    const updated = changeDiagram(table, table.activeId, diagram => ({ ...diagram, nodes: diagram.nodes.map(node => node.id === creature.node.id
+      ? { ...node, data: { ...node.data, statBlock: structuredClone(original) } } : node) }))
+    const copied = duplicatePlacement(updated, updated.activeId, creature.node.id)
+    const duplicate = copied.diagrams[0].nodes.at(-1)!
+    const edited = changeDiagram(copied, copied.activeId, diagram => ({ ...diagram, nodes: diagram.nodes.map(node => node.id === duplicate.id
+      ? { ...node, data: { ...node.data, statBlock: { ...original, entity: { ...original.entity, hitPoints: '12' } } } } : node) }))
+    const restored = parseTable(serializeTable(edited))
+    expect(restored.entities[2].statBlock).toEqual(original)
+    expect(restored.entities.at(-1)?.statBlock).toMatchObject({ entity: { hitPoints: '12' } })
+    expect(original.entity.hitPoints).toBe('45')
+    expect(restored.diagrams[0].nodes.at(-1)?.data).toEqual({ entityId: duplicate.data.entityId })
+    expect(restored.entities.at(-1)?.reference).toEqual(reference)
+    const broken = structuredClone(restored)
+    Object.assign(broken.entities[2].statBlock!, { kind: 'spell' })
+    expect(() => parseTable(JSON.stringify(broken))).toThrow()
+  })
+  it('разрешает добавление только мобов, предметов и заклинаний из энциклопедии', () => {
+    for (const type of ['class', 'race', 'background', 'feat', 'reference'] as const) expect(canPlaceReference({ ...reference, entityType: type })).toBe(false)
+    for (const type of ['creature', 'spell', 'item'] as const) expect(canPlaceReference({ ...reference, entityType: type })).toBe(true)
+    expect(canPlaceReference({ ...reference, source: 'character', entityType: 'character' })).toBe(true)
+  })
   it.each(NODE_ENTITY_TYPES)('поддерживает %s отдельно от размещения', type => {
     const table = createTable(), object = createCanvasObject(type, { x: 75, y: 135 })
     const restored = parseTable(serializeTable(placeCanvasObject(table, table.activeId, object, 'Объект')))

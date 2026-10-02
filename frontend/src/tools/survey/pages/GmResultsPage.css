@@ -723,25 +723,6 @@
 
   overflow-y: auto;
 
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(168, 111, 218, 0.5)
-    transparent;
-}
-
-.gm-player-list::-webkit-scrollbar {
-  width: 5px;
-}
-
-.gm-player-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.gm-player-list::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-
-  background:
-    rgba(168, 111, 218, 0.5);
 }
 
 .gm-player-card {
