@@ -25,3 +25,17 @@ src/
 - CORS уже настроен для `localhost:3000` и `localhost:5173`. Если твой
   dev-сервер на другом порту — скажи бэкендеру, он добавит.
 - Полное описание эндпоинтов и флоу — в корневом `README.md`.
+
+## Проверка бестиария в Storybook
+
+`BestiaryEntityPage / Tarrasque From Api` обращается к настоящему backend.
+Адрес задаётся через `VITE_API_BASE_URL` в `frontend/.env.local`; по умолчанию
+используется `http://127.0.0.1:8000`. После изменения переменной перезапустите
+Storybook. Нужен доступный API энциклопедии с импортированными данными и CORS
+для адреса Storybook. При ошибке запросов страница показывает ошибку, а не мок.
+
+`BestiaryEntityPage / Tarrasque / Mock API` — автономный пример HTTP-загрузки
+через MSW. Содержимое берётся из общего `mockTarrasque`; это не сохранённый
+ответ БД и не проверка её фактического формата. Stories представлений
+`CreatureFullView`, `CreatureCompactCard` и `CreatureReference` также используют
+этот fixture напрямую, без HTTP.

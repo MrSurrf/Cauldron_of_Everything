@@ -1,0 +1,165 @@
+const surfaceSelector = '[data-cursor-reveal]'
+const backgroundSelector = 'main, [data-cursor-light-background]'
+const interactiveSelector = [
+  'a[href]', 'button', 'input', 'select', 'textarea', 'label', 'summary',
+  '[contenteditable="true"]', '[role="button"]', '[role="link"]',
+  '[role="checkbox"]', '[role="radio"]', '[role="switch"]',
+  '[role="tab"]', '[role="option"]', '[role="menuitem"]',
+].join(', ')
+
+function isInteractiveSurface(surface: HTMLElement) {
+  return surface.closest(interactiveSelector) !== null
+}
+
+/** Общий цикл обновления: сначала измерения видимых панелей, затем запись стилей. */
+export function trackCursorLighting() {
+  const media = window.matchMedia(
+    '(any-hover: hover) and (any-pointer: fine) and (prefers-reduced-motion: no-preference) and (forced-colors: none)',
+  )
+  const radius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cursor-reveal-radius')) || 180
+  const backgrounds = new Set<HTMLElement>()
+  const surfaces = new Set<HTMLElement>()
+  const visible = new Set<HTMLElement>()
+  const lit = new Set<HTMLElement>()
+  let pointer: { x: number; y: number } | null = null
+  let frame = 0
+
+  function resetBackground(background: HTMLElement) {
+    background.style.removeProperty('--cursor-light-x')
+    background.style.removeProperty('--cursor-light-y')
+    background.style.removeProperty('--cursor-light-active')
+  }
+
+  function resetSurface(surface: HTMLElement) {
+    surface.style.removeProperty('--cursor-reveal-x')
+    surface.style.removeProperty('--cursor-reveal-y')
+    surface.style.removeProperty('--cursor-reveal-active')
+    lit.delete(surface)
+  }
+
+  function render() {
+    frame = 0
+    if (!pointer || !media.matches) return
+    const { x, y } = pointer
+    const measurements = [...visible].map(surface => ({ surface, rect: surface.getBoundingClientRect() }))
+    const backgroundMeasurements = [...backgrounds].map(background => ({
+      background,
+      rect: background.getBoundingClientRect(),
+      borderLeft: background.clientLeft,
+      borderTop: background.clientTop,
+    }))
+    const nextLit = new Set<HTMLElement>()
+
+    for (const { background, rect, borderLeft, borderTop } of backgroundMeasurements) {
+      background.style.setProperty('--cursor-light-x', `${x - rect.left - borderLeft}px`)
+      background.style.setProperty('--cursor-light-y', `${y - rect.top - borderTop}px`)
+      background.style.setProperty('--cursor-light-active', '1')
+    }
+    for (const { surface, rect } of measurements) {
+      if (isInteractiveSurface(surface)) continue
+      const dx = Math.max(rect.left - x, 0, x - rect.right)
+      const dy = Math.max(rect.top - y, 0, y - rect.bottom)
+      if (!rect.width || !rect.height || Math.hypot(dx, dy) > radius) continue
+      surface.style.setProperty('--cursor-reveal-x', `${x - rect.left}px`)
+      surface.style.setProperty('--cursor-reveal-y', `${y - rect.top}px`)
+      surface.style.setProperty('--cursor-reveal-active', '1')
+      nextLit.add(surface)
+    }
+    for (const surface of lit) {
+      if (!nextLit.has(surface)) resetSurface(surface)
+    }
+    for (const surface of nextLit) lit.add(surface)
+  }
+
+  function schedule() {
+    if (pointer && media.matches && !frame) frame = requestAnimationFrame(render)
+  }
+
+  function hide() {
+    pointer = null
+    cancelAnimationFrame(frame)
+    frame = 0
+    for (const background of backgrounds) resetBackground(background)
+    for (const surface of lit) resetSurface(surface)
+  }
+
+  function move(event: PointerEvent) {
+    if (!media.matches || event.pointerType === 'touch' || !event.isPrimary) {
+      hide()
+      return
+    }
+    pointer = { x: event.clientX, y: event.clientY }
+    schedule()
+  }
+
+  const intersection = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      const surface = entry.target as HTMLElement
+      if (entry.isIntersecting) visible.add(surface)
+      else {
+        visible.delete(surface)
+        resetSurface(surface)
+      }
+    }
+    schedule()
+  }, { rootMargin: `${radius}px` })
+  const resize = new ResizeObserver(schedule)
+
+  // Новые маршруты и раскрытые карточки подключаются автоматически.
+  // Изменения style намеренно не наблюдаем: они записываются самим эффектом.
+  function refreshSurfaces() {
+    for (const background of backgrounds) {
+      if (!background.isConnected) {
+        resize.unobserve(background)
+        backgrounds.delete(background)
+        resetBackground(background)
+      }
+    }
+    for (const background of document.querySelectorAll<HTMLElement>(backgroundSelector)) {
+      if (backgrounds.has(background)) continue
+      backgrounds.add(background)
+      resize.observe(background)
+    }
+    for (const surface of surfaces) {
+      if (!surface.isConnected || isInteractiveSurface(surface)) {
+        intersection.unobserve(surface)
+        resize.unobserve(surface)
+        surfaces.delete(surface)
+        visible.delete(surface)
+        resetSurface(surface)
+      }
+    }
+    for (const surface of document.querySelectorAll<HTMLElement>(surfaceSelector)) {
+      if (surfaces.has(surface) || isInteractiveSurface(surface)) continue
+      surfaces.add(surface)
+      intersection.observe(surface)
+      resize.observe(surface)
+    }
+    schedule()
+  }
+
+  const mutations = new MutationObserver(refreshSurfaces)
+  mutations.observe(document.body, { childList: true, subtree: true })
+  refreshSurfaces()
+  window.addEventListener('pointermove', move, { passive: true })
+  document.documentElement.addEventListener('pointerleave', hide)
+  document.addEventListener('scroll', schedule, { capture: true, passive: true })
+  document.addEventListener('visibilitychange', hide)
+  window.addEventListener('resize', schedule, { passive: true })
+  window.addEventListener('blur', hide)
+  media.addEventListener('change', hide)
+
+  return () => {
+    hide()
+    intersection.disconnect()
+    resize.disconnect()
+    mutations.disconnect()
+    window.removeEventListener('pointermove', move)
+    document.documentElement.removeEventListener('pointerleave', hide)
+    document.removeEventListener('scroll', schedule, true)
+    document.removeEventListener('visibilitychange', hide)
+    window.removeEventListener('resize', schedule)
+    window.removeEventListener('blur', hide)
+    media.removeEventListener('change', hide)
+  }
+}

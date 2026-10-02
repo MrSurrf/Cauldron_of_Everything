@@ -1,0 +1,36 @@
+.list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) 3.5rem auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.visionIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--palette-purple-300);
+}
+
+.comboboxInput,
+.rangeInput {
+  min-width: 0;
+  font-size: var(--font-size-xs);
+}
+
+.rangeInput {
+  padding-inline: var(--space-1) !important;
+  text-align: center;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-2);
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}

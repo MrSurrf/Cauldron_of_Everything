@@ -1,23 +1,20 @@
 .survey-page {
   --survey-font:
-    'Gilroy',
-    Arial,
-    sans-serif;
+    var(--font-family-body);
 
   --survey-title-font:
-    GothicRusWeb,
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   position: relative;
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   overflow-x: hidden;
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover
@@ -53,7 +50,7 @@
       calc(100vw - 48px)
     );
 
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   margin: 0 auto;
 
@@ -436,24 +433,6 @@
 
   line-height: 1.35;
 
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(178, 123, 241, 0.5)
-    transparent;
-}
-
-.survey-description p::-webkit-scrollbar {
-  width: 4px;
-}
-
-.survey-description p::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.survey-description p::-webkit-scrollbar-thumb {
-  border-radius: 4px;
-  background:
-    rgba(178, 123, 241, 0.5);
 }
 
 /* Шкала */
@@ -601,7 +580,7 @@
 
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -651,7 +630,7 @@
   background: transparent;
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -827,7 +806,7 @@
 
   opacity: 0.6;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-weight: 400;
   line-height: 1;
 

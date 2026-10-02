@@ -2,6 +2,7 @@ import type {
   Meta,
   StoryObj,
 } from '@storybook/react-vite'
+import { useState } from 'react'
 import {
   expect,
   fireEvent,
@@ -10,6 +11,7 @@ import {
 } from 'storybook/test'
 
 import { PlaceholderIcon } from '../icons/PlaceholderIcon'
+import { Button } from '../Button'
 import { TextArea } from './TextArea'
 
 const longText = Array.from(
@@ -57,6 +59,38 @@ function ResetExample() {
         Сбросить
       </button>
     </form>
+  )
+}
+
+function RichEditorExample() {
+  const [value, setValue] = useState(
+    'Внимательный герой восстанавливает 10d10+2 хитов.',
+  )
+
+  return (
+    <TextArea
+      formatting="markdown"
+      label="Особенности и умения"
+      onChange={(event) =>
+        setValue(event.currentTarget.value)
+      }
+      rows={8}
+      showTextScaleControls={true}
+      topToolbar={
+        <>
+          <Button size="sm" variant="secondary">
+            Ресурс
+          </Button>
+          <Button size="sm" variant="secondary">
+            Раскрываемый блок
+          </Button>
+          <Button size="sm" variant="secondary">
+            Разделитель
+          </Button>
+        </>
+      }
+      value={value}
+    />
   )
 }
 
@@ -320,5 +354,118 @@ export const PlaceholderBehavior: Story = {
     await expect(
       textarea.matches(':placeholder-shown'),
     ).toBe(false)
+  },
+}
+
+export const MarkdownFormatting: Story = {
+  render: () => <RichEditorExample />,
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole('textbox', {
+      name: 'Особенности и умения',
+    }) as HTMLTextAreaElement
+    const selectedWord = 'Внимательный'
+
+    await userEvent.click(textarea)
+    textarea.setSelectionRange(0, selectedWord.length)
+    await fireEvent.mouseUp(textarea)
+
+    await expect(
+      await canvas.findByRole('toolbar', {
+        name: 'Форматирование выделенного текста',
+      }),
+    ).toBeInTheDocument()
+
+    await userEvent.click(
+      canvas.getByRole('button', {
+        name: 'Полужирный',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(textarea).toHaveValue(
+        `**${selectedWord}** герой восстанавливает 10d10+2 хитов.`,
+      )
+    })
+    await expect(textarea).toHaveFocus()
+
+    const formula = '10d10+2'
+    const formulaStart = textarea.value.indexOf(formula)
+
+    textarea.setSelectionRange(
+      formulaStart,
+      formulaStart + formula.length,
+    )
+    await fireEvent.mouseUp(textarea)
+    await userEvent.click(
+      canvas.getByRole('button', {
+        name: 'Бросок кубика',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(textarea.value).toContain(
+        '[[roll:10d10+2]]',
+      )
+    })
+  },
+}
+
+export const TextScaleControls: Story = {
+  args: {
+    defaultValue: 'Размер этой записи можно менять.',
+    defaultTextScale: 1,
+    showTextScaleControls: true,
+  },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole(
+      'textbox',
+    ) as HTMLTextAreaElement
+    const increase = canvas.getByRole('button', {
+      name: 'Увеличить текст',
+    })
+
+    await expect(
+      textarea.style.getPropertyValue(
+        '--text-area-content-size',
+      ),
+    ).toBe('1em')
+
+    await userEvent.click(increase)
+
+    await waitFor(() => {
+      expect(
+        textarea.style.getPropertyValue(
+          '--text-area-content-size',
+        ),
+      ).toBe('1.125em')
+    })
+    await expect(
+      canvas.getByText('113%'),
+    ).toBeInTheDocument()
+  },
+}
+
+export const ToolToolbar: Story = {
+  args: {
+    topToolbar: (
+      <Button size="sm" variant="secondary">
+        Ресурс
+      </Button>
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole('toolbar', {
+        name: 'Действия текстового поля',
+      }),
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(canvas.getByRole('textbox'))
+
+    await expect(
+      await canvas.findByRole('toolbar', {
+        name: 'Действия текстового поля',
+      }),
+    ).toBeVisible()
   },
 }
