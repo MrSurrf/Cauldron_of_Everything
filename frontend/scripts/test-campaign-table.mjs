@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { chromium } from 'playwright'
+import { chooseCombobox } from './choose-combobox.mjs'
 
 const baseUrl = process.env.TABLE_TEST_URL || 'http://127.0.0.1:5173'
 const storageKey = 'cauldron.campaign-table.v2'
@@ -206,20 +207,20 @@ try {
   await tower.getByRole('button', { name: 'Извлечь: Скелет', exact: true }).click()
   assert.equal((await saved()).diagrams[0].nodes.find(node => node.id === skeletonId).data.locationId, undefined)
 
-  // Все разделы внутри workspace, без навигации на другую страницу.
-  for (const [title, type] of [['Классы', 'class'], ['Расы', 'race'], ['Предыстории', 'background'], ['Черты', 'feat'], ['Заклинания', 'spell'], ['Магические предметы', 'item'], ['Справочные материалы', 'reference']]) {
-    await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption(type)
+  // Только размещаемые разделы внутри workspace, без навигации на другую страницу.
+  for (const [title, type] of [['Заклинания', 'spell'], ['Магические предметы', 'item']]) {
+    await chooseCombobox(page, 'Раздел библиотеки', title)
     await page.getByRole('button', { name: `Открыть: Материал ${type}`, exact: true }).waitFor()
   }
   await page.getByRole('tab', { name: 'Моё', exact: true }).click()
   await page.getByRole('button', { name: 'Открыть: Герой', exact: true }).dragTo(tower, { targetPosition: { x: 120, y: 35 } })
   await showMembers(tower, 1)
   await tower.getByRole('button', { name: 'Герой', exact: true }).waitFor()
-  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('campaign')
+  await chooseCombobox(page, 'Раздел библиотеки', 'Кампании')
   await page.getByRole('alert').getByText('Источник ещё не подключён к серверу.').waitFor()
   assert.equal(new URL(page.url()).pathname, '/my-table')
   await page.getByRole('tab', { name: 'Энциклопедия', exact: true }).click()
-  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('spell')
+  await chooseCombobox(page, 'Раздел библиотеки', 'Заклинания')
   await page.getByRole('searchbox', { name: 'Поиск в библиотеке', exact: true }).fill('Материал')
   await page.getByRole('separator', { name: 'Ширина библиотеки', exact: true }).press('ArrowLeft')
   const resizedLibraryWidth = (await saved()).layout.libraryWidth

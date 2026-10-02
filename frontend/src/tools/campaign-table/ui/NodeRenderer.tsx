@@ -4,7 +4,7 @@ import type { NodeProps } from '@xyflow/react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
 import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
-import { EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
+import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
@@ -107,11 +107,11 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
           <button type="button" role="menuitem" onClick={event => { event.stopPropagation(); setMenuOpen(false); openEntity() }}>Открыть</button>
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.edit(id) }}>Редактировать</button>
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.startConnection(id) }}>Связать с…</button>
-          {!actions.readOnly && actions.diagrams.length > 1 && <label className={styles.nodePlaceIn}>На другую схему
-            <select className="nodrag" aria-label="Разместить Entity на схеме" value="" onChange={event => {
-              event.stopPropagation(); if (event.target.value) actions.placeOnDiagram(id, event.target.value); setMenuOpen(false)
-            }}><option value="" disabled>Выберите схему</option>{actions.diagrams.filter(item => item.id !== actions.diagram.id).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
-          </label>}
+          {!actions.readOnly && actions.diagrams.length > 1 && <div className={styles.nodePlaceIn}>На другую схему
+            <Combobox className="nodrag" aria-label="Разместить Entity на схеме" placeholder="Выберите схему" value={null}
+              options={actions.diagrams.filter(item => item.id !== actions.diagram.id).map(item => ({ value: item.id, label: item.name }))}
+              onClick={event => event.stopPropagation()} onValueChange={value => { if (value !== null) { actions.placeOnDiagram(id, value); setMenuOpen(false) } }} />
+          </div>}
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.remove(id) }}>Удалить со схемы</button>
         </div>}
       </div>

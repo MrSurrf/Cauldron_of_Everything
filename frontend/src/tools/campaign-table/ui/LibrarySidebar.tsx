@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, ListCard, ScrollArea, TextInput } from '../../../shared/ui'
-import { canPlaceReference, LIBRARY_SECTIONS, searchLibrary } from '../model/library'
+import { Button, Combobox, ListCard, ScrollArea, TextInput } from '../../../shared/ui'
+import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS, searchLibrary } from '../model/library'
 import type { LibraryReference, LibrarySection } from '../model/library'
 import { ENTITY_DRAG_TYPE } from './tableContext'
 import { ResizeGrip } from './ResizeGrip'
 import styles from './CampaignTable.module.css'
 
-const encyclopediaSections = LIBRARY_SECTIONS.filter(([id]) => id !== 'character' && id !== 'campaign')
-const mineSections = LIBRARY_SECTIONS.filter(([id]) => id === 'character' || id === 'campaign')
+const encyclopediaSections = PLACEMENT_LIBRARY_SECTIONS.filter(([id]) => id !== 'character' && id !== 'campaign')
+const mineSections = PLACEMENT_LIBRARY_SECTIONS.filter(([id]) => id === 'character' || id === 'campaign')
 
 export function LibrarySidebar({ section, query, width, onCollapse, onSection, onQuery, onResize, onOpen, onAdd }: {
   section: LibrarySection; query: string; width: number
@@ -62,9 +62,9 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
         onKeyDown={event => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); selectSection(lastSection.encyclopedia); document.getElementById('library-source-encyclopedia')?.focus() } }}>Моё</button>
     </div>
     <div className={styles.libraryFilters}>
-      <select aria-label="Раздел библиотеки" value={section} onChange={event => selectSection(event.target.value as LibrarySection)}>
-        {sections.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
-      </select>
+      <Combobox aria-label="Раздел библиотеки" rootClassName={styles.search} value={section}
+        options={sections.map(([value, label]) => ({ value, label }))}
+        onValueChange={value => { if (value !== null) selectSection(value as LibrarySection) }} />
       <TextInput type="search" aria-label="Поиск в библиотеке" placeholder="Поиск…" rootClassName={styles.search} value={query} onChange={event => onQuery(event.target.value)} />
     </div>
     <ScrollArea rootClassName={styles.catalog} id="library-results" role="tabpanel" aria-labelledby={`library-source-${source}`} aria-busy={!current}>

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { chooseCombobox } from './choose-combobox.mjs'
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1700, height: 1100 } })
@@ -54,6 +55,11 @@ try {
   assert.equal(await page.getByText('Старое скрытое состояние', { exact: true }).count(), 0)
 
   await edit('e1')
+  const panel = page.getByRole('complementary', { name: 'Карточка и редактор' })
+  const header = panel.locator(':scope > header')
+  assert.equal(await header.getByRole('heading').textContent(), 'Существо')
+  assert.ok((await header.boundingBox()).height <= 36, 'Заголовок панели должен быть компактным')
+  assert.equal(await header.getByRole('button', { name: 'Закрыть карточку' }).getAttribute('data-size'), null)
   const panelViewport = page.getByRole('region', { name: 'Карточка и редактор', exact: true })
   assert.equal(await panelViewport.evaluate(viewport => getComputedStyle(viewport).scrollbarWidth), 'none')
   await page.getByRole('slider', { name: 'Вертикальная прокрутка: Карточка и редактор', exact: true }).waitFor()
@@ -83,6 +89,8 @@ try {
   await close()
 
   await edit('hero')
+  assert.equal(await page.getByRole('heading', { name: 'Лист персонажа', exact: true }).count(), 0)
+  assert.equal(await page.getByRole('button', { name: 'Открыть настройки листа', exact: true }).count(), 0)
   const sheetViewport = page.locator('[aria-label="Лист персонажа"][tabindex]')
   await sheetViewport.waitFor()
   const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('aside').getBoundingClientRect().bottom }))
@@ -90,6 +98,12 @@ try {
   assert.ok(geometry.bottom <= geometry.panelBottom, 'Прокрутка листа должна быть доступна внутри панели')
   const horizontalScroll = page.getByRole('slider', { name: 'Горизонтальная прокрутка: Лист персонажа', exact: true })
   await horizontalScroll.waitFor()
+  // Панель и ScrollSync измеряются разными ResizeObserver: ждём актуальный диапазон.
+  await page.waitForFunction(() => {
+    const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
+    const slider = document.querySelector('input[aria-label="Горизонтальная прокрутка: Лист персонажа"]')
+    return Math.abs(Number(slider?.max) - (viewport.scrollWidth - viewport.clientWidth)) <= 1
+  })
   await horizontalScroll.press('End')
   await page.waitForFunction(() => {
     const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
@@ -103,15 +117,15 @@ try {
   assert.equal(characterDocument.identity.name, 'Герой')
   await close()
 
-  // В библиотеке оригиналы прежние; запрещены кнопки добавления и forged DnD.
+  // Запрещённые разделы скрыты; меню использует общий компонент, не native select.
+  assert.equal(await page.locator('select').count(), 0)
+  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).click()
+  assert.deepEqual(await page.getByRole('option').allTextContents(), ['Бестиарий', 'Заклинания', 'Магические предметы'])
+  await page.screenshot({ path: join(tmpdir(), 'campaign-library-dropdown.png') })
+  await page.keyboard.press('Escape')
+  // Поддельный DnD запрещён независимо от отсутствия категории в меню.
   for (const type of ['class', 'race', 'background', 'feat', 'reference']) {
-    await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption(type)
-    const row = page.getByRole('button', { name: `Открыть: ${type}`, exact: true }); await row.waitFor()
-    assert.equal(await row.getAttribute('draggable'), 'false')
     assert.equal(await page.getByRole('button', { name: `Добавить на холст: ${type}`, exact: true }).count(), 0)
-    await row.click()
-    assert.equal(await page.getByRole('button', { name: 'Добавить на холст', exact: true }).count(), 0)
-    await close()
     const reference = { source: 'encyclopedia', entityId: '10', entityType: type, name: type, slug: type, facts: [] }
     await page.locator('.react-flow').evaluate((canvas, reference) => {
       const transfer = new DataTransfer(); transfer.setData('application/x-cauldron-entity', JSON.stringify(reference))
@@ -119,7 +133,7 @@ try {
     }, reference)
     assert.equal((await saved()).diagrams[0].nodes.length, 4)
   }
-  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('creature')
+  await chooseCombobox(page, 'Раздел библиотеки', 'Бестиарий')
   await page.getByRole('button', { name: 'Открыть: Страж', exact: true }).click()
   await page.getByLabel('Класс доспеха 13').waitFor()
   await close()
@@ -141,6 +155,10 @@ try {
   assert.deepEqual(errors, [])
   console.log('Полные статблоки, персонаж, оригиналы, ограничение типов, независимость данных и offline reload — OK.')
 } catch (error) {
+  console.error(await page.locator('[aria-label="Лист персонажа"][tabindex]').evaluateAll(viewports => viewports.map(viewport => ({
+    left: viewport.scrollLeft, width: viewport.scrollWidth, client: viewport.clientWidth,
+    max: document.querySelector('input[aria-label="Горизонтальная прокрутка: Лист персонажа"]')?.max,
+  }))))
   await page.screenshot({ path: join(tmpdir(), 'campaign-instance-editors-failure.png'), fullPage: true })
   console.error(errors); throw error
 } finally { await browser.close() }

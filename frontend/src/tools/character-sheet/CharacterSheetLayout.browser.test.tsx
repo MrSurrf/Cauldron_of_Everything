@@ -96,6 +96,15 @@ afterEach(async () => {
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('показывает лист сразу без верхней панели и настроек оформления', async () => {
+    const container = await mountCharacterSheet()
+    expect(container.querySelector('[aria-label="Открыть настройки листа"]')).toBeNull()
+    expect(Array.from(container.querySelectorAll('h1, h2')).some(heading => heading.textContent === 'Лист персонажа')).toBe(false)
+    const viewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
+    expect(viewport.getBoundingClientRect().top - container.getBoundingClientRect().top).toBeLessThanOrEqual(8)
+    expect(roundedWidth(container.querySelector('[data-character-sheet-page]')!)).toBe(964)
+  })
+
   it('сохраняет исходную раскладку в узкой панели и прокручивает лист в обе стороны', async () => {
     const container = await mountCharacterSheet()
     await act(async () => {

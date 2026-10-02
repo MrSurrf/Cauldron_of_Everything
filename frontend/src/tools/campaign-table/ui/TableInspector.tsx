@@ -3,15 +3,16 @@ import { CreatureFullView, getCreatureById } from '../../../entities/creature'
 import type { CreatureEntity } from '../../../entities/creature'
 import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
-import { Button, ScrollArea, TextInput } from '../../../shared/ui'
+import { Button, Combobox, ScrollArea, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { RichContent } from '../../../shared/ui/RichContent'
 import { campaignRequest } from '../model/campaignApi'
 import type { OwnedMaterial } from '../model/campaignApi'
-import { canPlaceReference } from '../model/library'
+import { canPlaceReference, entityLabel } from '../model/library'
 import { EntityReferenceLinks } from './EntityReferenceLinks'
 import { hasInstanceEditor } from '../model/instanceStatBlock'
 import { InstanceStatBlockPanel } from './InstanceStatBlockPanel'
+import { NodePanelHeader } from './NodePanelHeader'
 import type { LibraryReference } from '../model/library'
 import { canContain, moveToLocation } from '../model/table'
 import { canResizeNode } from '../model/nodeGeometry'
@@ -70,10 +71,10 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
   const field = (key: 'title' | 'facts' | 'description', value: string) => changeNode(item => ({ ...item, data: { ...item.data, [key]: value } }))
   return <aside className={styles.inspectorWindow} aria-label="Карточка и редактор">
     <ResizeGrip label="Ширина карточки" width={width} min={300} onResize={onResize} />
-    <header className={styles.sectionHeading}><h2>{edge ? 'Связь' : editing ? 'Редактор экземпляра' : 'Карточка'}</h2><Button size="sm" onClick={onClose} aria-label="Закрыть карточку">×</Button></header>
+    <NodePanelHeader title={edge ? 'Связь' : entityLabel(node?.data.entityType ?? reference!.entityType)} closeLabel="Закрыть карточку" onClose={onClose} />
     <ScrollArea aria-label="Карточка и редактор" rootClassName={styles.panelScrollArea} className={styles.inspectorBody}>
       {node && <>
-        <h3>{node.data.title}</h3>
+        {!hasInstanceEditor(node.data.entityType) && <h3>{node.data.title}</h3>}
         {!readOnly && <div className={styles.actions}><Button size="sm" onClick={() => editing ? actions.open(node.id) : actions.edit(node.id)}>{editing ? 'Просмотр' : 'Редактировать экземпляр'}</Button>
           <Button size="sm" variant="secondary" onClick={() => actions.duplicate(node.id)}>Дублировать</Button></div>}
         {hasInstanceEditor(node.data.entityType) && <InstanceStatBlockPanel key={node.data.entityId} data={node.data} editing={editing} readOnly={readOnly}
@@ -93,9 +94,10 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
               changeNode(item => key === 'x' || key === 'y' ? { ...item, position: { ...item.position, [key]: value } }
                 : { ...item, [key]: Math.max(key === 'width' ? (item.type === 'location' ? 300 : 220) : (item.type === 'location' ? 200 : 130), value) })
             }} /></label>)}</div>
-          {canContain(node) && <label>Расположение<select aria-label="Локация экземпляра" value={node.data.locationId ?? ''} onChange={event => onChange(current => moveToLocation(current, node.id, event.target.value || undefined))}>
-            <option value="">На холсте</option>{diagram.nodes.filter(item => item.type === 'location').map(item => <option key={item.id} value={item.id}>{item.data.title}</option>)}
-          </select></label>}
+          {canContain(node) && <div className={styles.statField}><span>Расположение</span><Combobox aria-label="Локация экземпляра" value={node.data.locationId ?? ''}
+            options={[{ value: '', label: 'На холсте' }, ...diagram.nodes.filter(item => item.type === 'location').map(item => ({ value: item.id, label: item.data.title }))]}
+            onValueChange={value => { if (value !== null) onChange(current => moveToLocation(current, node.id, value || undefined)) }} />
+          </div>}
           </details>
           <p className={styles.hint}>Изменяется Entity этого экземпляра во всех её размещениях. Оригинал в библиотеке остаётся прежним.</p>
           <Button size="sm" variant="secondary" onClick={() => actions.remove(node.id)}>{node.type === 'location' ? 'Удалить локацию, освободить содержимое' : 'Удалить экземпляр'}</Button>
@@ -110,9 +112,10 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
       {edge && <div className={styles.editorFields}>
         <label>Подпись<TextInput aria-label="Подпись связи" value={edge.label ?? ''} readOnly={readOnly} onChange={event => onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, label: event.target.value } : item) }))} /></label>
         <ContentEditor accessibleLabel="Описание связи" value={edge.data?.description ?? ''} readOnly={readOnly} renderPreview onValueChange={description => onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, data: { ...item.data, description } } : item) }))} />
-        {(['source', 'target'] as const).map(key => <label key={key}>{key === 'source' ? 'Откуда' : 'Куда'}<select aria-label={key === 'source' ? 'Начало связи' : 'Конец связи'} value={edge[key]} disabled={readOnly} onChange={event => onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, [key]: event.target.value } : item) }))}>
-          {diagram.nodes.filter(item => item.id !== edge[key === 'source' ? 'target' : 'source']).map(item => <option key={item.id} value={item.id}>{item.data.title}</option>)}
-        </select></label>)}
+        {(['source', 'target'] as const).map(key => <div key={key} className={styles.statField}><span>{key === 'source' ? 'Откуда' : 'Куда'}</span><Combobox aria-label={key === 'source' ? 'Начало связи' : 'Конец связи'} value={edge[key]} readOnly={readOnly}
+          options={diagram.nodes.filter(item => item.id !== edge[key === 'source' ? 'target' : 'source']).map(item => ({ value: item.id, label: item.data.title }))}
+          onValueChange={value => { if (value !== null) onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, [key]: value } : item) })) }} />
+        </div>)}
         {!readOnly && <Button size="sm" onClick={() => onChange(current => ({ ...current, edges: current.edges.filter(item => item.id !== edge.id) }))}>Удалить связь</Button>}
       </div>}
       {reference && !readOnly && !editing && (selection.kind === 'library' || !node || !hasInstanceEditor(node.data.entityType)) && <>

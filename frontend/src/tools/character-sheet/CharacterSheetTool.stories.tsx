@@ -8,7 +8,6 @@ import {
   fn,
   screen,
   userEvent,
-  waitFor,
   within,
 } from 'storybook/test'
 
@@ -67,18 +66,18 @@ export const FullCharacterSheet: Story = {
   },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole('heading', {
+      canvas.queryByRole('heading', {
         name: 'Лист персонажа',
       }),
-    ).toBeVisible()
+    ).toBeNull()
     await expect(
       canvas.getByDisplayValue('Брендон Вейл'),
     ).toBeVisible()
     await expect(
-      canvas.getByRole('button', {
+      canvas.queryByRole('button', {
         name: 'Открыть настройки листа',
       }),
-    ).toBeVisible()
+    ).toBeNull()
     const featureNotes = canvas.getByRole('region', {
       name: 'Особенности, умения и заметки',
     })
@@ -94,32 +93,6 @@ export const FullCharacterSheet: Story = {
     await expect(featureNotes.textContent).toContain(
       'Всплеск действий',
     )
-
-    await userEvent.click(
-      canvas.getByRole('button', {
-        name: 'Открыть настройки листа',
-      }),
-    )
-    const settingsDialog = await screen.findByRole(
-      'dialog',
-      {
-        name: 'Дополнительные настройки',
-      },
-    )
-    await waitFor(() => {
-      expect(settingsDialog).toBeVisible()
-    })
-    const headingSize = within(
-      settingsDialog,
-    ).getByRole('radiogroup', {
-      name: 'Размер заголовков',
-    })
-    await expect(
-      within(headingSize).getByRole('radio', {
-        name: 'Средний',
-      }),
-    ).toBeChecked()
-    await userEvent.keyboard('{Escape}')
 
     const strengthCard = canvas.getByRole('article', {
       name: 'Сила',

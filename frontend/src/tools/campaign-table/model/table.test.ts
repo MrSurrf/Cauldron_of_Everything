@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
-import { canPlaceReference } from './library'
+import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS } from './library'
 
 const reference: LibraryReference = { source: 'encyclopedia', entityId: '42', entityType: 'creature', name: 'Призрак', slug: 'ghost', facts: ['ПО 4'] }
 function fixture() {
@@ -13,6 +13,19 @@ function fixture() {
   return { table, a, b, creature }
 }
 describe('нормализованный документ кампании', () => {
+  it('скрывает запрещённые разделы и восстанавливает старый выбор без потери схем', () => {
+    expect(PLACEMENT_LIBRARY_SECTIONS.map(([id]) => id)).toEqual(['creature', 'spell', 'item', 'character', 'campaign'])
+    const { table } = fixture()
+    for (const section of ['class', 'race', 'background', 'feat', 'reference']) {
+      const restored = parseTable(JSON.stringify({ ...table, layout: { ...table.layout, section } }))
+      expect(restored.layout.section).toBe('creature')
+      expect(restored.entities).toEqual(table.entities)
+      expect(restored.diagrams).toEqual(table.diagrams)
+    }
+    for (const [section] of PLACEMENT_LIBRARY_SECTIONS) {
+      expect(parseTable(JSON.stringify({ ...table, layout: { ...table.layout, section } })).layout.section).toBe(section)
+    }
+  })
   it('сохраняет полный статблок в Entity, дублирует независимо и не меняет оригинал', () => {
     const { table, creature } = fixture()
     const original = { kind: 'creature' as const, entity: { id: '42', slug: 'ghost', entityType: 'creature' as const, name: 'Призрак', hitPoints: '45', sections: [] } }

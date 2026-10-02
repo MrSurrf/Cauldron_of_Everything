@@ -1,6 +1,4 @@
 import { Panel, ScrollArea } from '../../../../shared/ui'
-import { characterSheetActions } from '../../model'
-import { CharacterSheetToolbar } from '../toolbar'
 import styles from '../../CharacterSheetTool.module.css'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
@@ -24,11 +22,7 @@ import {
   CharacterSheetStat,
 } from './CharacterSheetStatsStrip'
 import { ProficienciesEditor } from './ProficienciesEditor'
-import {
-  appearancePatch,
-  getAppearanceValue,
-  getSheetStyle,
-} from './sheetAppearance'
+import { getSheetStyle } from './sheetAppearance'
 import { useCharacterSheetViewModel } from './sheetViewModel'
 
 const PERSONALITY_SECTION_ORDER = [
@@ -53,11 +47,10 @@ export function CharacterSheetContent({
   onPortraitRemove,
 }: CharacterSheetContentProps) {
   const sheet = useCharacterSheetViewModel()
-  const { dispatch, document } = sheet
+  const { document } = sheet
   const rootClassName = [styles.root, className]
     .filter(Boolean)
     .join(' ')
-  const appearance = getAppearanceValue(document.appearance)
 
   return (
     <div
@@ -67,27 +60,6 @@ export function CharacterSheetContent({
     >
       <Panel className={styles.panel} padding="none">
         <div className={styles.shell}>
-          <CharacterSheetToolbar
-            appearance={appearance}
-            onAppearanceChange={(nextAppearance) => {
-              dispatch(
-                characterSheetActions.patchAppearance(
-                  appearancePatch(nextAppearance),
-                ),
-              )
-            }}
-            onResetAppearance={() => {
-              dispatch(
-                characterSheetActions.patchAppearance({
-                  bodyFontSize: 14,
-                  density: 'compact',
-                  font: 'cauldron',
-                  headingFontSize: 14,
-                }),
-              )
-            }}
-          />
-
           <ScrollArea
             aria-label="Лист персонажа"
             className={styles.viewport}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { chromium } from 'playwright'
+import { chooseCombobox } from './choose-combobox.mjs'
 
 const key = 'cauldron.campaign-table.v2'
 const types = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note']
@@ -42,7 +43,10 @@ async function scheme(name) {
 async function moveNode(type, dx, dy) {
   const rect = await node(type).boundingBox()
   await page.mouse.move(rect.x + rect.width / 2, rect.y + 65)
-  await page.mouse.down(); await page.mouse.move(rect.x + rect.width / 2 + dx, rect.y + 65 + dy, { steps: 20 }); await page.mouse.up()
+  assert.equal(await node(type).evaluate(el => getComputedStyle(el).cursor), 'grab')
+  await page.mouse.down(); await page.mouse.move(rect.x + rect.width / 2 + dx, rect.y + 65 + dy, { steps: 20 })
+  assert.equal(await node(type).evaluate(el => getComputedStyle(el).cursor), 'grabbing')
+  await page.mouse.up()
 }
 try {
   await page.goto(`${process.env.TABLE_TEST_URL || 'http://127.0.0.1:5173'}/my-table`)
@@ -50,6 +54,13 @@ try {
   await page.reload()
   await page.getByRole('button', { name: 'Свернуть библиотеку' }).click()
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__node').length === 9)
+  const pane = page.locator('.react-flow__pane')
+  assert.equal(await pane.evaluate(el => getComputedStyle(el).cursor), 'default')
+  // Даже во время панорамирования пустого холста не показываем руку для drag ноды.
+  await page.mouse.move(1510, 940); await page.mouse.down()
+  await page.mouse.move(1520, 940, { steps: 4 })
+  assert.equal(await pane.evaluate(el => getComputedStyle(el).cursor), 'default')
+  await page.mouse.move(1510, 940, { steps: 4 }); await page.mouse.up()
   for (const type of types) {
     assert.equal(await node(type).locator('article').getAttribute('data-entity-type'), type)
     assert.equal(await node(type).locator('.react-flow__handle').first().evaluate(el => getComputedStyle(el).opacity), '0')
@@ -68,6 +79,10 @@ try {
     await node(type).getByRole('heading').click()
     assert.equal(await node(type).locator('.react-flow__resize-control').count(), 0)
     assert.equal(await node(type).evaluate(element => getComputedStyle(element).outlineStyle), 'none')
+    const header = page.locator('aside[aria-label="Инспектор объекта"] > header, aside[aria-label="Карточка и редактор"] > header')
+    assert.ok((await header.boundingBox()).height <= 36)
+    assert.ok(!/Inspector|Карточка|Редактор экземпляра/.test(await header.innerText()))
+    assert.equal(await header.getByRole('button').getAttribute('data-size'), null)
     const inspectorClose = page.getByRole('button', { name: 'Закрыть Inspector' })
     await (await inspectorClose.count() ? inspectorClose : page.getByRole('button', { name: 'Закрыть карточку' })).click()
   }
@@ -158,7 +173,7 @@ try {
 
   // Одна Entity на двух схемах, правки названия общие, геометрия независимая.
   await menu('location')
-  await node('location').getByRole('combobox', { name: 'Разместить Entity на схеме' }).selectOption('second')
+  await chooseCombobox(page, 'Разместить Entity на схеме', 'Вторая схема')
   let state = await saved()
   assert.equal(state.entities.length, 9)
   assert.equal(state.diagrams[1].nodes[0].data.entityId, 'entity-location')
