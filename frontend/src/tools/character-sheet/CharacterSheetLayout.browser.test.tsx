@@ -27,6 +27,7 @@ function nextFrame() {
 
 async function mountCharacterSheet(
   initialDocument = createMockCharacterSheet(),
+  fitWidth = false,
 ) {
   const container = document.createElement('div')
   container.style.width = '75rem'
@@ -41,6 +42,7 @@ async function mountCharacterSheet(
     root.render(
       <CharacterSheetTool
         initialDocument={initialDocument}
+        fitWidth={fitWidth}
       />,
     )
     await nextFrame()
@@ -96,6 +98,50 @@ afterEach(async () => {
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('масштабирует весь лист под панель, сохраняя геометрию и доступность полей', async () => {
+    const container = await mountCharacterSheet(createMockCharacterSheet(), true)
+    const viewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
+    const sheetPage = container.querySelector<HTMLElement>('[data-character-sheet-page]')!
+    const body = container.querySelector<HTMLElement>('[data-character-sheet-layout="body"]')!
+    const baseline = Array.from(body.children).map(element => {
+      const rect = element.getBoundingClientRect(), origin = body.getBoundingClientRect()
+      return { x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }
+    })
+    for (const width of [320, 520, 700, 800, 1100]) {
+      await act(async () => {
+        container.style.width = `${width}px`
+        container.style.height = '640px'
+        await nextFrame()
+        await nextFrame()
+      })
+      // После появления вертикального scrollbar ширина viewport измеряется повторно.
+      for (let frame = 0; frame < 4; frame += 1) {
+        await act(async () => { await nextFrame() })
+      }
+      const scale = Number(getComputedStyle(sheetPage).zoom)
+      expect(scale).toBeGreaterThan(0)
+      expect(scale).toBeLessThanOrEqual(1)
+      expect(sheetPage.offsetWidth).toBe(964)
+      expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 1)
+      expect(sheetPage.getBoundingClientRect().right).toBeLessThanOrEqual(viewport.getBoundingClientRect().right + 1)
+      expect(container.querySelector('[aria-label="Горизонтальная прокрутка: Лист персонажа"]')).toBeNull()
+      Array.from(body.children).forEach((element, index) => {
+        const rect = element.getBoundingClientRect(), origin = body.getBoundingClientRect()
+        expect((rect.left - origin.left) / scale).toBeCloseTo(baseline[index].x, 0)
+        expect((rect.top - origin.top) / scale).toBeCloseTo(baseline[index].y, 0)
+        expect(rect.width / scale).toBeCloseTo(baseline[index].width, 0)
+        expect(rect.height / scale).toBeCloseTo(baseline[index].height, 0)
+      })
+    }
+    expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight)
+    await act(async () => {
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'instant' })
+      await nextFrame()
+    })
+    const lastSection = container.querySelector<HTMLElement>('[data-character-sheet-personality="flaws"]')!
+    expect(lastSection.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1)
+  })
+
   it('показывает лист сразу без верхней панели и настроек оформления', async () => {
     const container = await mountCharacterSheet()
     expect(container.querySelector('[aria-label="Открыть настройки листа"]')).toBeNull()

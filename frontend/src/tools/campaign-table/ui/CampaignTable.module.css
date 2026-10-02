@@ -218,8 +218,8 @@
 .localEntityTabs button[aria-selected='true'] { border-color: var(--color-border-accent); background: var(--color-surface-accent); color: var(--color-heading-primary); }
 .localEntityEditorBody { width: min(100%, 54rem); margin-inline: auto; box-sizing: border-box; }
 .localEntityEditorBody h2 { margin: 0; font: 400 var(--font-size-xl)/1.2 var(--font-family-heading); }
-.inspectorBody p { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
-.inspectorBody h3 { margin-block: var(--space-2); font: 400 var(--font-size-lg)/1.3 var(--font-family-heading); overflow-wrap: anywhere; }
+.inspectorBody p:not(.instanceCharacterSheet p) { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.inspectorTitle { margin-block: var(--space-2); font: 400 var(--font-size-lg)/1.3 var(--font-family-heading); overflow-wrap: anywhere; }
 .fullCard.fullCard { display: flex; flex-direction: column; min-width: 0; }
 .fullCard h1 { font-size: var(--font-size-xl); }
 .plainContent { white-space: pre-wrap; }

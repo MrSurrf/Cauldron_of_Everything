@@ -24,6 +24,7 @@ import {
 import { ProficienciesEditor } from './ProficienciesEditor'
 import { getSheetStyle } from './sheetAppearance'
 import { useCharacterSheetViewModel } from './sheetViewModel'
+import { useSheetFitWidth } from './useSheetFitWidth'
 
 const PERSONALITY_SECTION_ORDER = [
   'traits',
@@ -34,6 +35,7 @@ const PERSONALITY_SECTION_ORDER = [
 
 export type CharacterSheetContentProps = {
   className?: string
+  fitWidth?: boolean
   onPortraitFileSelect?: (
     file: File,
     characterId: string,
@@ -43,10 +45,12 @@ export type CharacterSheetContentProps = {
 
 export function CharacterSheetContent({
   className,
+  fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
 }: CharacterSheetContentProps) {
   const sheet = useCharacterSheetViewModel()
+  const { viewportRef, pageRef, scale } = useSheetFitWidth(fitWidth)
   const { document } = sheet
   const rootClassName = [styles.root, className]
     .filter(Boolean)
@@ -61,16 +65,19 @@ export function CharacterSheetContent({
       <Panel className={styles.panel} padding="none">
         <div className={styles.shell}>
           <ScrollArea
+            ref={viewportRef}
             aria-label="Лист персонажа"
             className={styles.viewport}
             data-cursor-light-background=""
             contentClassName={styles.document}
-            orientation="both"
+            orientation={fitWidth ? 'vertical' : 'both'}
             rootClassName={styles.scrollArea}
           >
             <div
+              ref={pageRef}
               className={styles.sheetPage}
               data-character-sheet-page={true}
+              style={fitWidth ? { zoom: scale } : undefined}
             >
               <CharacterIdentitySection
                 sheet={sheet}

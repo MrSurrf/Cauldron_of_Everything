@@ -48,9 +48,9 @@ function SourceCard({ reference, onOpen }: { reference: LibraryReference; onOpen
     {!result && <p role="status">Загрузка карточки…</p>}
     {result?.error && <p role="alert">{result.error}</p>}
     {result?.creature && <CreatureFullView entity={result.creature} className={styles.fullCard} />}
-    {result?.entry && <><h3>{result.entry.name}</h3>{result.entry.content_html
+    {result?.entry && <><h3 className={styles.inspectorTitle}>{result.entry.name}</h3>{result.entry.content_html
       ? <RichContent html={result.entry.content_html} /> : <p className={styles.plainContent}>{result.entry.content_text || 'Описание отсутствует.'}</p>}</>}
-    {result?.material && <><h3>{result.material.name}</h3><ContentEditor accessibleLabel="Описание материала" value={result.material.description} onValueChange={ignoreChange} readOnly renderPreview /></>}
+    {result?.material && <><h3 className={styles.inspectorTitle}>{result.material.name}</h3><ContentEditor accessibleLabel="Описание материала" value={result.material.description} onValueChange={ignoreChange} readOnly renderPreview /></>}
   </EntityReferenceLinks>
 }
 
@@ -74,7 +74,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
     <NodePanelHeader title={edge ? 'Связь' : entityLabel(node?.data.entityType ?? reference!.entityType)} closeLabel="Закрыть карточку" onClose={onClose} />
     <ScrollArea aria-label="Карточка и редактор" rootClassName={styles.panelScrollArea} className={styles.inspectorBody}>
       {node && <>
-        {!hasInstanceEditor(node.data.entityType) && <h3>{node.data.title}</h3>}
+        {!hasInstanceEditor(node.data.entityType) && <h3 className={styles.inspectorTitle}>{node.data.title}</h3>}
         {!readOnly && <div className={styles.actions}><Button size="sm" onClick={() => editing ? actions.open(node.id) : actions.edit(node.id)}>{editing ? 'Просмотр' : 'Редактировать экземпляр'}</Button>
           <Button size="sm" variant="secondary" onClick={() => actions.duplicate(node.id)}>Дублировать</Button></div>}
         {hasInstanceEditor(node.data.entityType) && <InstanceStatBlockPanel key={node.data.entityId} data={node.data} editing={editing} readOnly={readOnly}
@@ -105,7 +105,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
           {!hasInstanceEditor(node.data.entityType) && node.data.facts && <p>{node.data.facts}</p>}
           {node.data.description && <ContentEditor accessibleLabel="Описание экземпляра" value={node.data.description} onValueChange={ignoreChange} readOnly renderPreview />}
         </>}
-        {node.type === 'location' && <section><h3>Содержимое</h3>{diagram.nodes.filter(item => item.data.locationId === node.id).map(item => <div key={item.id} className={styles.member}>
+        {node.type === 'location' && <section><h3 className={styles.inspectorTitle}>Содержимое</h3>{diagram.nodes.filter(item => item.data.locationId === node.id).map(item => <div key={item.id} className={styles.member}>
           <button type="button" onClick={() => actions.open(item.id)}>{item.data.title}</button>{!readOnly && <><button type="button" onClick={() => actions.edit(item.id)}>Изменить / перенести</button><button type="button" onClick={() => actions.release(item.id)}>Извлечь</button></>}
         </div>)}</section>}
       </>}

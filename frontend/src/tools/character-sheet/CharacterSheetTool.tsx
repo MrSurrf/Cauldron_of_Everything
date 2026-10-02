@@ -6,6 +6,8 @@ import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 
 export type CharacterSheetToolProps = {
   className?: string
+  /** Уменьшать лист целиком под ширину host-панели, не меняя его раскладку. */
+  fitWidth?: boolean
   document?: CharacterSheetDocument
   initialDocument?: CharacterSheetDocument
   onDocumentChange?: (
@@ -20,6 +22,7 @@ export type CharacterSheetToolProps = {
 
 export function CharacterSheetTool({
   className,
+  fitWidth,
   document,
   initialDocument,
   onDocumentChange,
@@ -34,6 +37,7 @@ export function CharacterSheetTool({
     >
       <CharacterSheetContent
         className={className}
+        fitWidth={fitWidth}
         onPortraitFileSelect={onPortraitFileSelect}
         onPortraitRemove={onPortraitRemove}
       />
