@@ -30,6 +30,8 @@ export type InstanceData = PlacementData & {
   entityType: EntityType; reference?: LibraryReference
   title: string; description: string; facts: string; state: string
   statBlock?: InstanceStatBlock
+  /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
+  display?: { creatureExpanded?: boolean }
 }
 export type TableNode = Node<InstanceData, EntityNode['type']>
 export type Diagram = Omit<StoredDiagram, 'nodes'> & { nodes: TableNode[] }

@@ -3,12 +3,13 @@ import { Handle, NodeResizer, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
-import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeVisual } from '../model/nodeGeometry'
 import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
 import styles from './CampaignTable.module.css'
+import { useCreatureMorph } from './useCreatureMorph'
 
 function plainText(value: string) {
   if (!value) return ''
@@ -22,8 +23,8 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
-  const [creatureExpanded, setCreatureExpanded] = useState(false)
-  const [cardAlign, setCardAlign] = useState<'left' | 'right'>('left')
+  const creatureExpanded = Boolean(data.display?.creatureExpanded)
+  const { nodeRef, contentRef } = useCreatureMorph(data.entityType === 'creature' && !draft, creatureExpanded)
   const menuRef = useRef<HTMLDivElement>(null)
   const membersRef = useRef<HTMLDivElement>(null)
   const connectionSource = actions.connectionSource
@@ -56,15 +57,16 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const members = type === 'location' ? actions.diagram.nodes.filter(node => node.data.locationId === id) : []
   const localEntity = !data.reference
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
-  return <article className={styles.mindNode} data-badge={visual.badge} data-shape={visual.shape} data-entity-type={data.entityType}
-    data-selected={selected} data-card-align={cardAlign} data-connecting={Boolean(connectionSource && connectionSource !== id)}
+  return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
+    data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
+    data-selected={selected} data-connecting={Boolean(connectionSource && connectionSource !== id)}
     aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
       minWidth={190} minHeight={80} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
-    {!visual.badge && <NodeOutline shape={visual.shape} />}
+    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'square' : visual.shape} />}
     <div className={styles.nodeTopline}>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}
@@ -85,13 +87,7 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
             <button type="button" className={styles.nodeMenuTrigger} aria-label={creatureExpanded ? 'Скрыть подробности' : 'Показать больше'} aria-expanded={creatureExpanded}
               onClick={event => {
                 event.stopPropagation(); setMenuOpen(false)
-                const node = event.currentTarget.closest('.react-flow__node')
-                const rect = node?.getBoundingClientRect(), canvas = node?.closest('.react-flow')?.getBoundingClientRect()
-                if (rect && canvas) {
-                  const cardWidth = 23 * parseFloat(getComputedStyle(document.documentElement).fontSize) * rect.width / visual.width
-                  setCardAlign(rect.left + cardWidth > canvas.right ? 'right' : 'left')
-                }
-                setCreatureExpanded(value => !value)
+                actions.toggleCreature(id)
               }}>
               <svg className={styles.nodeExpandArrow} data-expanded={creatureExpanded} width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
@@ -116,8 +112,11 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
         </div>}
       </div>
     </div>
-    <NodeView type={data.entityType} title={data.title} summary={summary} />
-    {data.entityType === 'creature' && creatureExpanded && <NodeCreatureCard data={data} />}
+    {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
+      <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
+        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
+      </div>
+    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
     {!actions.readOnly && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
       <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
         aria-label={`Соединить ${label}: ${data.title}`} title={`Соединить ${label}`}

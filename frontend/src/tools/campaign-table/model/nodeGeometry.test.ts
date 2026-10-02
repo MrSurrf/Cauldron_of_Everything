@@ -3,6 +3,12 @@ import { center, connectionPoints, contourBox, contourPoint, nodeVisuals } from 
 import type { ShapeBox } from './nodeGeometry'
 
 describe('присоединение к контуру', () => {
+  it('при раскрытии существа соединяет тот же узел с контуром карточки', () => {
+    const expanded = contourBox('creature', { x: 10, y: 20 }, 368, 460, true)
+    expect(expanded).toEqual({ x: 10, y: 20, width: 368, height: 460, shape: 'rectangle' })
+    expect(contourPoint(expanded, { x: 800, y: 250 })).toEqual({ x: 378, y: 250 })
+    expect(contourBox('creature', { x: 10, y: 20 }, 180, 170).shape).toBe('octagon')
+  })
   const box: ShapeBox = { x: 10, y: 20, width: 100, height: 100, shape: 'circle' }
   it('соединяет круг с любой стороны, включая диагональ', () => {
     expect(contourPoint(box, { x: 300, y: 70 })).toEqual({ x: 110, y: 70 })

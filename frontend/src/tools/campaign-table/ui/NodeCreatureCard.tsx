@@ -23,11 +23,9 @@ export function NodeCreatureCard({ data }: { data: InstanceData }) {
     return () => controller.abort()
   }, [entityId, attempt])
   const current = result?.id === entityId ? result : null
-  return <div className={`${styles.nodeCreatureCard} nodrag nopan nowheel`} role="region" aria-label={`Карточка существа: ${data.title}`}
-    onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}
-    onDoubleClick={event => event.stopPropagation()} onContextMenu={event => event.stopPropagation()}>
+  return <div className={`${styles.nodeCreatureCard} nopan nowheel`} role="region" aria-label={`Карточка существа: ${data.title}`}>
     {entityId && !current && <p role="status">Загрузка карточки…</p>}
-    {current?.error && <div role="alert"><p>{current.error}</p><Button size="sm" onClick={() => { setResult(null); setAttempt(value => value + 1) }}>Повторить</Button></div>}
+    {current?.error && <div role="alert"><p>{current.error}</p><Button className="nodrag nopan" size="sm" onClick={event => { event.stopPropagation(); setResult(null); setAttempt(value => value + 1) }}>Повторить</Button></div>}
     {(snapshot || current?.entity) && <CreatureCompactCard entity={{ ...(snapshot ?? current!.entity!), id: data.entityId, name: data.title }} />}
     {!entityId && !snapshot && <><h3>{data.title}</h3>{data.facts && <p>{data.facts}</p>}<p>Боевой паспорт недоступен: у существа нет ссылки на бестиарий.</p></>}
   </div>

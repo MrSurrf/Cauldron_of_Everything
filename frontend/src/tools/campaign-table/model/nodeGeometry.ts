@@ -5,6 +5,7 @@ import type { NodeEntityType } from './table'
 export type NodeShape = 'circle' | 'rectangle' | 'octagon' | 'diamond' | 'square' | 'quest' | 'shield' | 'note'
 export type NodeVisual = { shape: NodeShape; width: number; badge: boolean }
 export const canResizeNode = (type: EntityType) => ['location', 'note', 'quest'].includes(type)
+export const EXPANDED_CREATURE_WIDTH = 368
 export const nodeVisuals = {
   playerCharacter: { shape: 'circle', width: 180, badge: true },
   npc: { shape: 'circle', width: 180, badge: true },
@@ -30,7 +31,8 @@ export const polygons: Record<Exclude<NodeShape, 'circle'>, [number, number][]> 
   note: [[0, 0], [0.87, 0], [1, 0.2], [1, 1], [0, 1]],
 }
 export type ShapeBox = { x: number; y: number; width: number; height: number; shape: NodeShape }
-export function contourBox(type: EntityType, position: XYPosition, width: number, height: number): ShapeBox {
+export function contourBox(type: EntityType, position: XYPosition, width: number, height: number, expanded = false): ShapeBox {
+  if (type === 'creature' && expanded) return { ...position, width, height, shape: 'rectangle' }
   const visual = nodeVisual(type)
   if (!visual.badge) return { ...position, width, height, shape: visual.shape }
   const size = Math.min(width - 32, 120)
