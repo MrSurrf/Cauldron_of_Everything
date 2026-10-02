@@ -433,24 +433,6 @@
 
   line-height: 1.35;
 
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(178, 123, 241, 0.5)
-    transparent;
-}
-
-.survey-description p::-webkit-scrollbar {
-  width: 4px;
-}
-
-.survey-description p::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.survey-description p::-webkit-scrollbar-thumb {
-  border-radius: 4px;
-  background:
-    rgba(178, 123, 241, 0.5);
 }
 
 /* Шкала */

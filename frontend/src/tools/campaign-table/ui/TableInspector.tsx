@@ -3,7 +3,7 @@ import { CreatureFullView, getCreatureById } from '../../../entities/creature'
 import type { CreatureEntity } from '../../../entities/creature'
 import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
-import { Button, TextInput } from '../../../shared/ui'
+import { Button, ScrollArea, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { RichContent } from '../../../shared/ui/RichContent'
 import { campaignRequest } from '../model/campaignApi'
@@ -71,7 +71,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
   return <aside className={styles.inspectorWindow} aria-label="Карточка и редактор">
     <ResizeGrip label="Ширина карточки" width={width} min={300} onResize={onResize} />
     <header className={styles.sectionHeading}><h2>{edge ? 'Связь' : editing ? 'Редактор экземпляра' : 'Карточка'}</h2><Button size="sm" onClick={onClose} aria-label="Закрыть карточку">×</Button></header>
-    <div className={styles.inspectorBody}>
+    <ScrollArea aria-label="Карточка и редактор" rootClassName={styles.panelScrollArea} className={styles.inspectorBody}>
       {node && <>
         <h3>{node.data.title}</h3>
         {!readOnly && <div className={styles.actions}><Button size="sm" onClick={() => editing ? actions.open(node.id) : actions.edit(node.id)}>{editing ? 'Просмотр' : 'Редактировать экземпляр'}</Button>
@@ -121,6 +121,6 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
         <SourceCard key={`${reference.source}:${reference.entityId}`} reference={reference} onOpen={onOpen} />
       </>}
       {readOnly && <p className={styles.hint}>Только материалы, разрешённые сервером для публичного стола.</p>}
-    </div>
+    </ScrollArea>
   </aside>
 }

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, ListCard, TextInput } from '../../../shared/ui'
+import { Button, ListCard, ScrollArea, TextInput } from '../../../shared/ui'
 import { canPlaceReference, LIBRARY_SECTIONS, searchLibrary } from '../model/library'
 import type { LibraryReference, LibrarySection } from '../model/library'
 import { ENTITY_DRAG_TYPE } from './tableContext'
@@ -67,7 +67,7 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
       </select>
       <TextInput type="search" aria-label="Поиск в библиотеке" placeholder="Поиск…" rootClassName={styles.search} value={query} onChange={event => onQuery(event.target.value)} />
     </div>
-    <div className={styles.catalog} id="library-results" role="tabpanel" aria-labelledby={`library-source-${source}`} aria-busy={!current}>
+    <ScrollArea rootClassName={styles.catalog} id="library-results" role="tabpanel" aria-labelledby={`library-source-${source}`} aria-busy={!current}>
       {!current && <p role="status">Загрузка…</p>}
       {current?.error && <div role="alert"><p>{current.error}</p><Button size="sm" onClick={() => setAttempt(value => value + 1)}>Повторить</Button></div>}
       {current && !current.error && !current.entries.length && <p role="status">{section === 'reference' ? 'Справочные материалы в энциклопедии пока не опубликованы.' : 'Записи не найдены.'}</p>}
@@ -78,7 +78,7 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
         }}><ListCard name={reference.name} tags={reference.facts} /></button>
         {canPlaceReference(reference) && <Button size="sm" variant="secondary" decoration="minimal" aria-label={`Добавить на холст: ${reference.name}`} onClick={() => onAdd(reference)}>+</Button>}
       </div>)}
-    </div>
+    </ScrollArea>
     <div className={styles.pagination}>
       <Button size="sm" variant="secondary" disabled={currentPage === 1} onClick={() => setPage({ section, query, value: currentPage - 1 })}>←</Button>
       <span>{currentPage} · {current?.count ?? '…'} записей</span>

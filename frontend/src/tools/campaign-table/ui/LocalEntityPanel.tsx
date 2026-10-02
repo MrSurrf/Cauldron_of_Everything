@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, TextInput } from '../../../shared/ui'
+import { Button, ScrollArea, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { entityLabel } from '../model/library'
 import type { CanvasEntity, Diagram, TableNode } from '../model/table'
@@ -34,7 +34,7 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
     <ResizeGrip label="Ширина Inspector" width={width} min={300} onResize={onResize} />
     <header className={styles.sectionHeading}><div><span className={styles.localEntityType}>{entityLabel(entity.entityType)}</span><h2>Inspector</h2></div>
       <Button size="sm" onClick={onClose} aria-label="Закрыть Inspector">×</Button></header>
-    <div className={styles.localEntityBody}>
+    <ScrollArea aria-label="Inspector объекта" rootClassName={styles.panelScrollArea} contentClassName={styles.localEntityBody}>
       <NameField key={entity.id} entity={entity} readOnly={readOnly} onUpdate={onUpdate} />
       <div className={styles.localEntityField}><span>Краткое описание</span>
         <ContentEditor accessibleLabel="Описание Entity" value={entity.description} readOnly={readOnly}
@@ -50,7 +50,7 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
         <button type="button" onClick={() => actions.duplicate(node.id)}>Дублировать размещение</button>
         <button type="button" onClick={() => { actions.remove(node.id); onClose() }}>Убрать со схемы</button>
       </details>}
-    </div>
+    </ScrollArea>
   </aside>
 }
 
@@ -62,13 +62,13 @@ export function LocalEntityEditor({ entity, diagramName, readOnly, onBack, onUpd
       <button type="button" role="tab" aria-selected="false" onClick={onBack}>{diagramName}</button>
       <button type="button" role="tab" aria-selected="true">{entity.name}</button>
     </nav>
-    <div className={styles.localEntityEditorBody} role="tabpanel">
+    <ScrollArea aria-label="Редактор Entity" rootClassName={styles.panelScrollArea} contentClassName={styles.localEntityEditorBody} role="tabpanel">
       <span className={styles.localEntityType}>{entityLabel(entity.entityType)}</span>
       <h2>{entity.name}</h2>
       <NameField key={entity.id} entity={entity} readOnly={readOnly} onUpdate={onUpdate} />
       <label className={styles.localEntityField}>Описание</label>
       <ContentEditor accessibleLabel="Полное описание Entity" value={entity.description} readOnly={readOnly}
         onValueChange={description => onUpdate({ description })} rows={12} renderPreview showStructureActions />
-    </div>
+    </ScrollArea>
   </section>
 }

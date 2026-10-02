@@ -50,9 +50,13 @@ try {
     nodes: entities.map((entity, i) => ({ id: entity.id, type: 'entity', data: { entityId: entity.id }, position: { x: 40 + i % 2 * 280, y: 40 + Math.floor(i / 2) * 270 } })) }] }
   await page.evaluate(({ key, document }) => localStorage.setItem(key, JSON.stringify(document)), { key: storageKey, document })
   await page.reload()
+  assert.equal(await page.locator('#library-results').evaluate(viewport => getComputedStyle(viewport).scrollbarWidth), 'none')
   assert.equal(await page.getByText('Старое скрытое состояние', { exact: true }).count(), 0)
 
   await edit('e1')
+  const panelViewport = page.getByRole('region', { name: 'Карточка и редактор', exact: true })
+  assert.equal(await panelViewport.evaluate(viewport => getComputedStyle(viewport).scrollbarWidth), 'none')
+  await page.getByRole('slider', { name: 'Вертикальная прокрутка: Карточка и редактор', exact: true }).waitFor()
   await page.getByRole('textbox', { name: 'Хиты', exact: true }).fill('99 (12к8)')
   await page.getByText('Характеристики, спасброски и навыки', { exact: true }).click()
   await page.getByRole('spinbutton', { name: 'Характеристики: Сила: Значение', exact: true }).fill('20')
@@ -79,8 +83,23 @@ try {
   await close()
 
   await edit('hero')
+  const sheetViewport = page.locator('[aria-label="Лист персонажа"][tabindex]')
+  await sheetViewport.waitFor()
+  const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('aside').getBoundingClientRect().bottom }))
+  assert.ok(geometry.content > geometry.client, 'Исходный широкий лист должен прокручиваться, а не перестраиваться')
+  assert.ok(geometry.bottom <= geometry.panelBottom, 'Прокрутка листа должна быть доступна внутри панели')
+  const horizontalScroll = page.getByRole('slider', { name: 'Горизонтальная прокрутка: Лист персонажа', exact: true })
+  await horizontalScroll.waitFor()
+  await horizontalScroll.press('End')
+  await page.waitForFunction(() => {
+    const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
+    return viewport.scrollLeft >= viewport.scrollWidth - viewport.clientWidth - 1
+  })
+  await horizontalScroll.press('Home')
+  await page.waitForFunction(() => document.querySelector('[aria-label="Лист персонажа"][tabindex]').scrollLeft < 1)
   await page.getByRole('textbox', { name: 'Имя персонажа', exact: true }).fill('Локальный герой')
   await page.getByRole('textbox', { name: 'Класс', exact: true }).fill('Воин')
+  if (process.env.TABLE_TEST_SCREENSHOT) await page.screenshot({ path: process.env.TABLE_TEST_SCREENSHOT })
   assert.equal(characterDocument.identity.name, 'Герой')
   await close()
 
