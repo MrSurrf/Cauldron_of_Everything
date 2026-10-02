@@ -4,6 +4,8 @@ import type { Diagram, NodeEntityType } from '../model/table'
 export type TableActions = {
   diagram: Diagram
   readOnly: boolean
+  beginGesture: () => void
+  endGesture: () => void
   diagrams: { id: string; name: string }[]
   connectionSource: string | null
   startConnection: (id: string, pointer?: { x: number; y: number }) => void

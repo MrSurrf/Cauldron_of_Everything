@@ -4,6 +4,7 @@ import type { NodeEntityType } from './table'
 
 export type NodeShape = 'circle' | 'rectangle' | 'octagon' | 'diamond' | 'square' | 'quest' | 'shield' | 'note'
 export type NodeVisual = { shape: NodeShape; width: number; badge: boolean }
+export const canResizeNode = (type: EntityType) => ['location', 'note', 'quest'].includes(type)
 export const nodeVisuals = {
   playerCharacter: { shape: 'circle', width: 180, badge: true },
   npc: { shape: 'circle', width: 180, badge: true },

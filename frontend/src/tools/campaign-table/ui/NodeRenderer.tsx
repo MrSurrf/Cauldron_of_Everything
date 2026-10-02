@@ -3,7 +3,8 @@ import { Handle, NodeResizer, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
-import { nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
+import { EditIcon, TrashIcon } from '../../../shared/ui'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
 import styles from './CampaignTable.module.css'
@@ -54,8 +55,10 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
   return <article className={styles.mindNode} data-badge={visual.badge} data-shape={visual.shape} data-entity-type={data.entityType}
     data-selected={selected} data-has-state={Boolean(data.state)} data-connecting={Boolean(connectionSource && connectionSource !== id)}
-    aria-label={data.title}>
-    <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource} minWidth={visual.badge ? 140 : 190} minHeight={visual.badge ? 200 : 80} color="var(--color-brand-bright)" />
+    aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenuOpen(true) }}>
+    {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
+      minWidth={190} minHeight={80} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
+      onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
     {!visual.badge && <NodeOutline shape={visual.shape} />}
@@ -74,8 +77,12 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
         </div>}
       </div>}
       <div ref={menuRef} className={`${styles.nodeActions} nodrag`} onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-        <button type="button" className={styles.nodeMenuTrigger} aria-label={`Действия: ${data.title}`} aria-expanded={menuOpen}
-          onClick={event => { event.stopPropagation(); setMenuOpen(value => !value); setMembersOpen(false) }}>•••</button>
+        {!actions.readOnly && <div className={styles.nodeQuickActions}>
+          <button type="button" className={styles.nodeMenuTrigger} aria-label={`Редактировать: ${data.title}`} title="Редактировать"
+            onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.edit(id) }}><EditIcon /></button>
+          <button type="button" className={styles.nodeMenuTrigger} aria-label={`Удалить со схемы: ${data.title}`} title="Удалить со схемы"
+            onClick={event => { event.stopPropagation(); actions.remove(id) }}><TrashIcon /></button>
+        </div>}
         {menuOpen && <div className={styles.nodeMenu} role="menu" aria-label={`Действия с узлом: ${data.title}`}>
           <button type="button" role="menuitem" onClick={event => { event.stopPropagation(); setMenuOpen(false); openEntity() }}>Открыть</button>
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.edit(id) }}>Редактировать</button>

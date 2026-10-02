@@ -44,9 +44,9 @@
 .schemeMenu label { display: grid; gap: var(--space-1); font-size: var(--font-size-xs); color: var(--color-text-subtle); }
 .schemeMenu form { display: flex; gap: var(--space-2); }
 .schemeMenu form > :first-child { flex: 1; min-width: 0; }
-.canvas { position: relative; flex: 1; min-height: 0; }
+.canvas { position: relative; flex: 1; min-height: 0; background: var(--cursor-background-image, none), var(--color-background); }
 .canvas :global(.react-flow) {
-  --xy-background-color: var(--color-background);
+  --xy-background-color: transparent;
   --xy-edge-stroke: var(--color-brand);
   --xy-edge-stroke-selected: var(--color-brand-bright);
   --xy-edge-stroke-width: 2;
@@ -60,6 +60,12 @@
 }
 .canvas :global(.react-flow__attribution a) { color: var(--color-text-subtle); }
 .canvas .internalAnchor { opacity: 0; pointer-events: none; width: 1px; height: 1px; border: 0; left: 50%; top: 50%; }
+.canvas :global(.react-flow__node), .canvas :global(.react-flow__node.selected), .canvas :global(.react-flow__node.selectable:focus), .canvas :global(.react-flow__node.selectable:focus-visible) { outline: none; border: none; box-shadow: none; background: transparent; }
+.canvas :global(.react-flow__nodesselection-rect) { border: none; background: transparent; }
+.canvas .nodeResizeLine:global(.react-flow__resize-control.line) { border: 0; background: transparent; pointer-events: none; }
+.canvas .nodeResizeHandle:global(.react-flow__resize-control.handle) { width: 24px; height: 24px; border: 0; border-radius: 0; background: transparent; }
+.nodeResizeHandle::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border: 1px solid var(--color-brand-bright); border-radius: 2px; background: var(--color-surface-default); }
+.nodeResizeHandle:hover::after { background: var(--color-brand-bright); }
 .connectionPort { position: absolute; z-index: 4; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; transform: translate(-50%, -50%); cursor: crosshair; opacity: 0; pointer-events: none; }
 .connectionPort::after { content: ''; display: block; width: 6px; height: 6px; margin: auto; box-sizing: border-box; border: 1px solid var(--color-brand-bright); border-radius: 50%; background: var(--color-brand-bright); }
 .connectionPort[data-side='top'] { left: 50%; top: -10px; }
@@ -123,6 +129,8 @@
 .mindNode[data-has-state='true'] .nodeSummary { -webkit-line-clamp: 1; }
 .nodeActions, .nodeMembers { position: relative; flex: 0 0 auto; }
 .nodeActions { margin-left: auto; }
+.nodeQuickActions { display: flex; gap: 2px; }
+.nodeQuickActions .nodeMenuTrigger { width: 24px; height: 24px; padding: 3px; background: var(--color-surface-default); }
 .nodeMenuTrigger, .nodeMembersTrigger { display: grid; place-items: center; min-width: 1.4rem; height: 1.3rem; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
 .nodeMenuTrigger { opacity: 0; pointer-events: none; }
 .mindNode:hover .nodeMenuTrigger, .mindNode[data-selected='true'] .nodeMenuTrigger, .nodeMenuTrigger:focus-visible, .nodeMenuTrigger[aria-expanded='true'] { opacity: 1; pointer-events: auto; }

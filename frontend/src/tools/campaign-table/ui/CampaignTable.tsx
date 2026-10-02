@@ -12,7 +12,8 @@ import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { NodeRenderer } from './NodeRenderer'
 import { ConnectionPreview, ContourEdge } from './ContourEdge'
-import { nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
+import { TableHistory } from '../model/tableHistory'
 import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE, TableContext } from './tableContext'
@@ -25,6 +26,8 @@ const nodeTypes = { entity: NodeRenderer, location: NodeRenderer, note: NodeRend
 const edgeTypes = { contour: ContourEdge }
 const creatableTypes = ['location', 'note', 'playerCharacter', 'npc', 'quest', 'faction'] as const
 type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
+type HistoryControls = { beginGesture: () => void; endGesture: () => void; undo: () => void; redo: () => void }
+const noHistory: HistoryControls = { beginGesture: () => {}, endGesture: () => {}, undo: () => {}, redo: () => {} }
 function loadTable() {
   try {
     const raw = localStorage.getItem(TABLE_STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
@@ -45,7 +48,9 @@ function locationAt(diagram: Diagram, position: XYPosition, measured: (id: strin
 }
 
 function compactNode(node: TableNode): TableNode {
-  return { ...node, width: node.width ?? nodeVisual(node.data.entityType).width }
+  return canResizeNode(node.data.entityType)
+    ? { ...node, width: node.width ?? nodeVisual(node.data.entityType).width }
+    : { ...node, width: nodeVisual(node.data.entityType).width, height: undefined }
 }
 
 function focusIsEditing() {
@@ -53,8 +58,9 @@ function focusIsEditing() {
   return focused instanceof Element && Boolean(focused.closest('input, textarea, select, [contenteditable], [role="textbox"], [role="menu"], button'))
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly }: {
+function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly, history }: {
   table: TableState; diagram: Diagram; readOnly: boolean
+  history: HistoryControls
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
   onPlaceObject: (object: { entity: CanvasEntity; node: EntityNode }, name: string) => void
@@ -76,6 +82,18 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const [editorEntityId, setEditorEntityId] = useState<string | null>(null)
   const [schemesOpen, setSchemesOpen] = useState(false)
   const [newName, setNewName] = useState('')
+  useEffect(() => {
+    if (readOnly || editorEntityId || draft) return
+    const handleHistory = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || event.code !== 'KeyZ') return
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], [role="textbox"]')) return
+      event.preventDefault()
+      setSelection(null); setAnchor(null); setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null)
+      if (event.shiftKey) history.redo(); else history.undo()
+    }
+    document.addEventListener('keydown', handleHistory)
+    return () => document.removeEventListener('keydown', handleHistory)
+  }, [readOnly, editorEntityId, draft, history])
   const linking = connectionSource !== null && diagram.nodes.some(node => node.id === connectionSource && !node.data.locationId)
   const cancelConnection = () => { setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) }
   useEffect(() => {
@@ -165,6 +183,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
   }
   return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
+    beginGesture: history.beginGesture, endGesture: history.endGesture,
     diagrams: table.diagrams, connectionSource: linking ? connectionSource : null,
     startConnection: (id, pointer) => { if (!readOnly) { setConnectionSource(id); setConnectionTarget(null); setConnectionPointer(pointer ? flow.screenToFlowPosition(pointer) : null); setAnchor(null); setSelection(null) } },
     placeOnDiagram: (id, diagramId) => { const node = diagram.nodes.find(item => item.id === id); if (node && !readOnly) onPlaceExisting(node.data.entityId, diagramId) },
@@ -191,7 +210,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           <Button size="sm" variant="secondary" decoration="minimal" onClick={() => void flow.fitView({ padding: 0.25, maxZoom: 1 })}>Показать всё</Button>
         </div>
       </header>
-      <div ref={canvasRef} className={styles.canvas} data-linking={linking} onDrop={drop}
+      <div ref={canvasRef} className={styles.canvas} data-cursor-light-background="" data-linking={linking} onDrop={drop}
         onPointerMove={event => { if (linking) setConnectionPointer(flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })) }} onDragOver={event => {
         if (!readOnly && event.dataTransfer.types.some(type => [ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE].includes(type))) {
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
@@ -210,12 +229,14 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
               return { ...next, nodes: applyNodeChanges(persistedChanges.filter(change => change.type !== 'remove'), next.nodes) }
             })
           }}
+          onNodeDragStart={readOnly ? undefined : history.beginGesture}
           onNodeDragStop={readOnly ? undefined : (event, node) => {
             if (canContain(node)) {
               const position = 'clientX' in event ? flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
                 : { x: node.position.x + (node.width ?? 260) / 2, y: node.position.y + (node.height ?? 150) / 2 }
               onChange(current => moveToLocation(current, node.id, findLocation(current, position)))
             }
+            history.endGesture()
           }}
           onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
           onNodeClick={(_, node) => {
@@ -266,7 +287,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   </TableContext.Provider>
 }
 
-function Workspace({ table, commit, readOnly = false }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean }) {
+function Workspace({ table, commit, readOnly = false, history = noHistory }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean; history?: HistoryControls }) {
   const [libraryCollapsed, setLibraryCollapsed] = useState(false)
   const active = resolveDiagram(table, table.diagrams.find(diagram => diagram.id === table.activeId)!)
   const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram) => {
@@ -274,7 +295,7 @@ function Workspace({ table, commit, readOnly = false }: { table: TableState; com
   }, [commit, active.id, readOnly])
   return <div className={styles.workspace} data-public={readOnly} data-collapsed={libraryCollapsed}
     style={{ '--library-width': table.layout.libraryWidth === 336 ? '30%' : `${table.layout.libraryWidth}px`, '--inspector-width': `${table.layout.inspectorWidth}px` } as CSSProperties}>
-    <ReactFlowProvider key={active.id}><DiagramCanvas table={table} diagram={active} onChange={changeDiagram} readOnly={readOnly}
+    <ReactFlowProvider key={active.id}><DiagramCanvas table={table} diagram={active} onChange={changeDiagram} readOnly={readOnly} history={history}
       libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
       onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
@@ -307,16 +328,25 @@ function PrivateTable({ onPrivate, onPublic }: { onPrivate: () => void; onPublic
   const [initial] = useState(loadTable)
   const [table, setTable] = useState(initial.table)
   const currentRef = useRef(table)
+  const [history] = useState(() => new TableHistory())
   const [saveError, setSaveError] = useState(initial.error)
-  const commit = useCallback((update: (table: TableState) => TableState) => {
-    const next = update(currentRef.current)
+  const persist = useCallback((next: TableState) => {
     currentRef.current = next; setTable(next)
     if (initial.error) return
     try { localStorage.setItem(TABLE_STORAGE_KEY, serializeTable(next)); setSaveError('') }
     catch { setSaveError('Изменения не сохранены: хранилище браузера недоступно или заполнено.') }
   }, [initial.error])
+  const commit = useCallback((update: (table: TableState) => TableState) => {
+    const next = update(currentRef.current)
+    history.record(currentRef.current, next)
+    persist(next)
+  }, [history, persist])
+  const historyControls: HistoryControls = {
+    beginGesture: () => history.begin(currentRef.current), endGesture: () => history.end(currentRef.current),
+    undo: () => persist(history.undo(currentRef.current)), redo: () => persist(history.redo(currentRef.current)),
+  }
   return <><TableToolbar publicMode={false} status={saveError ? 'Не сохранено' : 'Сохранено в этом браузере'} onPrivate={onPrivate} onPublic={onPublic} />
-    {saveError && <p role="alert" className={styles.error}>{saveError}</p>}<Workspace table={table} commit={commit} /></>
+    {saveError && <p role="alert" className={styles.error}>{saveError}</p>}<Workspace table={table} commit={commit} history={historyControls} /></>
 }
 
 function PublicTable({ campaignId }: { campaignId: string }) {

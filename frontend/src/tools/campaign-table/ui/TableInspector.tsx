@@ -11,6 +11,7 @@ import type { OwnedMaterial } from '../model/campaignApi'
 import { entryReference } from '../model/library'
 import type { LibraryReference } from '../model/library'
 import { canContain, moveToLocation } from '../model/table'
+import { canResizeNode } from '../model/nodeGeometry'
 import type { Diagram, TableNode } from '../model/table'
 import { ResizeGrip } from './ResizeGrip'
 import { useTableActions } from './tableContext'
@@ -91,7 +92,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
           <label>Ключевые данные<TextInput aria-label="Ключевые данные" value={node.data.facts} onChange={event => field('facts', event.target.value)} /></label>
           <label>Состояние экземпляра<TextInput aria-label="Состояние экземпляра" placeholder="Например: 12 хитов, ранен" value={node.data.state} onChange={event => field('state', event.target.value)} /></label>
           <label>Описание</label><ContentEditor accessibleLabel="Описание экземпляра" value={node.data.description} onValueChange={value => field('description', value)} rows={5} renderPreview showStructureActions />
-          <div className={styles.geometry}>{(['x', 'y', 'width', 'height'] as const).map(key => <label key={key}>{({ x: 'X', y: 'Y', width: 'Ширина', height: 'Высота' })[key]}
+          <div className={styles.geometry}>{(['x', 'y', 'width', 'height'] as const).filter(key => key === 'x' || key === 'y' || canResizeNode(node.data.entityType)).map(key => <label key={key}>{({ x: 'X', y: 'Y', width: 'Ширина', height: 'Высота' })[key]}
             <input aria-label={`Узел: ${key}`} type="number" value={key === 'x' || key === 'y' ? node.position[key] : node[key] ?? 260} onChange={event => {
               const value = event.target.valueAsNumber
               if (!Number.isFinite(value)) return
