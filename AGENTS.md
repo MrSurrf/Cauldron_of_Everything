@@ -89,6 +89,14 @@ Cauldron_of_Everything/
 │   │   ├── serializers.py
 │   │   ├── urls.py
 │   │   └── views.py
+│   ├── accounts/            # профиль и настройки аккаунта: модель, API, админка
+│   │   ├── migrations/
+│   │   ├── admin.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── test_profile.py
+│   │   ├── urls.py
+│   │   └── views.py
 │   ├── Encyclopedia-data/   # сырой датасет энциклопедии, НЕ в git (~1.2 ГБ)
 │   ├── media/               # загружаемые файлы (картинки анкеты)
 │   │   └── survey/
@@ -143,7 +151,7 @@ Cauldron_of_Everything/
 ### 4.1. Django-проект и приложения
 
 - Проект: `core` (`backend/core/`).
-- Приложения: `survey` (`backend/survey/`) — анкета; `encyclopedia` (`backend/encyclopedia/`) — энциклопедия D&D.
+- Приложения: `survey` (`backend/survey/`) — анкета; `encyclopedia` (`backend/encyclopedia/`) — энциклопедия D&D; `accounts` (`backend/accounts/`) — профиль и настройки аккаунта.
 
 ### 4.2. Модели (`backend/survey/models.py`)
 
@@ -176,6 +184,8 @@ Cauldron_of_Everything/
 | POST | `/api/answers/` | JWT | Сохранить/перезаписать ответ `{"question", "choice"}` |
 | GET | `/api/submissions/` | нет | Список результатов прохождения анкеты |
 | POST | `/api/submissions/` | JWT | Сохранить результат целиком от фронтенда |
+| GET | `/api/me/profile/` | JWT | Профиль и настройки текущего аккаунта (`{"data": {...}, "updated_at"}`) |
+| PATCH | `/api/me/profile/` | JWT | Частичное обновление профиля: поля из `data` сливаются с сохранёнными |
 | GET | `/api/encyclopedia/` | нет | Список сущностей энциклопедии: `?type=spell`, `?q=...`, пагинация |
 | GET | `/api/encyclopedia/<id>/` | нет | Карточка сущности: `content_html`, `data`, связи |
 | GET | `/api/encyclopedia/types/` | нет | Количество сущностей по типам |
@@ -201,6 +211,20 @@ Cauldron_of_Everything/
 - Импорт одноразовый: `source_key` в БД не сохраняется, повторный запуск — только с `--replace` (полная очистка).
 - Три прохода: создание сущностей → очистка и перелинковка `content_html` (BeautifulSoup) → построение `EntityLink` через сопоставление `source_key → id`.
 - Импортировано: 4643 сущности (spell 524, creature 2921, item 942, class 13, sidekick 3, race 48, feat 105, background 87), 15247 связей.
+
+### 4.3.2. Аккаунты (`backend/accounts/`)
+
+Модель (`accounts/models.py`):
+
+| Модель | Назначение | Ключевые поля |
+|---|---|---|
+| `Profile` | Профиль и настройки аккаунта | OneToOne `user` (related_name `profile`), `data` (JSON), `updated_at` |
+
+- Все пользовательские данные (имя, био, приватность, настройки инструментов) хранятся в `Profile.data` как JSON — по тому же принципу, что `SurveySubmission.answers` и `Entity.data`.
+- Структуру `data` валидирует `accounts/serializers.py`: известные строковые поля с лимитами длины, массивы строк (`systems`, `styles`, `genres`), `links` (список `{label, value}`), `privacy` (булевы флаги по известным ключам), `settings` (свободный namespace настроек инструментов). Неизвестные ключи верхнего уровня отклоняются с 400.
+- `GET /api/me/profile/` создаёт пустой профиль при первом обращении (`get_or_create`); `PATCH` делает shallow merge поверх сохранённых полей.
+- Профиль строго привязан к `request.user` — прочитать или изменить чужой профиль через API нельзя.
+- Тесты: `accounts/test_profile.py` (`python manage.py test accounts`).
 
 ### 4.4. Загрузка анкеты из JSON
 
@@ -292,6 +316,13 @@ Cauldron_of_Everything/
   ```
 - Страница результатов мастера (`#/gm`) загружает список через `GET /api/submissions/`.
 - Ошибки сохранения логируются в консоль, UI всё равно показывает завершение.
+
+### 5.3.1. Профиль и настройки аккаунта
+
+- Страница `/profile` (`frontend/src/pages/profile/ProfilePage.tsx`) — экран профиля и настроек аккаунта: имя, био, тема, приватность и т.д.
+- Данные хранятся на бэкенде (приложение `accounts`); фронтенд обращается через `frontend/src/shared/api/account.ts` (`GET/PATCH /api/me/profile/`, поверх `authFetch`).
+- При открытии страница подтягивает профиль с сервера; `localStorage` (`profileCache.ts`) — только кэш для мгновенного отображения до ответа сервера и очищается при выходе из аккаунта.
+- Аватар пока не загружается на сервер: выбранное фото живёт как локальный object URL и при перезагрузке теряется.
 
 ### 5.4. Стили и ресурсы
 

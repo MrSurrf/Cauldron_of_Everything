@@ -18,6 +18,8 @@ urlpatterns = [
     path("api/auth/session/", SessionView.as_view(), name="auth-session"),
     # Анкета
     path("api/", include("survey.urls")),
+    # Профиль и настройки аккаунта
+    path("api/me/", include("accounts.urls")),
     # Энциклопедия
     path("api/encyclopedia/", include("encyclopedia.urls")),
     # Документация API (для фронтендера)
