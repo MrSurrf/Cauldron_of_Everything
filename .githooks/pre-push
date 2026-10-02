@@ -1,0 +1,53 @@
+#!/usr/bin/env sh
+
+echo ""
+echo "=== Проверка npm-зависимостей ==="
+
+cd frontend || {
+  echo "==============================================" >&2
+  echo "ОШИБКА: папка frontend не найдена." >&2
+  echo "Hook должен запускать npm там, где лежит package.json." >&2
+  echo "==============================================" >&2
+  exit 1
+}
+
+echo ""
+echo "=== Проверка npm-зависимостей в frontend ==="
+
+if ! npm ci --no-audit --no-fund; then
+  echo "" >&2
+  echo "==============================================" >&2
+  echo "ОШИБКА: npm-зависимости не прошли проверку." >&2
+  echo "Вероятно, package.json и package-lock.json не синхронизированы." >&2
+  echo "" >&2
+  echo "Что сделать:" >&2
+  echo "1. Выполни: npm install в папке \frontend" >&2
+  echo "2. Проверь: npm ci --no-audit --no-fund" >&2
+  echo "3. Добавь package-lock.json в commit" >&2
+  echo "4. Повтори git push" >&2
+  echo "5...и хватит блять все ломать" >&2
+  echo "==============================================" >&2
+  exit 1
+fi
+
+echo ""
+echo "=== Сборка проекта ==="
+
+if ! npm run build; then
+  echo "" >&2
+  echo "==============================================" >&2
+  echo "ОШИБКА: сборка проекта завершилась неуспешно." >&2
+  echo "Push отменён: сначала исправь ошибки сборки." >&2
+  echo "" >&2
+  echo "Проверь вывод команды:" >&2
+  echo "npm run build" >&2
+  echo "==============================================" >&2
+  echo "...Voilà le bordel, mon toutou..." >&2
+  exit 1
+fi
+
+echo ""
+echo "=== Всё успешно ==="
+echo "npm ci и npm run build завершились без ошибок."
+echo "Push разрешён."
+exit 0
