@@ -215,7 +215,8 @@
 }
 .damageNote { margin: var(--space-2) 0 0; color: var(--color-text-subtle); font-size: var(--font-size-sm); }
 .damageAffinities { composes: semanticInfographic from '../../../shared/styles/entityTypography.module.css'; display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
-.compactDamageBadge {
+/* Компактный размер не должен зависеть от порядка загрузки базового CSS бейджа. */
+.damageAffinities .compactDamageBadge {
   --damage-badge-width: 2.25rem;
   --damage-badge-height: 2.6rem;
   --damage-shield-inset-y: 0.225rem;

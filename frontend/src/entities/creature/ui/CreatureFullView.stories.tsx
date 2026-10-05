@@ -106,6 +106,12 @@ export const Tarrasque: Story = {
     await expect(canvas.getAllByRole('img')).toHaveLength(
       mockTarrasque.damageAffinities.length,
     )
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+    for (const badge of canvas.getAllByRole('img')) {
+      const bounds = badge.getBoundingClientRect()
+      expect(bounds.width).toBeCloseTo(2.25 * rem, 1)
+      expect(bounds.height).toBeCloseTo(2.6 * rem, 1)
+    }
     await expect(mockTarrasque.damageAffinities).toHaveLength(
       DAMAGE_TYPES.length,
     )
