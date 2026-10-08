@@ -187,7 +187,6 @@ export const WithIcon: Story = {
 
 export const Search: Story = {
   args: {
-    icon: <PlaceholderIcon />,
     label: 'Поиск по сайту',
     placeholder: 'Найти материал...',
     type: 'search',
@@ -195,6 +194,10 @@ export const Search: Story = {
   play: async ({ canvas }) => {
     const input = canvas.getByRole('searchbox', { name: 'Поиск по сайту' })
     await expect(input).toHaveAttribute('type', 'search')
+    const icon = input.parentElement!.querySelector<HTMLElement>('[data-icon="search"]')!
+    await expect(icon).toBeInTheDocument()
+    expect(getComputedStyle(icon).backgroundColor).toBe(getComputedStyle(icon.parentElement!).color)
+    expect(getComputedStyle(icon).width).toBe(getComputedStyle(icon.parentElement!).width)
     const innerFrame = input.parentElement!.querySelector<HTMLElement>('[class*="innerFrame"]')!
     expect(getComputedStyle(innerFrame).display).toBe('none')
     await userEvent.click(input)

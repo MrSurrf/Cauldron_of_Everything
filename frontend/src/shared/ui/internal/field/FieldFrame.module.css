@@ -422,7 +422,8 @@
   pointer-events: none;
 }
 
-.icon svg {
+.icon svg,
+.icon [data-shared-icon='true'] {
   display: block;
 
   width: 100%;

@@ -17,6 +17,10 @@ async function checkSearchFrames() {
   const frames = await page.locator('main input:not([type="checkbox"]), header input[type="search"]').evaluateAll(inputs => inputs.map(input => {
     const frame = input.parentElement
     const inner = frame.querySelector('[class*="innerFrame"]')
+    if (input.type === 'search') {
+      const icon = frame.querySelector('[data-icon="search"]')
+      if (!icon || getComputedStyle(icon).backgroundColor !== getComputedStyle(icon.parentElement).color) return { display: 'missing-search-icon' }
+    }
     return inner ? { display: getComputedStyle(inner).display, border: getComputedStyle(frame).backgroundColor } : null
   }).filter(Boolean))
   assert.ok(frames.length > 0)
@@ -76,6 +80,17 @@ try {
   assert.equal(hero.events, 'none')
   await checkSearchFrames()
   await checkHeroBoundary()
+  const divider = await page.locator('main header [class*="titleDivider"]').evaluate(element => {
+    const bounds = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return { top: bounds.top, bottom: bounds.bottom, width: bounds.width,
+      titleBottom: element.previousElementSibling.getBoundingClientRect().bottom,
+      descriptionTop: element.nextElementSibling.getBoundingClientRect().top,
+      background: style.backgroundImage, shadow: style.boxShadow,
+      diamond: getComputedStyle(element, '::after').transform }
+  })
+  assert.ok(divider.width > 0 && divider.top > divider.titleBottom && divider.bottom < divider.descriptionTop)
+  assert.ok(divider.background.includes('linear-gradient') && divider.shadow !== 'none' && divider.diamond !== 'none')
   const siteSearch = page.getByRole('searchbox', { name: 'Поиск по сайту', exact: true })
   const frames = await Promise.all([search, siteSearch].map(input => input.evaluate(input => ({
     classes: [...input.parentElement.classList],

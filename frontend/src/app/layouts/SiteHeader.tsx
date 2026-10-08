@@ -283,7 +283,6 @@ export function SiteHeader() {
               aria-label="Поиск по сайту"
               className={styles.searchInput}
               fieldClassName={styles.searchField}
-              icon={<PlaceholderIcon />}
               placeholder="Поиск..."
               rootClassName={styles.searchFrame}
               type="search"

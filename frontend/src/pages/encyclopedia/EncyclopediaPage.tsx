@@ -34,6 +34,7 @@ export default function EncyclopediaPage() {
         <div className={`${styles.container} ${styles.heroContent}`}>
           <header className={styles.intro}>
             <h1>Энциклопедия</h1>
+            <span className={styles.titleDivider} aria-hidden="true" />
             <p>Центральный справочник по миру, правилам, персонажам и многому другому.</p>
           </header>
         </div>
@@ -45,7 +46,6 @@ export default function EncyclopediaPage() {
             type="search"
             aria-label="Поиск по энциклопедии"
             placeholder="Поиск по энциклопедии..."
-            icon={<PlaceholderIcon />}
             value={query}
             rootClassName={styles.searchFrame}
             onChange={(event) => {
