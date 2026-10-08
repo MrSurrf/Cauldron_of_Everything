@@ -119,6 +119,7 @@ export const TextInput = forwardRef<
           rootClassName={joinClassNames(
             frameClassName,
             rootClassName,
+            type === 'search' ? fieldFrameStyles.search : undefined,
           )}
         >
           <input

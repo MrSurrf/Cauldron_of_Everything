@@ -97,7 +97,7 @@
 }
 
 .innerFrame {
-  /* Поисковые панели могут оставить только внешнюю рамку, не меняя остальные поля. */
+  /* Фильтры могут оставить только внешнюю рамку, не меняя остальные поля. */
   display: var(--input-inner-frame-display, block);
   --corner-cut:
     calc(
@@ -113,6 +113,11 @@
   clip-path: var(--input-frame-clip);
 
   pointer-events: none;
+}
+
+/* Все TextInput type="search", включая шапку сайта, имеют одну внешнюю рамку. */
+.root.search .innerFrame {
+  display: none;
 }
 
 .innerFrame::before {

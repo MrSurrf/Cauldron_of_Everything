@@ -1,31 +1,32 @@
 .page {
+  --encyclopedia-gutter: clamp(var(--space-4), 5.2vw, 6rem);
   min-height: var(--app-viewport-height);
-  padding: var(--space-5) clamp(var(--space-4), 5.2vw, 6rem) var(--space-7);
+  padding: var(--space-5) var(--encyclopedia-gutter) var(--space-7);
   background: var(--cursor-background-image, none), radial-gradient(ellipse at 47% 0, color-mix(in srgb, var(--color-surface-accent) 50%, transparent), transparent 65%), var(--color-background);
   color: var(--color-text-secondary);
 }
 
 .container { max-width: 100rem; margin-inline: auto; min-width: 0; }
-.home { position: relative; isolation: isolate; }
-.home::before {
+.page.home { padding-block-start: 0; padding-inline: 0; }
+.home .container { width: 100%; max-width: calc(100rem + 2 * var(--encyclopedia-gutter)); box-sizing: border-box; padding-inline: var(--encyclopedia-gutter); }
+.hero { position: relative; isolation: isolate; }
+.heroImage { display: block; width: 100%; height: auto; }
+.heroContent { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; }
+.hero .intro { max-width: 34rem; }
+.hero .intro p { margin-block-end: 0; }
+.hero::after {
   content: '';
   position: absolute;
-  z-index: -1;
-  inset: 0 0 auto;
-  height: clamp(15rem, 21vw, 24rem);
+  inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--color-background) 30%, transparent) 65%, var(--color-background)),
-    linear-gradient(90deg, color-mix(in srgb, var(--color-background) 68%, transparent), color-mix(in srgb, var(--color-background) 45%, transparent) 30%, transparent 65%),
-    url('../../../assets/backgrounds/encyclopedia.png');
-  background-size: cover;
-  background-position: center 40%;
-  background-repeat: no-repeat;
+  background:
+    linear-gradient(180deg, transparent 72%, color-mix(in srgb, var(--color-background) 35%, transparent) 90%, var(--color-background)),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-background) 68%, transparent), color-mix(in srgb, var(--color-background) 45%, transparent) 30%, transparent 65%);
 }
 .intro h1 { margin: 0; color: var(--color-heading-primary); font: 400 clamp(2.75rem, 5vw, 4.75rem)/1.1 var(--font-family-heading); }
 .intro p { margin: var(--space-2) 0 var(--space-5); font-size: var(--font-size-lg); line-height: var(--line-height-normal); }
 .search { position: relative; margin-bottom: var(--space-5); }
-.search .searchFrame { min-height: 4rem; --input-inner-frame-display: none; }
+.search .searchFrame { min-height: 4rem; }
 .searchHint { position: absolute; right: 9rem; top: 50%; transform: translateY(-50%); font-size: var(--font-size-sm); color: var(--color-text-subtle); pointer-events: none; }
 .shortcut { position: absolute; right: 3.9rem; top: 50%; transform: translateY(-50%); padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); background: var(--color-surface-muted); color: var(--color-text-secondary); font: inherit; font-size: var(--font-size-sm); pointer-events: none; }
 .search input { padding-right: 10rem !important; }
@@ -88,7 +89,7 @@
 
 @media (max-width: 70rem) { .searchHint { display: none; } }
 @media (max-width: 40rem) {
-  .page { padding-inline: var(--space-3); }
+  .page { --encyclopedia-gutter: var(--space-3); padding-inline: var(--encyclopedia-gutter); }
   .intro p { font-size: var(--font-size-md); }
   .shortcut { display: none; }
   .search input { padding-right: 4rem !important; }

@@ -99,9 +99,10 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getByLabelText('Название'),
-    ).toBeInTheDocument()
+    const input = canvas.getByLabelText('Название')
+    await expect(input).toBeInTheDocument()
+    const innerFrame = input.parentElement!.querySelector<HTMLElement>('[class*="innerFrame"]')!
+    expect(getComputedStyle(innerFrame).display).not.toBe('none')
   },
 }
 
@@ -192,11 +193,14 @@ export const Search: Story = {
     type: 'search',
   },
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getByRole('searchbox', {
-        name: 'Поиск по сайту',
-      }),
-    ).toHaveAttribute('type', 'search')
+    const input = canvas.getByRole('searchbox', { name: 'Поиск по сайту' })
+    await expect(input).toHaveAttribute('type', 'search')
+    const innerFrame = input.parentElement!.querySelector<HTMLElement>('[class*="innerFrame"]')!
+    expect(getComputedStyle(innerFrame).display).toBe('none')
+    await userEvent.click(input)
+    await expect(input).toHaveFocus()
+    await userEvent.type(input, 'Тараск')
+    await expect(input).toHaveValue('Тараск')
   },
 }
 

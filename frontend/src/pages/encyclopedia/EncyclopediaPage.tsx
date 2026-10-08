@@ -5,6 +5,7 @@ import { clearHistory, parseVisits, readHistorySnapshot, subscribeHistory } from
 import { encyclopediaGroups, sectionPath } from './encyclopediaSections'
 import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import { EncyclopediaResults } from './EncyclopediaResults'
+import encyclopediaBackground from '../../../assets/backgrounds/encyclopedia.png'
 import styles from './EncyclopediaPage.module.css'
 
 export default function EncyclopediaPage() {
@@ -28,12 +29,16 @@ export default function EncyclopediaPage() {
 
   return (
     <main className={`${styles.page} ${styles.home}`}>
+      <div className={styles.hero}>
+        <img className={styles.heroImage} src={encyclopediaBackground} width={1916} height={821} alt="" fetchPriority="high" />
+        <div className={`${styles.container} ${styles.heroContent}`}>
+          <header className={styles.intro}>
+            <h1>Энциклопедия</h1>
+            <p>Центральный справочник по миру, правилам, персонажам и многому другому.</p>
+          </header>
+        </div>
+      </div>
       <div className={styles.container}>
-        <header className={styles.intro}>
-          <h1>Энциклопедия</h1>
-          <p>Центральный справочник по миру, правилам, персонажам и многому другому.</p>
-        </header>
-
         <div className={styles.search} role="search" aria-label="Поиск по энциклопедии">
           <TextInput
             ref={inputRef}
