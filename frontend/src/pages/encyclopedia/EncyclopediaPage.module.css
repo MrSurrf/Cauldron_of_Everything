@@ -7,12 +7,21 @@
 }
 
 .container { max-width: 100rem; margin-inline: auto; min-width: 0; }
-.page.home { padding-block-start: 0; padding-inline: 0; }
-.home .container { width: 100%; max-width: calc(100rem + 2 * var(--encyclopedia-gutter)); box-sizing: border-box; padding-inline: var(--encyclopedia-gutter); }
+.page.home {
+  --encyclopedia-composition-width: calc(100rem + 2 * var(--encyclopedia-gutter));
+  padding-block-start: 0;
+  padding-inline: 0;
+}
+.home .container { width: 100%; max-width: var(--encyclopedia-composition-width); box-sizing: border-box; padding-inline: var(--encyclopedia-gutter); }
 .hero {
   position: relative;
   isolation: isolate;
+  /* Иллюстрация, градиенты и заголовок используют одну композицию, не край окна. */
+  width: 100%;
+  max-width: var(--encyclopedia-composition-width);
+  margin-inline: auto;
   height: clamp(18rem, 18vw, 22.8rem);
+  max-height: calc(var(--encyclopedia-composition-width) * 0.18);
   overflow: hidden;
   background: var(--color-background);
 }
@@ -24,7 +33,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center 50%;
-  mask-image: linear-gradient(90deg, transparent, var(--color-background) 18%);
+  mask-image: linear-gradient(90deg, transparent, var(--color-background) 18%, var(--color-background) 94%, transparent);
 }
 .heroContent { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; }
 .hero .intro { max-width: 34rem; }

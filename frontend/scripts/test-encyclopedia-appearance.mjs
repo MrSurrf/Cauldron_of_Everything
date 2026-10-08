@@ -42,6 +42,24 @@ async function checkHeroBoundary() {
   assert.ok(bounds.titleTop >= bounds.imageTop && bounds.descriptionBottom <= bounds.imageBottom, 'Заголовок и описание должны оставаться внутри изображения')
 }
 
+async function readComposition() {
+  return page.locator('main').evaluate(main => {
+    const image = main.querySelector('img[src*="encyclopedia"]')
+    const hero = image.parentElement
+    const heroRect = hero.getBoundingClientRect()
+    const imageRect = image.getBoundingClientRect()
+    const titleRect = main.querySelector('h1').getBoundingClientRect()
+    const searchRect = main.querySelector('[role="search"]').getBoundingClientRect()
+    const overlay = getComputedStyle(hero, '::after')
+    return {
+      heroLeft: heroRect.left, heroWidth: heroRect.width, heroHeight: heroRect.height,
+      imageOffset: imageRect.left - heroRect.left, imageWidth: imageRect.width,
+      titleOffset: titleRect.left - heroRect.left, searchOffset: searchRect.left - heroRect.left,
+      gradient: overlay.backgroundImage, gradientWidth: overlay.width,
+    }
+  })
+}
+
 try {
   await page.goto(`${baseUrl}/encyclopedia`)
   const search = page.getByRole('searchbox', { name: 'Поиск по энциклопедии', exact: true })
@@ -96,11 +114,21 @@ try {
   await page.waitForURL(url => !url.searchParams.has('search'))
   await search.waitFor()
   await page.screenshot({ path: join(tmpdir(), 'encyclopedia-background-desktop.png'), fullPage: true })
-  for (const width of [1280, 800, 390, 320]) {
+  let desktopComposition
+  for (const width of [1920, 2560, 3440, 3840, 1280, 800, 390, 320]) {
     await page.setViewportSize({ width, height: 900 })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
     await checkSearchFrames()
     await checkHeroBoundary()
+    const composition = await readComposition()
+    assert.ok(Math.abs(composition.titleOffset - composition.searchOffset) < 1, 'Заголовок и поиск должны использовать одну ось')
+    if (width >= 1920) {
+      const { heroLeft, ...relativeComposition } = composition
+      assert.ok(Math.abs(heroLeft - (width - composition.heroWidth) / 2) < 1, 'Композиция центрируется на широком мониторе')
+      if (desktopComposition) assert.deepEqual(relativeComposition, desktopComposition, 'Соотношение картинки, заголовка и градиента не меняется на больших экранах')
+      else desktopComposition = relativeComposition
+      await page.screenshot({ path: join(tmpdir(), `encyclopedia-background-${width}.png`), fullPage: true })
+    }
     if (width === 390) await page.screenshot({ path: join(tmpdir(), 'encyclopedia-background-mobile.png'), fullPage: true })
   }
   await page.setViewportSize({ width: 1700, height: 1000 })
@@ -111,7 +139,7 @@ try {
     assert.equal(await page.locator('main img[src*="encyclopedia"]').count(), 0)
   }
   assert.deepEqual(errors, [])
-  console.log('Энциклопедия: компактный баннер, градиент под заголовком, точная граница поиска, общий TextInput, поиск и ширины 320–1700 px — OK.')
+  console.log('Энциклопедия: стабильная композиция на мониторах 1920–3840 px, граница поиска, общий TextInput и адаптив 320–3840 px — OK.')
 } catch (error) {
   await page.screenshot({ path: join(tmpdir(), 'encyclopedia-appearance-failure.png'), fullPage: true })
   console.error('Страница:', page.url(), 'Ошибки:', errors, (await page.locator('body').innerText()).slice(0, 700))
