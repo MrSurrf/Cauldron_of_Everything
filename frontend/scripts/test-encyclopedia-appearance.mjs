@@ -37,7 +37,7 @@ async function checkHeroBoundary() {
       heroHeight: heroRect.height, objectFit: getComputedStyle(image).objectFit }
   })
   assert.ok(Math.abs(bounds.searchTop - bounds.imageBottom) < 1, 'Поиск должен начинаться точно на нижней границе изображения')
-  assert.ok(bounds.heroHeight >= 240 && bounds.heroHeight <= 304, 'Баннер должен оставаться компактным, а не занимать половину экрана')
+  assert.ok(bounds.heroHeight >= 288 && bounds.heroHeight <= 365, 'Высота баннера увеличена на 20%, но остаётся ограниченной')
   assert.equal(bounds.objectFit, 'cover', 'Кадрирование не должно растягивать изображение')
   assert.ok(bounds.titleTop >= bounds.imageTop && bounds.descriptionBottom <= bounds.imageBottom, 'Заголовок и описание должны оставаться внутри изображения')
 }
