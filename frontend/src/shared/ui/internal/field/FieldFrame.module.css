@@ -97,6 +97,8 @@
 }
 
 .innerFrame {
+  /* Поисковые панели могут оставить только внешнюю рамку, не меняя остальные поля. */
+  display: var(--input-inner-frame-display, block);
   --corner-cut:
     calc(
       var(--input-corner-cut) -

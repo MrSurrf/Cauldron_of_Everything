@@ -27,7 +27,7 @@ export default function EncyclopediaPage() {
   }, [])
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${styles.home}`}>
       <div className={styles.container}>
         <header className={styles.intro}>
           <h1>Энциклопедия</h1>
