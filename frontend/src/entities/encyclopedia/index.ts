@@ -1,4 +1,6 @@
 export { clearHistory, parseVisits, readHistorySnapshot, recordVisit, subscribeHistory } from './history'
 export type { EncyclopediaVisit } from './history'
+export { clearSearches, parseSearches, readSearchSnapshot, recordSearch, subscribeSearches } from './searchHistory'
+export type { EncyclopediaSearch } from './searchHistory'
 export { fetchEncyclopedia } from './repository'
 export type { EncyclopediaEntry } from './repository'

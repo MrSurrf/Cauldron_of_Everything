@@ -8,10 +8,11 @@ export type EncyclopediaVisit = {
   title: string
   category: string
   visitedAt: number
+  visitCount?: number
 }
 
 // ID используется только для разделения локального кеша, не для авторизации.
-export function historyKey(): string {
+export function encyclopediaStorageKey(prefix: string): string {
   try {
     for (const key of ['surveyAuth.access', 'surveyAuth.refresh']) {
       const token = localStorage.getItem(key)
@@ -20,12 +21,14 @@ export function historyKey(): string {
         const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
         const payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')))
         const id: unknown = payload.user_id ?? payload.sub
-        if (typeof id === 'string' || typeof id === 'number') return PREFIX + encodeURIComponent(String(id))
+        if (typeof id === 'string' || typeof id === 'number') return prefix + encodeURIComponent(String(id))
       } catch { /* Повреждённый access не мешает проверить refresh. */ }
     }
   } catch { /* Хранилище может быть недоступно в приватном режиме. */ }
-  return PREFIX + 'guest'
+  return prefix + 'guest'
 }
+
+export function historyKey(): string { return encyclopediaStorageKey(PREFIX) }
 
 export function parseVisits(raw: string | null, now = Date.now()): EncyclopediaVisit[] {
   try {
@@ -44,7 +47,7 @@ export function parseVisits(raw: string | null, now = Date.now()): EncyclopediaV
       if (seen.has(entry.path)) return false
       seen.add(entry.path)
       return true
-    }).slice(0, LIMIT)
+    }).slice(0, LIMIT).map(entry => ({ ...entry, visitCount: typeof entry.visitCount === 'number' && Number.isSafeInteger(entry.visitCount) && entry.visitCount > 0 ? Math.min(entry.visitCount, 1_000_000) : 1 }))
   } catch { return [] }
 }
 
@@ -52,12 +55,16 @@ export function readHistorySnapshot(): string | null {
   try { return localStorage.getItem(historyKey()) } catch { return null }
 }
 
-export function recordVisit(visit: Omit<EncyclopediaVisit, 'visitedAt'>): void {
+export function recordVisit(visit: Omit<EncyclopediaVisit, 'visitedAt' | 'visitCount'>): void {
   try {
     const now = Date.now()
+    const previousEntries = parseVisits(readHistorySnapshot(), now)
+    const previous = previousEntries.find(entry => entry.path === visit.path)
+    // StrictMode и повторный эффект при загрузке не считаются новым открытием.
+    const visitCount = previous ? (previous.visitCount ?? 1) + (now - previous.visitedAt >= 1000 ? 1 : 0) : 1
     const entries = parseVisits(JSON.stringify([
-      { ...visit, visitedAt: now },
-      ...parseVisits(readHistorySnapshot(), now).filter((entry) => entry.path !== visit.path),
+      { ...visit, visitedAt: now, visitCount },
+      ...previousEntries.filter((entry) => entry.path !== visit.path),
     ]), now)
     localStorage.setItem(historyKey(), JSON.stringify(entries))
     window.dispatchEvent(new Event(EVENT))
