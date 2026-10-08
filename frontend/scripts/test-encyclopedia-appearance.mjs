@@ -28,15 +28,17 @@ async function checkHeroBoundary() {
   const bounds = await page.locator('main').evaluate(main => {
     const image = main.querySelector('img[src*="encyclopedia"]')
     const imageRect = image.getBoundingClientRect()
+    const heroRect = image.parentElement.getBoundingClientRect()
     const searchRect = main.querySelector('[role="search"]').getBoundingClientRect()
     const titleRect = main.querySelector('h1').getBoundingClientRect()
     const descriptionRect = main.querySelector('header p').getBoundingClientRect()
     return { imageTop: imageRect.top, imageBottom: imageRect.bottom, searchTop: searchRect.top,
       titleTop: titleRect.top, descriptionBottom: descriptionRect.bottom,
-      displayedRatio: imageRect.width / imageRect.height, originalRatio: image.naturalWidth / image.naturalHeight }
+      heroHeight: heroRect.height, objectFit: getComputedStyle(image).objectFit }
   })
   assert.ok(Math.abs(bounds.searchTop - bounds.imageBottom) < 1, 'Поиск должен начинаться точно на нижней границе изображения')
-  assert.ok(Math.abs(bounds.displayedRatio - bounds.originalRatio) < 0.001, 'Изображение сохраняет новые пропорции без обрезки')
+  assert.ok(bounds.heroHeight >= 240 && bounds.heroHeight <= 304, 'Баннер должен оставаться компактным, а не занимать половину экрана')
+  assert.equal(bounds.objectFit, 'cover', 'Кадрирование не должно растягивать изображение')
   assert.ok(bounds.titleTop >= bounds.imageTop && bounds.descriptionBottom <= bounds.imageBottom, 'Заголовок и описание должны оставаться внутри изображения')
 }
 
@@ -109,7 +111,7 @@ try {
     assert.equal(await page.locator('main img[src*="encyclopedia"]').count(), 0)
   }
   assert.deepEqual(errors, [])
-  console.log('Энциклопедия: новые пропорции изображения, точная граница поиска, заголовок, общий TextInput в шапке и на странице, поиск и ширины 320–1700 px — OK.')
+  console.log('Энциклопедия: компактный баннер, градиент под заголовком, точная граница поиска, общий TextInput, поиск и ширины 320–1700 px — OK.')
 } catch (error) {
   await page.screenshot({ path: join(tmpdir(), 'encyclopedia-appearance-failure.png'), fullPage: true })
   console.error('Страница:', page.url(), 'Ошибки:', errors, (await page.locator('body').innerText()).slice(0, 700))
