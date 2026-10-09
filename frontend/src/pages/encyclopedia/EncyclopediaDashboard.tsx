@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ListCard, Panel, PlaceholderIcon, ScrollArea } from '../../shared/ui'
-import { clearHistory } from '../../entities/encyclopedia'
-import type { EncyclopediaVisit } from '../../entities/encyclopedia'
-import { encyclopediaGroups, encyclopediaSections, sectionPath } from './encyclopediaSections'
+import { clearHistory, fetchPopularEncyclopedia } from '../../entities/encyclopedia'
+import type { EncyclopediaVisit, PopularEncyclopediaEntry } from '../../entities/encyclopedia'
+import { entryPath } from './encyclopediaApi'
+import { encyclopediaGroups, encyclopediaSections, sectionPath, typeLabel } from './encyclopediaSections'
 import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import styles from './EncyclopediaDashboard.module.css'
 
@@ -13,8 +14,6 @@ const descriptions: Record<string, string> = {
   magic: 'Заклинания, магические предметы и всё, что наполняет мир силой.',
   rules: 'Ключевые правила, системы и механики игры.',
 }
-const quickSections = ['spells', 'bestiary', 'classes', 'items', 'conditions']
-  .flatMap(id => encyclopediaSections.filter(section => section.id === id))
 
 function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] }) {
   const gridRef = useRef<HTMLDivElement>(null)
@@ -62,18 +61,49 @@ function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] })
   </Panel>
 }
 
-function VisitLink({ visit, rank }: { visit: EncyclopediaVisit; rank?: number }) {
+function VisitLink({ visit }: { visit: EncyclopediaVisit }) {
   const section = encyclopediaSections.find(section => sectionPath(section) === visit.path)
   return <Link to={visit.path} className={styles.rowLink} title={new Date(visit.visitedAt).toLocaleString('ru')}>
     <ListCard className={styles.sidebarCard} appearance="navigation" name={visit.title} tags={[visit.category]}
-      icon={rank === undefined ? <EncyclopediaSectionIcon sectionId={section?.id ?? ''} /> : <span className={styles.rank}>{rank}</span>} />
+      icon={<EncyclopediaSectionIcon sectionId={section?.id ?? ''} />} />
     <span className={styles.rowArrow} aria-hidden="true" />
   </Link>
 }
 
+function PopularPanel() {
+  const [attempt, setAttempt] = useState(0)
+  const [state, setState] = useState<{ attempt: number; entries?: PopularEncyclopediaEntry[]; error?: boolean } | null>(null)
+  const current = state?.attempt === attempt ? state : null
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchPopularEncyclopedia(controller.signal).then(page => {
+      if (!controller.signal.aborted) setState({ attempt, entries: page.results })
+    }).catch(() => {
+      if (!controller.signal.aborted) setState({ attempt, error: true })
+    })
+    return () => controller.abort()
+  }, [attempt])
+
+  return <Panel className={styles.sidebarPanel} padding="compact">
+    <section className={styles.sidebarSection} aria-labelledby="encyclopedia-popular">
+      <h2 id="encyclopedia-popular"><span aria-hidden="true"><PlaceholderIcon /></span>Популярное</h2>
+      <ScrollArea aria-label="Популярные материалы" orientation="vertical" rootClassName={styles.panelScroll}>
+        {!current ? <p className={styles.empty} role="status">Загружаем общий рейтинг…</p>
+          : current.error ? <div role="status"><p className={styles.empty}>Общий рейтинг пока недоступен.</p>
+            <button type="button" className={styles.textAction} onClick={() => setAttempt(value => value + 1)}>Повторить</button></div>
+          : current.entries?.length === 0 ? <p className={styles.empty}>Пока нет данных об открытиях.</p>
+          : current.entries?.map((entry, index) => <Link to={entryPath(entry)} className={styles.rowLink} key={entry.id}>
+            <ListCard className={styles.sidebarCard} appearance="navigation" name={entry.name} tags={[typeLabel(entry.entity_type)]}
+              icon={<span className={styles.rank}>{index + 1}</span>} />
+            <span className={styles.rowArrow} aria-hidden="true" />
+          </Link>)}
+      </ScrollArea>
+    </section>
+  </Panel>
+}
+
 export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[] }) {
-  const [showHistory, setShowHistory] = useState(false)
-  const popular = [...history].sort((a, b) => (b.visitCount ?? 1) - (a.visitCount ?? 1) || b.visitedAt - a.visitedAt).slice(0, 5)
 
   return <div className={styles.dashboard}>
     <div className={styles.groups}>
@@ -81,42 +111,18 @@ export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[
     </div>
     <aside className={styles.sidebar} aria-label="Подборки энциклопедии">
       <Panel className={styles.sidebarPanel} padding="compact">
-        <section aria-labelledby="encyclopedia-quick">
-          <h2 id="encyclopedia-quick"><span aria-hidden="true"><PlaceholderIcon /></span>Быстрый доступ</h2>
-          <nav aria-label="Быстрый доступ">
-            {quickSections.map(section => <Link to={sectionPath(section)} className={styles.rowLink} key={section.id}>
-              <ListCard className={styles.sidebarCard} appearance="navigation" name={section.title}
-                icon={<EncyclopediaSectionIcon sectionId={section.id} />} />
-              <span className={styles.rowArrow} aria-hidden="true" />
-            </Link>)}
-          </nav>
-        </section>
-      </Panel>
-      <Panel className={styles.sidebarPanel} padding="compact">
-        <section aria-labelledby="encyclopedia-history">
+        <section className={styles.sidebarSection} aria-labelledby="encyclopedia-history">
           <div className={styles.sidebarHeading}>
             <h2 id="encyclopedia-history"><span aria-hidden="true"><PlaceholderIcon /></span>Недавно открывали</h2>
-            {history.length > 0 && <button type="button" className={styles.textAction}
-              aria-expanded={showHistory} aria-controls="recent-visits" onClick={() => setShowHistory(value => !value)}>
-              {showHistory ? 'Свернуть' : 'Вся история'}
-            </button>}
+            {history.length > 0 && <button type="button" className={styles.textAction} onClick={clearHistory}>Очистить историю</button>}
           </div>
-          {history.length === 0 ? <p className={styles.empty}>Здесь появятся открытые вами материалы.</p>
-            : showHistory ? <ScrollArea id="recent-visits" aria-label="История посещений" orientation="vertical"
-              rootClassName={styles.historyScroll} rootStyle={{ height: `${Math.min(history.length * 4.5, 24)}rem` }}>
-              {history.map(visit => <VisitLink key={visit.path} visit={visit} />)}
-            </ScrollArea> : <div id="recent-visits">{history.slice(0, 3).map(visit => <VisitLink key={visit.path} visit={visit} />)}</div>}
-          {history.length > 0 && showHistory && <button type="button" className={styles.textAction} onClick={clearHistory}>Очистить историю</button>}
+          <ScrollArea id="recent-visits" aria-label="История посещений" orientation="vertical" rootClassName={styles.panelScroll}>
+            {history.length === 0 ? <p className={styles.empty}>Здесь появятся открытые вами материалы.</p>
+              : history.map(visit => <VisitLink key={visit.path} visit={visit} />)}
+          </ScrollArea>
         </section>
       </Panel>
-      <Panel className={styles.sidebarPanel} padding="compact">
-        <section aria-labelledby="encyclopedia-popular">
-          <h2 id="encyclopedia-popular"><span aria-hidden="true"><PlaceholderIcon /></span>Популярное</h2>
-          <p className={styles.popularCaption}>По вашим открытиям</p>
-          {popular.length === 0 ? <p className={styles.empty}>Здесь появятся часто открываемые вами материалы.</p>
-            : popular.map((visit, index) => <VisitLink key={visit.path} visit={visit} rank={index + 1} />)}
-        </section>
-      </Panel>
+      <PopularPanel />
     </aside>
   </div>
 }
