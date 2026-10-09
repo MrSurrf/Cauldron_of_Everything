@@ -39,6 +39,7 @@ const MockTarrasquePage = lazy(
   () => import('../../pages/encyclopedia/MockTarrasquePage'),
 )
 const EncyclopediaPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaPage'))
+const ArticlesPage = lazy(() => import('../../pages/articles/ArticlesPage'))
 const SpellsPage = lazy(() => import('../../pages/encyclopedia/SpellsPage'))
 const BackgroundsPage = lazy(() => import('../../pages/encyclopedia/BackgroundsPage'))
 const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
@@ -92,6 +93,7 @@ export function AppRouter() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-table" element={<CampaignTableRoutePage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
+              <Route path="/articles" element={<ArticlesPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
               <Route path="/encyclopedia/backgrounds" element={<BackgroundsPage />} />
