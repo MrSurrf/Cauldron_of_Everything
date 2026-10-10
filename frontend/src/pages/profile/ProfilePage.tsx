@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent } from 'react'
 
 import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
-import { getProfile, patchProfile } from '../../shared/api/account'
+import { getProfile, patchProfile, uploadAvatar } from '../../shared/api/account'
 import type { ProfilePayload } from '../../shared/api/account'
 import { CharacterPortrait } from '../../tools/character-sheet'
 import { EmptyBadges, ProfileAvatar, ProfileFacts, ProfilePreview, ProfileSection, ProfileStats, TagList } from './ProfileParts'
@@ -11,7 +11,7 @@ import type { ProfileData, ProfileTab } from './profileModel'
 import { bindProfileCacheToAuth, readProfileCache, writeProfileCache } from './profileCache'
 import styles from './ProfilePage.module.css'
 
-// Сервер хранит только поля ProfilePayload; портрет пока живёт локально (object URL).
+// Сервер хранит поля ProfilePayload; аватар загружается отдельно и сохраняется как URL.
 function toPayload(profile: ProfileData): ProfilePayload {
   return {
     name: profile.name,
@@ -21,6 +21,7 @@ function toPayload(profile: ProfileData): ProfilePayload {
     role: profile.role,
     bio: profile.bio,
     quote: profile.quote,
+    portrait: profile.portrait,
     theme: profile.theme,
     visibility: profile.visibility,
     messages: profile.messages,
@@ -42,6 +43,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [portraitRevision, setPortraitRevision] = useState(0)
   const imageUrls = useRef<string[]>([])
+  const pendingPortraitFile = useRef<File | null>(null)
   const editingRef = useRef(false)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   const profile = editing ? draft : saved
@@ -91,9 +93,16 @@ export default function ProfilePage() {
       const next = { ...draft, name: draft.name.trim() }
       setSaving(true)
       try {
-        await patchProfile(toPayload(next))
-        writeProfileCache(next)
-        setSaved(next)
+        let portraitUrl: string | null = next.portrait
+        if (pendingPortraitFile.current) {
+          portraitUrl = await uploadAvatar(pendingPortraitFile.current)
+        }
+        const savedProfile = { ...next, portrait: portraitUrl }
+        await patchProfile(toPayload(savedProfile))
+        writeProfileCache(savedProfile)
+        setSaved(savedProfile)
+        setDraft(savedProfile)
+        pendingPortraitFile.current = null
         setEditing(false)
         editingRef.current = false
         setNotice('Изменения сохранены.')
@@ -104,6 +113,7 @@ export default function ProfilePage() {
         setSaving(false)
       }
     } else {
+      pendingPortraitFile.current = null
       setDraft(saved)
       setEditing(false)
       editingRef.current = false
@@ -117,10 +127,16 @@ export default function ProfilePage() {
       setNotice('Выберите изображение размером до 5 МБ.')
       return
     }
+    pendingPortraitFile.current = file
     const url = URL.createObjectURL(file)
     imageUrls.current.push(url)
     update('portrait', url)
     setNotice('')
+  }
+
+  function removePortrait() {
+    pendingPortraitFile.current = null
+    update('portrait', null)
   }
 
   function handleTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -232,7 +248,7 @@ export default function ProfilePage() {
             <div className={styles.stack}>
               <ProfileSection title="Аватар" action={editAction}>
                 <div className={styles.avatarEditor}>
-                  {editing ? <div className={styles.portraitPicker}><CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={() => update('portrait', null)} /></div> : <ProfileAvatar profile={profile} />}
+                  {editing ? <div className={styles.portraitPicker}><CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} /></div> : <ProfileAvatar profile={profile} />}
                   <div><h3>{editing ? 'Добавьте своё изображение' : 'Фото профиля'}</h3><p className={styles.muted}>Изображение до 5 МБ</p><p className={styles.muted}>{editing ? 'Нажмите на портрет, чтобы выбрать файл.' : 'Аватар отображается в профиле и рядом с вашими публикациями.'}</p></div>
                 </div>
               </ProfileSection>

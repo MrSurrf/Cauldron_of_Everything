@@ -15,6 +15,7 @@ export type ProfilePayload = {
   role?: string
   bio?: string
   quote?: string
+  portrait?: string | null
   theme?: string
   visibility?: string
   messages?: string
@@ -51,4 +52,17 @@ export async function patchProfile(data: ProfilePayload): Promise<ProfileRespons
   })
   if (!response.ok) throw await readError(response, 'Не удалось сохранить профиль')
   return response.json() as Promise<ProfileResponse>
+}
+
+export async function uploadAvatar(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('portrait', file)
+  const response = await authFetch(`${API_BASE_URL}/api/me/profile/avatar/`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!response.ok) throw await readError(response, 'Не удалось загрузить аватар')
+  const body = (await response.json()) as { portrait?: string }
+  if (!body.portrait) throw new Error('Сервер не вернул URL аватара')
+  return body.portrait
 }

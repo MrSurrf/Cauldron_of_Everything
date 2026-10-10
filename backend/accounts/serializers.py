@@ -12,6 +12,7 @@ STRING_FIELDS = {
     "theme": 40,
     "visibility": 20,
     "messages": 20,
+    "portrait": 500,
 }
 
 # Массивы строк (выбранные системы, стили игры, жанры).
@@ -50,6 +51,9 @@ def validate_profile_data(value):
         if field not in value:
             continue
         item = value[field]
+        if item is None:
+            cleaned[field] = item
+            continue
         if not isinstance(item, str):
             raise serializers.ValidationError({field: "Ожидается строка."})
         if len(item) > max_length:
@@ -129,6 +133,11 @@ class ProfileSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         # PATCH: новые поля накладываются поверх сохранённых, остальные не трогаем.
-        instance.data = {**instance.data, **validated_data["data"]}
-        instance.save(update_fields=["data", "updated_at"])
+        data = validated_data["data"]
+        if "portrait" in data and not data["portrait"]:
+            if instance.portrait:
+                instance.portrait.delete(save=False)
+            instance.portrait = None
+        instance.data = {**instance.data, **data}
+        instance.save(update_fields=["data", "portrait", "updated_at"])
         return instance
