@@ -16,6 +16,7 @@ export type TableActions = {
   remove: (id: string) => void
   release: (id: string) => void
   duplicate: (id: string) => void
+  toggleCreature: (id: string) => void
 }
 export const TableContext = createContext<TableActions | null>(null)
 export function useTableActions() {

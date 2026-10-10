@@ -6,7 +6,7 @@ import styles from './CampaignTable.module.css'
 
 function box(node: InternalNode<TableNode>) {
   return contourBox(node.data.entityType, node.internals.positionAbsolute,
-    node.measured.width ?? nodeVisual(node.data.entityType).width, node.measured.height ?? 80)
+    node.measured.width ?? nodeVisual(node.data.entityType).width, node.measured.height ?? 80, node.data.display?.creatureExpanded)
 }
 export function ContourEdge({ source, target, ...props }: EdgeProps<TableEdge>) {
   const from = useInternalNode<TableNode>(source)

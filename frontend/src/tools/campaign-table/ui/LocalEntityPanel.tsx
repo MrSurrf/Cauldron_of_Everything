@@ -4,6 +4,7 @@ import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { entityLabel } from '../model/library'
 import type { CanvasEntity, Diagram, TableNode } from '../model/table'
 import { ResizeGrip } from './ResizeGrip'
+import { NodePanelHeader } from './NodePanelHeader'
 import { useTableActions } from './tableContext'
 import styles from './CampaignTable.module.css'
 
@@ -32,8 +33,7 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
   const connectionCount = diagram.edges.filter(edge => edge.source === node.id || edge.target === node.id).length
   return <aside className={styles.localEntityPanel} aria-label="Инспектор объекта">
     <ResizeGrip label="Ширина Inspector" width={width} min={300} onResize={onResize} />
-    <header className={styles.sectionHeading}><div><span className={styles.localEntityType}>{entityLabel(entity.entityType)}</span><h2>Inspector</h2></div>
-      <Button size="sm" onClick={onClose} aria-label="Закрыть Inspector">×</Button></header>
+    <NodePanelHeader title={entityLabel(entity.entityType)} closeLabel="Закрыть Inspector" onClose={onClose} />
     <ScrollArea aria-label="Inspector объекта" rootClassName={styles.panelScrollArea} contentClassName={styles.localEntityBody}>
       <NameField key={entity.id} entity={entity} readOnly={readOnly} onUpdate={onUpdate} />
       <div className={styles.localEntityField}><span>Краткое описание</span>

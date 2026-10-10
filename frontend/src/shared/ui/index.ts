@@ -33,6 +33,7 @@ export {
   EditIcon,
   EquippedIcon,
   PlaceholderIcon,
+  SearchIcon,
   SavingThrowIcon,
   HeartIcon,
   TrashIcon,

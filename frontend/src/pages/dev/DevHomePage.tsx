@@ -21,6 +21,9 @@ export function DevHomeMenu() {
           <MenuButton icon={null} onClick={() => navigate('/encyclopedia')}>
             Энциклопедия
           </MenuButton>
+          <MenuButton icon={null} onClick={() => navigate('/articles')}>
+            Статьи
+          </MenuButton>
           <MenuButton icon={null} onClick={() => navigate('/encyclopedia/bestiary')}>
             Бестиарий
           </MenuButton>

@@ -221,12 +221,15 @@ export function SiteHeader() {
             Энциклопедия
           </NavLink>
 
-          <span
-            className={`${styles.navControl} ${styles.navControlDisabled}`}
-            aria-disabled={true}
+          <NavLink
+            className={({ isActive }) =>
+              `${styles.navControl} ${isActive ? styles.navControlActive : ''}`
+            }
+            to="/articles"
+            onClick={closeNavigation}
           >
             Статьи
-          </span>
+          </NavLink>
 
           {HEADER_MENUS.map((menu) => {
             const isOpen = openMenu === menu.id
@@ -283,7 +286,6 @@ export function SiteHeader() {
               aria-label="Поиск по сайту"
               className={styles.searchInput}
               fieldClassName={styles.searchField}
-              icon={<PlaceholderIcon />}
               placeholder="Поиск..."
               rootClassName={styles.searchFrame}
               type="search"

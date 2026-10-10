@@ -14,7 +14,7 @@ describe('Локальная история энциклопедии', () => {
     })
     vi.stubGlobal('window', new EventTarget())
   })
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 
   it('сохраняет открытия и переносит повторно открытую запись в начало без дублей', () => {
     recordVisit(visit)
@@ -64,5 +64,22 @@ describe('Локальная история энциклопедии', () => {
     expect(() => recordVisit(visit)).not.toThrow()
     expect(() => clearHistory()).not.toThrow()
     expect(readHistorySnapshot()).toBeNull()
+  })
+
+  it('считает повторные открытия, но не удваивает их при повторном эффекте загрузки', () => {
+    vi.useFakeTimers()
+    recordVisit(visit)
+    recordVisit(visit)
+    expect(parseVisits(readHistorySnapshot())[0].visitCount).toBe(1)
+    vi.advanceTimersByTime(2000)
+    recordVisit(visit)
+    expect(parseVisits(readHistorySnapshot())[0].visitCount).toBe(2)
+  })
+
+  it('читает прежнюю историю без счётчиков и нормализует повреждённый счётчик', () => {
+    const now = Date.now()
+    for (const visitCount of [undefined, -4, '100', NaN]) {
+      expect(parseVisits(JSON.stringify([{ ...visit, visitedAt: now, visitCount }]), now)[0].visitCount).toBe(1)
+    }
   })
 })

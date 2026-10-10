@@ -56,8 +56,8 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
     : <p role="status">{readOnly ? 'Статблок не опубликован.' : 'Загрузка статблока…'}</p>}</div>
   if (!editing) {
     if (snapshot.kind === 'creature') return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><CreatureFullView entity={{ ...snapshot.entity, id: data.entityId, name: data.title }} className={styles.fullCard} /></EntityReferenceLinks>
-    if (snapshot.kind === 'playerCharacter') return <div className={styles.instanceCharacterSheet}><CharacterSheetTool className={styles.instanceCharacterDocument} document={snapshot.document} /></div>
-    return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><section><h3>{data.title}</h3>
+    if (snapshot.kind === 'playerCharacter') return <div className={styles.instanceCharacterSheet}><CharacterSheetTool fitWidth className={styles.instanceCharacterDocument} document={snapshot.document} /></div>
+    return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><section><h3 className={styles.inspectorTitle}>{data.title}</h3>
       <dl className={styles.instanceEntryMeta}>{Object.entries(snapshot.entry.data ?? {}).filter(([key, value]) => !key.endsWith('_html') && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')).map(([key, value]) =>
         <div key={key}><dt>{({ level: 'Уровень', school: 'Школа', casting_time: 'Время накладывания', range: 'Дальность', duration: 'Длительность', components: 'Компоненты', rarity: 'Редкость', cost: 'Стоимость', price: 'Стоимость', weight: 'Вес', concentration: 'Концентрация', ritual: 'Ритуал', attunement: 'Настройка', item_type: 'Тип предмета' } as Record<string, string>)[key] ?? key}</dt><dd>{typeof value === 'boolean' ? value ? 'Да' : 'Нет' : String(value)}</dd></div>)}</dl>
       <RichContent html={snapshot.entry.content_html || snapshot.entry.content_text || ''} />
@@ -66,7 +66,7 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
       <details><summary>Все параметры</summary><StatBlockField field="Параметры" value={snapshot.entry.data ?? {}} readOnly onChange={() => {}} /></details></section></EntityReferenceLinks>
   }
   if (snapshot.kind === 'playerCharacter') return <div className={styles.instanceCharacterSheet}>
-    <CharacterSheetTool className={styles.instanceCharacterDocument} document={snapshot.document} onDocumentChange={document => update({ ...snapshot, document })} />
+    <CharacterSheetTool fitWidth className={styles.instanceCharacterDocument} document={snapshot.document} onDocumentChange={document => update({ ...snapshot, document })} />
   </div>
   if (snapshot.kind === 'creature') return <div className={styles.statEditor} aria-label="Полный статблок существа">
     <label className={styles.statField}>Название<TextInput aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entity: { ...snapshot.entity, name: event.target.value } })} /></label>

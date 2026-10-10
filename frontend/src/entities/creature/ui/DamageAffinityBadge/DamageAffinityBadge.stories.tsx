@@ -46,6 +46,9 @@ export const MixedStates: Story = {
     })
 
     await expect(badge).toBeVisible()
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize)
+    expect(badge.getBoundingClientRect().width).toBeCloseTo(5 * rem, 1)
+    expect(badge.getBoundingClientRect().height).toBeCloseTo(5.75 * rem, 1)
     await expect(
       badge.querySelector(
         '[data-marker="physical-resistance"]',

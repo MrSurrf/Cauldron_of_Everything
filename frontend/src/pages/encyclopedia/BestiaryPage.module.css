@@ -70,6 +70,7 @@
 }
 
 .compactControl {
+  --input-inner-frame-display: none;
   min-height: var(--control-height-sm);
   --input-corner-cut: var(--radius-sm);
   --input-inner-frame-inset: var(--space-1);

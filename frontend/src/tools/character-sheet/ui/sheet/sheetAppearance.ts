@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react'
 
 import type { SheetAppearance } from '../../model'
-import type { SheetAppearanceValue } from '../settings'
 
 type CharacterSheetStyle = CSSProperties & {
   '--field-font-family': string
@@ -13,62 +12,6 @@ type CharacterSheetStyle = CSSProperties & {
   '--sheet-heading-font': string
   '--sheet-heading-size': string
   '--sheet-section-padding': string
-}
-
-export function getAppearanceValue(
-  appearance: SheetAppearance,
-): SheetAppearanceValue {
-  const getBodySize = (value: number) => {
-    if (value <= 12) return 'small' as const
-    if (value >= 16) return 'large' as const
-    return 'medium' as const
-  }
-  const getHeadingSize = (value: number) => {
-    if (value <= 12) return 'small' as const
-    if (value >= 16) return 'large' as const
-    return 'medium' as const
-  }
-
-  return {
-    bodySize: getBodySize(appearance.bodyFontSize),
-    density: appearance.density,
-    fontFamily:
-      appearance.font === 'serif'
-        ? 'heading'
-        : appearance.font === 'sans'
-          ? 'system'
-          : 'body',
-    headingSize: getHeadingSize(
-      appearance.headingFontSize,
-    ),
-  }
-}
-
-export function appearancePatch(
-  value: SheetAppearanceValue,
-): SheetAppearance {
-  const sizeMap = {
-    small: 12,
-    medium: 14,
-    large: 16,
-  } as const
-  const headingSizeMap = {
-    small: 12,
-    medium: 14,
-    large: 16,
-  } as const
-
-  return {
-    bodyFontSize: sizeMap[value.bodySize],
-    density: value.density,
-    font:
-      value.fontFamily === 'heading'
-        ? 'serif'
-        : value.fontFamily === 'system'
-          ? 'sans'
-          : 'cauldron',
-    headingFontSize: headingSizeMap[value.headingSize],
-  }
 }
 
 export function getSheetStyle(

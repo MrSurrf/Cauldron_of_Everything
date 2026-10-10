@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Checkbox, TextInput } from '../../../shared/ui'
+import { Button, Checkbox, Combobox, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { RichContent } from '../../../shared/ui/RichContent'
 import styles from './CampaignTable.module.css'
@@ -96,9 +96,11 @@ export function StatBlockField({ field, value, path = '', readOnly = false, onCh
     : field === 'type' && /Урон/.test(path) ? options.damageType
     : field === 'type' && /Разделы статблока/.test(path) ? ['traits', 'actions', 'bonus-actions', 'reactions', 'legendary-actions', 'lair-actions', 'regional-effects', 'description', 'custom']
     : field === 'ability' ? ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] : undefined)
-  if (choices) return <label className={styles.statField}>{label}<select aria-label={accessible} value={String(value ?? '')} disabled={readOnly} onChange={event => onChange(event.target.value)}>
-    <option value="">Не указано</option>{choices.map(option => <option key={option} value={option}>{optionLabels[option] ?? labels[option] ?? option}</option>)}
-  </select></label>
+  if (choices) return <div className={styles.statField}><span>{label}</span><Combobox aria-label={accessible} value={String(value ?? '')} readOnly={readOnly}
+    options={[{ value: '', label: 'Не указано' }, ...choices.map(option => ({ value: option, label: optionLabels[option] ?? labels[option] ?? option })),
+      ...(value && !choices.includes(String(value)) ? [{ value: String(value), label: String(value) }] : [])]}
+    onValueChange={next => { if (next !== null) onChange(next) }} />
+  </div>
   if (typeof value === 'number' || value === null) return <label className={styles.statField}>{label}<input className={styles.statNumber} aria-label={accessible} type="number" value={value == null ? '' : value} readOnly={readOnly}
     onChange={event => { const number = event.target.valueAsNumber; onChange(Number.isFinite(number) ? number : undefined) }} /></label>
   return <label className={styles.statField}>{label}<TextInput aria-label={accessible} value={value == null ? '' : String(value)} readOnly={readOnly} onChange={event => onChange(event.target.value)} /></label>

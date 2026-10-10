@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { chooseCombobox } from './choose-combobox.mjs'
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1700, height: 1100 } })
@@ -54,6 +55,11 @@ try {
   assert.equal(await page.getByText('Старое скрытое состояние', { exact: true }).count(), 0)
 
   await edit('e1')
+  const panel = page.getByRole('complementary', { name: 'Карточка и редактор' })
+  const header = panel.locator(':scope > header')
+  assert.equal(await header.getByRole('heading').textContent(), 'Существо')
+  assert.ok((await header.boundingBox()).height <= 36, 'Заголовок панели должен быть компактным')
+  assert.equal(await header.getByRole('button', { name: 'Закрыть карточку' }).getAttribute('data-size'), null)
   const panelViewport = page.getByRole('region', { name: 'Карточка и редактор', exact: true })
   assert.equal(await panelViewport.evaluate(viewport => getComputedStyle(viewport).scrollbarWidth), 'none')
   await page.getByRole('slider', { name: 'Вертикальная прокрутка: Карточка и редактор', exact: true }).waitFor()
@@ -83,35 +89,65 @@ try {
   await close()
 
   await edit('hero')
+  assert.equal(await page.getByRole('heading', { name: 'Лист персонажа', exact: true }).count(), 0)
+  assert.equal(await page.getByRole('button', { name: 'Открыть настройки листа', exact: true }).count(), 0)
   const sheetViewport = page.locator('[aria-label="Лист персонажа"][tabindex]')
   await sheetViewport.waitFor()
-  const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('aside').getBoundingClientRect().bottom }))
-  assert.ok(geometry.content > geometry.client, 'Исходный широкий лист должен прокручиваться, а не перестраиваться')
-  assert.ok(geometry.bottom <= geometry.panelBottom, 'Прокрутка листа должна быть доступна внутри панели')
-  const horizontalScroll = page.getByRole('slider', { name: 'Горизонтальная прокрутка: Лист персонажа', exact: true })
-  await horizontalScroll.waitFor()
-  await horizontalScroll.press('End')
   await page.waitForFunction(() => {
     const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
-    return viewport.scrollLeft >= viewport.scrollWidth - viewport.clientWidth - 1
+    return viewport.scrollWidth <= viewport.clientWidth + 1
   })
-  await horizontalScroll.press('Home')
-  await page.waitForFunction(() => document.querySelector('[aria-label="Лист персонажа"][tabindex]').scrollLeft < 1)
+  const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('aside').getBoundingClientRect().bottom }))
+  assert.ok(geometry.content <= geometry.client + 1, 'Весь лист должен помещаться по ширине панели')
+  assert.ok(geometry.bottom <= geometry.panelBottom, 'Прокрутка листа должна быть доступна внутри панели')
+  assert.equal(await page.getByRole('slider', { name: 'Горизонтальная прокрутка: Лист персонажа', exact: true }).count(), 0)
+  const sheetPage = page.locator('[data-character-sheet-page]')
+  const originalWidth = await sheetPage.evaluate(element => element.offsetWidth)
+  assert.equal(originalWidth, 964, 'Исходная раскладка листа не должна меняться')
+  assert.ok((await sheetPage.boundingBox()).width < originalWidth, 'Лист уменьшается целиком, а не обрезается')
+  for (const slot of ['hit-points', 'death-saves']) {
+    const section = sheetPage.locator(`[data-character-sheet-slot="${slot}"]`)
+    const heading = section.getByRole('heading')
+    assert.equal(await heading.evaluate(element => getComputedStyle(element).marginTop), '0px')
+    assert.equal(await heading.evaluate(element => getComputedStyle(element).marginBottom), '0px')
+    const controls = slot === 'death-saves' ? section.getByRole('button') : section.locator('input, output')
+    const bounds = await section.boundingBox()
+    for (const control of await controls.all()) {
+      const rect = await control.boundingBox()
+      assert.ok(rect.y >= bounds.y && rect.y + rect.height <= bounds.y + bounds.height + 1, `${slot}: поле не должно обрезаться`)
+    }
+  }
+  // Изменение ширины Inspector пересчитывает масштаб без перестановки колонок.
+  const resizeGrip = page.getByRole('separator', { name: 'Ширина карточки', exact: true })
+  for (let step = 0; step < 5; step += 1) await resizeGrip.press('ArrowLeft')
+  await page.waitForFunction(() => {
+    const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
+    return viewport.scrollWidth <= viewport.clientWidth + 1
+  })
+  assert.equal((await saved()).layout.inspectorWidth, 800, 'Проверяем полностью расширенную панель')
   await page.getByRole('textbox', { name: 'Имя персонажа', exact: true }).fill('Локальный герой')
   await page.getByRole('textbox', { name: 'Класс', exact: true }).fill('Воин')
+  await page.getByRole('textbox', { name: 'Текущие', exact: true }).fill('23')
+  await page.getByRole('button', { name: 'Успех 2', exact: true }).click()
+  await page.mouse.move(40, 110)
   if (process.env.TABLE_TEST_SCREENSHOT) await page.screenshot({ path: process.env.TABLE_TEST_SCREENSHOT })
   assert.equal(characterDocument.identity.name, 'Герой')
+  await page.getByRole('button', { name: 'Просмотр', exact: true }).click()
+  await page.waitForFunction(() => {
+    const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
+    return viewport.scrollWidth <= viewport.clientWidth + 1
+  })
   await close()
 
-  // В библиотеке оригиналы прежние; запрещены кнопки добавления и forged DnD.
+  // Запрещённые разделы скрыты; меню использует общий компонент, не native select.
+  assert.equal(await page.locator('select').count(), 0)
+  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).click()
+  assert.deepEqual(await page.getByRole('option').allTextContents(), ['Бестиарий', 'Заклинания', 'Магические предметы'])
+  await page.screenshot({ path: join(tmpdir(), 'campaign-library-dropdown.png') })
+  await page.keyboard.press('Escape')
+  // Поддельный DnD запрещён независимо от отсутствия категории в меню.
   for (const type of ['class', 'race', 'background', 'feat', 'reference']) {
-    await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption(type)
-    const row = page.getByRole('button', { name: `Открыть: ${type}`, exact: true }); await row.waitFor()
-    assert.equal(await row.getAttribute('draggable'), 'false')
     assert.equal(await page.getByRole('button', { name: `Добавить на холст: ${type}`, exact: true }).count(), 0)
-    await row.click()
-    assert.equal(await page.getByRole('button', { name: 'Добавить на холст', exact: true }).count(), 0)
-    await close()
     const reference = { source: 'encyclopedia', entityId: '10', entityType: type, name: type, slug: type, facts: [] }
     await page.locator('.react-flow').evaluate((canvas, reference) => {
       const transfer = new DataTransfer(); transfer.setData('application/x-cauldron-entity', JSON.stringify(reference))
@@ -119,7 +155,7 @@ try {
     }, reference)
     assert.equal((await saved()).diagrams[0].nodes.length, 4)
   }
-  await page.getByRole('combobox', { name: 'Раздел библиотеки' }).selectOption('creature')
+  await chooseCombobox(page, 'Раздел библиотеки', 'Бестиарий')
   await page.getByRole('button', { name: 'Открыть: Страж', exact: true }).click()
   await page.getByLabel('Класс доспеха 13').waitFor()
   await close()
@@ -128,6 +164,8 @@ try {
   assert.equal(beforeReload.entities[1].statBlock.entry.data.level, 5)
   assert.equal(beforeReload.entities[2].statBlock.entry.data.rarity, 'Легендарный')
   assert.equal(beforeReload.entities[3].statBlock.document.identity.name, 'Локальный герой')
+  assert.equal(beforeReload.entities[3].statBlock.document.hitPoints.current.manualValue, 23)
+  assert.equal(beforeReload.entities[3].statBlock.document.deathSaves.successes, 2)
   assert.ok(beforeReload.diagrams[0].nodes.every(node => Object.keys(node.data).every(key => ['entityId', 'locationId'].includes(key))))
   offline = true
   await page.reload()
@@ -141,6 +179,10 @@ try {
   assert.deepEqual(errors, [])
   console.log('Полные статблоки, персонаж, оригиналы, ограничение типов, независимость данных и offline reload — OK.')
 } catch (error) {
+  console.error(await page.locator('[aria-label="Лист персонажа"][tabindex]').evaluateAll(viewports => viewports.map(viewport => ({
+    left: viewport.scrollLeft, width: viewport.scrollWidth, client: viewport.clientWidth,
+    max: document.querySelector('input[aria-label="Горизонтальная прокрутка: Лист персонажа"]')?.max,
+  }))))
   await page.screenshot({ path: join(tmpdir(), 'campaign-instance-editors-failure.png'), fullPage: true })
   console.error(errors); throw error
 } finally { await browser.close() }

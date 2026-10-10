@@ -13,7 +13,7 @@ import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { NodeRenderer } from './NodeRenderer'
 import { ConnectionPreview, ContourEdge } from './ContourEdge'
-import { canResizeNode, nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeVisual } from '../model/nodeGeometry'
 import { TableHistory } from '../model/tableHistory'
 import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
 import { LibrarySidebar } from './LibrarySidebar'
@@ -48,7 +48,10 @@ function locationAt(diagram: Diagram, position: XYPosition, measured: (id: strin
   })?.id
 }
 
-function compactNode(node: TableNode): TableNode {
+function compactNode(node: TableNode, expanded = false): TableNode {
+  if (node.data.entityType === 'creature' && expanded) return {
+    ...node, width: EXPANDED_CREATURE_WIDTH, height: undefined, data: { ...node.data, display: { creatureExpanded: true } },
+  }
   return canResizeNode(node.data.entityType)
     ? { ...node, width: node.width ?? nodeVisual(node.data.entityType).width }
     : { ...node, width: nodeVisual(node.data.entityType).width, height: undefined }
@@ -83,6 +86,8 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const [editorEntityId, setEditorEntityId] = useState<string | null>(null)
   const [schemesOpen, setSchemesOpen] = useState(false)
   const [newName, setNewName] = useState('')
+  const [expandedCreatures, setExpandedCreatures] = useState<ReadonlySet<string>>(() => new Set())
+  const [creatureMeasurements, setCreatureMeasurements] = useState<ReadonlyMap<string, NonNullable<TableNode['measured']>>>(() => new Map())
   useEffect(() => {
     if (readOnly || editorEntityId || draft) return
     const handleHistory = (event: KeyboardEvent) => {
@@ -184,6 +189,11 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
   }
   return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
+    toggleCreature: id => setExpandedCreatures(current => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    }),
     beginGesture: history.beginGesture, endGesture: history.endGesture,
     diagrams: table.diagrams, connectionSource: linking ? connectionSource : null,
     startConnection: (id, pointer) => { if (!readOnly) { setConnectionSource(id); setConnectionTarget(null); setConnectionPointer(pointer ? flow.screenToFlowPosition(pointer) : null); setAnchor(null); setSelection(null) } },
@@ -217,12 +227,26 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
         }
       }}>
-        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...compactNode(node), hidden: hidden.has(node.id), draggable: node.id === draft?.node.id ? false : node.draggable }))}
+        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...compactNode(node, expandedCreatures.has(node.id)), hidden: hidden.has(node.id),
+          measured: node.data.entityType === 'creature' ? creatureMeasurements.get(node.id) ?? node.measured : node.measured,
+          className: [node.className, linking ? 'nopan' : undefined].filter(Boolean).join(' '), draggable: node.id === draft?.node.id ? false : node.draggable }))}
           edges={diagram.edges.map(edge => ({ ...edge, type: 'contour', sourceHandle: 'out', targetHandle: 'in', hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly && !linking} nodesConnectable={false} edgesReconnectable={false}
-          onNodesChange={readOnly ? undefined : changes => {
-            const persistedChanges = changes.filter(change => !('id' in change) || change.id !== draft?.node.id)
+          onNodesChange={changes => {
+            // React Flow требует актуальных measured при следующем контролируемом рендере.
+            // Эти размеры живут только в UI: раскрытие не меняет документ и историю.
+            const measurements = changes.filter(change => change.type === 'dimensions' && change.dimensions
+              && diagram.nodes.find(node => node.id === change.id)?.data.entityType === 'creature')
+            if (measurements.length) setCreatureMeasurements(current => {
+              const next = new Map(current)
+              for (const change of measurements) if (change.type === 'dimensions' && change.dimensions) next.set(change.id, change.dimensions)
+              return next
+            })
+            if (readOnly) return
+            // Анимационные измерения существа — не resize размещения и не шаг Undo.
+            const persistedChanges = changes.filter(change => (!('id' in change) || change.id !== draft?.node.id)
+              && !(change.type === 'dimensions' && diagram.nodes.find(node => node.id === change.id)?.data.entityType === 'creature'))
             if (!persistedChanges.length) return
             onChange(current => {
               const removed = new Set(persistedChanges.filter(change => change.type === 'remove').map(change => change.id))

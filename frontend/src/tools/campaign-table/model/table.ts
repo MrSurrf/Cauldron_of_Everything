@@ -1,6 +1,7 @@
 import type { Edge, Node, Viewport, XYPosition } from '@xyflow/react'
 import type { BaseEntity, EntityType } from '../../../entities/base'
 import type { LibraryReference, LibrarySection } from './library'
+import { placementLibrarySection } from './library'
 import { parseTable as parseLegacyTable } from './legacyTable'
 import { validStatBlock } from './instanceStatBlock'
 import type { InstanceStatBlock } from './instanceStatBlock'
@@ -29,6 +30,8 @@ export type InstanceData = PlacementData & {
   entityType: EntityType; reference?: LibraryReference
   title: string; description: string; facts: string; state: string
   statBlock?: InstanceStatBlock
+  /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
+  display?: { creatureExpanded?: boolean }
 }
 export type TableNode = Node<InstanceData, EntityNode['type']>
 export type Diagram = Omit<StoredDiagram, 'nodes'> & { nodes: TableNode[] }
@@ -228,5 +231,6 @@ export function parseTable(raw: string): CampaignTable {
     || !['creature', 'class', 'race', 'background', 'feat', 'spell', 'item', 'reference', 'character', 'campaign'].includes(String(value.layout.section))) return invalid()
   value.layout.libraryWidth = Math.max(260, Math.min(650, value.layout.libraryWidth))
   value.layout.inspectorWidth = Math.max(300, Math.min(800, value.layout.inspectorWidth))
+  value.layout.section = placementLibrarySection(value.layout.section)
   return value as CampaignTable
 }
