@@ -42,6 +42,10 @@ export const Tooltip = forwardRef<
   TooltipProps
 >(function Tooltip(
   {
+    'aria-controls': ariaControls,
+    'aria-disabled': ariaDisabled,
+    'aria-expanded': ariaExpanded,
+    'aria-haspopup': ariaHasPopup,
     children,
     className,
     closeDelay = 80,
@@ -50,11 +54,14 @@ export const Tooltip = forwardRef<
     disabled = false,
     id,
     offset = 8,
+    onClick,
+    onKeyDown,
     onOpenChange,
     open,
     openDelay = 300,
     placement = 'top',
     portalContainer: providedPortalContainer,
+    tabIndex,
   },
   ref,
 ) {
@@ -260,13 +267,26 @@ export const Tooltip = forwardRef<
     event: KeyboardEvent<HTMLElement>,
   ) {
     childProps.onKeyDown?.(event)
+    onKeyDown?.(event)
 
     if (event.key === 'Escape' && visible) {
-      event.preventDefault()
-      event.stopPropagation()
+      if (!event.defaultPrevented) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
       clearOpenTimer()
       clearCloseTimer()
       setVisible(false)
+    }
+  }
+
+  function handleClick(
+    event: MouseEvent<HTMLElement>,
+  ) {
+    childProps.onClick?.(event)
+
+    if (!event.defaultPrevented) {
+      onClick?.(event)
     }
   }
 
@@ -326,15 +346,27 @@ export const Tooltip = forwardRef<
     TooltipTriggerProps
   >(children, {
     ref: setTriggerRef,
+    'aria-controls': mergeAriaIds(
+      childProps['aria-controls'],
+      ariaControls,
+    ),
     'aria-describedby': mergeAriaIds(
       childProps['aria-describedby'],
       visible ? tooltipId : undefined,
     ),
+    'aria-disabled':
+      ariaDisabled ?? childProps['aria-disabled'],
+    'aria-expanded':
+      ariaExpanded ?? childProps['aria-expanded'],
+    'aria-haspopup':
+      ariaHasPopup ?? childProps['aria-haspopup'],
     onBlur: handleBlur,
+    onClick: handleClick,
     onFocus: handleFocus,
     onKeyDown: handleKeyDown,
     onMouseEnter: handleMouseEnter,
     onMouseLeave: handleMouseLeave,
+    tabIndex: tabIndex ?? childProps.tabIndex,
   })
   const tooltipClassName = [
     styles.tooltip,

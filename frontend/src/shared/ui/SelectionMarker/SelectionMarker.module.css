@@ -1,0 +1,79 @@
+.marker {
+  position: relative;
+  display: grid;
+  width: var(--selection-marker-size);
+  height: var(--selection-marker-size);
+  flex: 0 0 var(--selection-marker-size);
+  place-items: center;
+  pointer-events: none;
+}
+
+.marker::before {
+  position: absolute;
+  content: '';
+  inset: 0;
+  border: var(--border-width-default) solid
+    var(--selection-marker-outline);
+  border-radius: var(--radius-round);
+  opacity: 1;
+}
+
+.marker[data-state='checked']::before {
+  inset: 0.0625rem;
+  border: 0;
+  background: var(--selection-marker-fill);
+  box-shadow: var(--selection-marker-glow);
+}
+
+.marker[data-state='mixed']::before {
+  border-color: var(--color-text-disabled);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--selection-marker-fill) 54%,
+        transparent
+      ) 50%,
+      transparent 50%
+    );
+  opacity: 0.72;
+}
+
+.marker[data-state='diamond']::before {
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--selection-marker-fill);
+  clip-path:
+    polygon(
+      50% 0,
+      63% 37%,
+      100% 50%,
+      63% 63%,
+      50% 100%,
+      37% 63%,
+      0 50%,
+      37% 37%
+    );
+  filter:
+    drop-shadow(
+      0 0 0.18rem
+      color-mix(
+        in srgb,
+        var(--selection-marker-fill) 48%,
+        transparent
+      )
+    );
+}
+
+@media (forced-colors: active) {
+  .marker::before {
+    border-color: CanvasText;
+  }
+
+  .marker[data-state='checked']::before,
+  .marker[data-state='diamond']::before {
+    background: Highlight;
+  }
+}

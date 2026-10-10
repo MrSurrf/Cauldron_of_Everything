@@ -4,6 +4,7 @@ import type {
 } from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary'
+export type ButtonDecoration = 'ornate' | 'minimal' | 'bare'
 export type ButtonSize =
   | 'sm'
   | 'md'
@@ -13,6 +14,7 @@ export type ButtonSize =
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: ButtonSize
+  decoration?: ButtonDecoration
   fullWidth?: boolean
   icon?: ReactNode
 }

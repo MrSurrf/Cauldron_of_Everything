@@ -1,0 +1,8 @@
+.page {
+  width: 100%;
+  height: var(--app-viewport-height);
+  min-height: 42rem;
+  padding: var(--space-2);
+  overflow: hidden;
+  background: var(--cursor-background-image, none), var(--color-canvas-background);
+}

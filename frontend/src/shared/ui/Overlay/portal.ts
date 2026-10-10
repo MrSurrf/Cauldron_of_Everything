@@ -90,6 +90,16 @@ export function resolvePortalContainer(
     ) ??
     fallback
 
+  // Нативный modal-dialog находится в top layer. Портал за его пределами
+  // окажется inert и визуально под диалогом, поэтому вложенные списки и
+  // подсказки всегда остаются внутри открытого модального окна.
+  if (
+    candidate instanceof HTMLDialogElement &&
+    candidate.open
+  ) {
+    return candidate
+  }
+
   if (
     candidate.ownerDocument !== ownerDocument ||
     !isViewportFixedSafe(candidate)

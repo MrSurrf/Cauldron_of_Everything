@@ -1,15 +1,23 @@
 export { Button } from './Button'
+export { DialogueBubble } from './DialogueBubble'
+export type { DialogueBubbleProps } from './DialogueBubble'
+export { GuideArrow } from './GuideArrow'
 export type {
+  ButtonDecoration,
   ButtonProps,
   ButtonSize,
   ButtonVariant,
 } from './Button'
+export { Checkbox } from './Checkbox'
+export type { CheckboxProps } from './Checkbox'
 export { Combobox } from './Combobox'
 export type {
   ComboboxFilter,
   ComboboxOption,
   ComboboxProps,
 } from './Combobox'
+export { ContentEditor } from './ContentEditor'
+export type { ContentEditorProps } from './ContentEditor'
 export { IconFrame } from './IconFrame'
 export type { IconFrameProps } from './IconFrame'
 export { IconButton } from './IconButton'
@@ -18,15 +26,43 @@ export type {
   IconButtonSize,
   IconButtonVariant,
 } from './IconButton'
-export { PlaceholderIcon } from './icons/PlaceholderIcon'
+export {
+  AttunementIcon,
+  DICE_TYPES,
+  DiceIcon,
+  EditIcon,
+  EquippedIcon,
+  PlaceholderIcon,
+  SearchIcon,
+  SavingThrowIcon,
+  HeartIcon,
+  TrashIcon,
+  VisionIcon,
+  getDiceTypeFromExpression,
+} from './icons'
+export type {
+  DiceIconProps,
+  DiceType,
+  SavingThrowIconProps,
+  SharedIconProps,
+  VisionIconProps,
+} from './icons'
 export { MenuButton } from './MenuButton'
 export type { MenuButtonProps } from './MenuButton'
 export { Panel } from './Panel'
+export { ListCard } from './ListCard'
+export type { ListCardProps } from './ListCard'
 export type {
   PanelPadding,
   PanelProps,
   PanelVariant,
 } from './Panel'
+export { Popover } from './Popover'
+export type {
+  PopoverPlacement,
+  PopoverProps,
+  PopoverTriggerProps,
+} from './Popover'
 export { ScrollArea } from './ScrollArea'
 export type {
   ScrollAreaOrientation,
@@ -37,8 +73,21 @@ export type {
   ScrollBarOrientation,
   ScrollBarProps,
 } from './ScrollBar'
+export { SelectionMarker } from './SelectionMarker'
+export type {
+  SelectionMarkerProps,
+  SelectionMarkerState,
+} from './SelectionMarker'
+export { SegmentedControl } from './SegmentedControl'
+export type {
+  SegmentedControlOption,
+  SegmentedControlProps,
+} from './SegmentedControl'
 export { TextArea } from './TextArea'
-export type { TextAreaProps } from './TextArea'
+export type {
+  TextAreaFormatAction,
+  TextAreaProps,
+} from './TextArea'
 export { TextInput } from './TextInput'
 export type {
   TextInputProps,
