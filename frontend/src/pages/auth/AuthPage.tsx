@@ -14,6 +14,7 @@ import {
   saveTokens,
   verifyCode,
 } from '../../shared/api/auth'
+import loginIllustration from '../../../assets/backgrounds/Logo_page.png'
 import styles from './AuthPage.module.css'
 
 type AuthPageProps = {
@@ -97,7 +98,13 @@ export default function AuthPage({
           <section
             className={styles.emptySide}
             aria-hidden="true"
-          />
+          >
+            <img
+              className={styles.brandIllustration}
+              src={loginIllustration}
+              alt=""
+            />
+          </section>
 
           <section
             className={styles.authSide}

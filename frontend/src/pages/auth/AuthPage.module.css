@@ -46,8 +46,13 @@
 }
 
 .emptySide {
+  position: relative;
+  display: grid;
   min-width: 0;
   min-height: 100%;
+  padding: var(--space-5);
+  place-items: center;
+  overflow: hidden;
 
   border-right:
     var(--border-width-default) solid
@@ -67,6 +72,29 @@
       ),
       transparent 46%
     );
+}
+
+.emptySide::before {
+  position: absolute;
+  inset: 10% 6%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--palette-gray-300) 18%, transparent),
+    color-mix(in srgb, var(--palette-purple-300) 8%, transparent) 48%,
+    transparent 72%
+  );
+  content: '';
+  filter: blur(var(--space-5));
+  pointer-events: none;
+}
+
+.brandIllustration {
+  position: relative;
+  display: block;
+  width: min(100%, 28rem);
+  height: auto;
+  object-fit: contain;
 }
 
 .authSide {
