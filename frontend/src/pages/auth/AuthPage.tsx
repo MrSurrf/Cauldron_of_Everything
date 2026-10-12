@@ -14,8 +14,16 @@ import {
   saveTokens,
   verifyCode,
 } from '../../shared/api/auth'
+import { PlaceholderIcon } from '../../shared/ui/icons'
 import loginIllustration from '../../../assets/backgrounds/Logo_page.png'
 import styles from './AuthPage.module.css'
+
+const showcaseFeatures = [
+  'Статьи и гайды',
+  'Чарлисты',
+  'Сообщество игроков и мастеров',
+  'Инструменты для кампаний',
+] as const
 
 type AuthPageProps = {
   onLogin: () => void
@@ -96,14 +104,45 @@ export default function AuthPage({
       >
         <div className={styles.layout}>
           <section
-            className={styles.emptySide}
-            aria-hidden="true"
+            className={styles.showcaseSide}
+            aria-labelledby="auth-showcase-title"
           >
-            <img
-              className={styles.brandIllustration}
-              src={loginIllustration}
-              alt=""
-            />
+            <div className={styles.showcaseArt} aria-hidden="true">
+              <span className={styles.orbit} />
+              <span className={styles.orbitInner} />
+              <span className={styles.celestialCrest}>☾</span>
+              <span className={`${styles.star} ${styles.starLeftTop}`} />
+              <span className={`${styles.star} ${styles.starRightTop}`} />
+              <span className={`${styles.star} ${styles.starLeftBottom}`} />
+              <span className={`${styles.star} ${styles.starRightBottom}`} />
+              <img
+                className={styles.brandIllustration}
+                src={loginIllustration}
+                alt=""
+              />
+            </div>
+
+            <div className={styles.showcaseCopy}>
+              <h2 id="auth-showcase-title">
+                Мир настольных приключений
+                <span>на расстоянии клика</span>
+              </h2>
+              <p>
+                Играйте, создавайте, делитесь и находите единомышленников
+                в одном месте.
+              </p>
+            </div>
+
+            <ul className={styles.showcaseFeatures}>
+              {showcaseFeatures.map((feature) => (
+                <li key={feature}>
+                  <span className={styles.featureIcon} aria-hidden="true">
+                    <PlaceholderIcon />
+                  </span>
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section
