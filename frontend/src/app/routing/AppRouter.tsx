@@ -7,9 +7,11 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from 'react-router-dom'
 
 import { SiteHeader } from '../layouts/SiteHeader'
+import AuthPage from '../../pages/auth/AuthPage'
 import { AccessGate } from './AccessGate'
 import styles from './AppRouter.module.css'
 
@@ -73,12 +75,24 @@ function BestiaryRoute() {
   return <BestiaryPage key={location.search} />
 }
 
-export function AppRouter() {
+function LoginPreviewPage() {
+  const navigate = useNavigate()
+
   return (
-    <BrowserRouter>
-      <AccessGate>
+    <AuthPage
+      onLogin={() => navigate('/')}
+      onBack={() => navigate('/')}
+    />
+  )
+}
+
+function RoutedApp() {
+  const location = useLocation()
+
+  return (
+    <AccessGate>
       <div className={styles.shell}>
-        <SiteHeader />
+        {location.pathname !== '/dev/login-preview' && <SiteHeader />}
         <div className={styles.content}>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -90,6 +104,7 @@ export function AppRouter() {
                 path="/survey"
                 element={<SurveyRoutePage />}
               />
+              <Route path="/dev/login-preview" element={<LoginPreviewPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-table" element={<CampaignTableRoutePage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
@@ -126,7 +141,14 @@ export function AppRouter() {
           </Suspense>
         </div>
       </div>
-      </AccessGate>
+    </AccessGate>
+  )
+}
+
+export function AppRouter() {
+  return (
+    <BrowserRouter>
+      <RoutedApp />
     </BrowserRouter>
   )
 }

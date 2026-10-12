@@ -210,6 +210,15 @@
   font-size: var(--font-size-sm);
 }
 
+.previewBack {
+  display: block;
+  width: fit-content;
+  margin: var(--space-5) auto 0;
+  color: var(--color-interactive);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
 @media (max-width: 800px) {
   .page {
     padding: var(--space-4);

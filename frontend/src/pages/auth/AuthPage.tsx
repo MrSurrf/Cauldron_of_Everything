@@ -18,10 +18,12 @@ import styles from './AuthPage.module.css'
 
 type AuthPageProps = {
   onLogin: () => void
+  onBack?: () => void
 }
 
 export default function AuthPage({
   onLogin,
+  onBack,
 }: AuthPageProps) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -260,6 +262,18 @@ export default function AuthPage({
                   Создать аккаунт
                 </span>
               </div>
+              {onBack && (
+                <Button
+                  className={styles.previewBack}
+                  decoration="bare"
+                  icon={null}
+                  size="sm"
+                  type="button"
+                  onClick={onBack}
+                >
+                  Вернуться в мастерскую
+                </Button>
+              )}
             </div>
           </section>
         </div>
