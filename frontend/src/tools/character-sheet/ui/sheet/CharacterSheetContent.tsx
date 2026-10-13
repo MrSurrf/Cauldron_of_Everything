@@ -41,6 +41,7 @@ export type CharacterSheetContentProps = {
     characterId: string,
   ) => void
   onPortraitRemove?: (characterId: string) => void
+  onEncyclopediaItemDrop?: (transfer: DataTransfer) => void
 }
 
 export function CharacterSheetContent({
@@ -48,6 +49,7 @@ export function CharacterSheetContent({
   fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
+  onEncyclopediaItemDrop,
 }: CharacterSheetContentProps) {
   const sheet = useCharacterSheetViewModel()
   const { viewportRef, pageRef, scale } = useSheetFitWidth(fitWidth)
@@ -210,7 +212,7 @@ export function CharacterSheetContent({
                     className={styles.equipmentSlot}
                     data-character-sheet-slot="equipment"
                   >
-                    <CharacterEquipmentSection sheet={sheet} />
+                    <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
                   </div>
 
                   <div

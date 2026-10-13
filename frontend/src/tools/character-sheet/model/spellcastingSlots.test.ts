@@ -5,6 +5,8 @@ import { createMockSpellcasterSheet } from './mockSpellcaster'
 import { manualNumericField } from './defaults'
 import { getEffectiveSpellSlots } from './spellcastingSlots'
 import { getEffectiveSpellcastingAbility } from './spellcastingAbility'
+import { emptyItem, itemFromBlock, itemToSource } from '../../../shared/ui/ContentEditor/itemContent'
+import { parseContentSource } from '../../../shared/ui/ContentEditor/contentCodec'
 
 describe('Лист заклинаний персонажа', () => {
   it('пересчитывает ячейки по уровню класса и ограничивает потраченные', () => {
@@ -34,10 +36,12 @@ describe('Лист заклинаний персонажа', () => {
 
   it('связывает записи энциклопедии и не дублирует изученное заклинание', () => {
     const initial = createMockSpellcasterSheet()
-    const item = { id: 'first-shield', entityId: 101, name: 'Щит', quantity: 1 }
-    const withItem = characterSheetReducer(initial, characterSheetActions.addEquipmentItem(item))
-    const doubledItem = characterSheetReducer(withItem, characterSheetActions.addEquipmentItem({ ...item, id: 'second-shield' }))
-    expect(doubledItem.equipmentItems?.find(entry => entry.entityId === 101)?.quantity).toBe(2)
+    const item = itemToSource({ ...emptyItem, title: 'Щит' }, { 'entity-id': '101' })
+    const withItem = characterSheetReducer(initial, characterSheetActions.importEquipmentItem(101, item))
+    const doubledItem = characterSheetReducer(withItem, characterSheetActions.importEquipmentItem(101, item))
+    const equipment = parseContentSource(doubledItem.equipmentContentText ?? '').filter(block => block.kind === 'item')
+    expect(equipment).toHaveLength(5)
+    expect(itemFromBlock(equipment.find(block => block.attributes['entity-id'] === '101')!)).toMatchObject({ title: 'Щит', quantity: '2' })
 
     const spell = { id: 'first-spell', entityId: 202, name: 'Благословение', level: 1 as const, prepared: false }
     const withSpell = characterSheetReducer(doubledItem, characterSheetActions.addSpell(spell))

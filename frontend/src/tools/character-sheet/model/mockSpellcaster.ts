@@ -2,6 +2,7 @@ import type { CharacterSheetDocument, SpellEntry, SpellLevel } from './character
 import { SPELL_SLOT_LEVELS, formulaNumericField, manualNumericField } from './defaults'
 import { createMockCharacterSheet } from './mocks'
 import { getSingleClassSpellSlots } from './spellcastingRules'
+import { emptyItem, itemToSource } from '../../../shared/ui/ContentEditor/itemContent'
 
 function demoSpell(
   key: string,
@@ -96,13 +97,9 @@ export function createMockSpellcasterSheet(): CharacterSheetDocument {
     notes: '',
     itemId: 'item-mace',
   }]
-  sheet.equipmentContentText = ''
-  sheet.equipmentItems = [
-    { id: 'demo-chain-mail', entityId: null, name: 'Кольчуга', quantity: 1 },
-    { id: 'demo-shield', entityId: null, name: 'Щит', quantity: 1 },
-    { id: 'demo-mace', entityId: null, name: 'Булава', quantity: 1 },
-    { id: 'demo-holy-symbol', entityId: null, name: 'Священный символ', quantity: 1 },
-  ]
+  sheet.equipmentContentText = ['Кольчуга', 'Щит', 'Булава', 'Священный символ']
+    .map((title) => itemToSource({ ...emptyItem, title }))
+    .join('\n\n')
   sheet.features = [{
     id: 'feature-life-domain',
     category: 'class',

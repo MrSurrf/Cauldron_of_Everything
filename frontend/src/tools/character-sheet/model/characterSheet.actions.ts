@@ -8,7 +8,6 @@ import type {
   CustomField,
   CustomSection,
   DeathSavesState,
-  EquipmentEntry,
   HitDicePool,
   NumericFieldAddress,
   NumericFieldState,
@@ -21,6 +20,7 @@ import type {
   SpellEntry,
   SpellSlotLevel,
 } from './characterSheet.types'
+import type { ContentItemValue } from '../../../shared/ui/ContentEditor'
 import type { VisionSense } from '../../../shared/model'
 
 export type PersonalitySectionKey = keyof PersonalitySections
@@ -47,9 +47,8 @@ export type CharacterSheetAction =
   | { type: 'attack/remove'; id: string }
   | { type: 'attacks/setContentText'; value: string }
   | { type: 'equipment/setContentText'; value: string }
-  | { type: 'equipment/addItem'; value: EquipmentEntry }
-  | { type: 'equipment/updateItem'; id: string; patch: Partial<EquipmentEntry> }
-  | { type: 'equipment/removeItem'; id: string }
+  | { type: 'equipment/importItem'; entityId: number; source: string }
+  | { type: 'equipment/enrichItem'; entityId: number; patch: Partial<ContentItemValue> }
   | { type: 'spellcasting/setAbility'; ability: AbilityKey }
   | { type: 'spellcasting/setSlotUsed'; level: SpellSlotLevel; used: number }
   | { type: 'spellcasting/setSlotMaximum'; level: SpellSlotLevel; maximum: number }
@@ -130,9 +129,8 @@ export const characterSheetActions = {
     type: 'equipment/setContentText',
     value,
   }),
-  addEquipmentItem: (value: EquipmentEntry): CharacterSheetAction => ({ type: 'equipment/addItem', value }),
-  updateEquipmentItem: (id: string, patch: Partial<EquipmentEntry>): CharacterSheetAction => ({ type: 'equipment/updateItem', id, patch }),
-  removeEquipmentItem: (id: string): CharacterSheetAction => ({ type: 'equipment/removeItem', id }),
+  importEquipmentItem: (entityId: number, source: string): CharacterSheetAction => ({ type: 'equipment/importItem', entityId, source }),
+  enrichEquipmentItem: (entityId: number, patch: Partial<ContentItemValue>): CharacterSheetAction => ({ type: 'equipment/enrichItem', entityId, patch }),
   setSpellcastingAbility: (ability: AbilityKey): CharacterSheetAction => ({ type: 'spellcasting/setAbility', ability }),
   setSpellSlotUsed: (level: SpellSlotLevel, used: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotUsed', level, used }),
   setSpellSlotMaximum: (level: SpellSlotLevel, maximum: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotMaximum', level, maximum }),

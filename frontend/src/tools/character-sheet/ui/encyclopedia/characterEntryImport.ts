@@ -1,5 +1,6 @@
 import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
-import { createClientId, type EquipmentEntry, type SpellEntry, type SpellLevel } from '../../model'
+import { emptyItem, itemToSource, type ContentItemValue } from '../../../../shared/ui/ContentEditor'
+import { createClientId, type SpellEntry, type SpellLevel } from '../../model'
 import type { CharacterEncyclopediaEntry } from './characterEncyclopediaDrag'
 
 function stringValue(value: unknown): string | undefined {
@@ -30,14 +31,16 @@ function componentsValue(value: unknown): string | undefined {
   return stringValue(value)
 }
 
-export function createEquipmentFromEncyclopedia(entry: CharacterEncyclopediaEntry): EquipmentEntry {
-  return {
-    id: createClientId('equipment'),
-    entityId: entry.id,
-    name: entry.name,
-    nameEn: entry.nameEn,
-    quantity: 1,
-  }
+export function equipmentItemSource(entry: CharacterEncyclopediaEntry): string {
+  return itemToSource({
+    ...emptyItem,
+    title: entry.name,
+    itemType: firstString(entry.summary, 'classification', 'item_type', 'type') ?? '',
+    rarity: firstString(entry.summary, 'rarity') ?? '',
+  }, {
+    'entity-id': String(entry.id),
+    'name-en': encodeURIComponent(entry.nameEn),
+  })
 }
 
 export function createSpellFromEncyclopedia(entry: CharacterEncyclopediaEntry): SpellEntry | null {
@@ -61,8 +64,14 @@ export function createSpellFromEncyclopedia(entry: CharacterEncyclopediaEntry): 
   }
 }
 
-export function equipmentDetailPatch(detail: EncyclopediaEntry): Partial<EquipmentEntry> {
-  return { description: detail.content_text?.trim() || undefined }
+export function equipmentDetailPatch(detail: EncyclopediaEntry): Partial<ContentItemValue> {
+  const data = detail.data ?? {}
+  return {
+    description: detail.content_text?.trim() || undefined,
+    itemType: firstString(data, 'classification', 'item_type', 'type'),
+    rarity: firstString(data, 'rarity'),
+    cost: firstString(data, 'cost', 'price'),
+  }
 }
 
 export function spellDetailPatch(detail: EncyclopediaEntry): Partial<SpellEntry> {

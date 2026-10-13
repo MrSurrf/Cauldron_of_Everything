@@ -8,6 +8,7 @@ import type { CharacterSheetAction } from './characterSheet.actions'
 import { getRulesetDefinition } from './rulesets/registry'
 import { createEmptySpellcasting, formulaNumericField } from './defaults'
 import { getEffectiveSpellSlots } from './spellcastingSlots'
+import { enrichEquipmentItem, importEquipmentItem } from './equipmentContent'
 
 const replaceById = <T extends { id: string }>(
   items: readonly T[],
@@ -328,21 +329,10 @@ export function characterSheetReducer(
       return { ...document, attacksContentText: action.value }
     case 'equipment/setContentText':
       return { ...document, equipmentContentText: action.value }
-    case 'equipment/addItem': {
-      const items = document.equipmentItems ?? []
-      const existing = action.value.entityId === null ? undefined
-        : items.find(item => item.entityId === action.value.entityId)
-      return {
-        ...document,
-        equipmentItems: existing
-          ? items.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item)
-          : [...items, { ...action.value, quantity: Math.max(1, action.value.quantity) }],
-      }
-    }
-    case 'equipment/removeItem':
-      return { ...document, equipmentItems: (document.equipmentItems ?? []).filter(item => item.id !== action.id) }
-    case 'equipment/updateItem':
-      return { ...document, equipmentItems: replaceById(document.equipmentItems ?? [], action.id, action.patch) }
+    case 'equipment/importItem':
+      return { ...document, equipmentContentText: importEquipmentItem(document.equipmentContentText ?? '', action.entityId, action.source) }
+    case 'equipment/enrichItem':
+      return { ...document, equipmentContentText: enrichEquipmentItem(document.equipmentContentText ?? '', action.entityId, action.patch) }
     case 'spellcasting/setAbility':
       return { ...document, spellcasting: { ...(document.spellcasting ?? createEmptySpellcasting()), ability: action.ability, abilityMode: 'manual' } }
     case 'spellcasting/setSlotUsed': {

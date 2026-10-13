@@ -1,105 +1,101 @@
 .workspace {
   position: relative;
-  display: grid;
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   color: var(--color-text-primary);
 }
 
-.stage {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  padding-right: 2rem;
-  height: 100%;
-}
-
-.sheetSurface {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  box-shadow: var(--shadow-panel);
-}
-
-.sheetSurface[data-item-drop-target='true']::after {
-  content: 'Отпустите предмет, чтобы добавить его в снаряжение';
-  position: absolute;
-  z-index: 5;
-  inset: var(--space-2);
-  display: grid;
-  place-items: center;
-  border: 2px dashed var(--color-border-accent);
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-surface-accent) 76%, transparent);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  pointer-events: none;
-}
-
-.spellViewport {
+.spreadViewport {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-color: var(--color-border-accent) var(--color-background);
 }
 
-.pageTab {
+.book {
+  --book-page-width: 60.75rem;
+  display: flex;
+  width: max-content;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  gap: var(--space-2);
+  margin-inline: auto;
+}
+
+.characterPanel,
+.spellPanel {
+  position: relative;
+  flex: 0 0 var(--book-page-width);
+  width: var(--book-page-width);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.characterPanel {
+  z-index: 2;
+}
+
+.characterContent {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+.spellPanel {
+  z-index: 1;
+  overflow-y: auto;
+  border: var(--border-width-default) solid var(--color-content-border);
+  background: var(--color-canvas-background);
+  scrollbar-color: var(--color-border-accent) var(--color-background);
+}
+
+.pageTab,
+.libraryTrigger {
   position: absolute;
   z-index: 0;
-  top: 6.25rem;
-  right: 0.25rem;
+  right: -1.65rem;
   display: grid;
-  width: 3rem;
-  height: 6rem;
-  padding: 0 0 0 1.25rem;
+  width: 2.75rem;
   place-items: center;
-  border: 1px solid var(--color-border-accent);
+  border: var(--border-width-default) solid var(--color-border-accent);
   color: var(--color-brand-bright);
   background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
   box-shadow: var(--shadow-panel);
-  clip-path: polygon(0 0, calc(100% - 0.4rem) 0, 100% 0.4rem, 100% calc(100% - 0.4rem), calc(100% - 0.4rem) 100%, 0 100%);
   cursor: pointer;
-  font: 2rem/1 var(--font-family-heading);
   transform: translateX(0);
   transition: transform var(--motion-duration-fast), background var(--motion-duration-fast);
 }
 
-.libraryTrigger {
-  position: absolute;
-  z-index: 0;
-  top: 12.75rem;
-  right: 0.25rem;
-  width: 3rem;
-  height: 8.75rem;
-  padding: var(--space-2) 0 var(--space-2) 1.25rem;
-  border: 1px solid var(--color-content-border);
-  color: var(--color-brand-bright);
-  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
-  box-shadow: var(--shadow-panel);
-  cursor: pointer;
-  font: var(--font-size-xs)/1.2 var(--font-family-body);
-  writing-mode: vertical-rl;
-  transform: translateX(0);
-  transition: transform var(--motion-duration-fast);
+.pageTab {
+  top: 44%;
+  height: 6rem;
+  padding-left: 1rem;
+  font: 2rem/1 var(--font-family-heading);
+  clip-path: polygon(0 0, calc(100% - 0.35rem) 0, 100% 0.35rem, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%);
 }
 
-.libraryTrigger:hover,
-.libraryTrigger[aria-expanded='true'] {
-  border-color: var(--color-border-accent);
-  transform: translateX(0.25rem);
+.libraryTrigger {
+  top: 12rem;
+  height: 8.5rem;
+  padding: var(--space-2) 0 var(--space-2) 1rem;
+  font: var(--font-size-xs)/1.2 var(--font-family-body);
+  writing-mode: vertical-rl;
 }
 
 .pageTab:hover,
-.pageTab:focus-visible {
+.pageTab:focus-visible,
+.libraryTrigger:hover,
+.libraryTrigger:focus-visible {
   background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent));
-  transform: translateX(0.25rem);
+  transform: translateX(0.45rem);
 }
 
 .pageTab:focus-visible,
@@ -109,14 +105,16 @@
 }
 
 .library {
-  z-index: 3;
-  min-width: 0;
+  position: absolute;
+  z-index: 5;
+  inset: 0 0 0 auto;
+  width: min(24rem, 90%);
   height: 100%;
 }
 
 .importError {
   position: absolute;
-  z-index: 4;
+  z-index: 6;
   right: 2.5rem;
   bottom: var(--space-3);
   display: flex;
@@ -139,18 +137,15 @@
   font: inherit;
 }
 
-@media (min-width: 86rem) {
-  .workspace[data-library-open='true'] {
-    grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
-  }
+.workspace[data-fit-width='true'] .book {
+  width: calc(100% - 2rem);
+  gap: var(--space-2);
 }
 
-@media (max-width: 85.999rem) {
-  .library {
-    position: absolute;
-    inset: 0 0 0 auto;
-    width: min(24rem, 90%);
-  }
+.workspace[data-fit-width='true'] .characterPanel,
+.workspace[data-fit-width='true'] .spellPanel {
+  flex: 1 0 0;
+  width: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

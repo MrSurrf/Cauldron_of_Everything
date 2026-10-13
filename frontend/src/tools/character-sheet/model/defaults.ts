@@ -141,7 +141,6 @@ export function createEmptyCharacterSheet(
       pp: manualNumericField(0),
     },
     equipmentContentText: '',
-    equipmentItems: [],
     spellcasting: createEmptySpellcasting(),
     personality: {
       traits: [],

@@ -19,6 +19,7 @@ export type SpellcastingSummary = {
 
 export type SpellSheetProps = {
   className?: string
+  pageScale?: number
   spellcasting: SpellcastingSummary
   slots: Partial<Record<SpellSlotLevel, SpellSlotPool>>
   spells: readonly SpellSheetSpell[]
@@ -125,6 +126,7 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
 
 export function SpellSheet({
   className,
+  pageScale = 1,
   spellcasting,
   slots,
   spells,
@@ -164,10 +166,10 @@ export function SpellSheet({
     onSpellDrop(event.dataTransfer, level)
   }
 
-  return <div className={[styles.root, className].filter(Boolean).join(' ')}>
-    {(onBack || onOpenEncyclopedia) && <div className={styles.toolbar}>
+  return <div className={[styles.root, className].filter(Boolean).join(' ')}
+    style={pageScale < 1 ? { zoom: pageScale, width: '60.75rem' } : undefined}>
+    {onBack && <div className={styles.toolbar}>
       {onBack && <button type="button" className={styles.toolbarButton} onClick={onBack}>← <span>Лист персонажа</span></button>}
-      {onOpenEncyclopedia && <button type="button" className={styles.toolbarButton} onClick={onOpenEncyclopedia}>+ <span>Открыть энциклопедию</span></button>}
     </div>}
 
     <div className={styles.content}>
@@ -192,6 +194,9 @@ export function SpellSheet({
         <div className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div><span className={styles.summaryLabel}>Бонус атаки</span><strong>{signedBonus(spellcasting.attackBonus)}</strong></div>
+          {onOpenEncyclopedia && <button type="button" className={styles.encyclopediaButton}
+            title="Открыть энциклопедию заклинаний" aria-label="Открыть энциклопедию заклинаний"
+            onClick={onOpenEncyclopedia}>+</button>}
         </div>
       </div>
 

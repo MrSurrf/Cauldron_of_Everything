@@ -5,6 +5,7 @@ import {
   type CharacterSheetDocument,
 } from '../../tools/character-sheet'
 import styles from './CharacterSheetRoutePage.module.css'
+import { emptyItem, itemToSource } from '../../shared/ui/ContentEditor/itemContent'
 
 const STORAGE_KEY = 'cauldron.character-sheet.demo.v1'
 
@@ -14,7 +15,18 @@ function loadDocument(): CharacterSheetDocument {
     if (raw) {
       const value: unknown = JSON.parse(raw)
       if (value && typeof value === 'object' && 'id' in value && 'identity' in value && 'abilities' in value) {
-        return value as CharacterSheetDocument
+        const saved = value as CharacterSheetDocument
+        if (saved.equipmentItems?.length) {
+          const oldItems = saved.equipmentItems.map((item) => itemToSource({
+            ...emptyItem,
+            title: item.name,
+            quantity: String(item.quantity),
+            description: item.description ?? '',
+          }, item.entityId ? { 'entity-id': String(item.entityId) } : {}))
+          saved.equipmentContentText = [saved.equipmentContentText?.trim(), ...oldItems].filter(Boolean).join('\n\n')
+          delete saved.equipmentItems
+        }
+        return saved
       }
     }
   } catch {
