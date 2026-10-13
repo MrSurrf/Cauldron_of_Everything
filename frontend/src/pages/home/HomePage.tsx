@@ -152,7 +152,6 @@ export default function HomePage() {
             <PlaceholderIcon />
           </span>)}
         </div>
-        <Link className={styles.devLink} to="/dev">Мастерская</Link>
       </section>
     </div>
   </main>

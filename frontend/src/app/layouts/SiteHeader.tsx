@@ -294,6 +294,14 @@ export function SiteHeader() {
             />
           </form>
 
+          <NavLink
+            className={({ isActive }) => `${styles.workshopLink} ${isActive ? styles.workshopLinkActive : ''}`}
+            to="/dev"
+            onClick={closeNavigation}
+          >
+            Мастерская
+          </NavLink>
+
           <button
             className={`${styles.iconButton} ${styles.mobileMenuButton}`}
             type="button"

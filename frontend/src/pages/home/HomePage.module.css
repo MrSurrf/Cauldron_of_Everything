@@ -111,8 +111,8 @@
 .editorialSection { min-width: 0; padding: var(--space-4); border: var(--border-width-default) solid var(--color-border-default); background: linear-gradient(180deg, var(--color-surface-default), var(--color-background)); }
 .sectionHeading { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
 .sectionHeading h2 { margin: 0; color: var(--color-heading-primary); font-size: var(--font-size-lg); font-weight: 400; }
-.sectionHeading a, .featureLink, .devLink { color: var(--color-interactive); font-size: var(--font-size-xs); text-decoration: none; }
-.sectionHeading a:hover, .featureLink:hover, .devLink:hover { color: var(--color-interactive-hover); text-decoration: underline; }
+.sectionHeading a, .featureLink { color: var(--color-interactive); font-size: var(--font-size-xs); text-decoration: none; }
+.sectionHeading a:hover, .featureLink:hover { color: var(--color-interactive-hover); text-decoration: underline; }
 .editorialBody { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(10rem, 0.85fr); gap: var(--space-3); min-height: 15rem; }
 .newsFeature { min-height: 100%; --panel-border: var(--color-brand-muted); --panel-surface-material: radial-gradient(ellipse at 70% 10%, var(--color-surface-accent), transparent 70%), linear-gradient(160deg, var(--color-surface-default), var(--color-background)); }
 .newsFeature > :global(div:last-child) { display: flex; flex-direction: column; align-items: start; justify-content: space-between; gap: var(--space-5); }
@@ -136,7 +136,6 @@
 .partnerSlots { display: flex; align-items: center; justify-content: space-around; flex: 1; gap: var(--space-3); }
 .partnerSlot { display: grid; place-items: center; width: clamp(3.5rem, 7vw, 6rem); height: 3.5rem; color: var(--color-brand-muted); }
 .partnerSlot svg { width: 2rem; height: 2rem; }
-.devLink { flex: 0 0 auto; }
 
 @media (max-width: 80rem) {
   .start { grid-template-columns: minmax(0, 1fr); }
@@ -167,7 +166,6 @@
   .editorialSection { padding: var(--space-3); }
   .newsFeature { min-height: 15rem; }
   .friendsIntro { max-width: none; }
-  .devLink { margin-left: auto; }
 }
 
 @media (max-width: 26rem) {
