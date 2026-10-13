@@ -45,7 +45,7 @@ function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] })
     <div ref={gridRef} className={styles.sectionGrid} id={`section-grid-${group.id}`} data-group={group.id}
       style={{ '--section-columns': columns } as CSSProperties}>
       {sections.map(section => <Link className={styles.sectionButton} to={sectionPath(section)} key={section.id}>
-        <ListCard appearance="navigation" name={section.title}
+        <ListCard appearance="navigation" name={section.title} tags={[section.description]}
           icon={<EncyclopediaSectionIcon sectionId={section.id} />} />
       </Link>)}
     </div>
