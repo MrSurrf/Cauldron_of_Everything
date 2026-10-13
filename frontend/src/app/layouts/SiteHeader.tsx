@@ -173,7 +173,7 @@ export function SiteHeader() {
     const query = searchQuery.trim()
     navigate(
       query
-        ? `/encyclopedia?search=${encodeURIComponent(query)}`
+        ? `/encyclopedia?search=${encodeURIComponent(query)}&search_mode=full`
         : '/encyclopedia',
     )
   }

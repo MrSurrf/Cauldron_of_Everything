@@ -6,6 +6,7 @@ import { recordVisit } from '../../entities/encyclopedia'
 import { Button, Combobox, ListCard, Panel, TextInput } from '../../shared/ui'
 import { groupBackgroundsBySource, loadBackgrounds } from './backgroundCatalog'
 import type { CatalogBackground } from './backgroundCatalog'
+import { catalogNameStartsWith } from './catalogAlphabet'
 import { entryPath } from './encyclopediaApi'
 import base from './BestiaryPage.module.css'
 import styles from './BackgroundsPage.module.css'
@@ -16,7 +17,9 @@ export default function BackgroundsPage() {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [search, setSearch] = useState('')
-  const [query, setQuery] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
+  const [searchResult, setSearchResult] = useState<{ query: string; entries: CatalogBackground[] } | null>(null)
+  const [searchError, setSearchError] = useState('')
   const [source, setSource] = useState<string | null>(null)
   const [skill, setSkill] = useState<string | null>(null)
   const [mode, setMode] = useState<'official' | 'homebrew'>('official')
@@ -37,19 +40,37 @@ export default function BackgroundsPage() {
     return () => controller.abort()
   }, [attempt])
 
-  const currentCatalog = useMemo(() => showFavorites ? [] : catalog.filter(entry => entry.homebrew === (mode === 'homebrew')), [catalog, mode, showFavorites])
+  useEffect(() => {
+    if (status !== 'ready' || !submittedQuery) return
+    const controller = new AbortController()
+    loadBackgrounds(controller.signal, submittedQuery).then(entries => {
+      if (controller.signal.aborted) return
+      setSearchResult({ query: submittedQuery, entries })
+      setSearchError('')
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted) setSearchError(cause instanceof Error ? cause.message : 'Не удалось выполнить поиск')
+    })
+    return () => controller.abort()
+  }, [status, submittedQuery, attempt])
+
+  const searchableCatalog = useMemo(() => submittedQuery
+    ? searchResult && searchResult.query === submittedQuery ? searchResult.entries : []
+    : catalog, [submittedQuery, searchResult, catalog])
+  const searchPending = Boolean(submittedQuery && searchResult?.query !== submittedQuery && !searchError)
+  const currentCatalog = useMemo(() => showFavorites ? [] : searchableCatalog.filter(entry => entry.homebrew === (mode === 'homebrew')), [searchableCatalog, mode, showFavorites])
   const sourceOptions = useMemo(() => groupBackgroundsBySource(currentCatalog).map(group => ({ value: group.source, label: group.source })), [currentCatalog])
   const skillOptions = useMemo(() => [...new Set(currentCatalog.flatMap(entry => entry.skills))].sort((a, b) => a.localeCompare(b, 'ru')).map(value => ({ value, label: value })), [currentCatalog])
   const results = useMemo(() => currentCatalog.filter(entry =>
-    (!query || `${entry.name} ${entry.name_en}`.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru')))
+    (submittedQuery || catalogNameStartsWith(entry.name, search))
     && (!skill || entry.skills.includes(skill))
     && (!source || (entry.sources.length ? entry.sources : ['Источник не указан']).includes(source)),
-  ), [currentCatalog, query, skill, source])
+  ), [currentCatalog, submittedQuery, search, skill, source])
   const groups = useMemo(() => groupBackgroundsBySource(results).filter(group => !source || group.source === source), [results, source])
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setQuery(search.trim())
+    setSearchError('')
+    setSubmittedQuery(search.trim())
   }
 
   return <main className={base.page}>
@@ -65,19 +86,23 @@ export default function BackgroundsPage() {
           aria-pressed={showFavorites} onClick={() => setShowFavorites(true)}>Избранное</button>
       </div>
       <form className={styles.filters} onSubmit={submit}>
-        <TextInput rootClassName={base.compactControl} type="search" aria-label="Поиск по разделу" placeholder="Поиск по разделу" value={search} disabled={status !== 'ready'} onChange={event => setSearch(event.target.value)} />
+        <TextInput rootClassName={base.compactControl} type="search" aria-label="Поиск по названию; Enter — поиск по содержимому карточек" placeholder="Название; Enter — поиск по содержимому" value={search} disabled={status !== 'ready'} onChange={event => { setSearch(event.target.value); setSubmittedQuery(''); setSearchError('') }} />
         <Combobox rootClassName={base.compactControl} label="Навыки" options={skillOptions} value={skill} onValueChange={setSkill} disabled={status !== 'ready'} />
         <Combobox rootClassName={base.compactControl} label="Источник" options={sourceOptions} value={source} onValueChange={setSource} disabled={status !== 'ready'} />
         <Button size="sm" icon={null} type="submit" disabled={status !== 'ready'}>Найти</Button>
-        <Button size="sm" variant="secondary" decoration="minimal" icon={null} disabled={status !== 'ready'} onClick={() => { setSearch(''); setQuery(''); setSource(null); setSkill(null) }}>Сбросить</Button>
+        <Button size="sm" variant="secondary" decoration="minimal" icon={null} disabled={status !== 'ready'} onClick={() => { setSearch(''); setSubmittedQuery(''); setSearchError(''); setSource(null); setSkill(null) }}>Сбросить</Button>
       </form>
     </Panel>
     <Panel className={`${base.listPanel} ${styles.list}`} padding="compact">
       {status === 'loading' && <p role="status" className={base.loadStatus}>Загружаем предыстории…</p>}
+      {searchPending && <p role="status" className={base.loadStatus}>Ищем предыстории…</p>}
+      {searchError && <div role="alert" className={base.loadStatus}>Не удалось выполнить поиск: {searchError}.
+        <Button size="md" variant="secondary" icon={null} onClick={() => { setSearchError(''); setAttempt(value => value + 1) }}>Повторить</Button>
+      </div>}
       {status === 'error' && <div role="alert" className={base.loadStatus}>{error}<Button size="md" variant="secondary" icon={null} onClick={() => { setStatus('loading'); setAttempt(value => value + 1) }}>Повторить</Button></div>}
       {status === 'ready' && <>
         <div className={`${base.listToolbar} ${styles.toolbar}`}><span>По источникам</span><span className={base.count} role="status">Найдено: {results.length}</span></div>
-        {!results.length && <p className={base.empty}>{showFavorites ? 'В избранном пока ничего нет.' : 'Предыстории не найдены. Измените фильтры или запрос.'}</p>}
+        {!results.length && !searchPending && !searchError && <p className={base.empty}>{showFavorites ? 'В избранном пока ничего нет.' : 'Предыстории не найдены. Измените фильтры или запрос.'}</p>}
         <div className={base.creatureGroups}>{groups.map(group => <section key={group.source} aria-label={group.source}>
           <h2 className={styles.sourceHeading}>{group.source}</h2>
           <ul className={`${base.creatureGrid} ${styles.cards}`}>{group.entries.map(entry => <li key={entry.id}>

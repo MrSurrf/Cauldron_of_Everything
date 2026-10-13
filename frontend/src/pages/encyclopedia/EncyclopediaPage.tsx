@@ -10,25 +10,21 @@ import styles from './EncyclopediaPage.module.css'
 export default function EncyclopediaPage() {
   const [params, setParams] = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
-  const searchTimer = useRef<number | null>(null)
   const snapshot = useSyncExternalStore(subscribeHistory, readHistorySnapshot, () => null)
   const history = useMemo(() => parseVisits(snapshot), [snapshot])
   const searchSnapshot = useSyncExternalStore(subscribeSearches, readSearchSnapshot, () => null)
   const searches = useMemo(() => parseSearches(searchSnapshot), [searchSnapshot])
   const query = params.get('search') ?? ''
+  const fullSearch = params.get('search_mode') === 'full'
 
-  useEffect(() => {
-    if (!query.trim()) return
-    // Запоминаем выполненный запрос после паузы, а не каждый набранный символ.
-    searchTimer.current = window.setTimeout(() => { recordSearch(query); searchTimer.current = null }, 1000)
-    return () => { if (searchTimer.current !== null) window.clearTimeout(searchTimer.current); searchTimer.current = null }
-  }, [query])
-
-  function changeQuery(value: string) {
+  function changeQuery(value: string, submit = false) {
     const next = new URLSearchParams(params)
     if (value) next.set('search', value)
     else next.delete('search')
+    if (submit && value.trim()) next.set('search_mode', 'full')
+    else next.delete('search_mode')
     setParams(next, { replace: true })
+    if (submit) recordSearch(value)
   }
 
   useEffect(() => {
@@ -60,12 +56,11 @@ export default function EncyclopediaPage() {
             ref={inputRef}
             type="search"
             aria-label="Поиск по энциклопедии"
-            placeholder="Поиск по энциклопедии..."
+            placeholder="Название; Enter — поиск по содержимому"
             value={query}
             rootClassName={styles.searchFrame}
             onChange={event => changeQuery(event.target.value)}
-            onKeyDown={event => { if (event.key === 'Enter') recordSearch(query) }}
-            onBlur={() => recordSearch(query)}
+            onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); changeQuery(query, true) } }}
           />
           {!query && <span className={styles.searchHint}>Например: заклинания, монстры, состояния…</span>}
           <kbd className={styles.shortcut}>Ctrl + K</kbd>
@@ -75,10 +70,8 @@ export default function EncyclopediaPage() {
           <span className={styles.queriesLabel}>Недавние запросы:</span>
           {searches.length === 0 ? <span className={styles.queriesEmpty}>Пока нет запросов</span> : <>
             {searches.map(search => <button type="button" className={styles.queryChip} key={search.query.toLocaleLowerCase('ru')}
-              title={search.query} onClick={() => { recordSearch(search.query); changeQuery(search.query) }}>{search.query}</button>)}
+              title={search.query} onClick={() => changeQuery(search.query, true)}>{search.query}</button>)}
             <button type="button" className={styles.clearQueries} onClick={() => {
-              if (searchTimer.current !== null) window.clearTimeout(searchTimer.current)
-              searchTimer.current = null
               clearSearches()
             }} aria-label="Очистить недавние запросы">Очистить</button>
           </>}
@@ -87,7 +80,7 @@ export default function EncyclopediaPage() {
         {query.trim() && (
           <section className={styles.results} aria-label="Результаты поиска">
             <h2>Результаты поиска</h2>
-            <EncyclopediaResults key={query.trim()} query={query.trim()} />
+            <EncyclopediaResults key={`${query.trim()}:${fullSearch}`} query={query.trim()} fullSearch={fullSearch} />
           </section>
         )}
 

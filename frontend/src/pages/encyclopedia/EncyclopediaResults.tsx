@@ -9,27 +9,29 @@ import styles from './EncyclopediaPage.module.css'
 
 type ResultPage = { count: number; results: EncyclopediaEntry[] }
 
-export function EncyclopediaResults({ query = '', type }: { query?: string; type?: string }) {
+export function EncyclopediaResults({ query = '', type, fullSearch = false }: { query?: string; type?: string; fullSearch?: boolean }) {
   const [page, setPage] = useState(1)
   const [attempt, setAttempt] = useState(0)
   const [showFavorites, setShowFavorites] = useState(false)
   const [state, setState] = useState<{ request: string; data?: ResultPage; error?: string } | null>(null)
-  const request = `${query}:${type ?? ''}:${page}:${attempt}`
+  const request = `${query}:${type ?? ''}:${fullSearch}:${page}:${attempt}`
   const current = state?.request === request ? state : null
-  const sections = type ? [] : encyclopediaSections.filter((section) => `${section.title} ${section.description}`.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru')))
+  const sections = type ? [] : encyclopediaSections.filter((section) =>
+    (fullSearch ? `${section.title} ${section.description}`.toLocaleLowerCase('ru').includes(query.toLocaleLowerCase('ru'))
+      : section.title.toLocaleLowerCase('ru').startsWith(query.toLocaleLowerCase('ru'))))
 
   useEffect(() => {
     const controller = new AbortController()
     const timeout = window.setTimeout(() => {
       const params = new URLSearchParams({ page: String(page), page_size: '24' })
-      if (query) params.set('q', query)
+      if (query) params.set(fullSearch ? 'q' : 'name_prefix', query)
       if (type) params.set('type', type)
       fetchEncyclopedia<ResultPage>(`?${params}`, controller.signal)
         .then((data) => { if (!controller.signal.aborted) setState({ request, data }) })
         .catch(() => { if (!controller.signal.aborted) setState({ request, error: 'Не удалось загрузить материалы. Проверьте соединение и повторите попытку.' }) })
     }, query ? 250 : 0)
     return () => { window.clearTimeout(timeout); controller.abort() }
-  }, [page, query, request, type])
+  }, [page, query, request, type, fullSearch])
 
   return (
     <>

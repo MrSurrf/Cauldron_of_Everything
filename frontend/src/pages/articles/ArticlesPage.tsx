@@ -125,15 +125,20 @@ function ArticlesSidebar({ category, onCategoryChange }: {
 
 export default function ArticlesPage() {
   const [query, setQuery] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [sort, setSort] = useState<ArticleSort>('newest')
   const [view, setView] = useState('grid')
   const [page, setPage] = useState(1)
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
+  const fullSearch = Boolean(normalizedQuery && submittedQuery === normalizedQuery)
   const filteredArticles = articleFixtures
     .filter(article => category === 'all' || article.category === category)
-    .filter(article => !normalizedQuery || [article.title, article.description, article.author, categoryLabel(article.category)]
-      .some(value => value.toLocaleLowerCase('ru-RU').includes(normalizedQuery)))
+    .filter(article => !normalizedQuery || (fullSearch
+      ? normalizedQuery.split(/\s+/).every(word =>
+        [article.title, article.description, article.author, categoryLabel(article.category)]
+          .some(value => value.toLocaleLowerCase('ru-RU').includes(word)))
+      : article.title.toLocaleLowerCase('ru-RU').startsWith(normalizedQuery)))
     .sort((a, b) => sort === 'popular' ? b.popularity - a.popularity
       : sort === 'shortest' ? a.readingMinutes - b.readingMinutes : b.publishedAt.localeCompare(a.publishedAt))
   const pageCount = Math.max(1, Math.ceil(filteredArticles.length / PAGE_SIZE))
@@ -160,9 +165,12 @@ export default function ArticlesPage() {
       <div className={styles.container}>
         <div className={styles.toolbar}>
           <div className={styles.search} role="search" aria-label="Поиск по статьям">
-            <TextInput type="search" icon={null} aria-label="Поиск статей, тем или авторов"
-              placeholder="Поиск статей, тем или авторов…" value={query}
-              onChange={event => { setQuery(event.target.value); setPage(1) }} />
+            <TextInput type="search" icon={null} aria-label="Поиск по названию; Enter — поиск по содержимому статей"
+              placeholder="Название; Enter — поиск по содержимому" value={query}
+              onChange={event => { setQuery(event.target.value); setSubmittedQuery(''); setPage(1) }}
+              onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                event.preventDefault(); setSubmittedQuery(query.trim().toLocaleLowerCase('ru-RU')); setPage(1)
+              } }} />
           </div>
           <div className={styles.displayControls}>
             <Combobox aria-label="Сортировка статей" listboxLabel="Порядок статей"

@@ -95,8 +95,9 @@ export function toCatalogSpell(item: SpellSummary): CatalogSpell {
   }
 }
 
-export async function loadSpells(signal: AbortSignal): Promise<CatalogSpell[]> {
+export async function loadSpells(signal: AbortSignal, query = ''): Promise<CatalogSpell[]> {
   const params = new URLSearchParams({ type: 'spell', page_size: String(PAGE_SIZE) })
+  if (query.trim()) params.set('q', query.trim())
   const first = await fetchEncyclopedia<SpellPage>(`?${params}`, signal)
   const pages = await Promise.all(Array.from({ length: Math.ceil(first.count / PAGE_SIZE) - 1 }, (_, index) =>
     fetchEncyclopedia<SpellPage>(`?${params}&page=${index + 2}`, signal),

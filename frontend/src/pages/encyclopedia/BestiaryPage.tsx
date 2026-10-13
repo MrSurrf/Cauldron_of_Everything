@@ -9,7 +9,7 @@ import {
 import { Button, Checkbox, Panel, Popover, TextInput } from '../../shared/ui'
 import type { CatalogCreature } from './bestiaryCatalog'
 import { getBestiaryCreature, loadBestiary } from './bestiaryApi'
-import { catalogFirstLetter } from './catalogAlphabet'
+import { catalogFirstLetter, catalogNameStartsWith } from './catalogAlphabet'
 import { tarrasqueCatalogEntry } from './mockBestiary'
 import {
   emptyFilters,
@@ -92,6 +92,7 @@ export default function BestiaryPage() {
     ...emptyFilters(),
     query: searchParams.get('search') ?? '',
   }))
+  const [searchDraft, setSearchDraft] = useState(() => searchParams.get('search') ?? '')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -120,7 +121,9 @@ export default function BestiaryPage() {
         ?? searchResult?.creatures.find((creature) => creature.id === selectedId)
         ?? null
   )
-  const results = useMemo(() => showFavorites ? [] : filterCatalog(searchableCatalog, facetFilters), [searchableCatalog, facetFilters, showFavorites])
+  const results = useMemo(() => showFavorites ? [] : filterCatalog(searchableCatalog, facetFilters)
+    .filter((creature) => query || catalogNameStartsWith(creature.name, searchDraft)),
+  [searchableCatalog, facetFilters, showFavorites, query, searchDraft])
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
@@ -231,12 +234,22 @@ export default function BestiaryPage() {
             className={styles.searchInput}
             fieldClassName={styles.searchField}
             rootClassName={styles.compactControl}
-            aria-label="Поиск по названию и содержанию карточки"
+            aria-label="Поиск по названию; Enter — поиск по содержимому карточек"
             type="search"
-            placeholder="Поиск по названию и содержанию карточки"
-            value={filters.query}
+            placeholder="Название; Enter — поиск по содержимому"
+            value={searchDraft}
             disabled={status !== 'ready'}
-            onChange={(event) => updateFilters((current) => ({ ...current, query: event.target.value }))}
+            onChange={(event) => {
+              setSearchDraft(event.target.value)
+              setSearchError(null)
+              updateFilters((current) => ({ ...current, query: '', letter: '' }))
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                event.preventDefault()
+                updateFilters((current) => ({ ...current, query: searchDraft.trim(), letter: '' }))
+              }
+            }}
           />
           {FACETS.map((facet) => (
             <FacetControl
@@ -265,7 +278,7 @@ export default function BestiaryPage() {
             decoration="minimal"
             size="sm"
             disabled={status !== 'ready'}
-            onClick={() => updateFilters(() => emptyFilters())}
+            onClick={() => { setSearchDraft(''); setSearchError(null); updateFilters(() => emptyFilters()) }}
           >
             Сброс
           </Button>
