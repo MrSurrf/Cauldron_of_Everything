@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { ListCard, Panel, PlaceholderIcon, ScrollArea } from '../../shared/ui'
@@ -103,7 +103,7 @@ function PopularPanel() {
   </Panel>
 }
 
-export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[] }) {
+export const EncyclopediaDashboard = memo(function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[] }) {
 
   return <div className={styles.dashboard}>
     <div className={styles.groups}>
@@ -125,4 +125,4 @@ export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[
       <PopularPanel />
     </aside>
   </div>
-}
+})

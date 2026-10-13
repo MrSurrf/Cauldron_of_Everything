@@ -1,5 +1,5 @@
-import { useMemo, useSyncExternalStore } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { TextInput } from '../../shared/ui'
 import { clearSearches, parseSearches, parseVisits, readHistorySnapshot, readSearchSnapshot, recordSearch, subscribeHistory, subscribeSearches } from '../../entities/encyclopedia'
 import { EncyclopediaDashboard } from './EncyclopediaDashboard'
@@ -8,22 +8,32 @@ import encyclopediaBackground from '../../../assets/backgrounds/encyclopedia.png
 import styles from './EncyclopediaPage.module.css'
 
 export default function EncyclopediaPage() {
+  const location = useLocation()
   const [params, setParams] = useSearchParams()
   const snapshot = useSyncExternalStore(subscribeHistory, readHistorySnapshot, () => null)
   const history = useMemo(() => parseVisits(snapshot), [snapshot])
   const searchSnapshot = useSyncExternalStore(subscribeSearches, readSearchSnapshot, () => null)
   const searches = useMemo(() => parseSearches(searchSnapshot), [searchSnapshot])
-  const query = params.get('search') ?? ''
-  const fullSearch = params.get('search_mode') === 'full'
+  const urlQuery = params.get('search') ?? ''
+  const urlFullSearch = params.get('search_mode') === 'full'
+  const [search, setSearch] = useState(() => ({ locationKey: location.key, query: urlQuery, fullSearch: urlFullSearch }))
+  if (search.locationKey !== location.key) {
+    setSearch({ locationKey: location.key, query: urlQuery, fullSearch: urlFullSearch })
+  }
+  const query = search.locationKey === location.key ? search.query : urlQuery
+  const fullSearch = search.locationKey === location.key ? search.fullSearch : urlFullSearch
 
   function changeQuery(value: string, submit = false) {
+    setSearch({ locationKey: location.key, query: value, fullSearch: submit })
+    if (!submit) return
+
     const next = new URLSearchParams(params)
     if (value) next.set('search', value)
     else next.delete('search')
-    if (submit && value.trim()) next.set('search_mode', 'full')
+    if (value.trim()) next.set('search_mode', 'full')
     else next.delete('search_mode')
     setParams(next, { replace: true })
-    if (submit) recordSearch(value)
+    recordSearch(value)
   }
 
   return (
@@ -66,7 +76,7 @@ export default function EncyclopediaPage() {
         {query.trim() && (
           <section className={styles.results} aria-label="Результаты поиска">
             <h2>Результаты поиска</h2>
-            <EncyclopediaResults key={`${query.trim()}:${fullSearch}`} query={query.trim()} fullSearch={fullSearch} />
+            <EncyclopediaResults query={query.trim()} fullSearch={fullSearch} />
           </section>
         )}
 
