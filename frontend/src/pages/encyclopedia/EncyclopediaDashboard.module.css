@@ -1,16 +1,17 @@
 .dashboard { display: grid; grid-template-columns: minmax(0, 1fr) clamp(18rem, 24%, 22rem); gap: var(--space-4); align-items: start; }
-.groups, .sidebar { display: grid; gap: var(--space-3); min-width: 0; }
+.groups { display: grid; gap: var(--space-5); min-width: 0; }
+.sidebar { display: grid; gap: var(--space-3); min-width: 0; }
 .sidebar { align-self: stretch; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); contain: size; }
 .sidebarPanel { min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .sidebarSection { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-height: 0; }
-.groupPanel, .sidebarPanel { --panel-border: var(--color-border-default); }
-.groupPanel { --panel-content-padding: var(--space-4); }
+.groupsPanel, .sidebarPanel { --panel-border: var(--color-border-default); }
+.groupsPanel { --panel-content-padding: var(--space-4); }
+.groupSection { min-width: 0; }
 .groupHeading { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
 .groupIcon { flex: 0 0 2.5rem; height: 2.5rem; color: var(--color-brand-bright); }
 .groupIcon svg { width: 100%; height: 100%; }
 .groupCopy { flex: 1; min-width: 0; }
-.groupHeading .groupCopy h2 { margin-bottom: var(--space-1); }
-.groupCopy p { margin: 0; color: var(--color-text-subtle); font-size: var(--font-size-xs); line-height: var(--line-height-normal); }
+.groupHeading .groupCopy h2 { margin-bottom: 0; }
 .expandButton, .textAction { flex: 0 0 auto; border: 0; padding: var(--space-1); background: transparent; color: var(--color-interactive); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
 .expandButton { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 2rem; }
 .expandButton:hover, .textAction:hover { color: var(--color-interactive-hover); }
@@ -43,7 +44,7 @@
   .sidebar { height: 26rem; contain: none; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
 }
 @media (max-width: 40rem) {
-  .groupPanel { --panel-content-padding: var(--space-3); }
+  .groupsPanel { --panel-content-padding: var(--space-3); }
   .groupHeading { align-items: start; }
   .expandButton { min-width: 2rem; justify-content: center; }
   .expandButton > span:first-child { display: none; }
