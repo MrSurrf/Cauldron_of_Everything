@@ -417,17 +417,49 @@
 @media (max-width: 800px) {
   .page {
     padding: var(--space-4);
+    align-items: start;
   }
 
   .authPanel {
-    min-height: min(42rem, calc(var(--app-viewport-height) - var(--space-6)));
+    --panel-surface-material:
+      radial-gradient(
+        ellipse 72% 40% at 50% 24%,
+        color-mix(in srgb, var(--palette-purple-700) 23%, transparent),
+        transparent 82%
+      ),
+      linear-gradient(180deg, var(--palette-purple-950), var(--palette-black) 52%);
+
+    min-height: calc(100svh - var(--space-6));
   }
 
   .layout {
-    grid-template-columns: 1fr;
+    height: auto;
+    min-height: calc(100svh - var(--space-6));
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: clamp(17rem, 42svh, 24rem) auto;
   }
 
   .showcaseSide {
+    min-height: 16rem;
+    padding: var(--space-5) var(--space-5) 0;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    border-right: 0;
+    border-bottom: var(--border-width-default) solid
+      color-mix(in srgb, var(--color-border-accent) 36%, var(--color-content-border));
+  }
+
+  .showcaseArt {
+    min-height: 0;
+  }
+
+  .brandIllustration {
+    width: min(76%, 26rem);
+    max-height: 88%;
+  }
+
+  .showcaseCopy,
+  .showcaseFeatures {
     display: none;
   }
 
@@ -442,7 +474,22 @@
   }
 
   .authPanel {
-    min-height: calc(var(--app-viewport-height) - var(--space-4));
+    min-height: calc(100svh - var(--space-4));
+  }
+
+  .layout {
+    min-height: calc(100svh - var(--space-4));
+    grid-template-rows: clamp(16rem, 40svh, 22rem) auto;
+  }
+
+  .showcaseSide {
+    min-height: 15rem;
+    padding: var(--space-4) var(--space-2) 0;
+  }
+
+  .brandIllustration {
+    width: min(82%, 20rem);
+    max-height: 90%;
   }
 
   .authSide {
