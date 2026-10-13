@@ -1,0 +1,161 @@
+.workspace {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--color-text-primary);
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding-right: 2rem;
+  height: 100%;
+}
+
+.sheetSurface {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow-panel);
+}
+
+.sheetSurface[data-item-drop-target='true']::after {
+  content: 'Отпустите предмет, чтобы добавить его в снаряжение';
+  position: absolute;
+  z-index: 5;
+  inset: var(--space-2);
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--color-border-accent);
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-surface-accent) 76%, transparent);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  pointer-events: none;
+}
+
+.spellViewport {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  scrollbar-color: var(--color-border-accent) var(--color-background);
+}
+
+.pageTab {
+  position: absolute;
+  z-index: 0;
+  top: 6.25rem;
+  right: 0.25rem;
+  display: grid;
+  width: 3rem;
+  height: 6rem;
+  padding: 0 0 0 1.25rem;
+  place-items: center;
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-brand-bright);
+  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
+  box-shadow: var(--shadow-panel);
+  clip-path: polygon(0 0, calc(100% - 0.4rem) 0, 100% 0.4rem, 100% calc(100% - 0.4rem), calc(100% - 0.4rem) 100%, 0 100%);
+  cursor: pointer;
+  font: 2rem/1 var(--font-family-heading);
+  transform: translateX(0);
+  transition: transform var(--motion-duration-fast), background var(--motion-duration-fast);
+}
+
+.libraryTrigger {
+  position: absolute;
+  z-index: 0;
+  top: 12.75rem;
+  right: 0.25rem;
+  width: 3rem;
+  height: 8.75rem;
+  padding: var(--space-2) 0 var(--space-2) 1.25rem;
+  border: 1px solid var(--color-content-border);
+  color: var(--color-brand-bright);
+  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  font: var(--font-size-xs)/1.2 var(--font-family-body);
+  writing-mode: vertical-rl;
+  transform: translateX(0);
+  transition: transform var(--motion-duration-fast);
+}
+
+.libraryTrigger:hover,
+.libraryTrigger[aria-expanded='true'] {
+  border-color: var(--color-border-accent);
+  transform: translateX(0.25rem);
+}
+
+.pageTab:hover,
+.pageTab:focus-visible {
+  background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent));
+  transform: translateX(0.25rem);
+}
+
+.pageTab:focus-visible,
+.libraryTrigger:focus-visible {
+  outline: 2px solid var(--color-brand-bright);
+  outline-offset: 2px;
+}
+
+.library {
+  z-index: 3;
+  min-width: 0;
+  height: 100%;
+}
+
+.importError {
+  position: absolute;
+  z-index: 4;
+  right: 2.5rem;
+  bottom: var(--space-3);
+  display: flex;
+  max-width: min(28rem, calc(100% - 5rem));
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text-primary);
+  background: var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--font-size-sm);
+}
+
+.importError button {
+  border: 0;
+  color: var(--color-brand-bright);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+@media (min-width: 86rem) {
+  .workspace[data-library-open='true'] {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
+  }
+}
+
+@media (max-width: 85.999rem) {
+  .library {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(24rem, 90%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageTab,
+  .libraryTrigger {
+    transition: none;
+  }
+}

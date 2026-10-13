@@ -6,7 +6,8 @@ import type {
 } from './characterSheet.types'
 import type { CharacterSheetAction } from './characterSheet.actions'
 import { getRulesetDefinition } from './rulesets/registry'
-import { formulaNumericField } from './defaults'
+import { createEmptySpellcasting, formulaNumericField } from './defaults'
+import { getEffectiveSpellSlots } from './spellcastingSlots'
 
 const replaceById = <T extends { id: string }>(
   items: readonly T[],
@@ -327,6 +328,69 @@ export function characterSheetReducer(
       return { ...document, attacksContentText: action.value }
     case 'equipment/setContentText':
       return { ...document, equipmentContentText: action.value }
+    case 'equipment/addItem': {
+      const items = document.equipmentItems ?? []
+      const existing = action.value.entityId === null ? undefined
+        : items.find(item => item.entityId === action.value.entityId)
+      return {
+        ...document,
+        equipmentItems: existing
+          ? items.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item)
+          : [...items, { ...action.value, quantity: Math.max(1, action.value.quantity) }],
+      }
+    }
+    case 'equipment/removeItem':
+      return { ...document, equipmentItems: (document.equipmentItems ?? []).filter(item => item.id !== action.id) }
+    case 'equipment/updateItem':
+      return { ...document, equipmentItems: replaceById(document.equipmentItems ?? [], action.id, action.patch) }
+    case 'spellcasting/setAbility':
+      return { ...document, spellcasting: { ...(document.spellcasting ?? createEmptySpellcasting()), ability: action.ability, abilityMode: 'manual' } }
+    case 'spellcasting/setSlotUsed': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      const slot = getEffectiveSpellSlots(document)[action.level]
+      const used = Math.max(0, Math.min(slot.maximum, Math.floor(action.used)))
+      if (used === slot.used) return document
+      return { ...document, spellcasting: { ...spellcasting, slots: { ...spellcasting.slots, [action.level]: { ...slot, used } } } }
+    }
+    case 'spellcasting/setSlotMaximum': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      const slots = getEffectiveSpellSlots(document)
+      const slot = slots[action.level]
+      const maximum = Math.max(0, Math.min(20, Math.floor(action.maximum)))
+      return { ...document, spellcasting: {
+        ...spellcasting,
+        slotMode: 'manual',
+        slots: { ...slots, [action.level]: { maximum, used: Math.min(slot.used, maximum) } },
+      } }
+    }
+    case 'spellcasting/addSpell': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      if (spellcasting.spells.some(spell => action.value.entityId != null && spell.entityId === action.value.entityId)) return document
+      return { ...document, spellcasting: { ...spellcasting, spells: [...spellcasting.spells, action.value] } }
+    }
+    case 'spellcasting/removeSpell': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      return { ...document, spellcasting: {
+        ...spellcasting,
+        spells: spellcasting.spells.filter(spell => spell.id !== action.id),
+        concentratingOnId: spellcasting.concentratingOnId === action.id ? null : spellcasting.concentratingOnId,
+      } }
+    }
+    case 'spellcasting/updateSpell': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      return { ...document, spellcasting: {
+        ...spellcasting,
+        spells: replaceById(spellcasting.spells, action.id, action.patch),
+      } }
+    }
+    case 'spellcasting/setPrepared': {
+      const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+      return { ...document, spellcasting: {
+        ...spellcasting,
+        spells: spellcasting.spells.map(spell => spell.id === action.id && !spell.alwaysPrepared
+          ? { ...spell, prepared: action.prepared } : spell),
+      } }
+    }
     case 'personality/add':
       return {
         ...document,

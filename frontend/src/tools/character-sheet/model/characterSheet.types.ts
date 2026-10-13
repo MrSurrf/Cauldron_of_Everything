@@ -99,6 +99,50 @@ export type AttackEntry = {
   itemId: string | null
 }
 
+export type EquipmentEntry = {
+  id: string
+  entityId: number | null
+  name: string
+  nameEn?: string
+  quantity: number
+  description?: string
+}
+
+export type SpellLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+export type SpellSlotLevel = Exclude<SpellLevel, 0>
+export type SpellSlotState = { maximum: number; used: number }
+
+export type SpellEntry = {
+  id: string
+  entityId?: number | null
+  name: string
+  nameEn?: string
+  level: SpellLevel
+  prepared: boolean
+  alwaysPrepared?: boolean
+  description?: string
+  castingTime?: string
+  range?: string
+  duration?: string
+  school?: string
+  components?: string | string[]
+  concentration?: boolean
+  ritual?: boolean
+  source?: string
+  sourceClassId?: string
+  notes?: string
+}
+
+export type SpellcastingState = {
+  className: string
+  ability: AbilityKey
+  abilityMode?: 'automatic' | 'manual'
+  slotMode: 'automatic' | 'manual'
+  slots: Record<SpellSlotLevel, SpellSlotState>
+  spells: SpellEntry[]
+  concentratingOnId: string | null
+}
+
 export type CurrencyKey = 'cp' | 'sp' | 'ep' | 'gp' | 'pp'
 export type CurrencyState = Record<CurrencyKey, NumericFieldState>
 
@@ -251,6 +295,10 @@ export type CharacterSheetDocument = {
   attacksContentText?: string | null
   currency: CurrencyState
   equipmentContentText: string
+  /** Структурированные предметы из энциклопедии; поле необязательно для старых документов. */
+  equipmentItems?: EquipmentEntry[]
+  /** Заклинания и ячейки; поле необязательно для старых документов. */
+  spellcasting?: SpellcastingState
   personality: PersonalitySections
   features: CharacterFeature[]
   customFields: Record<string, CustomField>

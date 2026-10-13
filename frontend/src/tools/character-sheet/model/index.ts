@@ -12,6 +12,7 @@ export type {
   CharacterSheetViewState,
   CurrencyKey,
   CurrencyState,
+  EquipmentEntry,
   CustomField,
   CustomSection,
   CustomSectionKind,
@@ -32,6 +33,11 @@ export type {
   SheetAppearance,
   SheetDensity,
   SheetFont,
+  SpellEntry,
+  SpellLevel,
+  SpellSlotLevel,
+  SpellSlotState,
+  SpellcastingState,
   SkillState,
 } from './characterSheet.types'
 export { characterSheetActions } from './characterSheet.actions'
@@ -58,14 +64,20 @@ export type {
 export {
   createClientId,
   createEmptyCharacterSheet,
+  createEmptySpellcasting,
   formulaNumericField,
   manualNumericField,
 } from './defaults'
+export { SPELL_SLOT_LEVELS } from './defaults'
+export { getEffectiveSpellSlots } from './spellcastingSlots'
+export { getEffectiveSpellcastingAbility } from './spellcastingAbility'
+export { getSingleClassSpellSlots } from './spellcastingRules'
 export {
   EMPTY_CHARACTER_SHEET,
   MOCK_CHARACTER_SHEET,
   createMockCharacterSheet,
 } from './mocks'
+export { createMockSpellcasterSheet } from './mockSpellcaster'
 export {
   formatSignedValue,
   selectAbilityModifier,

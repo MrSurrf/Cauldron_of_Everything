@@ -1,0 +1,49 @@
+.withItems > div:last-child {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.items {
+  display: grid;
+  gap: var(--space-1);
+  max-height: 6rem;
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  min-width: 0;
+  min-height: 1.5rem;
+  padding-inline: var(--space-2);
+  align-items: center;
+  gap: var(--space-1);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-accent);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+}
+
+.itemName {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quantity { color: var(--color-brand-bright); }
+
+.remove {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0 var(--space-1);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.remove:hover { color: var(--color-interactive-hover); }
+.remove:focus-visible { outline: var(--border-width-strong) solid var(--color-interactive); }

@@ -8,6 +8,7 @@ import type {
   CustomField,
   CustomSection,
   DeathSavesState,
+  EquipmentEntry,
   HitDicePool,
   NumericFieldAddress,
   NumericFieldState,
@@ -17,6 +18,8 @@ import type {
   ResourcePool,
   RulesetId,
   SheetAppearance,
+  SpellEntry,
+  SpellSlotLevel,
 } from './characterSheet.types'
 import type { VisionSense } from '../../../shared/model'
 
@@ -44,6 +47,16 @@ export type CharacterSheetAction =
   | { type: 'attack/remove'; id: string }
   | { type: 'attacks/setContentText'; value: string }
   | { type: 'equipment/setContentText'; value: string }
+  | { type: 'equipment/addItem'; value: EquipmentEntry }
+  | { type: 'equipment/updateItem'; id: string; patch: Partial<EquipmentEntry> }
+  | { type: 'equipment/removeItem'; id: string }
+  | { type: 'spellcasting/setAbility'; ability: AbilityKey }
+  | { type: 'spellcasting/setSlotUsed'; level: SpellSlotLevel; used: number }
+  | { type: 'spellcasting/setSlotMaximum'; level: SpellSlotLevel; maximum: number }
+  | { type: 'spellcasting/addSpell'; value: SpellEntry }
+  | { type: 'spellcasting/updateSpell'; id: string; patch: Partial<SpellEntry> }
+  | { type: 'spellcasting/removeSpell'; id: string }
+  | { type: 'spellcasting/setPrepared'; id: string; prepared: boolean }
   | {
       type: 'personality/add'
       section: PersonalitySectionKey
@@ -117,6 +130,16 @@ export const characterSheetActions = {
     type: 'equipment/setContentText',
     value,
   }),
+  addEquipmentItem: (value: EquipmentEntry): CharacterSheetAction => ({ type: 'equipment/addItem', value }),
+  updateEquipmentItem: (id: string, patch: Partial<EquipmentEntry>): CharacterSheetAction => ({ type: 'equipment/updateItem', id, patch }),
+  removeEquipmentItem: (id: string): CharacterSheetAction => ({ type: 'equipment/removeItem', id }),
+  setSpellcastingAbility: (ability: AbilityKey): CharacterSheetAction => ({ type: 'spellcasting/setAbility', ability }),
+  setSpellSlotUsed: (level: SpellSlotLevel, used: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotUsed', level, used }),
+  setSpellSlotMaximum: (level: SpellSlotLevel, maximum: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotMaximum', level, maximum }),
+  addSpell: (value: SpellEntry): CharacterSheetAction => ({ type: 'spellcasting/addSpell', value }),
+  updateSpell: (id: string, patch: Partial<SpellEntry>): CharacterSheetAction => ({ type: 'spellcasting/updateSpell', id, patch }),
+  removeSpell: (id: string): CharacterSheetAction => ({ type: 'spellcasting/removeSpell', id }),
+  setSpellPrepared: (id: string, prepared: boolean): CharacterSheetAction => ({ type: 'spellcasting/setPrepared', id, prepared }),
   patchAppearance: (patch: Partial<SheetAppearance>): CharacterSheetAction => ({
     type: 'appearance/patch',
     patch,
