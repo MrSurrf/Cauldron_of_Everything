@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { TextInput } from '../../shared/ui'
 import { clearSearches, parseSearches, parseVisits, readHistorySnapshot, readSearchSnapshot, recordSearch, subscribeHistory, subscribeSearches } from '../../entities/encyclopedia'
@@ -9,7 +9,6 @@ import styles from './EncyclopediaPage.module.css'
 
 export default function EncyclopediaPage() {
   const [params, setParams] = useSearchParams()
-  const inputRef = useRef<HTMLInputElement>(null)
   const snapshot = useSyncExternalStore(subscribeHistory, readHistorySnapshot, () => null)
   const history = useMemo(() => parseVisits(snapshot), [snapshot])
   const searchSnapshot = useSyncExternalStore(subscribeSearches, readSearchSnapshot, () => null)
@@ -27,17 +26,6 @@ export default function EncyclopediaPage() {
     if (submit) recordSearch(value)
   }
 
-  useEffect(() => {
-    function focusSearch(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        inputRef.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', focusSearch)
-    return () => window.removeEventListener('keydown', focusSearch)
-  }, [])
-
   return (
     <main className={`${styles.page} ${styles.home}`}>
       <div className={styles.hero}>
@@ -53,17 +41,15 @@ export default function EncyclopediaPage() {
       <div className={styles.container}>
         <div className={styles.search} role="search" aria-label="Поиск по энциклопедии">
           <TextInput
-            ref={inputRef}
             type="search"
             aria-label="Поиск по энциклопедии"
-            placeholder="Название; Enter — поиск по содержимому"
+            className={styles.searchInput}
+            placeholder="например: заклинания, монстры, состояния"
             value={query}
             rootClassName={styles.searchFrame}
             onChange={event => changeQuery(event.target.value)}
             onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); changeQuery(query, true) } }}
           />
-          {!query && <span className={styles.searchHint}>Например: заклинания, монстры, состояния…</span>}
-          <kbd className={styles.shortcut}>Ctrl + K</kbd>
         </div>
 
         <div className={styles.recentQueries} role="group" aria-label="Недавние запросы">

@@ -165,7 +165,8 @@ export default function ArticlesPage() {
       <div className={styles.container}>
         <div className={styles.toolbar}>
           <div className={styles.search} role="search" aria-label="Поиск по статьям">
-            <TextInput type="search" icon={null} aria-label="Поиск по названию; Enter — поиск по содержимому статей"
+            <TextInput type="search" aria-label="Поиск по названию; Enter — поиск по содержимому статей"
+              className={styles.searchInput} rootClassName={styles.searchFrame}
               placeholder="Название; Enter — поиск по содержимому" value={query}
               onChange={event => { setQuery(event.target.value); setSubmittedQuery(''); setPage(1) }}
               onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) {

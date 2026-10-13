@@ -120,6 +120,12 @@
   display: none;
 }
 
+.root.search .control::-webkit-search-cancel-button,
+.root.search .control::-webkit-search-decoration {
+  appearance: none;
+  display: none;
+}
+
 .innerFrame::before {
   content: '';
 

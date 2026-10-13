@@ -197,6 +197,7 @@
 
   /* Общая оболочка сайта */
   --site-header-height: 5.5rem;
+  --site-search-width: clamp(12rem, 18vw, 20rem);
   --app-viewport-height: calc(100svh - var(--site-header-height));
 
   /* Плитки workspace */
@@ -212,6 +213,12 @@
   --tile-shadow-dragging: var(--shadow-overlay);
   --tile-resize-handle-size: 1rem;
   --tile-dragging-opacity: 0.92;
+}
+
+@media (max-width: 78rem) {
+  :root {
+    --site-search-width: clamp(11rem, 20vw, 15rem);
+  }
 }
 
 @media (max-width: 50rem) {
