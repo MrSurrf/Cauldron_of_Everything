@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { ListCard, Panel, PlaceholderIcon, ScrollArea } from '../../shared/ui'
+import { ListCard, Panel, ScrollArea } from '../../shared/ui'
 import { clearHistory, fetchPopularEncyclopedia } from '../../entities/encyclopedia'
 import type { EncyclopediaVisit, PopularEncyclopediaEntry } from '../../entities/encyclopedia'
 import { entryPath } from './encyclopediaApi'
@@ -31,7 +31,6 @@ function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] })
 
   return <section className={styles.groupSection} aria-labelledby={`encyclopedia-${group.id}`}>
     <div className={styles.groupHeading}>
-      <span className={styles.groupIcon} aria-hidden="true"><PlaceholderIcon /></span>
       <div className={styles.groupCopy}>
         <h2 id={`encyclopedia-${group.id}`}>{group.title}</h2>
       </div>
@@ -78,7 +77,7 @@ function PopularPanel() {
 
   return <Panel className={styles.sidebarPanel} padding="compact">
     <section className={styles.sidebarSection} aria-labelledby="encyclopedia-popular">
-      <h2 id="encyclopedia-popular"><span aria-hidden="true"><PlaceholderIcon /></span>Популярное</h2>
+      <h2 id="encyclopedia-popular">Популярное</h2>
       <ScrollArea aria-label="Популярные материалы" orientation="vertical" rootClassName={styles.panelScroll}>
         {!current ? <p className={styles.empty} role="status">Загружаем общий рейтинг…</p>
           : current.error ? <div role="status"><p className={styles.empty}>Общий рейтинг пока недоступен.</p>
@@ -106,7 +105,7 @@ export const EncyclopediaDashboard = memo(function EncyclopediaDashboard({ histo
       <Panel className={styles.sidebarPanel} padding="compact">
         <section className={styles.sidebarSection} aria-labelledby="encyclopedia-history">
           <div className={styles.sidebarHeading}>
-            <h2 id="encyclopedia-history"><span aria-hidden="true"><PlaceholderIcon /></span>Недавно открывали</h2>
+            <h2 id="encyclopedia-history">Недавно открывали</h2>
             {history.length > 0 && <button type="button" className={styles.textAction} onClick={clearHistory}>Очистить историю</button>}
           </div>
           <ScrollArea id="recent-visits" aria-label="История посещений" orientation="vertical" rootClassName={styles.panelScroll}>

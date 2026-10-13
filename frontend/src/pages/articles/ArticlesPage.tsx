@@ -1,8 +1,9 @@
 import { useState } from 'react'
 
 import { Button, Combobox, ListCard, Panel, SegmentedControl, TextInput } from '../../shared/ui'
+import { ArticleCard } from './ArticleCard'
 import { articleCategories, articleFixtures } from './articleFixtures'
-import type { ArticleCategory, ArticlePreview } from './articleFixtures'
+import type { ArticleCategory } from './articleFixtures'
 import styles from './ArticlesPage.module.css'
 
 type CategoryFilter = ArticleCategory | 'all'
@@ -18,41 +19,12 @@ const viewOptions = [
   { value: 'grid', label: 'Плитки' },
   { value: 'list', label: 'Список' },
 ] as const
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
-})
 const popularArticles = [...articleFixtures]
   .sort((a, b) => b.popularity - a.popularity)
   .slice(0, 5)
 
 function categoryLabel(category: ArticleCategory) {
   return articleCategories.find(item => item.id === category)?.label ?? ''
-}
-
-function ArticleCard({ article, featured }: { article: ArticlePreview; featured: boolean }) {
-  const titleId = `article-title-${article.id}`
-
-  return (
-    <article className={styles.article} data-featured={featured || undefined} aria-labelledby={titleId}>
-      <Panel className={styles.articlePanel} padding="none">
-        <div className={styles.articleContent}>
-          <div className={styles.cover} aria-hidden="true" />
-          <div className={styles.articleCopy}>
-            <span className={styles.categoryBadge}>{categoryLabel(article.category)}</span>
-            <h2 id={titleId}>{article.title}</h2>
-            <p className={styles.description}>{article.description}</p>
-            <footer className={styles.articleMeta}>
-              <div className={styles.author}>
-                <span>{article.author}</span>
-                <time dateTime={article.publishedAt}>{dateFormatter.format(new Date(`${article.publishedAt}T00:00:00Z`))}</time>
-              </div>
-              <span className={styles.readingTime}>{article.readingMinutes} мин чтения</span>
-            </footer>
-          </div>
-        </div>
-      </Panel>
-    </article>
-  )
 }
 
 function ArticlesSidebar({ category, onCategoryChange }: {

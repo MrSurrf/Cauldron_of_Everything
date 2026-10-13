@@ -21,6 +21,7 @@ const SurveyRoutePage = lazy(
 const DevHomePage = lazy(
   () => import('../../pages/dev/DevHomePage'),
 )
+const HomePage = lazy(() => import('../../pages/home/HomePage'))
 const ProfilePage = lazy(
   () => import('../../pages/profile/ProfilePage'),
 )
@@ -98,8 +99,9 @@ function RoutedApp() {
             <Routes>
               <Route
                 path="/"
-                element={<DevHomePage />}
+                element={<HomePage />}
               />
+              <Route path="/dev" element={<DevHomePage />} />
               <Route
                 path="/survey"
                 element={<SurveyRoutePage />}
