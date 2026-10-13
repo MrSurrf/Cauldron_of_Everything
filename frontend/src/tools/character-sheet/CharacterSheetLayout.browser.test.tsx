@@ -114,11 +114,11 @@ describe('Character Sheet fixed desktop composition', () => {
         await nextFrame()
         await nextFrame()
       })
-      // После появления вертикального scrollbar ширина viewport измеряется повторно.
+      // Масштаб всего разворота меняется после измерения контейнера.
       for (let frame = 0; frame < 4; frame += 1) {
         await act(async () => { await nextFrame() })
       }
-      const scale = Number(getComputedStyle(sheetPage).zoom)
+      const scale = sheetPage.getBoundingClientRect().width / sheetPage.offsetWidth
       expect(scale).toBeGreaterThan(0)
       expect(scale).toBeLessThanOrEqual(1)
       expect(sheetPage.offsetWidth).toBe(964)
@@ -151,7 +151,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(roundedWidth(container.querySelector('[data-character-sheet-page]')!)).toBe(964)
   })
 
-  it('сохраняет исходную раскладку в узкой панели и прокручивает лист в обе стороны', async () => {
+  it('сохраняет раскладку в узкой панели без горизонтальной прокрутки', async () => {
     const container = await mountCharacterSheet()
     await act(async () => {
       container.style.height = '640px'
@@ -171,15 +171,19 @@ describe('Character Sheet fixed desktop composition', () => {
         await nextFrame()
         await nextFrame()
       })
-      if (width < 1000) expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+      expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 1)
       expect(viewport.clientHeight).toBeGreaterThan(0)
       expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(container.getBoundingClientRect().bottom + 1)
       expect(getComputedStyle(viewport).scrollbarWidth).toBe('none')
-      expect(roundedWidth(sheetPage)).toBe(964)
+      expect(sheetPage.offsetWidth).toBe(964)
+      const scale = sheetPage.getBoundingClientRect().width / sheetPage.offsetWidth
       Array.from(body.children).forEach((element, index) => {
         const rect = element.getBoundingClientRect()
         const origin = body.getBoundingClientRect()
-        expect({ x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }).toEqual(columns[index])
+        expect((rect.left - origin.left) / scale).toBeCloseTo(columns[index].x, 0)
+        expect((rect.top - origin.top) / scale).toBeCloseTo(columns[index].y, 0)
+        expect(rect.width / scale).toBeCloseTo(columns[index].width, 0)
+        expect(rect.height / scale).toBeCloseTo(columns[index].height, 0)
       })
     }
     await act(async () => {
@@ -188,11 +192,11 @@ describe('Character Sheet fixed desktop composition', () => {
       await nextFrame()
     })
     await act(async () => {
-      viewport.scrollTo({ left: viewport.scrollWidth, top: viewport.scrollHeight, behavior: 'instant' })
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'instant' })
       await nextFrame()
     })
     const lastSection = container.querySelector<HTMLElement>('[data-character-sheet-personality="flaws"]')!
-    expect(viewport.scrollLeft).toBeGreaterThan(0)
+    expect(viewport.scrollLeft).toBe(0)
     expect(lastSection.getBoundingClientRect().right).toBeLessThanOrEqual(viewport.getBoundingClientRect().right + 1)
     expect(lastSection.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1)
   })

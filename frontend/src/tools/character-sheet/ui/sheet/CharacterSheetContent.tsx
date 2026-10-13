@@ -1,4 +1,4 @@
-import { Panel, ScrollArea } from '../../../../shared/ui'
+import { Panel } from '../../../../shared/ui'
 import styles from '../../CharacterSheetTool.module.css'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
@@ -24,7 +24,6 @@ import {
 import { ProficienciesEditor } from './ProficienciesEditor'
 import { getSheetStyle } from './sheetAppearance'
 import { useCharacterSheetViewModel } from './sheetViewModel'
-import { useSheetFitWidth } from './useSheetFitWidth'
 
 const PERSONALITY_SECTION_ORDER = [
   'traits',
@@ -35,7 +34,6 @@ const PERSONALITY_SECTION_ORDER = [
 
 export type CharacterSheetContentProps = {
   className?: string
-  fitWidth?: boolean
   onPortraitFileSelect?: (
     file: File,
     characterId: string,
@@ -46,13 +44,11 @@ export type CharacterSheetContentProps = {
 
 export function CharacterSheetContent({
   className,
-  fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
   onEncyclopediaItemDrop,
 }: CharacterSheetContentProps) {
   const sheet = useCharacterSheetViewModel()
-  const { viewportRef, pageRef, scale } = useSheetFitWidth(fitWidth)
   const { document } = sheet
   const rootClassName = [styles.root, className]
     .filter(Boolean)
@@ -66,21 +62,14 @@ export function CharacterSheetContent({
     >
       <Panel className={styles.panel} padding="none">
         <div className={styles.shell}>
-          <ScrollArea
-            ref={viewportRef}
+          <div
             aria-label="Лист персонажа"
             className={styles.viewport}
-            data-cursor-light-background=""
-            contentClassName={styles.document}
-            orientation={fitWidth ? 'vertical' : 'both'}
-            rootClassName={styles.scrollArea}
+            role="region"
+            tabIndex={0}
           >
-            <div
-              ref={pageRef}
-              className={styles.sheetPage}
-              data-character-sheet-page={true}
-              style={fitWidth ? { zoom: scale } : undefined}
-            >
+            <div className={styles.document}>
+              <div className={styles.sheetPage} data-character-sheet-page={true}>
               <CharacterIdentitySection
                 sheet={sheet}
                 onPortraitFileSelect={onPortraitFileSelect}
@@ -253,8 +242,9 @@ export function CharacterSheetContent({
                   </div>
                 </div>
               </div>
+              </div>
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </Panel>
     </div>

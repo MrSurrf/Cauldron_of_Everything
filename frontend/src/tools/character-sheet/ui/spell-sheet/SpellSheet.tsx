@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react'
 
 import { PlaceholderIcon } from '../../../../shared/ui/icons/PlaceholderIcon'
+import { Panel } from '../../../../shared/ui'
 import type { AbilityKey, SpellEntry, SpellLevel, SpellSlotLevel, SpellSlotState } from '../../model'
 import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
 import styles from './SpellSheet.module.css'
@@ -19,7 +20,6 @@ export type SpellcastingSummary = {
 
 export type SpellSheetProps = {
   className?: string
-  pageScale?: number
   spellcasting: SpellcastingSummary
   slots: Partial<Record<SpellSlotLevel, SpellSlotPool>>
   spells: readonly SpellSheetSpell[]
@@ -126,7 +126,6 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
 
 export function SpellSheet({
   className,
-  pageScale = 1,
   spellcasting,
   slots,
   spells,
@@ -166,8 +165,8 @@ export function SpellSheet({
     onSpellDrop(event.dataTransfer, level)
   }
 
-  return <div className={[styles.root, className].filter(Boolean).join(' ')}
-    style={pageScale < 1 ? { zoom: pageScale, width: '60.75rem' } : undefined}>
+  return <Panel className={[styles.root, className].filter(Boolean).join(' ')} padding="none">
+    <div className={styles.scroller}>
     {onBack && <div className={styles.toolbar}>
       {onBack && <button type="button" className={styles.toolbarButton} onClick={onBack}>← <span>Лист персонажа</span></button>}
     </div>}
@@ -272,5 +271,6 @@ export function SpellSheet({
         })}
       </div>
     </div>
-  </div>
+    </div>
+  </Panel>
 }

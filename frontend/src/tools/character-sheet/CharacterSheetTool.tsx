@@ -39,12 +39,11 @@ const ABILITY_NAMES = {
 } as const
 
 type CharacterSheetWorkspaceProps = Pick<CharacterSheetToolProps,
-  'className' | 'fitWidth' | 'onPortraitFileSelect' | 'onPortraitRemove'
+  'className' | 'onPortraitFileSelect' | 'onPortraitRemove'
 >
 
 function CharacterSheetWorkspace({
   className,
-  fitWidth,
   onPortraitFileSelect,
   onPortraitRemove,
 }: CharacterSheetWorkspaceProps) {
@@ -55,15 +54,14 @@ function CharacterSheetWorkspace({
   const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
-  const spreadViewport = useRef<HTMLDivElement>(null)
-  const book = useRef<HTMLDivElement>(null)
+  const sheetSpace = useRef<HTMLDivElement>(null)
 
   useEffect(() => () => {
     detailRequests.current.forEach((request) => request.abort())
   }, [])
 
   useEffect(() => {
-    const viewport = spreadViewport.current
+    const viewport = sheetSpace.current
     if (!viewport) return
     const measure = () => setViewportWidth(viewport.clientWidth)
     measure()
@@ -71,25 +69,6 @@ function CharacterSheetWorkspace({
     observer.observe(viewport)
     return () => observer.disconnect()
   }, [])
-
-  useEffect(() => {
-    const viewport = spreadViewport.current
-    const pages = book.current
-    if (!viewport || !pages) return
-    let frame = 0
-    const alignPages = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => {
-        const left = spellsOpen ? Math.max(0, viewport.scrollWidth - viewport.clientWidth) : 0
-        if (Math.abs(viewport.scrollLeft - left) > 1) viewport.scrollTo({ left, behavior: 'smooth' })
-      })
-    }
-    alignPages()
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(alignPages)
-    observer?.observe(viewport)
-    observer?.observe(pages)
-    return () => { observer?.disconnect(); cancelAnimationFrame(frame) }
-  }, [spellsOpen])
 
   function hydrateEntry(entry: CharacterEncyclopediaEntry, localId?: string) {
     const controller = new AbortController()
@@ -147,20 +126,17 @@ function CharacterSheetWorkspace({
   const castingAbility = getEffectiveSpellcastingAbility(document)
   const abilityModifier = selectAbilityModifier(formulas, castingAbility) ?? 0
   const proficiency = selectFormulaValue(formulas, 'PROFICIENCY') ?? 0
-  const compactSpread = viewportWidth > 0 && viewportWidth < 1984
-  const scaledSpread = fitWidth || (spellsOpen && compactSpread)
-  const spellPageScale = scaledSpread
-    ? Math.min(1, Math.max(0.01, (viewportWidth - 40) / (2 * 972)))
+  const pageScale = viewportWidth > 0
+    ? Math.min(1, Math.max(0.1, (viewportWidth - 16) / (spellsOpen ? 1988 : 990)))
     : 1
 
   return <div className={[styles.workspace, className].filter(Boolean).join(' ')}
-    data-library-open={libraryOpen} data-spells-open={spellsOpen} data-fit-width={Boolean(scaledSpread)}>
-    <div ref={spreadViewport} className={styles.spreadViewport} aria-label="Листы персонажа">
-      <div ref={book} className={styles.book}>
+    data-library-open={libraryOpen} data-spells-open={spellsOpen}>
+    <div ref={sheetSpace} className={styles.sheetSpace} aria-label="Листы персонажа">
+      <div className={styles.book} style={{ zoom: pageScale }}>
         <div className={styles.characterPanel}>
           <CharacterSheetContent
             className={styles.characterContent}
-            fitWidth={scaledSpread}
             onPortraitFileSelect={onPortraitFileSelect}
             onPortraitRemove={onPortraitRemove}
             onEncyclopediaItemDrop={(transfer) => {
@@ -176,14 +152,9 @@ function CharacterSheetWorkspace({
               setSpellsOpen((value) => !value)
               if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
             }}><span aria-hidden="true">{spellsOpen ? '‹' : '›'}</span></button>
-          <button type="button" className={styles.libraryTrigger}
-            title="Энциклопедия" aria-expanded={libraryOpen}
-            aria-label="Открыть энциклопедию для листа персонажа"
-            onClick={() => openLibrary('item')}>Энциклопедия</button>
         </div>
         {spellsOpen && <div className={styles.spellPanel}>
           <SpellSheet
-            pageScale={spellPageScale}
             spellcasting={{
               className: document.identity.className || spellcasting.className,
               abilityKey: castingAbility,
@@ -212,17 +183,24 @@ function CharacterSheetWorkspace({
         </div>}
       </div>
     </div>
+    <div className={styles.libraryDock} data-open={libraryOpen}>
+      <button type="button" className={styles.libraryTrigger}
+        title={libraryOpen ? 'Скрыть энциклопедию' : 'Энциклопедия'}
+        aria-expanded={libraryOpen}
+        aria-label={libraryOpen ? 'Скрыть энциклопедию' : 'Открыть энциклопедию для листа персонажа'}
+        onClick={() => setLibraryOpen((value) => !value)}>Энциклопедия</button>
+      {libraryOpen && <CharacterEncyclopediaPanel
+        className={styles.library}
+        mode={libraryMode}
+        onModeChange={setLibraryMode}
+        onAdd={addEntry}
+        onClose={() => setLibraryOpen(false)}
+      />}
+    </div>
     {importError && <div className={styles.importError} role="alert">
       <span>{importError}</span>
       <button type="button" onClick={() => setImportError('')} aria-label="Закрыть сообщение">×</button>
     </div>}
-    {libraryOpen && <CharacterEncyclopediaPanel
-      className={styles.library}
-      mode={libraryMode}
-      onModeChange={setLibraryMode}
-      onAdd={addEntry}
-      onClose={() => setLibraryOpen(false)}
-    />}
   </div>
 }
 
@@ -244,7 +222,6 @@ export type CharacterSheetToolProps = {
 
 export function CharacterSheetTool({
   className,
-  fitWidth,
   document,
   initialDocument,
   onDocumentChange,
@@ -259,7 +236,6 @@ export function CharacterSheetTool({
     >
       <CharacterSheetWorkspace
         className={className}
-        fitWidth={fitWidth}
         onPortraitFileSelect={onPortraitFileSelect}
         onPortraitRemove={onPortraitRemove}
       />
