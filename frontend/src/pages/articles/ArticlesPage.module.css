@@ -38,7 +38,6 @@
 
 .toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
 .search, .sortField { min-width: 0; }
-.search { width: min(100%, var(--site-search-width)); }
 .searchFrame { min-height: var(--control-height-lg); }
 .searchInput { font-size: var(--font-size-sm); }
 .displayControls { display: flex; align-items: center; gap: var(--space-3); }
@@ -111,7 +110,6 @@
 }
 
 @media (max-width: 40rem) {
-  .search { width: 100%; }
   .page { --articles-gutter: var(--space-3); }
   .hero { min-height: 15rem; }
   .intro p { font-size: var(--font-size-md); }

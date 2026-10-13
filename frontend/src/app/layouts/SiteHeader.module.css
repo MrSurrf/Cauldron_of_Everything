@@ -440,7 +440,7 @@ a.dropdownItem:focus-visible {
 }
 
 .search {
-  width: var(--site-search-width);
+  width: clamp(12rem, 18vw, 20rem);
 }
 
 .searchField,
@@ -553,6 +553,9 @@ a.dropdownItem:focus-visible {
     display: none;
   }
 
+  .search {
+    width: clamp(11rem, 20vw, 15rem);
+  }
 }
 
 @media (max-width: 64rem) {
