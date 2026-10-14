@@ -1,6 +1,7 @@
 import {
   createElement,
   useId,
+  useState,
   type HTMLAttributes,
   type ReactNode,
 } from 'react'
@@ -67,6 +68,7 @@ export function CollapsibleSection({
   const generatedId = useId()
   const contentId = `sheet-section-${generatedId}`
   const headingId = `${contentId}-heading`
+  const [toggleTooltipOpen, setToggleTooltipOpen] = useState(false)
   const [isOpen, setOpen] = useControllableBoolean({
     defaultValue: defaultOpen,
     onChange: onOpenChange,
@@ -97,6 +99,9 @@ export function CollapsibleSection({
         {collapsible && (
           <Tooltip
             content={`${isOpen ? 'Свернуть' : 'Развернуть'} секцию «${title}»`}
+            open={toggleTooltipOpen}
+            onClick={() => setToggleTooltipOpen(false)}
+            onOpenChange={setToggleTooltipOpen}
           >
             <IconButton
               aria-controls={contentId}
