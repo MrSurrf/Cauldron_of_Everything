@@ -1,9 +1,9 @@
 import { useState, type DragEvent } from 'react'
 
 import { PlaceholderIcon } from '../../../../shared/ui/icons/PlaceholderIcon'
-import { Panel } from '../../../../shared/ui'
 import type { AbilityKey, SpellEntry, SpellLevel, SpellSlotLevel, SpellSlotState } from '../../model'
 import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
+import { SheetSection } from '../SheetSection'
 import styles from './SpellSheet.module.css'
 
 export type { SpellLevel } from '../../model'
@@ -165,7 +165,7 @@ export function SpellSheet({
     onSpellDrop(event.dataTransfer, level)
   }
 
-  return <Panel className={[styles.root, className].filter(Boolean).join(' ')} padding="none">
+  return <div className={[styles.root, className].filter(Boolean).join(' ')}>
     <div className={styles.scroller}>
     {onBack && <div className={styles.toolbar}>
       {onBack && <button type="button" className={styles.toolbarButton} onClick={onBack}>← <span>Лист персонажа</span></button>}
@@ -173,11 +173,11 @@ export function SpellSheet({
 
     <div className={styles.content}>
       <div className={styles.summary} aria-label="Характеристики заклинателя">
-        <div className={styles.summaryCard}>
+        <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div><span className={styles.summaryLabel}>Класс заклинателя</span><strong>{spellcasting.className || '—'}</strong></div>
-        </div>
-        <div className={styles.summaryCard}>
+        </SheetSection>
+        <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div><span className={styles.summaryLabel}>Характеристика</span>{onAbilityChange
             ? <select className={styles.abilitySelect} aria-label="Характеристика заклинателя"
@@ -185,18 +185,18 @@ export function SpellSheet({
               {ABILITIES.map(({ key, name }) => <option key={key} value={key}>{name}</option>)}
             </select>
             : <strong>{spellcasting.ability || '—'}</strong>}</div>
-        </div>
-        <div className={styles.summaryCard}>
+        </SheetSection>
+        <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div><span className={styles.summaryLabel}>Сл спасброска</span><strong>{spellcasting.saveDc}</strong></div>
-        </div>
-        <div className={styles.summaryCard}>
+        </SheetSection>
+        <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div><span className={styles.summaryLabel}>Бонус атаки</span><strong>{signedBonus(spellcasting.attackBonus)}</strong></div>
           {onOpenEncyclopedia && <button type="button" className={styles.encyclopediaButton}
             title="Открыть энциклопедию заклинаний" aria-label="Открыть энциклопедию заклинаний"
             onClick={onOpenEncyclopedia}>+</button>}
-        </div>
+        </SheetSection>
       </div>
 
       <div className={styles.levelGrid}>
@@ -206,7 +206,7 @@ export function SpellSheet({
           const maximum = Math.min(20, Math.max(0, Math.floor(pool?.maximum ?? 0)))
           const used = Math.min(maximum, Math.max(0, Math.floor(pool?.used ?? 0)))
           const available = maximum - used
-          return <section
+          return <SheetSection
             className={styles.levelCard}
             data-drop-target={dragLevel === level}
             key={level}
@@ -267,10 +267,10 @@ export function SpellSheet({
               {levelSpells.length === 0 && <p className={styles.emptyLevel}>Заклинаний пока нет</p>}
             </div>
             {onSpellDrop && <div className={styles.dropHint} aria-hidden="true">Перетащите заклинание сюда</div>}
-          </section>
+          </SheetSection>
         })}
       </div>
     </div>
     </div>
-  </Panel>
+  </div>
 }

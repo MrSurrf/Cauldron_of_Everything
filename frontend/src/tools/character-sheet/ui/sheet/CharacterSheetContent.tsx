@@ -1,4 +1,3 @@
-import { Panel } from '../../../../shared/ui'
 import styles from '../../CharacterSheetTool.module.css'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
@@ -60,8 +59,7 @@ export function CharacterSheetContent({
       data-density={document.appearance.density}
       style={getSheetStyle(document.appearance)}
     >
-      <Panel className={styles.panel} padding="none">
-        <div className={styles.shell}>
+      <div className={styles.shell}>
           <div
             aria-label="Лист персонажа"
             className={styles.viewport}
@@ -245,8 +243,7 @@ export function CharacterSheetContent({
               </div>
             </div>
           </div>
-        </div>
-      </Panel>
+      </div>
     </div>
   )
 }

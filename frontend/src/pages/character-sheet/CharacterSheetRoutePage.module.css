@@ -4,5 +4,12 @@
   min-height: 42rem;
   padding: var(--space-2);
   overflow: hidden;
-  background: var(--color-background);
+  background:
+    var(--cursor-background-image, none),
+    radial-gradient(
+      ellipse at 50% 0,
+      color-mix(in srgb, var(--color-surface-accent) 42%, transparent),
+      transparent 68%
+    ),
+    var(--color-background);
 }
