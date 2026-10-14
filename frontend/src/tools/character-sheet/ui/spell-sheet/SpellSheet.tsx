@@ -18,6 +18,7 @@ import {
   type FormulaFieldValue,
   type FormulaVariableOption,
 } from '../fields'
+import { AnimatedDisclosure } from '../AnimatedDisclosure'
 import { SheetSection } from '../SheetSection'
 import styles from './SpellSheet.module.css'
 
@@ -102,7 +103,11 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
   if (spell.duration) facts.push(['Длительность', spell.duration])
   if (components) facts.push(['Компоненты', components])
 
-  return <article className={styles.spell} data-expanded={expanded}>
+  return <article
+    className={styles.spell}
+    data-expanded={expanded}
+    data-spell-entry={spell.id}
+  >
     <div className={styles.spellRow}>
       <Checkbox
         rootClassName={styles.prepareControl}
@@ -117,7 +122,11 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
         <span className={styles.chevron} aria-hidden="true" />
       </button>
     </div>
-    {expanded && <div className={styles.spellDetails} id={detailsId}>
+    <AnimatedDisclosure
+      id={detailsId}
+      contentClassName={styles.spellDetails}
+      open={expanded}
+    >
       {facts.length > 0 && <dl className={styles.factList}>
         {facts.map(([label, value]) => <div className={styles.fact} key={label}>
           <dt>{label}</dt><dd>{value}</dd>
@@ -133,7 +142,7 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
         {spell.source && <span className={styles.source}>{spell.source}</span>}
         {onRemove && <button type="button" className={styles.removeButton} onClick={() => onRemove(spell.id)} aria-label={`Удалить заклинание ${spell.name}`}>Удалить</button>}
       </div>}
-    </div>}
+    </AnimatedDisclosure>
   </article>
 }
 

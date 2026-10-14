@@ -15,6 +15,7 @@ import {
   ArrowIcon,
   ChevronIcon,
 } from './icons'
+import { AnimatedDisclosure } from './AnimatedDisclosure'
 import styles from './sections.module.css'
 import sectionStyles from './SheetSection/SheetSection.module.css'
 import { useControllableBoolean } from './useControllableBoolean'
@@ -193,11 +194,16 @@ export function CollapsibleSection({
         </div>
       </header>
 
-      {contentVisible && (
-        <div
+      {collapsible ? (
+        <AnimatedDisclosure
           id={contentId}
-          className={styles.content}
+          contentClassName={styles.content}
+          open={contentVisible}
         >
+          {children}
+        </AnimatedDisclosure>
+      ) : (
+        <div id={contentId} className={styles.content}>
           {children}
         </div>
       )}

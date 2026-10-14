@@ -286,6 +286,12 @@ describe('Character Sheet fixed desktop composition', () => {
       container.querySelectorAll<HTMLButtonElement>('[data-character-sheet-personality] button[aria-expanded="false"]')
         .forEach(button => button.click())
       await nextFrame()
+      container.querySelectorAll<HTMLElement>(
+        '[data-character-sheet-personality] [data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
     })
     expectTextEditorSpacing(container, 8)
 
@@ -542,6 +548,12 @@ describe('Character Sheet fixed desktop composition', () => {
     await act(async () => {
       traitsToggle.click()
       await nextFrame()
+      personalitySections.querySelectorAll<HTMLElement>(
+        '[data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
     })
 
     const featuresAfter = features.getBoundingClientRect()
@@ -566,6 +578,12 @@ describe('Character Sheet fixed desktop composition', () => {
 
     await act(async () => {
       toggles.slice(1).forEach((toggle) => toggle.click())
+      await nextFrame()
+      personalitySections.querySelectorAll<HTMLElement>(
+        '[data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
       await nextFrame()
     })
 
@@ -975,5 +993,92 @@ describe('Character Sheet fixed desktop composition', () => {
     })
 
     expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
+  })
+
+  it('анимирует раскрытие и закрытие личностных разделов и карточек заклинаний', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const traits = container.querySelector<HTMLElement>(
+      '[data-character-sheet-personality="traits"]',
+    )!
+    const traitsToggle = traits.querySelector<HTMLButtonElement>(
+      'button[aria-expanded]',
+    )!
+
+    expect(traits.querySelector('[data-animated-disclosure]')).toBeNull()
+
+    await act(async () => {
+      await userEvent.click(traitsToggle)
+      await nextFrame()
+    })
+
+    const openedTraits = traits.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(traitsToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(openedTraits.dataset.state).toBe('open')
+    expect(getComputedStyle(openedTraits).animationName).not.toBe('none')
+
+    await act(async () => {
+      await userEvent.click(traitsToggle)
+      await nextFrame()
+    })
+
+    const closingTraits = traits.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(closingTraits).toBe(openedTraits)
+    expect(closingTraits.dataset.state).toBe('closing')
+    expect(closingTraits).toHaveAttribute('inert')
+
+    await act(async () => {
+      closingTraits.dispatchEvent(
+        new AnimationEvent('animationend', { bubbles: true }),
+      )
+      await nextFrame()
+    })
+
+    expect(traits.querySelector('[data-animated-disclosure]')).toBeNull()
+
+    const spellSheetToggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    await act(async () => {
+      await userEvent.click(spellSheetToggle)
+      await nextFrame()
+    })
+
+    const spellPanel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    const spellToggle = spellPanel.querySelector<HTMLButtonElement>(
+      '[data-spell-entry] button[aria-expanded="true"]',
+    )!
+    const spell = spellToggle.closest<HTMLElement>('article')!
+    const openedDetails = spell.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+
+    expect(openedDetails.dataset.state).toBe('open')
+
+    await act(async () => {
+      await userEvent.click(spellToggle)
+      await nextFrame()
+    })
+
+    const closingDetails = spell.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(spellToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(closingDetails).toBe(openedDetails)
+    expect(closingDetails.dataset.state).toBe('closing')
+
+    await act(async () => {
+      closingDetails.dispatchEvent(
+        new AnimationEvent('animationend', { bubbles: true }),
+      )
+      await nextFrame()
+    })
+
+    expect(spell.querySelector('[data-animated-disclosure]')).toBeNull()
   })
 })

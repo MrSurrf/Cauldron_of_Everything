@@ -6,6 +6,7 @@ import {
   expect,
   fn,
   userEvent,
+  waitFor,
 } from 'storybook/test'
 
 import { CollapsibleSection } from './CollapsibleSection'
@@ -50,9 +51,11 @@ export const Default: Story = {
       'true',
     )
     await userEvent.click(toggle)
-    await expect(
-      canvas.queryByText(/Произвольное содержимое/),
-    ).not.toBeInTheDocument()
+    await waitFor(async () => {
+      await expect(
+        canvas.queryByText(/Произвольное содержимое/),
+      ).not.toBeInTheDocument()
+    })
   },
 }
 
