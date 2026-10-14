@@ -137,6 +137,8 @@ export type SpellcastingState = {
   className: string
   ability: AbilityKey
   abilityMode?: 'automatic' | 'manual'
+  saveDc: NumericFieldState
+  attackBonus: NumericFieldState
   slotMode: 'automatic' | 'manual'
   slots: Record<SpellSlotLevel, SpellSlotState>
   spells: SpellEntry[]
@@ -319,5 +321,6 @@ export type NumericFieldAddress =
   | { kind: 'featureUse'; featureId: string; field: 'current' | 'maximum' }
   | { kind: 'resource'; resourceId: string; field: 'current' | 'maximum' }
   | { kind: 'attack'; attackId: string }
+  | { kind: 'spellcasting'; field: 'saveDc' | 'attackBonus' }
   | { kind: 'currency'; currency: CurrencyKey }
   | { kind: 'customField'; fieldId: string }

@@ -163,7 +163,7 @@
 }
 
 .detailFrame::before,
-.detailFrame > span[aria-hidden='true'] {
+.detailFrame > span[aria-hidden='true']:first-child {
   display: none;
 }
 

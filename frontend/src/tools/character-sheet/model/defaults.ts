@@ -40,6 +40,8 @@ export function createEmptySpellcasting(): SpellcastingState {
     className: '',
     ability: 'wisdom',
     abilityMode: 'automatic',
+    saveDc: formulaNumericField(null),
+    attackBonus: formulaNumericField(null),
     slotMode: 'automatic',
     slots: Object.fromEntries(SPELL_SLOT_LEVELS.map(level => [level, { maximum: 0, used: 0 }])) as SpellcastingState['slots'],
     spells: [],

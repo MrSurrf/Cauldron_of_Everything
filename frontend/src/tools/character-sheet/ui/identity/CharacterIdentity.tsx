@@ -2,6 +2,7 @@ import { TextInput } from '../../../../shared/ui'
 import type { CSSProperties, ReactNode } from 'react'
 
 import sheetFieldStyles from '../fields/SheetFields.module.css'
+import { ClassNameField } from '../ClassNameField'
 import { NumericEditor } from '../fields'
 import { SheetSection } from '../SheetSection'
 import styles from './CharacterIdentity.module.css'
@@ -152,22 +153,34 @@ export function CharacterIdentity({
           />
 
           <div className={styles.details}>
-            {detailFields.map((field) => (
-              <TextInput
-                key={field.key}
-                className={styles.detailInput}
-                fieldClassName={`${sheetFieldStyles.compactField} ${styles.detailField}`}
-                label={field.label}
-                rootClassName={`${sheetFieldStyles.compactFrame} ${styles.detailFrame}`}
-                value={value[field.key]}
-                onChange={(event) => {
-                  onValueChange({
-                    ...value,
-                    [field.key]: event.currentTarget.value,
-                  })
-                }}
-              />
-            ))}
+            {detailFields.map((field) => {
+              const sharedProps = {
+                className: styles.detailInput,
+                fieldClassName: `${sheetFieldStyles.compactField} ${styles.detailField}`,
+                label: field.label,
+                rootClassName: `${sheetFieldStyles.compactFrame} ${styles.detailFrame}`,
+                value: value[field.key],
+              }
+
+              return field.key === 'characterClass'
+                ? <ClassNameField
+                    key={field.key}
+                    {...sharedProps}
+                    onValueChange={(characterClass) => {
+                      onValueChange({ ...value, characterClass })
+                    }}
+                  />
+                : <TextInput
+                    key={field.key}
+                    {...sharedProps}
+                    onChange={(event) => {
+                      onValueChange({
+                        ...value,
+                        [field.key]: event.currentTarget.value,
+                      })
+                    }}
+                  />
+            })}
           </div>
         </div>
 

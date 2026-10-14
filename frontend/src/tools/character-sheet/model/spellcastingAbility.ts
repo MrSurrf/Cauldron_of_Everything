@@ -9,6 +9,7 @@ const CASTING_ABILITIES: Readonly<Record<string, AbilityKey>> = {
   warlock: 'charisma', колдун: 'charisma',
   paladin: 'charisma', паладин: 'charisma',
   wizard: 'intelligence', волшебник: 'intelligence',
+  artificer: 'intelligence', изобретатель: 'intelligence',
   'eldritch knight': 'intelligence', 'мистический рыцарь': 'intelligence',
   'arcane trickster': 'intelligence', 'мистический ловкач': 'intelligence',
 }
@@ -17,7 +18,7 @@ const CASTING_ABILITIES: Readonly<Record<string, AbilityKey>> = {
 export function getEffectiveSpellcastingAbility(document: CharacterSheetDocument): AbilityKey {
   const spellcasting = document.spellcasting
   if (spellcasting?.abilityMode === 'manual') return spellcasting.ability
-  const className = (document.identity.className || spellcasting?.className || '').trim().toLocaleLowerCase('ru')
+  const className = (spellcasting?.className || document.identity.className || '').trim().toLocaleLowerCase('ru')
   const subclass = document.identity.subclass.trim().toLocaleLowerCase('ru')
   return CASTING_ABILITIES[subclass] ?? CASTING_ABILITIES[className] ?? spellcasting?.ability ?? 'wisdom'
 }

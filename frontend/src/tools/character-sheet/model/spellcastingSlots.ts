@@ -7,7 +7,7 @@ import { getSingleClassSpellSlots } from './spellcastingRules'
 export function getEffectiveSpellSlots(document: CharacterSheetDocument): Record<SpellSlotLevel, SpellSlotState> {
   const spellcasting = document.spellcasting ?? createEmptySpellcasting()
   const level = selectFormulaValue(selectFormulaEvaluation(document), 'LEVEL')
-  const className = document.identity.className.trim() || spellcasting.className.trim()
+  const className = spellcasting.className.trim() || document.identity.className.trim()
   const subclass = document.identity.subclass.trim()
   const progression = level === null ? null : (
     (subclass && getSingleClassSpellSlots(`${className} (${subclass})`, level, document.rulesetId))

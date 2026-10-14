@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { characterSheetActions } from './characterSheet.actions'
 import { characterSheetReducer } from './characterSheet.reducer'
 import { createMockSpellcasterSheet } from './mockSpellcaster'
-import { manualNumericField } from './defaults'
+import { formulaNumericField, manualNumericField } from './defaults'
 import { getEffectiveSpellSlots } from './spellcastingSlots'
 import { getEffectiveSpellcastingAbility } from './spellcastingAbility'
+import { FORMULA_FIELD_KEYS } from './formulas'
+import { selectFormulaEvaluation, selectFormulaValue } from './characterSheet.selectors'
 import { emptyItem, itemFromBlock, itemToSource } from '../../../shared/ui/ContentEditor/itemContent'
 import { parseContentSource } from '../../../shared/ui/ContentEditor/contentCodec'
 
@@ -51,9 +53,35 @@ describe('Лист заклинаний персонажа', () => {
 
   it('выбирает характеристику по классу и сохраняет ручной выбор', () => {
     const wizard = createMockSpellcasterSheet()
+    wizard.spellcasting!.className = ''
     wizard.identity.className = 'Волшебник'
     expect(getEffectiveSpellcastingAbility(wizard)).toBe('intelligence')
-    const manual = characterSheetReducer(wizard, characterSheetActions.setSpellcastingAbility('charisma'))
+
+    const cleric = characterSheetReducer(wizard, characterSheetActions.setSpellcastingClassName('Жрец'))
+    expect(getEffectiveSpellcastingAbility(cleric)).toBe('wisdom')
+
+    const manual = characterSheetReducer(cleric, characterSheetActions.setSpellcastingAbility('charisma'))
     expect(getEffectiveSpellcastingAbility(manual)).toBe('charisma')
+  })
+
+  it('рассчитывает и позволяет переопределить формулы заклинателя', () => {
+    const initial = createMockSpellcasterSheet()
+    const initialFormulas = selectFormulaEvaluation(initial)
+
+    expect(selectFormulaValue(initialFormulas, FORMULA_FIELD_KEYS.spellSaveDc)).toBe(16)
+    expect(selectFormulaValue(initialFormulas, FORMULA_FIELD_KEYS.spellAttackBonus)).toBe(8)
+
+    const customized = characterSheetReducer(
+      initial,
+      characterSheetActions.setNumericField(
+        { kind: 'spellcasting', field: 'saveDc' },
+        formulaNumericField(null, '10 + PROFICIENCY + WIS_MOD'),
+      ),
+    )
+
+    expect(selectFormulaValue(
+      selectFormulaEvaluation(customized),
+      FORMULA_FIELD_KEYS.spellSaveDc,
+    )).toBe(18)
   })
 })

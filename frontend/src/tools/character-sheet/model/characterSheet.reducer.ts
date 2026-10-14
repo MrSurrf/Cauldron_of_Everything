@@ -216,6 +216,16 @@ function setNumericField(
     }
   }
 
+  if (address.kind === 'spellcasting') {
+    return {
+      ...document,
+      spellcasting: {
+        ...(document.spellcasting ?? createEmptySpellcasting()),
+        [address.field]: value,
+      },
+    }
+  }
+
   if (address.kind === 'currency') {
     return {
       ...document,
@@ -333,6 +343,8 @@ export function characterSheetReducer(
       return { ...document, equipmentContentText: importEquipmentItem(document.equipmentContentText ?? '', action.entityId, action.source) }
     case 'equipment/enrichItem':
       return { ...document, equipmentContentText: enrichEquipmentItem(document.equipmentContentText ?? '', action.entityId, action.patch) }
+    case 'spellcasting/setClassName':
+      return { ...document, spellcasting: { ...(document.spellcasting ?? createEmptySpellcasting()), className: action.className } }
     case 'spellcasting/setAbility':
       return { ...document, spellcasting: { ...(document.spellcasting ?? createEmptySpellcasting()), ability: action.ability, abilityMode: 'manual' } }
     case 'spellcasting/setSlotUsed': {

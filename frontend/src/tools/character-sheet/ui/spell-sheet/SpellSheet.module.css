@@ -27,8 +27,7 @@
   padding: var(--sheet-layout-gap);
 }
 
-.toolbarButton,
-.encyclopediaButton {
+.toolbarButton {
   min-height: 1.375rem;
   border: 1px solid var(--sheet-frame);
   color: var(--palette-purple-300);
@@ -38,9 +37,7 @@
 }
 
 .toolbarButton { padding: 0 var(--sheet-layout-gap); }
-.encyclopediaButton { width: 1.375rem; margin-left: auto; font-size: var(--font-size-md); }
-.toolbarButton:hover,
-.encyclopediaButton:hover { border-color: var(--color-border-accent); background: var(--color-surface-accent); }
+.toolbarButton:hover { border-color: var(--color-border-accent); background: var(--color-surface-accent); }
 
 .content {
   width: 100%;
@@ -66,6 +63,7 @@
 }
 
 .summaryCard > div > div { display: grid; min-width: 0; gap: var(--sheet-tight-gap); }
+.summaryValue { flex: 1; }
 .summaryIcon {
   display: grid;
   flex: 0 0 2.5rem;
@@ -99,6 +97,35 @@
 }
 .abilitySelect { cursor: pointer; appearance: none; }
 .abilitySelect option { color: var(--color-text-primary); background: var(--color-surface-default); }
+
+.classField { width: 100%; min-width: 0; }
+.classFrame {
+  --input-border: transparent;
+  --input-inner-border: transparent;
+  --input-surface-start: transparent;
+  --input-surface-end: transparent;
+  --input-corner-cut: 0;
+  --input-inner-frame-inset: 0;
+  min-height: 1.5rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--sheet-frame) 72%, transparent);
+  background: transparent;
+  clip-path: none;
+  filter: none;
+}
+.classFrame::before,
+.classFrame > span[aria-hidden='true']:first-child { display: none; }
+.classFrame:focus-within { border-bottom-color: var(--color-border-accent); filter: none; }
+.classInput {
+  min-height: 1.5rem;
+  padding: 0 1.25rem 0 0;
+  color: var(--color-text-primary);
+  font: 1rem/1.1 var(--sheet-heading-font, var(--font-family-heading));
+}
+
+.formulaSummaryCard { --sheet-large-value-size: 1rem; }
+.summaryFormula { flex: 1; width: 100%; }
+.summaryFormula :is(input, output) { min-height: 1.5rem; }
 
 .levelGrid {
   display: grid;

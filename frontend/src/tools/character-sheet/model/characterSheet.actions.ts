@@ -49,6 +49,7 @@ export type CharacterSheetAction =
   | { type: 'equipment/setContentText'; value: string }
   | { type: 'equipment/importItem'; entityId: number; source: string }
   | { type: 'equipment/enrichItem'; entityId: number; patch: Partial<ContentItemValue> }
+  | { type: 'spellcasting/setClassName'; className: string }
   | { type: 'spellcasting/setAbility'; ability: AbilityKey }
   | { type: 'spellcasting/setSlotUsed'; level: SpellSlotLevel; used: number }
   | { type: 'spellcasting/setSlotMaximum'; level: SpellSlotLevel; maximum: number }
@@ -131,6 +132,7 @@ export const characterSheetActions = {
   }),
   importEquipmentItem: (entityId: number, source: string): CharacterSheetAction => ({ type: 'equipment/importItem', entityId, source }),
   enrichEquipmentItem: (entityId: number, patch: Partial<ContentItemValue>): CharacterSheetAction => ({ type: 'equipment/enrichItem', entityId, patch }),
+  setSpellcastingClassName: (className: string): CharacterSheetAction => ({ type: 'spellcasting/setClassName', className }),
   setSpellcastingAbility: (ability: AbilityKey): CharacterSheetAction => ({ type: 'spellcasting/setAbility', ability }),
   setSpellSlotUsed: (level: SpellSlotLevel, used: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotUsed', level, used }),
   setSpellSlotMaximum: (level: SpellSlotLevel, maximum: number): CharacterSheetAction => ({ type: 'spellcasting/setSlotMaximum', level, maximum }),

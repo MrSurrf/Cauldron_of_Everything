@@ -181,6 +181,24 @@ const staticDescriptors: FormulaVariableDescriptor[] = [
       fieldId: FORMULA_FIELD_KEYS.passivePerception,
     },
   },
+  {
+    key: FORMULA_FIELD_KEYS.spellSaveDc,
+    label: 'СЛ спасброска заклинаний',
+    category: 'Заклинания',
+    source: {
+      kind: 'computed',
+      fieldId: FORMULA_FIELD_KEYS.spellSaveDc,
+    },
+  },
+  {
+    key: FORMULA_FIELD_KEYS.spellAttackBonus,
+    label: 'Бонус атаки заклинаниями',
+    category: 'Заклинания',
+    source: {
+      kind: 'computed',
+      fieldId: FORMULA_FIELD_KEYS.spellAttackBonus,
+    },
+  },
 ]
 
 export function createCharacterSheetVariableRegistry(

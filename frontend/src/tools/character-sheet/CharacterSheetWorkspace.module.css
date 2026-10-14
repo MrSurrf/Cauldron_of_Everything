@@ -31,6 +31,7 @@
   align-items: stretch;
   gap: var(--space-2);
   margin-inline: auto;
+  transition: zoom 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .characterPanel,
@@ -45,7 +46,66 @@
 
 .characterPanel { z-index: 2; }
 .characterContent { width: 100%; height: 100%; }
-.spellPanel { z-index: 1; }
+.spellPanel {
+  z-index: 1;
+  isolation: isolate;
+  transform-origin: left center;
+  animation: spell-sheet-surface-in 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.spellPanel::after {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      104deg,
+      transparent 34%,
+      color-mix(in srgb, var(--palette-purple-300) 4%, transparent) 44%,
+      color-mix(in srgb, var(--palette-purple-300) 32%, transparent) 50%,
+      color-mix(in srgb, var(--palette-white) 26%, transparent) 52%,
+      transparent 62%
+    );
+  content: '';
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateX(-72%);
+  animation: spell-sheet-light-sweep 820ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes spell-sheet-surface-in {
+  0% {
+    opacity: 0;
+    filter: blur(0.65rem) brightness(0.62);
+    transform: translateX(calc(-100% - var(--space-2))) scale(0.97);
+  }
+
+  20% { opacity: 0.3; }
+
+  62% {
+    opacity: 1;
+    filter: blur(0) brightness(1.12);
+    transform: translateX(0.85rem) scale(1.006);
+  }
+
+  80% {
+    filter: blur(0) brightness(1.03);
+    transform: translateX(-0.3rem) scale(0.998);
+  }
+
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@keyframes spell-sheet-light-sweep {
+  0%, 18% { opacity: 0; transform: translateX(-72%); }
+  42% { opacity: 0.78; }
+  100% { opacity: 0; transform: translateX(72%); }
+}
 
 .pageTab,
 .libraryTrigger {
@@ -119,6 +179,9 @@
 .importError button { border: 0; color: var(--color-brand-bright); background: transparent; cursor: pointer; font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
+  .book { transition: none; }
+  .spellPanel { animation: none; }
+  .spellPanel::after { display: none; }
   .pageTab,
   .libraryTrigger { transition: none; }
 }

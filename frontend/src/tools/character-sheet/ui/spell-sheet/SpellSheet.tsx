@@ -2,8 +2,22 @@ import { useState, type DragEvent } from 'react'
 
 import { Checkbox } from '../../../../shared/ui'
 import { PlaceholderIcon } from '../../../../shared/ui/icons/PlaceholderIcon'
-import type { AbilityKey, SpellEntry, SpellLevel, SpellSlotLevel, SpellSlotState } from '../../model'
+import {
+  abilityModifierVariable,
+  type AbilityKey,
+  type SpellEntry,
+  type SpellLevel,
+  type SpellSlotLevel,
+  type SpellSlotState,
+} from '../../model'
+import { ClassNameField } from '../ClassNameField'
 import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
+import {
+  FormulaField,
+  type ComputedValueResult,
+  type FormulaFieldValue,
+  type FormulaVariableOption,
+} from '../fields'
 import { SheetSection } from '../SheetSection'
 import styles from './SpellSheet.module.css'
 
@@ -15,8 +29,10 @@ export type SpellcastingSummary = {
   className: string
   abilityKey: AbilityKey
   ability: string
-  saveDc: number
-  attackBonus: number
+  saveDc: FormulaFieldValue
+  saveDcResult: ComputedValueResult
+  attackBonus: FormulaFieldValue
+  attackBonusResult: ComputedValueResult
 }
 
 export type SpellSheetProps = {
@@ -26,11 +42,14 @@ export type SpellSheetProps = {
   spells: readonly SpellSheetSpell[]
   onSlotUsedChange?: (level: SpellSlotLevel, used: number) => void
   onSlotMaximumChange?: (level: SpellSlotLevel, maximum: number) => void
+  onClassNameChange?: (className: string) => void
   onAbilityChange?: (ability: AbilityKey) => void
+  onSaveDcChange?: (value: FormulaFieldValue) => void
+  onAttackBonusChange?: (value: FormulaFieldValue) => void
   onSpellPreparedChange?: (id: string, prepared: boolean) => void
   onSpellDrop?: (transfer: DataTransfer, level: SpellLevel) => void
   onRemoveSpell?: (id: string) => void
-  onOpenEncyclopedia?: () => void
+  formulaVariables?: readonly FormulaVariableOption[]
   onBack?: () => void
 }
 
@@ -56,10 +75,6 @@ const LEVEL_NAMES: Record<SpellLevel, string> = {
   7: '7-й уровень',
   8: '8-й уровень',
   9: '9-й уровень',
-}
-
-function signedBonus(value: number) {
-  return value >= 0 ? `+${value}` : String(value)
 }
 
 function initialExpandedSpells(spells: readonly SpellSheetSpell[]) {
@@ -129,11 +144,14 @@ export function SpellSheet({
   spells,
   onSlotUsedChange,
   onSlotMaximumChange,
+  onClassNameChange,
   onAbilityChange,
+  onSaveDcChange,
+  onAttackBonusChange,
   onSpellPreparedChange,
   onSpellDrop,
   onRemoveSpell,
-  onOpenEncyclopedia,
+  formulaVariables,
   onBack,
 }: SpellSheetProps) {
   const [expandedIds, setExpandedIds] = useState(() => initialExpandedSpells(spells))
@@ -173,7 +191,21 @@ export function SpellSheet({
       <div className={styles.summary} aria-label="Характеристики заклинателя">
         <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
-          <div><span className={styles.summaryLabel}>Класс заклинателя</span><strong>{spellcasting.className || '—'}</strong></div>
+          <div className={styles.summaryValue}>
+            <span className={styles.summaryLabel}>Класс заклинателя</span>
+            {onClassNameChange
+              ? <ClassNameField
+                  aria-label="Класс заклинателя"
+                  className={styles.classInput}
+                  fieldClassName={styles.classField}
+                  placeholder="Выберите или введите"
+                  rootClassName={styles.classFrame}
+                  spellcasterOnly
+                  value={spellcasting.className}
+                  onValueChange={onClassNameChange}
+                />
+              : <strong>{spellcasting.className || '—'}</strong>}
+          </div>
         </SheetSection>
         <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
@@ -184,16 +216,37 @@ export function SpellSheet({
             </select>
             : <strong>{spellcasting.ability || '—'}</strong>}</div>
         </SheetSection>
-        <SheetSection className={styles.summaryCard}>
+        <SheetSection className={`${styles.summaryCard} ${styles.formulaSummaryCard}`}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
-          <div><span className={styles.summaryLabel}>Сл спасброска</span><strong>{spellcasting.saveDc}</strong></div>
+          <FormulaField
+            className={styles.summaryFormula}
+            compact
+            defaultFormula={`8 + PROFICIENCY + ${abilityModifierVariable(spellcasting.abilityKey)}`}
+            disabled={!onSaveDcChange}
+            label="СЛ спасброска"
+            presentation="stat"
+            result={spellcasting.saveDcResult}
+            value={spellcasting.saveDc}
+            variables={formulaVariables}
+            onValueChange={onSaveDcChange ?? (() => undefined)}
+          />
         </SheetSection>
-        <SheetSection className={styles.summaryCard}>
+        <SheetSection className={`${styles.summaryCard} ${styles.formulaSummaryCard}`}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
-          <div><span className={styles.summaryLabel}>Бонус атаки</span><strong>{signedBonus(spellcasting.attackBonus)}</strong></div>
-          {onOpenEncyclopedia && <button type="button" className={styles.encyclopediaButton}
-            title="Открыть энциклопедию заклинаний" aria-label="Открыть энциклопедию заклинаний"
-            onClick={onOpenEncyclopedia}>+</button>}
+          <FormulaField
+            className={styles.summaryFormula}
+            compact
+            defaultFormula={`PROFICIENCY + ${abilityModifierVariable(spellcasting.abilityKey)}`}
+            disabled={!onAttackBonusChange}
+            label="Бонус атаки"
+            prefixPositive
+            presentation="stat"
+            result={spellcasting.attackBonusResult}
+            signDisplay="compact"
+            value={spellcasting.attackBonus}
+            variables={formulaVariables}
+            onValueChange={onAttackBonusChange ?? (() => undefined)}
+          />
         </SheetSection>
       </div>
 

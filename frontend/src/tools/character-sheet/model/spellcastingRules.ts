@@ -43,7 +43,7 @@ const WARLOCK_PACT_SLOTS: readonly (readonly [number, SpellSlotLevel])[] = [
   [3, 5], [4, 5], [4, 5], [4, 5], [4, 5],
 ]
 
-type ClassProgression = 'full' | 'half' | 'third' | 'pact' | 'none'
+type ClassProgression = 'full' | 'half' | 'half-up' | 'third' | 'pact' | 'none'
 
 // Совпадение полного названия намеренно строгое: запись нескольких классов
 // или незнакомая домашняя специализация не должна давать ошибочный максимум.
@@ -55,6 +55,7 @@ const CLASS_PROGRESSION: Readonly<Record<string, ClassProgression>> = {
   wizard: 'full', волшебник: 'full',
   paladin: 'half', паладин: 'half',
   ranger: 'half', следопыт: 'half',
+  artificer: 'half-up', изобретатель: 'half-up',
   warlock: 'pact', колдун: 'pact',
   'eldritch knight': 'third', 'fighter (eldritch knight)': 'third',
   'мистический рыцарь': 'third', 'воин (мистический рыцарь)': 'third',
@@ -98,6 +99,7 @@ export function getSingleClassSpellSlots(
   if (progression === 'half' && (rulesetId === 'dnd5e-2024' || level >= 2)) {
     casterLevel = Math.ceil(level / 2)
   }
+  if (progression === 'half-up') casterLevel = Math.ceil(level / 2)
   if (progression === 'third' && level >= 3) casterLevel = Math.ceil(level / 3)
 
   return {

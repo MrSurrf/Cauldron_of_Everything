@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import {
   CharacterSheetProvider,
+  FORMULA_FIELD_KEYS,
   characterSheetActions,
+  createCharacterSheetVariableRegistry,
   createEmptySpellcasting,
   getEffectiveSpellcastingAbility,
   getEffectiveSpellSlots,
-  selectAbilityModifier,
-  selectFormulaValue,
+  selectFormulaResult,
   useCharacterSheet,
   type CharacterSheetDocument,
   type SpellLevel,
@@ -26,6 +27,7 @@ import {
   spellDetailPatch,
 } from './ui/encyclopedia/characterEntryImport'
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
+import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
 import styles from './CharacterSheetWorkspace.module.css'
 
@@ -61,6 +63,7 @@ function CharacterSheetWorkspace({
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
+  const initialDevicePixelRatio = useRef(1)
 
   useEffect(() => () => {
     detailRequests.current.forEach((request) => request.abort())
@@ -69,11 +72,19 @@ function CharacterSheetWorkspace({
   useEffect(() => {
     const root = workspace.current
     if (!root) return
-    const measure = () => setWorkspaceWidth(root.clientWidth)
+    initialDevicePixelRatio.current = window.devicePixelRatio || 1
+    const measure = () => {
+      const browserZoom = (window.devicePixelRatio || 1) / initialDevicePixelRatio.current
+      setWorkspaceWidth(Math.round(root.clientWidth * browserZoom))
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(root)
-    return () => observer.disconnect()
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
   }, [])
 
   function hydrateEntry(entry: CharacterEncyclopediaEntry, localId?: string) {
@@ -123,15 +134,18 @@ function CharacterSheetWorkspace({
     setSpellsOpen(true)
   }
 
-  function openLibrary(mode: CharacterEncyclopediaMode) {
-    setLibraryMode(mode)
-    setLibraryOpen(true)
-  }
-
-  const spellcasting = document.spellcasting ?? createEmptySpellcasting()
+  const emptySpellcasting = createEmptySpellcasting()
+  const spellcasting = document.spellcasting
+    ? { ...emptySpellcasting, ...document.spellcasting }
+    : emptySpellcasting
   const castingAbility = getEffectiveSpellcastingAbility(document)
-  const abilityModifier = selectAbilityModifier(formulas, castingAbility) ?? 0
-  const proficiency = selectFormulaValue(formulas, 'PROFICIENCY') ?? 0
+  const formulaVariables = useMemo(
+    () => createCharacterSheetVariableRegistry(document).list().map((variable) => ({
+      key: variable.key,
+      label: variable.label,
+    })),
+    [document],
+  )
   const reservedLibraryWidth = libraryOpen || spellsOpen
     ? LIBRARY_DOCK_WIDTH.open
     : LIBRARY_DOCK_WIDTH.closed
@@ -165,17 +179,23 @@ function CharacterSheetWorkspace({
         {spellsOpen && <div className={styles.spellPanel}>
           <SpellSheet
             spellcasting={{
-              className: document.identity.className || spellcasting.className,
+              className: spellcasting.className || document.identity.className,
               abilityKey: castingAbility,
               ability: ABILITY_NAMES[castingAbility],
-              saveDc: 8 + proficiency + abilityModifier,
-              attackBonus: proficiency + abilityModifier,
+              saveDc: spellcasting.saveDc,
+              saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
+              attackBonus: spellcasting.attackBonus,
+              attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
             }}
             slots={getEffectiveSpellSlots(document)}
             spells={spellcasting.spells}
+            formulaVariables={formulaVariables}
             onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
             onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
+            onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
             onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
+            onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
+            onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
             onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
             onSpellDrop={(transfer, level: SpellLevel) => {
               const entry = readCharacterEncyclopediaDrag(transfer)
@@ -187,7 +207,6 @@ function CharacterSheetWorkspace({
               addEntry({ ...entry, level })
             }}
             onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
-            onOpenEncyclopedia={() => openLibrary('spell')}
           />
         </div>}
       </div>
