@@ -38,6 +38,12 @@ const ABILITY_NAMES = {
   charisma: 'Харизма',
 } as const
 
+const LIBRARY_DOCK_WIDTH = {
+  closed: 32,
+  open: 384,
+} as const
+const SHEET_SPACE_GUTTER = 16
+
 type CharacterSheetWorkspaceProps = Pick<CharacterSheetToolProps,
   'className' | 'onPortraitFileSelect' | 'onPortraitRemove'
 >
@@ -49,24 +55,24 @@ function CharacterSheetWorkspace({
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
   const [spellsOpen, setSpellsOpen] = useState(false)
-  const [viewportWidth, setViewportWidth] = useState(0)
+  const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
-  const sheetSpace = useRef<HTMLDivElement>(null)
+  const workspace = useRef<HTMLDivElement>(null)
 
   useEffect(() => () => {
     detailRequests.current.forEach((request) => request.abort())
   }, [])
 
   useEffect(() => {
-    const viewport = sheetSpace.current
-    if (!viewport) return
-    const measure = () => setViewportWidth(viewport.clientWidth)
+    const root = workspace.current
+    if (!root) return
+    const measure = () => setWorkspaceWidth(root.clientWidth)
     measure()
     const observer = new ResizeObserver(measure)
-    observer.observe(viewport)
+    observer.observe(root)
     return () => observer.disconnect()
   }, [])
 
@@ -126,13 +132,16 @@ function CharacterSheetWorkspace({
   const castingAbility = getEffectiveSpellcastingAbility(document)
   const abilityModifier = selectAbilityModifier(formulas, castingAbility) ?? 0
   const proficiency = selectFormulaValue(formulas, 'PROFICIENCY') ?? 0
-  const pageScale = viewportWidth > 0
-    ? Math.min(1, Math.max(0.1, (viewportWidth - 16) / (spellsOpen ? 1988 : 990)))
+  const reservedLibraryWidth = libraryOpen || spellsOpen
+    ? LIBRARY_DOCK_WIDTH.open
+    : LIBRARY_DOCK_WIDTH.closed
+  const pageScale = workspaceWidth > 0
+    ? Math.min(1, Math.max(0.1, (workspaceWidth - reservedLibraryWidth - SHEET_SPACE_GUTTER) / (spellsOpen ? 1988 : 990)))
     : 1
 
-  return <div className={[styles.workspace, className].filter(Boolean).join(' ')}
+  return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
     data-library-open={libraryOpen} data-spells-open={spellsOpen}>
-    <div ref={sheetSpace} className={styles.sheetSpace} aria-label="Листы персонажа">
+    <div className={styles.sheetSpace} aria-label="Листы персонажа">
       <div className={styles.book} style={{ zoom: pageScale }}>
         <div className={styles.characterPanel}>
           <CharacterSheetContent

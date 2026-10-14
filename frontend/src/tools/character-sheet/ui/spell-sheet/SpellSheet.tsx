@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from 'react'
 
+import { Checkbox } from '../../../../shared/ui'
 import { PlaceholderIcon } from '../../../../shared/ui/icons/PlaceholderIcon'
 import type { AbilityKey, SpellEntry, SpellLevel, SpellSlotLevel, SpellSlotState } from '../../model'
 import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
@@ -88,17 +89,14 @@ function SpellRow({ spell, expanded, onExpand, onPreparedChange, onRemove }: {
 
   return <article className={styles.spell} data-expanded={expanded}>
     <div className={styles.spellRow}>
-      <button
-        type="button"
-        className={styles.prepareButton}
+      <Checkbox
+        rootClassName={styles.prepareControl}
         aria-label={`${spell.level === 0 ? 'Известный заговор' : 'Подготовить заклинание'}: ${spell.name}`}
-        aria-pressed={prepared}
         title={spell.level === 0 ? 'Известный заговор' : spell.alwaysPrepared ? 'Всегда подготовлено' : prepared ? 'Заклинание подготовлено' : 'Заклинание не подготовлено'}
+        checked={prepared}
         disabled={!onPreparedChange || spell.level === 0 || spell.alwaysPrepared}
-        onClick={() => onPreparedChange?.(spell.id, !prepared)}
-      >
-        <span className={styles.preparedMark} aria-hidden="true" />
-      </button>
+        onCheckedChange={(checked) => onPreparedChange?.(spell.id, checked)}
+      />
       <button type="button" className={styles.expandButton} aria-expanded={expanded} aria-controls={detailsId} onClick={onExpand}>
         <span>{spell.name}</span>
         <span className={styles.chevron} aria-hidden="true" />
@@ -227,15 +225,14 @@ export function SpellSheet({
                 {maximum > 0 && <div className={styles.slotMarks}>
                   {Array.from({ length: maximum }, (_, index) => {
                     const spent = index < used
-                    return <button
+                    return <Checkbox
                       key={index}
-                      type="button"
-                      className={styles.slotMark}
-                      data-spent={spent}
+                      rootClassName={styles.slotControl}
+                      checked={!spent}
                       aria-label={`${spent ? 'Восстановить' : 'Израсходовать'} ячейку ${level}-го уровня`}
                       title={spent ? 'Восстановить ячейку' : 'Израсходовать ячейку'}
                       disabled={!onSlotUsedChange}
-                      onClick={() => onSlotUsedChange?.(level, used + (spent ? -1 : 1))}
+                      onCheckedChange={(checked) => onSlotUsedChange?.(level, used + (checked ? -1 : 1))}
                     />
                   })}
                 </div>}
