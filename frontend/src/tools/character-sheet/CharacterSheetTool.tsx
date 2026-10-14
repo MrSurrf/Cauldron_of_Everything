@@ -57,6 +57,7 @@ function CharacterSheetWorkspace({
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
   const [spellsOpen, setSpellsOpen] = useState(false)
+  const [spellSheetMounted, setSpellSheetMounted] = useState(false)
   const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
@@ -68,6 +69,12 @@ function CharacterSheetWorkspace({
   useEffect(() => () => {
     detailRequests.current.forEach((request) => request.abort())
   }, [])
+
+  useEffect(() => {
+    if (spellsOpen || !spellSheetMounted) return
+    const fallback = window.setTimeout(() => setSpellSheetMounted(false), 750)
+    return () => window.clearTimeout(fallback)
+  }, [spellSheetMounted, spellsOpen])
 
   useEffect(() => {
     const root = workspace.current
@@ -131,6 +138,7 @@ function CharacterSheetWorkspace({
     const existing = document.spellcasting?.spells.find((candidate) => candidate.entityId === entry.id)
     dispatch(characterSheetActions.addSpell(spell))
     hydrateEntry(entry, existing?.id ?? spell.id)
+    setSpellSheetMounted(true)
     setSpellsOpen(true)
   }
 
@@ -156,7 +164,11 @@ function CharacterSheetWorkspace({
   return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
     data-library-open={libraryOpen} data-spells-open={spellsOpen}>
     <div className={styles.sheetSpace} aria-label="Листы персонажа">
-      <div className={styles.book} style={{ zoom: pageScale }}>
+      <div
+        className={styles.book}
+        data-spells-open={spellsOpen}
+        style={{ zoom: pageScale }}
+      >
         <div className={styles.characterPanel}>
           <CharacterSheetContent
             className={styles.characterContent}
@@ -168,15 +180,31 @@ function CharacterSheetWorkspace({
             }}
           />
           <button type="button" className={styles.pageTab}
+            data-spell-sheet-toggle
             title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
             aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
             aria-expanded={spellsOpen}
             onClick={() => {
-              setSpellsOpen((value) => !value)
+              const nextOpen = !spellsOpen
+              if (nextOpen) setSpellSheetMounted(true)
+              setSpellsOpen(nextOpen)
               if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
             }}><span aria-hidden="true">{spellsOpen ? '‹' : '›'}</span></button>
         </div>
-        {spellsOpen && <div className={styles.spellPanel}>
+        {spellSheetMounted && <div
+          className={styles.spellPanel}
+          data-spell-sheet-panel
+          data-state={spellsOpen ? 'open' : 'closing'}
+          onAnimationEnd={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !event.pseudoElement &&
+              !spellsOpen
+            ) {
+              setSpellSheetMounted(false)
+            }
+          }}
+        >
           <SpellSheet
             spellcasting={{
               className: spellcasting.className || document.identity.className,

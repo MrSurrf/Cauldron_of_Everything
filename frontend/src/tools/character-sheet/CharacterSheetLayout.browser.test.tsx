@@ -12,7 +12,7 @@ import {
 import '../../app/styles/global.css'
 import '../../shared/styles/tokens.css'
 import { CharacterSheetTool } from './CharacterSheetTool'
-import { createMockCharacterSheet } from './model'
+import { createMockCharacterSheet, createMockSpellcasterSheet } from './model'
 
 let mountedRoot: Root | null = null
 let mountedContainer: HTMLDivElement | null = null
@@ -936,5 +936,44 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(
       savingThrow.closest('[data-saving-throw-row]')?.getAttribute('data-rank'),
     ).toBe('none')
+  })
+
+  it('анимирует оба листа и размонтирует лист заклинаний только после закрытия', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const toggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    const book = toggle.closest<HTMLElement>('[data-spells-open]')!
+
+    await act(async () => {
+      await userEvent.click(toggle)
+      await nextFrame()
+    })
+
+    const panel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    const openingAnimation = getComputedStyle(panel).animationName
+    expect(book.dataset.spellsOpen).toBe('true')
+    expect(panel.dataset.state).toBe('open')
+    expect(getComputedStyle(book).transitionProperty).toContain('transform')
+    expect(openingAnimation).not.toBe('none')
+
+    await act(async () => {
+      await userEvent.click(toggle)
+      await nextFrame()
+    })
+
+    expect(book.dataset.spellsOpen).toBe('false')
+    expect(panel.dataset.state).toBe('closing')
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBe(panel)
+    expect(getComputedStyle(panel).animationName).not.toBe(openingAnimation)
+
+    await act(async () => {
+      panel.dispatchEvent(new AnimationEvent('animationend', { bubbles: true }))
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
   })
 })
