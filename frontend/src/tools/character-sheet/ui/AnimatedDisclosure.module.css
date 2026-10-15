@@ -12,7 +12,7 @@
   overflow: hidden;
 }
 
-.root[data-state='open'] {
+.root[data-state='opening'] {
   animation:
     disclosure-open 360ms
     cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -62,6 +62,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .root[data-state='open'] { animation: none; }
+  .root[data-state='opening'] { animation: none; }
   .root[data-state='closing'] { display: none; animation: none; }
 }

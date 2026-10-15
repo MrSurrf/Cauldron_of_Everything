@@ -138,6 +138,8 @@
   display: flex;
   min-height: 19rem;
   flex-direction: column;
+  contain-intrinsic-block-size: auto 19rem;
+  content-visibility: auto;
   --sheet-section-padding: var(--sheet-layout-gap);
 }
 .levelCard > div { display: flex; min-height: 0; flex: 1; flex-direction: column; }

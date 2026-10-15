@@ -974,8 +974,18 @@ describe('Character Sheet fixed desktop composition', () => {
     const openingAnimation = getComputedStyle(panel).animationName
     expect(book.dataset.spellsOpen).toBe('true')
     expect(panel.dataset.state).toBe('open')
-    expect(getComputedStyle(book).transitionProperty).toContain('transform')
+    expect(getComputedStyle(book).transitionProperty).toBe('transform')
+    expect(book.style.zoom).toBe('')
+    expect(book.style.getPropertyValue('--book-scale')).not.toBe('')
+    expect(getComputedStyle(panel).filter).toBe('none')
+    expect(getComputedStyle(panel, '::after').mixBlendMode).toBe('normal')
     expect(openingAnimation).not.toBe('none')
+
+    const initiallyExpandedSpell = panel.querySelector<HTMLElement>(
+      '[data-spell-entry][data-expanded="true"] [data-animated-disclosure]',
+    )!
+    expect(initiallyExpandedSpell.dataset.state).toBe('open')
+    expect(getComputedStyle(initiallyExpandedSpell).animationName).toBe('none')
 
     await act(async () => {
       await userEvent.click(toggle)
@@ -1015,7 +1025,7 @@ describe('Character Sheet fixed desktop composition', () => {
       '[data-animated-disclosure]',
     )!
     expect(traitsToggle).toHaveAttribute('aria-expanded', 'true')
-    expect(openedTraits.dataset.state).toBe('open')
+    expect(openedTraits.dataset.state).toBe('opening')
     expect(getComputedStyle(openedTraits).animationName).not.toBe('none')
 
     await act(async () => {

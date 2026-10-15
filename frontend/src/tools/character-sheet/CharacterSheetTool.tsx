@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import {
   CharacterSheetProvider,
@@ -167,7 +173,7 @@ function CharacterSheetWorkspace({
       <div
         className={styles.book}
         data-spells-open={spellsOpen}
-        style={{ zoom: pageScale }}
+        style={{ '--book-scale': pageScale } as CSSProperties}
       >
         <div className={styles.characterPanel}>
           <CharacterSheetContent
