@@ -47,12 +47,12 @@ const HEADER_MENUS: readonly HeaderMenu[] = [
   {
     id: 'tools',
     label: 'Инструменты',
-    pathPrefixes: ['/tools/', '/survey'],
+    pathPrefixes: ['/characters', '/tools/', '/survey'],
     items: [
       {
-        label: 'Лист персонажа',
-        description: 'Интерактивный лист героя',
-        to: '/tools/character-sheet',
+        label: 'Мои персонажи',
+        description: 'Герои, чарлисты и кампании',
+        to: '/characters',
       },
       {
         label: 'Опросник',

@@ -29,6 +29,9 @@ const CampaignTableRoutePage = lazy(() => import('../../pages/campaign-table/Cam
 const CharacterSheetRoutePage = lazy(
   () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
 )
+const CharactersPage = lazy(
+  () => import('../../pages/characters/CharactersPage'),
+)
 const BestiaryEntityPage = lazy(
   () =>
     import(
@@ -109,6 +112,7 @@ function RoutedApp() {
               <Route path="/dev/login-preview" element={<LoginPreviewPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-table" element={<CampaignTableRoutePage />} />
+              <Route path="/characters" element={<CharactersPage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
               <Route path="/articles" element={<ArticlesPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
