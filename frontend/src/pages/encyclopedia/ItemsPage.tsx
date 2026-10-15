@@ -172,7 +172,6 @@ export default function ItemsPage() {
         className={`${base.catalogCard} ${styles.itemCard}`}
         name={item.name}
         icon={<PlaceholderIcon />}
-        tags={[item.itemType, item.rarity]}
       />
     </button>
   }

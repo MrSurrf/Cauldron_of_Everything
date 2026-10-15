@@ -162,7 +162,6 @@ export default function SpellsPage() {
           name={spell.name}
           metric={spell.level || '—'}
           metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
-          tags={[spell.school || 'Школа не указана']}
         />
         {hasMarkers && <span className={styles.spellMarkers} aria-label="Особые свойства заклинания">
           {hasConcentration && <span title="Концентрация" aria-label="Концентрация">К</span>}

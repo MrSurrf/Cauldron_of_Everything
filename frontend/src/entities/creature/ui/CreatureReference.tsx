@@ -1,6 +1,5 @@
 import type { CreatureEntity } from '../model/creature'
 import { ListCard } from '../../../shared/ui/ListCard'
-import { getCreatureTaxonomy } from './creatureFormatting'
 
 export type CreatureReferenceProps = {
   className?: string
@@ -11,7 +10,6 @@ export function CreatureReference({
   className,
   entity,
 }: CreatureReferenceProps) {
-  const taxonomy = getCreatureTaxonomy(entity)
   const rating = entity.challengeRating?.split(' ')[0] || '—'
 
   return (
@@ -22,7 +20,6 @@ export function CreatureReference({
       name={entity.name}
       metric={`ПО ${rating}`}
       metricLabel={`Показатель опасности: ${rating}`}
-      tags={[taxonomy || entity.nameEn || '']}
     />
   )
 }
