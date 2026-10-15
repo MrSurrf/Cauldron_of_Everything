@@ -3,5 +3,8 @@ export { fetchEncyclopedia } from '../../entities/encyclopedia'
 export type { EncyclopediaEntry } from '../../entities/encyclopedia'
 
 export function entryPath(entry: EncyclopediaEntry): string {
-  return `/encyclopedia/${entry.entity_type === 'creature' ? 'creature' : 'entry'}/${entry.entity_type === 'creature' ? encodeURIComponent(entry.slug) : entry.id}`
+  if (entry.entity_type === 'creature' || entry.entity_type === 'item') {
+    return `/encyclopedia/${entry.entity_type}/${encodeURIComponent(entry.slug)}`
+  }
+  return `/encyclopedia/entry/${entry.id}`
 }

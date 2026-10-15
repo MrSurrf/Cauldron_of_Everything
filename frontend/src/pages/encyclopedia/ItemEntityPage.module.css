@@ -1,0 +1,63 @@
+.page {
+  min-width: 320px;
+  min-height: var(--app-viewport-height);
+  padding: clamp(var(--space-4), 4vw, var(--space-7));
+  background:
+    var(--cursor-background-image, none),
+    radial-gradient(circle at 50% -10rem, color-mix(in srgb, var(--color-surface-accent) 78%, transparent), transparent 40rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-default) 34%, var(--color-background)), var(--color-background) 32rem);
+  color: var(--color-text-primary);
+}
+
+.status {
+  display: grid;
+  width: min(100%, 38rem);
+  min-height: calc(var(--app-viewport-height) - var(--space-7) * 2);
+  margin-inline: auto;
+  align-content: center;
+  justify-items: start;
+}
+
+.status p {
+  margin: 0;
+  color: var(--color-brand-bright);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.status h1 {
+  margin: var(--space-2) 0 var(--space-5);
+  color: var(--color-heading-primary);
+  font: 400 clamp(2.5rem, 8vw, 5rem)/var(--line-height-tight) var(--font-family-heading);
+}
+
+.status span {
+  color: var(--color-text-secondary);
+}
+
+.status a {
+  color: var(--color-interactive);
+}
+
+.status button {
+  margin-top: var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-default) solid var(--color-border-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-accent);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.status button:hover,
+.status button:focus-visible {
+  background: var(--color-action-primary);
+  outline: 0;
+}
+
+@media (max-width: 40rem) {
+  .page {
+    padding-inline: var(--space-3);
+  }
+}
