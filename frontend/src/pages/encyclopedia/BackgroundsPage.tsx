@@ -8,6 +8,7 @@ import { groupBackgroundsBySource, loadBackgrounds } from './backgroundCatalog'
 import type { CatalogBackground } from './backgroundCatalog'
 import { catalogNameStartsWith } from './catalogAlphabet'
 import { entryPath } from './encyclopediaApi'
+import { EncyclopediaQuickNav } from './EncyclopediaQuickNav'
 import base from './BestiaryPage.module.css'
 import styles from './BackgroundsPage.module.css'
 
@@ -93,6 +94,7 @@ export default function BackgroundsPage() {
         <Button size="sm" variant="secondary" decoration="minimal" icon={null} disabled={status !== 'ready'} onClick={() => { setSearch(''); setSubmittedQuery(''); setSearchError(''); setSource(null); setSkill(null) }}>Сбросить</Button>
       </form>
     </Panel>
+    <div className={styles.layout}>
     <Panel className={`${base.listPanel} ${styles.list}`} padding="compact">
       {status === 'loading' && <p role="status" className={base.loadStatus}>Загружаем предыстории…</p>}
       {searchPending && <p role="status" className={base.loadStatus}>Ищем предыстории…</p>}
@@ -113,5 +115,9 @@ export default function BackgroundsPage() {
         </section>)}</div>
       </>}
     </Panel>
+    <aside className={styles.sidebar} aria-label="Быстрая навигация">
+      <EncyclopediaQuickNav currentSectionId="backgrounds" />
+    </aside>
+    </div>
   </main>
 }
