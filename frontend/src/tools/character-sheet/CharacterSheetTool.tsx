@@ -6,6 +6,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
+import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
 import { PlaceholderIcon } from '../../shared/ui'
 import {
   CharacterSheetProvider,
@@ -36,7 +37,6 @@ import {
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
-import { SpellbookIcon } from './ui/icons'
 import styles from './CharacterSheetWorkspace.module.css'
 
 const ABILITY_NAMES = {
@@ -198,7 +198,9 @@ function CharacterSheetWorkspace({
               setSpellsOpen(nextOpen)
               if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
             }}><span className={styles.pageTabContent} aria-hidden="true">
-              <span className={styles.pageTabIcon} data-spell-sheet-icon><SpellbookIcon /></span>
+              <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                <EncyclopediaSectionIcon sectionId="spells" />
+              </span>
               <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
             </span></button>
         </div>

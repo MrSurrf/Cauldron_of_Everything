@@ -1014,7 +1014,8 @@ describe('Character Sheet fixed desktop composition', () => {
     const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
 
     expect(toggle.getBoundingClientRect().height).toBeCloseTo(48, 0)
-    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.firstElementChild).not.toBeNull()
+    expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
     expect(arrow.textContent).toBe('›')
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(
       arrow.getBoundingClientRect().width,

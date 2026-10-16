@@ -200,11 +200,6 @@
   place-items: center;
 }
 
-.pageTabIcon svg {
-  width: 100%;
-  height: 100%;
-}
-
 .pageTabArrow {
   font: 0.8rem/1 var(--font-family-heading);
 }
