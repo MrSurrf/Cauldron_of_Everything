@@ -144,3 +144,21 @@ export function RestIcon() {
     </svg>
   )
 }
+
+export function SpellbookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M3.5 5.5c3.1-.7 5.9.1 8.5 2.2v11c-2.6-2.1-5.4-2.9-8.5-2.2v-11Zm17 0c-3.1-.7-5.9.1-8.5 2.2v11c2.6-2.1 5.4-2.9 8.5-2.2v-11Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.4"
+      />
+      <path
+        d="m17.2 2 .55 1.45L19.2 4l-1.45.55L17.2 6l-.55-1.45L15.2 4l1.45-.55L17.2 2Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}

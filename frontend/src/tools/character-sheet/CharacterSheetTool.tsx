@@ -6,6 +6,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
+import { PlaceholderIcon } from '../../shared/ui'
 import {
   CharacterSheetProvider,
   FORMULA_FIELD_KEYS,
@@ -35,6 +36,7 @@ import {
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
+import { SpellbookIcon } from './ui/icons'
 import styles from './CharacterSheetWorkspace.module.css'
 
 const ABILITY_NAMES = {
@@ -195,7 +197,10 @@ function CharacterSheetWorkspace({
               if (nextOpen) setSpellSheetMounted(true)
               setSpellsOpen(nextOpen)
               if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-            }}><span aria-hidden="true">{spellsOpen ? '‹' : '›'}</span></button>
+            }}><span className={styles.pageTabContent} aria-hidden="true">
+              <span className={styles.pageTabIcon} data-spell-sheet-icon><SpellbookIcon /></span>
+              <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+            </span></button>
         </div>
         {spellSheetMounted && <div
           className={styles.spellPanel}
@@ -246,11 +251,15 @@ function CharacterSheetWorkspace({
       </div>
     </div>
     <div className={styles.libraryDock} data-open={libraryOpen}>
-      <button type="button" className={styles.libraryTrigger}
-        title={libraryOpen ? 'Скрыть энциклопедию' : 'Энциклопедия'}
-        aria-expanded={libraryOpen}
-        aria-label={libraryOpen ? 'Скрыть энциклопедию' : 'Открыть энциклопедию для листа персонажа'}
-        onClick={() => setLibraryOpen((value) => !value)}>Энциклопедия</button>
+      {!libraryOpen && <button type="button" className={styles.libraryTrigger}
+        data-encyclopedia-trigger
+        title="Открыть энциклопедию"
+        aria-expanded={false}
+        aria-label="Открыть энциклопедию для листа персонажа"
+        onClick={() => setLibraryOpen(true)}>
+        <span className={styles.libraryTriggerIcon} aria-hidden="true"><PlaceholderIcon /></span>
+        <span>Энциклопедия</span>
+      </button>}
       {libraryOpen && <CharacterEncyclopediaPanel
         className={styles.library}
         mode={libraryMode}

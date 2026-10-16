@@ -1005,6 +1005,65 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
   })
 
+  it('показывает компактный язычок листа заклинаний с иконкой и маленькой стрелкой', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const toggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    const icon = toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!
+    const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
+
+    expect(toggle.getBoundingClientRect().height).toBeCloseTo(48, 0)
+    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(arrow.textContent).toBe('›')
+    expect(icon.getBoundingClientRect().width).toBeGreaterThan(
+      arrow.getBoundingClientRect().width,
+    )
+
+    await act(async () => {
+      await userEvent.click(toggle)
+      await nextFrame()
+    })
+
+    expect(arrow.textContent).toBe('‹')
+  })
+
+  it('скрывает верхнюю кнопку энциклопедии после открытия боковой панели', async () => {
+    const container = await mountCharacterSheet()
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-encyclopedia-trigger]',
+    )!
+    const sheet = container.querySelector<HTMLElement>(
+      '[data-character-sheet-page]',
+    )!
+
+    expect(trigger.textContent).toContain('Энциклопедия')
+    expect(trigger.querySelector('svg')).not.toBeNull()
+    expect(getComputedStyle(trigger).writingMode).not.toBe('vertical-rl')
+    expect(trigger.getBoundingClientRect().top).toBeCloseTo(
+      sheet.getBoundingClientRect().top,
+      0,
+    )
+
+    await act(async () => {
+      await userEvent.click(trigger)
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-encyclopedia-trigger]')).toBeNull()
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).not.toBeNull()
+
+    const close = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Закрыть энциклопедию"]',
+    )!
+    await act(async () => {
+      await userEvent.click(close)
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-encyclopedia-trigger]')).not.toBeNull()
+  })
+
   it('анимирует раскрытие и закрытие личностных разделов и карточек заклинаний', async () => {
     const container = await mountCharacterSheet(createMockSpellcasterSheet())
     const traits = container.querySelector<HTMLElement>(
