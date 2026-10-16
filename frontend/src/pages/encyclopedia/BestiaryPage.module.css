@@ -271,8 +271,8 @@
 }
 
 .catalogCard {
-  min-height: 2.625rem;
-  padding: var(--space-1) var(--space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--space-2);
   grid-template-columns: 2.75rem minmax(0, 1fr);
   gap: var(--space-1);
 }
