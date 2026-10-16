@@ -1,0 +1,317 @@
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
+import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
+import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
+import { PlaceholderIcon } from '../../shared/ui'
+import {
+  CharacterSheetProvider,
+  FORMULA_FIELD_KEYS,
+  characterSheetActions,
+  createCharacterSheetVariableRegistry,
+  createEmptySpellcasting,
+  getEffectiveSpellcastingAbility,
+  getEffectiveSpellSlots,
+  selectFormulaResult,
+  useCharacterSheet,
+  type CharacterSheetDocument,
+  type SpellLevel,
+} from './model'
+import {
+  CharacterEncyclopediaPanel,
+  readCharacterEncyclopediaDrag,
+  toCharacterEncyclopediaEntry,
+  type CharacterEncyclopediaEntry,
+  type CharacterEncyclopediaMode,
+} from './ui/encyclopedia'
+import {
+  createSpellFromEncyclopedia,
+  equipmentDetailPatch,
+  equipmentItemSource,
+  spellDetailPatch,
+} from './ui/encyclopedia/characterEntryImport'
+import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
+import { toComputedResult } from './ui/sheet/sheetViewModel'
+import { SpellSheet } from './ui/spell-sheet/SpellSheet'
+import styles from './CharacterSheetWorkspace.module.css'
+
+const ABILITY_NAMES = {
+  strength: 'Сила',
+  dexterity: 'Ловкость',
+  constitution: 'Телосложение',
+  intelligence: 'Интеллект',
+  wisdom: 'Мудрость',
+  charisma: 'Харизма',
+} as const
+
+const LIBRARY_DOCK_WIDTH = {
+  closed: 32,
+  open: 384,
+} as const
+const SHEET_SPACE_GUTTER = 16
+
+type CharacterSheetWorkspaceProps = Pick<CharacterSheetToolProps,
+  'className' | 'onPortraitFileSelect' | 'onPortraitRemove'
+>
+
+function CharacterSheetWorkspace({
+  className,
+  onPortraitFileSelect,
+  onPortraitRemove,
+}: CharacterSheetWorkspaceProps) {
+  const { document, dispatch, formulas } = useCharacterSheet()
+  const [spellsOpen, setSpellsOpen] = useState(false)
+  const [spellSheetMounted, setSpellSheetMounted] = useState(false)
+  const [workspaceWidth, setWorkspaceWidth] = useState(0)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
+  const [importError, setImportError] = useState('')
+  const detailRequests = useRef(new Set<AbortController>())
+  const workspace = useRef<HTMLDivElement>(null)
+  const initialDevicePixelRatio = useRef(1)
+
+  useEffect(() => () => {
+    detailRequests.current.forEach((request) => request.abort())
+  }, [])
+
+  useEffect(() => {
+    if (spellsOpen || !spellSheetMounted) return
+    const fallback = window.setTimeout(() => setSpellSheetMounted(false), 750)
+    return () => window.clearTimeout(fallback)
+  }, [spellSheetMounted, spellsOpen])
+
+  useEffect(() => {
+    const root = workspace.current
+    if (!root) return
+    initialDevicePixelRatio.current = window.devicePixelRatio || 1
+    const measure = () => {
+      const browserZoom = (window.devicePixelRatio || 1) / initialDevicePixelRatio.current
+      setWorkspaceWidth(Math.round(root.clientWidth * browserZoom))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(root)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
+
+  function hydrateEntry(entry: CharacterEncyclopediaEntry, localId?: string) {
+    const controller = new AbortController()
+    detailRequests.current.add(controller)
+    void fetchEncyclopedia<EncyclopediaEntry>(`${entry.id}/`, controller.signal)
+      .then((detail) => {
+        if (controller.signal.aborted) return
+        if (entry.entityType === 'item') {
+          dispatch(characterSheetActions.enrichEquipmentItem(entry.id, equipmentDetailPatch(detail)))
+        } else if (localId) {
+          dispatch(characterSheetActions.updateSpell(localId, spellDetailPatch(detail)))
+        }
+      })
+      .catch(() => { /* Запись уже добавлена по данным списка. */ })
+      .finally(() => detailRequests.current.delete(controller))
+  }
+
+  function addEntry(entry: CharacterEncyclopediaEntry) {
+    setImportError('')
+    if (entry.entityType === 'item') {
+      dispatch(characterSheetActions.importEquipmentItem(entry.id, equipmentItemSource(entry)))
+      hydrateEntry(entry)
+      return
+    }
+
+    const spell = createSpellFromEncyclopedia(entry)
+    if (!spell) {
+      const controller = new AbortController()
+      detailRequests.current.add(controller)
+      void fetchEncyclopedia<EncyclopediaEntry>(`${entry.id}/`, controller.signal)
+        .then((detail) => {
+          if (controller.signal.aborted) return
+          const resolved = toCharacterEncyclopediaEntry(detail)
+          if (resolved?.level !== null && resolved?.level !== undefined) addEntry(resolved)
+          else setImportError(`Для «${entry.name}» не указан уровень заклинания.`)
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setImportError(`Не удалось определить уровень заклинания «${entry.name}».`)
+        })
+        .finally(() => detailRequests.current.delete(controller))
+      return
+    }
+    const existing = document.spellcasting?.spells.find((candidate) => candidate.entityId === entry.id)
+    dispatch(characterSheetActions.addSpell(spell))
+    hydrateEntry(entry, existing?.id ?? spell.id)
+    setSpellSheetMounted(true)
+    setSpellsOpen(true)
+  }
+
+  const emptySpellcasting = createEmptySpellcasting()
+  const spellcasting = document.spellcasting
+    ? { ...emptySpellcasting, ...document.spellcasting }
+    : emptySpellcasting
+  const castingAbility = getEffectiveSpellcastingAbility(document)
+  const formulaVariables = useMemo(
+    () => createCharacterSheetVariableRegistry(document).list().map((variable) => ({
+      key: variable.key,
+      label: variable.label,
+    })),
+    [document],
+  )
+  const reservedLibraryWidth = libraryOpen || spellsOpen
+    ? LIBRARY_DOCK_WIDTH.open
+    : LIBRARY_DOCK_WIDTH.closed
+  const pageScale = workspaceWidth > 0
+    ? Math.min(1, Math.max(0.1, (workspaceWidth - reservedLibraryWidth - SHEET_SPACE_GUTTER) / (spellsOpen ? 1988 : 990)))
+    : 1
+
+  return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
+    data-library-open={libraryOpen} data-spells-open={spellsOpen}>
+    <div className={styles.sheetSpace} aria-label="Листы персонажа">
+      <div
+        className={styles.book}
+        data-spells-open={spellsOpen}
+        style={{ '--book-scale': pageScale } as CSSProperties}
+      >
+        <div className={styles.characterPanel}>
+          <CharacterSheetContent
+            className={styles.characterContent}
+            onPortraitFileSelect={onPortraitFileSelect}
+            onPortraitRemove={onPortraitRemove}
+            onEncyclopediaItemDrop={(transfer) => {
+              const entry = readCharacterEncyclopediaDrag(transfer)
+              if (entry?.entityType === 'item') addEntry(entry)
+            }}
+          />
+          <button type="button" className={styles.pageTab}
+            data-spell-sheet-toggle
+            title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+            aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+            aria-expanded={spellsOpen}
+            onClick={() => {
+              const nextOpen = !spellsOpen
+              if (nextOpen) setSpellSheetMounted(true)
+              setSpellsOpen(nextOpen)
+              if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+            }}><span className={styles.pageTabContent} aria-hidden="true">
+              <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                <EncyclopediaSectionIcon sectionId="spells" />
+              </span>
+              <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+            </span></button>
+        </div>
+        {spellSheetMounted && <div
+          className={styles.spellPanel}
+          data-spell-sheet-panel
+          data-state={spellsOpen ? 'open' : 'closing'}
+          onAnimationEnd={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !event.pseudoElement &&
+              !spellsOpen
+            ) {
+              setSpellSheetMounted(false)
+            }
+          }}
+        >
+          <SpellSheet
+            spellcasting={{
+              className: spellcasting.className || document.identity.className,
+              abilityKey: castingAbility,
+              ability: ABILITY_NAMES[castingAbility],
+              saveDc: spellcasting.saveDc,
+              saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
+              attackBonus: spellcasting.attackBonus,
+              attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
+            }}
+            slots={getEffectiveSpellSlots(document)}
+            spells={spellcasting.spells}
+            formulaVariables={formulaVariables}
+            onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
+            onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
+            onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
+            onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
+            onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
+            onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
+            onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
+            onSpellDrop={(transfer, level: SpellLevel) => {
+              const entry = readCharacterEncyclopediaDrag(transfer)
+              if (entry?.entityType !== 'spell') return
+              if (entry.level !== null && entry.level !== level) {
+                setImportError(`«${entry.name}» — заклинание ${entry.level}-го уровня. Перенесите его в соответствующий раздел.`)
+                return
+              }
+              addEntry({ ...entry, level })
+            }}
+            onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
+          />
+        </div>}
+      </div>
+    </div>
+    <div className={styles.libraryDock} data-open={libraryOpen}>
+      {!libraryOpen && <button type="button" className={styles.libraryTrigger}
+        data-encyclopedia-trigger
+        title="Открыть энциклопедию"
+        aria-expanded={false}
+        aria-label="Открыть энциклопедию для листа персонажа"
+        onClick={() => setLibraryOpen(true)}>
+        <span className={styles.libraryTriggerIcon} aria-hidden="true"><PlaceholderIcon /></span>
+        <span>Энциклопедия</span>
+      </button>}
+      {libraryOpen && <CharacterEncyclopediaPanel
+        className={styles.library}
+        mode={libraryMode}
+        onModeChange={setLibraryMode}
+        onAdd={addEntry}
+        onClose={() => setLibraryOpen(false)}
+      />}
+    </div>
+    {importError && <div className={styles.importError} role="alert">
+      <span>{importError}</span>
+      <button type="button" onClick={() => setImportError('')} aria-label="Закрыть сообщение">×</button>
+    </div>}
+  </div>
+}
+
+export type CharacterSheetToolProps = {
+  className?: string
+  /** Уменьшать лист целиком под ширину host-панели, не меняя его раскладку. */
+  fitWidth?: boolean
+  document?: CharacterSheetDocument
+  initialDocument?: CharacterSheetDocument
+  onDocumentChange?: (
+    document: CharacterSheetDocument,
+  ) => void
+  onPortraitFileSelect?: (
+    file: File,
+    characterId: string,
+  ) => void
+  onPortraitRemove?: (characterId: string) => void
+}
+
+export function CharacterSheetTool({
+  className,
+  document,
+  initialDocument,
+  onDocumentChange,
+  onPortraitFileSelect,
+  onPortraitRemove,
+}: CharacterSheetToolProps) {
+  return (
+    <CharacterSheetProvider
+      document={document}
+      initialDocument={initialDocument}
+      onDocumentChange={onDocumentChange}
+    >
+      <CharacterSheetWorkspace
+        className={className}
+        onPortraitFileSelect={onPortraitFileSelect}
+        onPortraitRemove={onPortraitRemove}
+      />
+    </CharacterSheetProvider>
+  )
+}

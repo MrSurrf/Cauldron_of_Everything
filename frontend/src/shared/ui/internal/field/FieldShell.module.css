@@ -5,7 +5,8 @@
   min-width: 0;
 
   color: var(--color-text-primary);
-  font-family: var(--font-family-body);
+  font-family:
+    var(--field-font-family, var(--font-family-body));
 }
 
 .controlShell {
@@ -273,7 +274,7 @@
   top: var(--space-1);
 
   background:
-    var(--color-surface-default);
+    var(--field-label-background, var(--color-surface-default));
   color: var(--color-text-primary);
 
   font-size: var(--font-size-xs);

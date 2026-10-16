@@ -1,26 +1,68 @@
 @font-face {
-  font-family: 'Gilroy';
-  src: url('/fonts/Gilroy-Regular.ttf') format('truetype');
+  font-family: 'Clacon2';
+  src: url('../../../assets/fonts/clacon2.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'GothicRusWeb';
-  src: url('/fonts/GothicRus.woff2?v=2') format('woff2'),
-       url('/fonts/GothicRus.ttf?v=3') format('truetype');
+  font-family: 'Gilroy';
+  src: url('/fonts/Gilroy-Light.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
-.gilroy {
-  font-family: 'Gilroy', Arial, sans-serif;
+@font-face {
+  font-family: 'Greengoth Regular';
+  src: url('/fonts/Greengoth Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-body {
+  font-family: var(--font-family-body);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-muted) var(--color-surface-muted);
+}
+
+/* Нативная прокрутка в панелях, списках и полях; ScrollArea сохраняет свои контролы. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: var(--color-surface-muted);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-muted);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-bright);
+}
+
+*::-webkit-scrollbar-button { display: none; }
+
+@media (forced-colors: active) {
+  * { scrollbar-color: auto; }
 }
 
 html,
@@ -35,8 +77,9 @@ body,
 
 body {
   min-height: 100svh;
-  overflow: hidden;
-  background: #020108;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
 }
 
 #root {

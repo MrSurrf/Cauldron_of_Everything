@@ -1,0 +1,279 @@
+.workspace {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.sheetSpace {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.book {
+  --book-page-width: 61.875rem;
+  --book-scale: 1;
+
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  width: var(--book-page-width);
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  margin-inline: auto;
+  backface-visibility: hidden;
+  transform: scale(var(--book-scale));
+  transform-origin: top center;
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.book[data-spells-open='true'] {
+  transform: scale(var(--book-scale))
+    translate3d(
+      calc((var(--book-page-width) + var(--space-2)) / -2),
+      0,
+      0
+    );
+}
+
+.characterPanel,
+.spellPanel {
+  position: relative;
+  flex: 0 0 var(--book-page-width);
+  width: var(--book-page-width);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.characterPanel { z-index: 2; }
+.characterContent { width: 100%; height: 100%; }
+.spellPanel {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: calc(100% + var(--space-2));
+  contain: layout paint;
+  isolation: isolate;
+  transform-origin: left center;
+}
+
+.spellPanel[data-state='open'] {
+  animation: spell-sheet-surface-in 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.spellPanel[data-state='open']::after,
+.spellPanel[data-state='closing']::after {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  bottom: 0;
+  left: -22%;
+  width: 22%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      104deg,
+      transparent 4%,
+      color-mix(in srgb, var(--palette-purple-300) 18%, transparent) 38%,
+      color-mix(in srgb, var(--palette-white) 24%, transparent) 50%,
+      color-mix(in srgb, var(--palette-purple-300) 16%, transparent) 62%,
+      transparent 96%
+    );
+  content: '';
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+}
+
+.spellPanel[data-state='open']::after {
+  animation: spell-sheet-light-sweep 820ms 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.spellPanel[data-state='closing'] {
+  animation: spell-sheet-surface-out 680ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.spellPanel[data-state='closing']::after {
+  animation: spell-sheet-light-sweep-out 620ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes spell-sheet-surface-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(-100% - var(--space-2)), 0, 0) scale(0.985);
+  }
+
+  20% { opacity: 0.3; }
+
+  62% {
+    opacity: 1;
+    transform: translate3d(0.85rem, 0, 0) scale(1.006);
+  }
+
+  80% {
+    transform: translate3d(-0.3rem, 0, 0) scale(0.998);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes spell-sheet-light-sweep {
+  0%, 18% { opacity: 0; transform: translate3d(0, 0, 0); }
+  42% { opacity: 0.78; }
+  100% { opacity: 0; transform: translate3d(560%, 0, 0); }
+}
+
+@keyframes spell-sheet-surface-out {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+
+  26% {
+    opacity: 1;
+    transform: translate3d(0.35rem, 0, 0) scale(1.002);
+  }
+
+  78% { opacity: 0.26; }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-100% - var(--space-2)), 0, 0) scale(0.985);
+  }
+}
+
+@keyframes spell-sheet-light-sweep-out {
+  0% { opacity: 0; transform: translate3d(560%, 0, 0); }
+  42% { opacity: 0.68; }
+  100% { opacity: 0; transform: translate3d(0, 0, 0); }
+}
+
+.pageTab,
+.libraryTrigger {
+  position: absolute;
+  z-index: 3;
+  border: var(--border-width-default) solid var(--color-border-accent);
+  color: var(--color-brand-bright);
+  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition: transform var(--motion-duration-fast), background var(--motion-duration-fast);
+}
+
+.pageTab {
+  top: 44%;
+  right: -0.75rem;
+  display: flex;
+  width: 2.15rem;
+  height: 3rem;
+  padding: 0 0.2rem;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(0 0, calc(100% - 0.35rem) 0, 100% 0.35rem, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%);
+}
+
+.pageTabContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+}
+
+.pageTabIcon {
+  display: grid;
+  width: 0.85rem;
+  height: 0.85rem;
+  place-items: center;
+}
+
+.pageTabArrow {
+  font: 0.8rem/1 var(--font-family-heading);
+}
+
+.pageTab:hover,
+.pageTab:focus-visible { transform: translateX(0.45rem); background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent)); }
+
+.libraryDock {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 100%;
+  min-width: 0;
+}
+.libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
+
+.libraryTrigger {
+  top: 0.375rem;
+  right: 0;
+  display: inline-flex;
+  width: 8.75rem;
+  height: 2rem;
+  padding: 0 var(--space-3);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: var(--font-size-2xs)/1 var(--font-family-body);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.libraryTriggerIcon {
+  display: grid;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  place-items: center;
+}
+
+.libraryTriggerIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.libraryTrigger:hover,
+.libraryTrigger:focus-visible { transform: translateX(-0.45rem); background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent)); }
+.pageTab:focus-visible,
+.libraryTrigger:focus-visible { outline: 2px solid var(--color-brand-bright); outline-offset: 2px; }
+
+.library { width: 100%; height: 100%; }
+
+.importError {
+  position: absolute;
+  z-index: 6;
+  right: 2.5rem;
+  bottom: var(--space-3);
+  display: flex;
+  max-width: min(28rem, calc(100% - 5rem));
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text-primary);
+  background: var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--font-size-sm);
+}
+.importError button { border: 0; color: var(--color-brand-bright); background: transparent; cursor: pointer; font: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .book { transition: none; }
+  .spellPanel { animation: none; }
+  .spellPanel[data-state='closing'] { display: none; }
+  .spellPanel::after { display: none; }
+  .pageTab,
+  .libraryTrigger { transition: none; }
+}

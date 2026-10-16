@@ -1,0 +1,30 @@
+.icon {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-brand-bright);
+  -webkit-mask: var(--section-icon-url) center / contain no-repeat;
+  mask: var(--section-icon-url) center / contain no-repeat;
+}
+
+.category {
+  --section-icon-height: 2.75rem;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  width: 4rem;
+  height: 4rem;
+}
+
+/* Тонкий силуэт бестиария требует небольшой оптической компенсации. */
+.category[data-section='bestiary'] {
+  --section-icon-height: 3rem;
+}
+
+.category .icon {
+  width: calc(var(--section-icon-height) * var(--section-icon-ratio));
+  height: var(--section-icon-height);
+  aspect-ratio: auto;
+  -webkit-mask-position: left top;
+  mask-position: left top;
+}
