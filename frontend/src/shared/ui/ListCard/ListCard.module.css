@@ -22,12 +22,12 @@
 .root::after {
   content: '';
   position: absolute;
-  right: 0;
+  left: 0;
   bottom: 0;
   width: 72%;
   height: var(--border-width-default);
   background: linear-gradient(
-    to left,
+    to right,
     color-mix(in srgb, var(--color-border-accent) 35%, transparent),
     color-mix(in srgb, var(--color-border-accent) 18%, transparent) 45%,
     transparent
@@ -53,8 +53,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--font-family-body);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 400;
   line-height: var(--line-height-tight);
 }
 
