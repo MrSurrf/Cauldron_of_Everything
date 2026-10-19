@@ -971,15 +971,37 @@ describe('Character Sheet fixed desktop composition', () => {
     const panel = container.querySelector<HTMLElement>(
       '[data-spell-sheet-panel]',
     )!
-    const openingAnimation = getComputedStyle(panel).animationName
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
     expect(book.dataset.spellsOpen).toBe('true')
     expect(panel.dataset.state).toBe('open')
     expect(getComputedStyle(book).transitionProperty).toBe('transform')
     expect(book.style.zoom).toBe('')
     expect(book.style.getPropertyValue('--book-scale')).not.toBe('')
     expect(getComputedStyle(panel).filter).toBe('none')
-    expect(getComputedStyle(panel, '::after').mixBlendMode).toBe('normal')
-    expect(openingAnimation).not.toBe('none')
+    expect(getComputedStyle(panel).opacity).toBe('1')
+
+    // Во всём ходе движения язычок остаётся прикреплён к краю листа.
+    const openingAnimations = [book, drawer].flatMap(element => element.getAnimations())
+    expect(openingAnimations).toHaveLength(2)
+    for (const time of [100, 280, 480]) {
+      await act(async () => {
+        openingAnimations.forEach(animation => {
+          animation.pause()
+          animation.currentTime = time
+        })
+        await nextFrame()
+      })
+      const panelRect = panel.getBoundingClientRect()
+      const tabRect = toggle.getBoundingClientRect()
+      const scale = panelRect.width / panel.offsetWidth
+      const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
+      expect((tabRect.left - panelRect.right) / scale - hoverOffset).toBeCloseTo(-14, 1)
+      expect(getComputedStyle(panel).opacity).toBe('1')
+    }
+    await act(async () => {
+      openingAnimations.forEach(animation => animation.finish())
+      await nextFrame()
+    })
 
     const initiallyExpandedSpell = panel.querySelector<HTMLElement>(
       '[data-spell-entry][data-expanded="true"] [data-animated-disclosure]',
@@ -995,10 +1017,12 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(book.dataset.spellsOpen).toBe('false')
     expect(panel.dataset.state).toBe('closing')
     expect(container.querySelector('[data-spell-sheet-panel]')).toBe(panel)
-    expect(getComputedStyle(panel).animationName).not.toBe(openingAnimation)
+    expect(panel).toHaveAttribute('inert')
 
     await act(async () => {
-      panel.dispatchEvent(new AnimationEvent('animationend', { bubbles: true }))
+      ;[book, drawer].forEach(element => {
+        element.getAnimations().forEach(animation => animation.finish())
+      })
       await nextFrame()
     })
 
@@ -1023,15 +1047,9 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(toggleRect.height).toBeCloseTo(48, 0)
     expect(sheetRect.right - toggleRect.left).toBeGreaterThan(4)
     expect(toggleRect.right).toBeGreaterThan(sheetRect.right)
-    expect(toggleRect.left + toggleRect.width / 2).toBeGreaterThan(
-      characterPanel.getBoundingClientRect().right,
-    )
     expect(icon.firstElementChild).not.toBeNull()
     expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
     expect(arrow.textContent).toBe('›')
-    expect(Number(getComputedStyle(characterPanel).zIndex)).toBeGreaterThan(
-      Number(getComputedStyle(toggle).zIndex),
-    )
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(
       arrow.getBoundingClientRect().width,
     )
@@ -1045,11 +1063,10 @@ describe('Character Sheet fixed desktop composition', () => {
     const spellPanel = container.querySelector<HTMLElement>(
       '[data-spell-sheet-panel]',
     )!
-    expect(getComputedStyle(toggle).transitionDuration).toContain('0.76s')
-    expect(getComputedStyle(spellPanel).animationDelay).toBe('0.055s')
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
 
     await act(async () => {
-      ;[book, toggle, spellPanel].forEach((element) => {
+      ;[book, toggle, drawer].forEach((element) => {
         element.getAnimations().forEach((animation) => animation.finish())
       })
       await nextFrame()
@@ -1066,14 +1083,16 @@ describe('Character Sheet fixed desktop composition', () => {
     await act(async () => {
       await userEvent.click(toggle)
       await nextFrame()
-      ;[book, toggle, spellPanel].forEach((element) => {
+      ;[book, toggle, drawer].forEach((element) => {
         element.getAnimations().forEach((animation) => animation.finish())
       })
       await nextFrame()
     })
 
     expect(arrow.textContent).toBe('›')
-    expect(toggle.getBoundingClientRect().left).toBeCloseTo(toggleRect.left, 0)
+    const returnedScale = characterPanel.getBoundingClientRect().width / characterPanel.offsetWidth
+    const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
+    expect(toggle.getBoundingClientRect().left - hoverOffset * returnedScale).toBeCloseTo(toggleRect.left, 0)
   })
 
   it('скрывает верхнюю кнопку энциклопедии после открытия боковой панели', async () => {

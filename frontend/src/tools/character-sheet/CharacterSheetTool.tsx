@@ -188,68 +188,76 @@ function CharacterSheetWorkspace({
             }}
           />
         </div>
-        {spellSheetMounted && <div
-          className={styles.spellPanel}
-          data-spell-sheet-panel
-          data-state={spellsOpen ? 'open' : 'closing'}
-          onAnimationEnd={(event) => {
-            if (
-              event.target === event.currentTarget &&
-              !event.pseudoElement &&
-              !spellsOpen
-            ) {
-              setSpellSheetMounted(false)
-            }
-          }}
-        >
-          <SpellSheet
-            spellcasting={{
-              className: spellcasting.className || document.identity.className,
-              abilityKey: castingAbility,
-              ability: ABILITY_NAMES[castingAbility],
-              saveDc: spellcasting.saveDc,
-              saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
-              attackBonus: spellcasting.attackBonus,
-              attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
-            }}
-            slots={getEffectiveSpellSlots(document)}
-            spells={spellcasting.spells}
-            formulaVariables={formulaVariables}
-            onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
-            onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
-            onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
-            onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
-            onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
-            onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
-            onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
-            onSpellDrop={(transfer, level: SpellLevel) => {
-              const entry = readCharacterEncyclopediaDrag(transfer)
-              if (entry?.entityType !== 'spell') return
-              if (entry.level !== null && entry.level !== level) {
-                setImportError(`«${entry.name}» — заклинание ${entry.level}-го уровня. Перенесите его в соответствующий раздел.`)
-                return
+        <div className={styles.spellReveal}>
+          <div
+            className={styles.spellDrawer}
+            data-spell-sheet-drawer
+            onTransitionEnd={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                event.propertyName === 'transform' &&
+                !spellsOpen
+              ) {
+                setSpellSheetMounted(false)
               }
-              addEntry({ ...entry, level })
             }}
-            onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
-          />
-        </div>}
-        <button type="button" className={styles.pageTab}
-          data-spell-sheet-toggle
-          title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-          aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-          aria-expanded={spellsOpen}
-          onClick={() => {
-            const nextOpen = !spellsOpen
-            if (nextOpen) setSpellSheetMounted(true)
-            setSpellsOpen(nextOpen)
-            if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-          }}><span className={styles.pageTabContent} aria-hidden="true">
-            <span className={styles.pageTabIcon} data-spell-sheet-icon>
-              <EncyclopediaSectionIcon sectionId="spells" />
-            </span>
-            <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
-          </span></button>
+          >
+            {spellSheetMounted && <div
+              className={styles.spellPanel}
+              data-spell-sheet-panel
+              data-state={spellsOpen ? 'open' : 'closing'}
+              inert={!spellsOpen}
+            >
+              <SpellSheet
+                spellcasting={{
+                  className: spellcasting.className || document.identity.className,
+                  abilityKey: castingAbility,
+                  ability: ABILITY_NAMES[castingAbility],
+                  saveDc: spellcasting.saveDc,
+                  saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
+                  attackBonus: spellcasting.attackBonus,
+                  attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
+                }}
+                slots={getEffectiveSpellSlots(document)}
+                spells={spellcasting.spells}
+                formulaVariables={formulaVariables}
+                onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
+                onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
+                onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
+                onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
+                onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
+                onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
+                onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
+                onSpellDrop={(transfer, level: SpellLevel) => {
+                  const entry = readCharacterEncyclopediaDrag(transfer)
+                  if (entry?.entityType !== 'spell') return
+                  if (entry.level !== null && entry.level !== level) {
+                    setImportError(`«${entry.name}» — заклинание ${entry.level}-го уровня. Перенесите его в соответствующий раздел.`)
+                    return
+                  }
+                  addEntry({ ...entry, level })
+                }}
+                onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
+              />
+            </div>}
+            <button type="button" className={styles.pageTab}
+              data-spell-sheet-toggle
+              title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+              aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+              aria-expanded={spellsOpen}
+              onClick={() => {
+                const nextOpen = !spellsOpen
+                if (nextOpen) setSpellSheetMounted(true)
+                setSpellsOpen(nextOpen)
+                if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+              }}><span className={styles.pageTabContent} aria-hidden="true">
+                <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                  <EncyclopediaSectionIcon sectionId="spells" />
+                </span>
+                <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+              </span></button>
+          </div>
+        </div>
       </div>
     </div>
     <div className={styles.libraryDock} data-open={libraryOpen}>
