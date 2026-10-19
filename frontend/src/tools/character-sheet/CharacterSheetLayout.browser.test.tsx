@@ -1013,8 +1013,18 @@ describe('Character Sheet fixed desktop composition', () => {
     const icon = toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!
     const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
     const sheetContent = toggle.parentElement!.firstElementChild as HTMLElement
+    const sheetPage = container.querySelector<HTMLElement>(
+      '[data-character-sheet-page]',
+    )!
+    const toggleRect = toggle.getBoundingClientRect()
+    const sheetRect = sheetPage.getBoundingClientRect()
 
-    expect(toggle.getBoundingClientRect().height).toBeCloseTo(48, 0)
+    expect(toggleRect.height).toBeCloseTo(48, 0)
+    expect(sheetRect.right - toggleRect.left).toBeGreaterThan(4)
+    expect(toggleRect.right).toBeGreaterThan(sheetRect.right)
+    expect(toggleRect.left + toggleRect.width / 2).toBeGreaterThan(
+      sheetContent.getBoundingClientRect().right,
+    )
     expect(icon.firstElementChild).not.toBeNull()
     expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
     expect(arrow.textContent).toBe('›')
