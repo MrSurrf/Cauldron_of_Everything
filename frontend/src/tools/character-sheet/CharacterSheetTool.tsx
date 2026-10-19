@@ -49,7 +49,7 @@ const ABILITY_NAMES = {
 } as const
 
 const LIBRARY_DOCK_WIDTH = {
-  closed: 32,
+  closed: 128,
   open: 384,
 } as const
 const SHEET_SPACE_GUTTER = 16
@@ -195,7 +195,7 @@ function CharacterSheetWorkspace({
             }}
           />
         </div>
-        <div className={styles.spellReveal} data-tab-expanded={spellTabExpanded}>
+        <div className={styles.spellReveal}>
           <div
             className={styles.spellDrawer}
             data-spell-sheet-drawer

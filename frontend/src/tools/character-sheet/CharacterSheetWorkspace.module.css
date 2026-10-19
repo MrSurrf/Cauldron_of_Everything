@@ -71,14 +71,12 @@
   z-index: 3;
   top: 0;
   left: calc(100% - var(--book-page-inset));
-  width: calc(var(--book-page-width) + var(--space-2) + 3rem);
+  width: calc(var(--book-page-width) + var(--space-2) + 8rem);
   height: 100%;
   /* Край чарлиста скрывает и содержимое, и язычок, включая прозрачные поля. */
   overflow: clip;
   pointer-events: none;
 }
-
-.spellReveal[data-tab-expanded='true'] { overflow: visible; }
 
 .spellDrawer {
   position: absolute;
@@ -118,7 +116,7 @@
 }
 
 .pageTab {
-  --page-tab-label-space: 0rem;
+  --page-tab-label-space: 5rem;
 
   top: 44%;
   right: -1.875rem;
@@ -132,15 +130,13 @@
   clip-path: polygon(0 0, calc(100% - 0.35rem) 0, 100% 0.35rem, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%);
   pointer-events: auto;
   transition:
-    width var(--motion-duration-fast),
     transform var(--motion-duration-fast),
     background var(--motion-duration-fast);
 }
 
 .pageTab[data-expanded='true'] {
-  --page-tab-label-space: 5rem;
-
-  z-index: 2;
+  transform: translate3d(calc(var(--page-tab-label-space) + 0.45rem), 0, 0);
+  background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent));
 }
 
 .pageTabContent {
@@ -158,7 +154,7 @@
   text-align: left;
   white-space: nowrap;
   opacity: 0;
-  transition: width var(--motion-duration-fast), opacity var(--motion-duration-fast);
+  transition: opacity var(--motion-duration-fast);
 }
 
 .pageTab[data-expanded='true'] .pageTabLabel { opacity: 1; }
@@ -174,19 +170,14 @@
   font: 0.8rem/1 var(--font-family-heading);
 }
 
-.pageTab:hover,
-.pageTab:focus-visible {
-  transform: translate3d(0.45rem, 0, 0);
-  background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent));
-}
-
 .libraryDock {
   position: relative;
   z-index: 4;
-  flex: 0 0 2rem;
-  width: 2rem;
+  flex: 0 0 8rem;
+  width: 8rem;
   height: 100%;
   min-width: 0;
+  pointer-events: none;
 }
 .libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
 
@@ -203,6 +194,7 @@
   font: var(--font-size-2xs)/1 var(--font-family-body);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  pointer-events: auto;
 }
 
 .libraryTriggerIcon {
@@ -222,7 +214,7 @@
 .pageTab:focus-visible,
 .libraryTrigger:focus-visible { outline: 2px solid var(--color-brand-bright); outline-offset: 2px; }
 
-.library { width: 100%; height: 100%; }
+.library { width: 100%; height: 100%; pointer-events: auto; }
 
 .importError {
   position: absolute;

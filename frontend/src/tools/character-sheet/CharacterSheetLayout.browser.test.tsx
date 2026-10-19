@@ -60,6 +60,11 @@ function roundedWidth(element: Element) {
   return Math.round(element.getBoundingClientRect().width)
 }
 
+async function clickSpellSheetTab(toggle: HTMLElement) {
+  // Под листом скрыта подпись: нажимаем на видимую иконку язычка.
+  await userEvent.click(toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!)
+}
+
 function expectTextEditorSpacing(container: HTMLElement, count: number) {
   const sections = container.querySelectorAll<HTMLElement>(
     '[data-content-layout="editor"]:not([data-open="false"])',
@@ -964,7 +969,7 @@ describe('Character Sheet fixed desktop composition', () => {
     const book = toggle.closest<HTMLElement>('[data-spells-open]')!
 
     await act(async () => {
-      await userEvent.click(toggle)
+      await clickSpellSheetTab(toggle)
       await nextFrame()
     })
 
@@ -995,7 +1000,7 @@ describe('Character Sheet fixed desktop composition', () => {
       const tabRect = toggle.getBoundingClientRect()
       const scale = panelRect.width / panel.offsetWidth
       const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
-      expect((tabRect.left - panelRect.right) / scale - hoverOffset).toBeCloseTo(-14, 1)
+      expect((tabRect.right - panelRect.right) / scale - hoverOffset).toBeCloseTo(30, 1)
       expect(getComputedStyle(panel).opacity).toBe('1')
     }
     await act(async () => {
@@ -1010,7 +1015,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(getComputedStyle(initiallyExpandedSpell).animationName).toBe('none')
 
     await act(async () => {
-      await userEvent.click(toggle)
+      await clickSpellSheetTab(toggle)
       await nextFrame()
     })
 
@@ -1029,7 +1034,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
   })
 
-  it('показывает компактный язычок листа заклинаний с иконкой и маленькой стрелкой', async () => {
+  it('выдвигает язычок вправо и показывает подпись перед иконкой при наведении', async () => {
     const container = await mountCharacterSheet(createMockSpellcasterSheet())
     const toggle = container.querySelector<HTMLButtonElement>(
       '[data-spell-sheet-toggle]',
@@ -1054,8 +1059,29 @@ describe('Character Sheet fixed desktop composition', () => {
       arrow.getBoundingClientRect().width,
     )
 
+    const label = toggle.querySelector<HTMLElement>('br')!.parentElement!
+    expect(getComputedStyle(label).opacity).toBe('0')
     await act(async () => {
-      await userEvent.click(toggle)
+      await userEvent.hover(icon)
+      await nextFrame()
+    })
+    await act(async () => {
+      await nextFrame()
+      toggle.getAnimations({ subtree: true }).forEach(animation => animation.finish())
+      await nextFrame()
+    })
+    const hoverRect = toggle.getBoundingClientRect()
+    const scale = characterPanel.getBoundingClientRect().width / characterPanel.offsetWidth
+    expect(hoverRect.width).toBeCloseTo(toggleRect.width, 1)
+    expect(hoverRect.left - toggleRect.left).toBeCloseTo(87.2 * scale, 1)
+    expect(label.getBoundingClientRect().left).toBeGreaterThanOrEqual(sheetRect.right)
+    expect(label.getBoundingClientRect().right).toBeLessThan(icon.getBoundingClientRect().left)
+    expect(getComputedStyle(label).fontFamily).toContain('Gilroy')
+    expect(getComputedStyle(label).fontWeight).toBe('400')
+    expect(getComputedStyle(label).opacity).toBe('1')
+
+    await act(async () => {
+      await clickSpellSheetTab(toggle)
       await nextFrame()
     })
 
@@ -1081,7 +1107,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(openToggleRect.right).toBeGreaterThan(spellPanelRect.right)
 
     await act(async () => {
-      await userEvent.click(toggle)
+      await clickSpellSheetTab(toggle)
       await nextFrame()
       ;[book, toggle, drawer].forEach((element) => {
         element.getAnimations().forEach((animation) => animation.finish())
@@ -1179,7 +1205,7 @@ describe('Character Sheet fixed desktop composition', () => {
       '[data-spell-sheet-toggle]',
     )!
     await act(async () => {
-      await userEvent.click(spellSheetToggle)
+      await clickSpellSheetTab(spellSheetToggle)
       await nextFrame()
     })
 
