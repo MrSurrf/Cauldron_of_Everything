@@ -73,7 +73,6 @@ function CharacterSheetWorkspace({
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
-  const initialDevicePixelRatio = useRef(1)
 
   function expandSpellTab(button: HTMLButtonElement) {
     const moving = button.parentElement?.getAnimations()
@@ -94,9 +93,14 @@ function CharacterSheetWorkspace({
   useEffect(() => {
     const root = workspace.current
     if (!root) return
-    initialDevicePixelRatio.current = window.devicePixelRatio || 1
+    // DPR меняется и при переносе между мониторами, поэтому не используем его
+    // как zoom. Сохраняем относительный масштаб страницы по размерам окна.
+    const windowRatio = () => window.outerWidth > 0 && window.innerWidth > 0
+      ? window.outerWidth / window.innerWidth
+      : 1
+    const initialWindowRatio = windowRatio()
     const measure = () => {
-      const browserZoom = (window.devicePixelRatio || 1) / initialDevicePixelRatio.current
+      const browserZoom = windowRatio() / initialWindowRatio
       setWorkspaceWidth(Math.round(root.clientWidth * browserZoom))
     }
     measure()
@@ -180,8 +184,10 @@ function CharacterSheetWorkspace({
   const pageScale = workspaceWidth > 0
     ? Math.min(1, Math.max(0.1, (workspaceWidth - reservedLibraryWidth - SHEET_SPACE_GUTTER) / (spellsOpen ? 1988 : 990)))
     : 1
+  const spreadWidth = (spellsOpen ? 1988 : 990) * pageScale + SHEET_SPACE_GUTTER
 
   return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
+    style={{ '--book-min-width': `${spreadWidth}px` } as CSSProperties}
     data-library-open={libraryOpen} data-spells-open={spellsOpen}>
     <div className={styles.sheetSpace} aria-label="Листы персонажа">
       <div

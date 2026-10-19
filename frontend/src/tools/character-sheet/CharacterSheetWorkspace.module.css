@@ -5,7 +5,8 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   color: var(--color-text-primary);
   background: transparent;
 }
@@ -13,7 +14,8 @@
 .sheetSpace {
   display: flex;
   flex: 1 1 auto;
-  min-width: 0;
+  /* При браузерном zoom края разворота должны оставаться доступны прокруткой. */
+  min-width: var(--book-min-width, 0);
   min-height: 0;
   height: 100%;
   align-items: stretch;
@@ -32,7 +34,9 @@
   display: flex;
   flex: 0 0 auto;
   width: var(--book-page-width);
-  height: 100%;
+  /* transform уменьшает и область прокрутки: компенсируем только её высоту,
+     сохраняя GPU-анимацию всего разворота и обычный размер содержимого. */
+  height: calc(100% / var(--book-scale));
   min-height: 0;
   align-items: stretch;
   margin-inline: auto;

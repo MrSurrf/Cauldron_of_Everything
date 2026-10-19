@@ -70,6 +70,17 @@ async function clickSpellSheetTab(toggle: HTMLElement) {
   await userEvent.click(toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!)
 }
 
+async function settleSheetLayout(container: HTMLElement) {
+  await act(async () => {
+    await nextFrame()
+    await nextFrame()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    ;[book, drawer].flatMap((element) => element.getAnimations()).forEach((animation) => animation.finish())
+    await nextFrame()
+  })
+}
+
 function expectTextEditorSpacing(container: HTMLElement, count: number) {
   const sections = container.querySelectorAll<HTMLElement>(
     '[data-content-layout="editor"]:not([data-open="false"])',
@@ -109,6 +120,93 @@ afterEach(async () => {
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('занимает всю высоту обоими листами после смены размеров окна и состояния энциклопедии', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const characterViewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
+    for (const [width, height] of [[1885, 800], [1440, 796], [2560, 1336], [1100, 640]]) {
+      await act(async () => {
+        container.style.width = `${width}px`
+        container.style.height = `${height}px`
+      })
+      for (const open of [false, true]) {
+        const toggle = container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!
+        await settleSheetLayout(container)
+        if ((toggle.getAttribute('aria-expanded') === 'true') !== open) {
+          await act(async () => { await clickSpellSheetTab(toggle) })
+        }
+        await settleSheetLayout(container)
+        expect(characterViewport.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+        expect(characterViewport.getBoundingClientRect().bottom).toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+        const spellPanel = container.querySelector<HTMLElement>('[data-spell-sheet-panel]')
+        if (open) {
+          expect(spellPanel!.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+          expect(spellPanel!.getBoundingClientRect().bottom).toBeCloseTo(characterViewport.getBoundingClientRect().bottom, 0)
+        }
+      }
+    }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ count: 0, results: [] })))
+    await act(async () => { await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!) })
+    await settleSheetLayout(container)
+    expect(characterViewport.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+    // Низ обоих листов доступен и после изменения высоты scrollport.
+    for (const scroller of [characterViewport, container.querySelector<HTMLElement>('[data-spell-sheet-panel] [class*="scroller"]')!]) {
+      await act(async () => { scroller.scrollTop = scroller.scrollHeight; await nextFrame() })
+      expect(scroller.scrollTop + scroller.clientHeight).toBeGreaterThanOrEqual(scroller.scrollHeight - 1)
+    }
+  })
+
+  it('не меняет масштаб и положение листов только из-за смены DPR монитора', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!) })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const before = book.getBoundingClientRect()
+    const scale = book.style.getPropertyValue('--book-scale')
+    vi.spyOn(window, 'devicePixelRatio', 'get').mockReturnValue(window.devicePixelRatio * 2)
+    await act(async () => { window.dispatchEvent(new Event('resize')) })
+    await settleSheetLayout(container)
+    expect(book.style.getPropertyValue('--book-scale')).toBe(scale)
+    expect(book.getBoundingClientRect().left).toBeCloseTo(before.left, 0)
+    expect(book.getBoundingClientRect().height).toBeCloseTo(before.height, 0)
+  })
+
+  it('сохраняет приближение и отдаление браузера, не теряя края листов при zoom', async () => {
+    let cssWindowWidth = 1200
+    vi.spyOn(window, 'outerWidth', 'get').mockReturnValue(1200)
+    vi.spyOn(window, 'innerWidth', 'get').mockImplementation(() => cssWindowWidth)
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!) })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const workspace = container.querySelector<HTMLElement>('[data-library-open][data-spells-open]')!
+    const scale = Number(book.style.getPropertyValue('--book-scale'))
+    const width = book.getBoundingClientRect().width
+    // При zoom 200% внешнее окно прежнее, а его CSS-ширина вдвое меньше.
+    await act(async () => {
+      cssWindowWidth = 600
+      container.style.width = '600px'
+      window.dispatchEvent(new Event('resize'))
+    })
+    await settleSheetLayout(container)
+    expect(Number(book.style.getPropertyValue('--book-scale'))).toBeCloseTo(scale, 3)
+    // Автоподгонка не уменьшает лист обратно: CSS-ширина сохраняется,
+    // значит при browser zoom 200% его физическая ширина удваивается.
+    expect(book.getBoundingClientRect().width).toBeCloseTo(width, 0)
+    expect(workspace.scrollWidth).toBeGreaterThan(workspace.clientWidth)
+    expect(book.getBoundingClientRect().left).toBeGreaterThanOrEqual(workspace.getBoundingClientRect().left)
+    await act(async () => { workspace.scrollLeft = workspace.scrollWidth; await nextFrame() })
+    const spells = container.querySelector<HTMLElement>('[data-spell-sheet-panel]')!
+    expect(spells.getBoundingClientRect().right).toBeLessThanOrEqual(workspace.getBoundingClientRect().right)
+    await act(async () => {
+      cssWindowWidth = 1600
+      container.style.width = '1600px'
+      window.dispatchEvent(new Event('resize'))
+    })
+    await settleSheetLayout(container)
+    expect(Number(book.style.getPropertyValue('--book-scale'))).toBeCloseTo(scale, 3)
+    expect(workspace.scrollWidth).toBeLessThanOrEqual(workspace.clientWidth + 1)
+  })
+
   it('переносит классы, расы и предыстории из API энциклопедии в соответствующие поля', async () => {
     const entries = {
       class: { id: 101, entity_type: 'class', name: 'Волшебник', name_en: 'Wizard' },
@@ -276,6 +374,7 @@ describe('Character Sheet fixed desktop composition', () => {
         await nextFrame()
         await nextFrame()
       })
+      await settleSheetLayout(container)
       expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 1)
       expect(viewport.clientHeight).toBeGreaterThan(0)
       expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(container.getBoundingClientRect().bottom + 1)
