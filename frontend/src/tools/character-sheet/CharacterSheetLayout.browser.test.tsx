@@ -1012,7 +1012,8 @@ describe('Character Sheet fixed desktop composition', () => {
     )!
     const icon = toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!
     const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
-    const sheetContent = toggle.parentElement!.firstElementChild as HTMLElement
+    const book = toggle.closest<HTMLElement>('[data-spells-open]')!
+    const characterPanel = book.firstElementChild as HTMLElement
     const sheetPage = container.querySelector<HTMLElement>(
       '[data-character-sheet-page]',
     )!
@@ -1023,12 +1024,12 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(sheetRect.right - toggleRect.left).toBeGreaterThan(4)
     expect(toggleRect.right).toBeGreaterThan(sheetRect.right)
     expect(toggleRect.left + toggleRect.width / 2).toBeGreaterThan(
-      sheetContent.getBoundingClientRect().right,
+      characterPanel.getBoundingClientRect().right,
     )
     expect(icon.firstElementChild).not.toBeNull()
     expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
     expect(arrow.textContent).toBe('›')
-    expect(Number(getComputedStyle(sheetContent).zIndex)).toBeGreaterThan(
+    expect(Number(getComputedStyle(characterPanel).zIndex)).toBeGreaterThan(
       Number(getComputedStyle(toggle).zIndex),
     )
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(
@@ -1041,6 +1042,38 @@ describe('Character Sheet fixed desktop composition', () => {
     })
 
     expect(arrow.textContent).toBe('‹')
+    const spellPanel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    expect(getComputedStyle(toggle).transitionDuration).toContain('0.76s')
+    expect(getComputedStyle(spellPanel).animationDelay).toBe('0.055s')
+
+    await act(async () => {
+      ;[book, toggle, spellPanel].forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
+    })
+
+    const openToggleRect = toggle.getBoundingClientRect()
+    const spellPanelRect = spellPanel.getBoundingClientRect()
+    expect(
+      openToggleRect.left - characterPanel.getBoundingClientRect().right,
+    ).toBeGreaterThan(300)
+    expect(openToggleRect.left).toBeLessThan(spellPanelRect.right)
+    expect(openToggleRect.right).toBeGreaterThan(spellPanelRect.right)
+
+    await act(async () => {
+      await userEvent.click(toggle)
+      await nextFrame()
+      ;[book, toggle, spellPanel].forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
+    })
+
+    expect(arrow.textContent).toBe('›')
+    expect(toggle.getBoundingClientRect().left).toBeCloseTo(toggleRect.left, 0)
   })
 
   it('скрывает верхнюю кнопку энциклопедии после открытия боковой панели', async () => {

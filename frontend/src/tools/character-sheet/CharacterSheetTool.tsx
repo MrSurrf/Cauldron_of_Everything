@@ -187,22 +187,6 @@ function CharacterSheetWorkspace({
               if (entry?.entityType === 'item') addEntry(entry)
             }}
           />
-          <button type="button" className={styles.pageTab}
-            data-spell-sheet-toggle
-            title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-            aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-            aria-expanded={spellsOpen}
-            onClick={() => {
-              const nextOpen = !spellsOpen
-              if (nextOpen) setSpellSheetMounted(true)
-              setSpellsOpen(nextOpen)
-              if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-            }}><span className={styles.pageTabContent} aria-hidden="true">
-              <span className={styles.pageTabIcon} data-spell-sheet-icon>
-                <EncyclopediaSectionIcon sectionId="spells" />
-              </span>
-              <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
-            </span></button>
         </div>
         {spellSheetMounted && <div
           className={styles.spellPanel}
@@ -250,6 +234,22 @@ function CharacterSheetWorkspace({
             onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
           />
         </div>}
+        <button type="button" className={styles.pageTab}
+          data-spell-sheet-toggle
+          title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+          aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+          aria-expanded={spellsOpen}
+          onClick={() => {
+            const nextOpen = !spellsOpen
+            if (nextOpen) setSpellSheetMounted(true)
+            setSpellsOpen(nextOpen)
+            if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+          }}><span className={styles.pageTabContent} aria-hidden="true">
+            <span className={styles.pageTabIcon} data-spell-sheet-icon>
+              <EncyclopediaSectionIcon sectionId="spells" />
+            </span>
+            <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+          </span></button>
       </div>
     </div>
     <div className={styles.libraryDock} data-open={libraryOpen}>
