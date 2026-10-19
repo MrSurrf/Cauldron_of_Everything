@@ -1012,13 +1012,13 @@ describe('Character Sheet fixed desktop composition', () => {
     )!
     const icon = toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!
     const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
-    const sheetBoundary = getComputedStyle(toggle.parentElement!, '::after')
+    const sheetContent = toggle.parentElement!.firstElementChild as HTMLElement
 
     expect(toggle.getBoundingClientRect().height).toBeCloseTo(48, 0)
     expect(icon.firstElementChild).not.toBeNull()
     expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
     expect(arrow.textContent).toBe('›')
-    expect(Number(sheetBoundary.zIndex)).toBeGreaterThan(
+    expect(Number(getComputedStyle(sheetContent).zIndex)).toBeGreaterThan(
       Number(getComputedStyle(toggle).zIndex),
     )
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(
