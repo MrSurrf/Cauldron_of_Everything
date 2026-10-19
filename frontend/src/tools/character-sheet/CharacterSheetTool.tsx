@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
-import { PlaceholderIcon, Tooltip } from '../../shared/ui'
+import { PlaceholderIcon } from '../../shared/ui'
 import {
   CharacterSheetProvider,
   FORMULA_FIELD_KEYS,
@@ -65,7 +65,7 @@ function CharacterSheetWorkspace({
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
   const [spellsOpen, setSpellsOpen] = useState(false)
-  const [spellTabLabelOpen, setSpellTabLabelOpen] = useState(false)
+  const [spellTabExpanded, setSpellTabExpanded] = useState(false)
   const [spellSheetMounted, setSpellSheetMounted] = useState(false)
   const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -74,6 +74,12 @@ function CharacterSheetWorkspace({
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
   const initialDevicePixelRatio = useRef(1)
+
+  function expandSpellTab(button: HTMLButtonElement) {
+    const moving = button.parentElement?.getAnimations()
+      .some(animation => animation.playState === 'running')
+    if (!moving) setSpellTabExpanded(true)
+  }
 
   useEffect(() => () => {
     detailRequests.current.forEach((request) => request.abort())
@@ -189,10 +195,15 @@ function CharacterSheetWorkspace({
             }}
           />
         </div>
-        <div className={styles.spellReveal}>
+        <div className={styles.spellReveal} data-tab-expanded={spellTabExpanded}>
           <div
             className={styles.spellDrawer}
             data-spell-sheet-drawer
+            onTransitionRun={(event) => {
+              if (event.target === event.currentTarget && event.propertyName === 'transform') {
+                setSpellTabExpanded(false)
+              }
+            }}
             onTransitionEnd={(event) => {
               if (
                 event.target === event.currentTarget &&
@@ -241,33 +252,30 @@ function CharacterSheetWorkspace({
                 onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
               />
             </div>}
-            <Tooltip
-              content={<>Лист<br />заклинаний</>}
-              placement="left"
-              offset={0}
-              openDelay={0}
-              closeDelay={0}
-              open={spellTabLabelOpen}
-              onOpenChange={setSpellTabLabelOpen}
-            >
-              <button type="button" className={styles.pageTab}
-                data-spell-sheet-toggle
-                aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-                aria-expanded={spellsOpen}
-                onMouseLeave={() => setSpellTabLabelOpen(false)}
-                onClick={() => {
-                  setSpellTabLabelOpen(false)
-                  const nextOpen = !spellsOpen
-                  if (nextOpen) setSpellSheetMounted(true)
-                  setSpellsOpen(nextOpen)
-                  if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-                }}><span className={styles.pageTabContent} aria-hidden="true">
-                  <span className={styles.pageTabIcon} data-spell-sheet-icon>
-                    <EncyclopediaSectionIcon sectionId="spells" />
-                  </span>
-                  <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
-                </span></button>
-            </Tooltip>
+            <button type="button" className={styles.pageTab}
+              data-spell-sheet-toggle
+              data-expanded={spellTabExpanded}
+              aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+              aria-expanded={spellsOpen}
+              onMouseEnter={(event) => expandSpellTab(event.currentTarget)}
+              onMouseLeave={() => setSpellTabExpanded(false)}
+              onFocus={(event) => {
+                if (event.currentTarget.matches(':focus-visible')) expandSpellTab(event.currentTarget)
+              }}
+              onBlur={() => setSpellTabExpanded(false)}
+              onClick={() => {
+                setSpellTabExpanded(false)
+                const nextOpen = !spellsOpen
+                if (nextOpen) setSpellSheetMounted(true)
+                setSpellsOpen(nextOpen)
+                if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+              }}><span className={styles.pageTabContent} aria-hidden="true">
+                <span className={styles.pageTabLabel}>Лист<br />заклинаний</span>
+                <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                  <EncyclopediaSectionIcon sectionId="spells" />
+                </span>
+                <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+              </span></button>
           </div>
         </div>
       </div>
