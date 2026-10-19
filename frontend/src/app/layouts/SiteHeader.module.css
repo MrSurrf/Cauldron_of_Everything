@@ -518,7 +518,8 @@ a.dropdownItem:focus-visible {
   background: var(--color-surface-accent);
 }
 
-.iconButton > svg {
+.iconButton > svg,
+.iconButton > [data-shared-icon='true'] {
   z-index: 1;
   width: var(--icon-size-lg);
   height: var(--icon-size-lg);

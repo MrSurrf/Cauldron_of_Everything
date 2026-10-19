@@ -12,7 +12,10 @@ import {
 } from 'react-router-dom'
 
 import { TextInput } from '../../shared/ui/TextInput'
-import { PlaceholderIcon } from '../../shared/ui/icons'
+import {
+  NotificationIcon,
+  PlaceholderIcon,
+} from '../../shared/ui/icons'
 import styles from './SiteHeader.module.css'
 
 type MenuId = 'find-table' | 'tools' | 'my-table'
@@ -318,7 +321,7 @@ export function SiteHeader() {
             type="button"
             aria-label="Уведомления"
           >
-            <PlaceholderIcon />
+            <NotificationIcon />
             <span className={styles.notificationDot} aria-hidden={true} />
           </button>
 
