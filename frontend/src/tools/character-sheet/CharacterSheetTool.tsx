@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
-import { PlaceholderIcon } from '../../shared/ui'
+import { PlaceholderIcon, Tooltip } from '../../shared/ui'
 import {
   CharacterSheetProvider,
   FORMULA_FIELD_KEYS,
@@ -65,6 +65,7 @@ function CharacterSheetWorkspace({
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
   const [spellsOpen, setSpellsOpen] = useState(false)
+  const [spellTabLabelOpen, setSpellTabLabelOpen] = useState(false)
   const [spellSheetMounted, setSpellSheetMounted] = useState(false)
   const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -240,22 +241,33 @@ function CharacterSheetWorkspace({
                 onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
               />
             </div>}
-            <button type="button" className={styles.pageTab}
-              data-spell-sheet-toggle
-              title={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-              aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-              aria-expanded={spellsOpen}
-              onClick={() => {
-                const nextOpen = !spellsOpen
-                if (nextOpen) setSpellSheetMounted(true)
-                setSpellsOpen(nextOpen)
-                if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-              }}><span className={styles.pageTabContent} aria-hidden="true">
-                <span className={styles.pageTabIcon} data-spell-sheet-icon>
-                  <EncyclopediaSectionIcon sectionId="spells" />
-                </span>
-                <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
-              </span></button>
+            <Tooltip
+              content={<>Лист<br />заклинаний</>}
+              placement="left"
+              offset={0}
+              openDelay={0}
+              closeDelay={0}
+              open={spellTabLabelOpen}
+              onOpenChange={setSpellTabLabelOpen}
+            >
+              <button type="button" className={styles.pageTab}
+                data-spell-sheet-toggle
+                aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+                aria-expanded={spellsOpen}
+                onMouseLeave={() => setSpellTabLabelOpen(false)}
+                onClick={() => {
+                  setSpellTabLabelOpen(false)
+                  const nextOpen = !spellsOpen
+                  if (nextOpen) setSpellSheetMounted(true)
+                  setSpellsOpen(nextOpen)
+                  if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+                }}><span className={styles.pageTabContent} aria-hidden="true">
+                  <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                    <EncyclopediaSectionIcon sectionId="spells" />
+                  </span>
+                  <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+                </span></button>
+            </Tooltip>
           </div>
         </div>
       </div>
