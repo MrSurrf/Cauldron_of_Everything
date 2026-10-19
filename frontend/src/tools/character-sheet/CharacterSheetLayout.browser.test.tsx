@@ -7,12 +7,17 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 
 import '../../app/styles/global.css'
 import '../../shared/styles/tokens.css'
 import { CharacterSheetTool } from './CharacterSheetTool'
 import { createMockCharacterSheet, createMockSpellcasterSheet } from './model'
+import {
+  CHARACTER_ENCYCLOPEDIA_DRAG_TYPE,
+  writeCharacterEncyclopediaDrag,
+} from './ui/encyclopedia'
 
 let mountedRoot: Root | null = null
 let mountedContainer: HTMLDivElement | null = null
@@ -100,9 +105,104 @@ afterEach(async () => {
   mountedContainer?.remove()
   mountedRoot = null
   mountedContainer = null
+  vi.restoreAllMocks()
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('переносит классы, расы и предыстории из API энциклопедии в соответствующие поля', async () => {
+    const entries = {
+      class: { id: 101, entity_type: 'class', name: 'Волшебник', name_en: 'Wizard' },
+      race: { id: 102, entity_type: 'race', name: 'Эльф', name_en: 'Elf' },
+      background: { id: 103, entity_type: 'background', name: 'Мудрец', name_en: 'Sage' },
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = new URL(String(input))
+      const mode = url.searchParams.get('type') as keyof typeof entries
+      return new Response(JSON.stringify({ count: entries[mode] ? 1 : 0, results: entries[mode] ? [entries[mode]] : [] }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    const container = await mountCharacterSheet()
+    function field(labelText: string) {
+      const label = Array.from(container.querySelectorAll('label')).find((label) => label.textContent === labelText)!
+      return document.getElementById(label.htmlFor) as HTMLInputElement
+    }
+    expect(field('Класс').getAttribute('role')).not.toBe('combobox')
+    await act(async () => {
+      await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!)
+    })
+    for (const [mode, tabName, fieldName] of [
+      ['class', 'Классы', 'Класс'], ['race', 'Расы', 'Раса'], ['background', 'Предыстории', 'Предыстория'],
+    ] as const) {
+      const entry = entries[mode]
+      await act(async () => {
+        await userEvent.click(Array.from(container.querySelectorAll<HTMLElement>('[role="tab"]')).find((tab) => tab.textContent === tabName)!)
+        // Дожидаемся debounce поиска и ответа API внутри act.
+        await new Promise((resolve) => window.setTimeout(resolve, 300))
+      })
+      await expect.poll(async () => {
+        await act(async () => { await nextFrame() })
+        return container.querySelector(`[aria-label="Показать карточку: ${entry.name}"]`)
+      }).not.toBeNull()
+      const input = field(fieldName)
+      const transfer = new DataTransfer()
+      await act(async () => {
+        container.querySelector(`[aria-label="Показать карточку: ${entry.name}"]`)!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }))
+      })
+      expect(JSON.parse(transfer.getData(CHARACTER_ENCYCLOPEDIA_DRAG_TYPE)).entityType).toBe(mode)
+      const dragOver = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer })
+      await act(async () => { input.dispatchEvent(dragOver) })
+      expect(dragOver.defaultPrevented).toBe(true)
+      expect(getComputedStyle(input.parentElement!).outlineStyle).toBe('solid')
+      await act(async () => {
+        input.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+      })
+      expect(input.value).toBe(entry.name)
+      expect(getComputedStyle(input.parentElement!).outlineStyle).not.toBe('solid')
+      // Кнопка добавления использует тот же путь обновления данных листа.
+      await act(async () => {
+        await userEvent.fill(input, 'Свой вариант')
+        await userEvent.click(container.querySelector<HTMLElement>(`[aria-label="Добавить: ${entry.name}"]`)!)
+      })
+      expect(input.value).toBe(entry.name)
+    }
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('type=background'))).toBe(true)
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
+  })
+
+  it('не вставляет запись чужого типа в поле класса и оставляет ручной ввод в обоих листах', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const label = Array.from(container.querySelectorAll('label')).find((label) => label.textContent === 'Класс')!
+    const input = document.getElementById(label.htmlFor) as HTMLInputElement
+    const originalValue = input.value
+    const transfer = new DataTransfer()
+    writeCharacterEncyclopediaDrag(transfer, { id: 102, entityType: 'race', name: 'Эльф', nameEn: 'Elf', level: null, summary: {} })
+    await act(async () => {
+      input.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+    })
+    expect(transfer.dropEffect).toBe('none')
+    const drop = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer })
+    await act(async () => { input.dispatchEvent(drop) })
+    expect(drop.defaultPrevented).toBe(true)
+    expect(input.value).toBe(originalValue)
+    await act(async () => {
+      await userEvent.fill(input, 'Домашний класс')
+      await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!)
+    })
+    const casterInput = container.querySelector<HTMLInputElement>('[aria-label="Класс заклинателя"]')!
+    expect(casterInput.tagName).toBe('INPUT')
+    expect(casterInput.getAttribute('role')).not.toBe('combobox')
+    await act(async () => { await userEvent.fill(casterInput, 'Свой заклинатель') })
+    expect(casterInput.value).toBe('Свой заклинатель')
+    expect(input.value).toBe('Домашний класс')
+    writeCharacterEncyclopediaDrag(transfer, { id: 101, entityType: 'class', name: 'Друид', nameEn: 'Druid', level: null, summary: {} })
+    await act(async () => {
+      casterInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+    })
+    expect(casterInput.value).toBe('Друид')
+    expect(input.value).toBe('Домашний класс')
+  })
+
   it('масштабирует весь лист под панель, сохраняя геометрию и доступность полей', async () => {
     const container = await mountCharacterSheet(createMockCharacterSheet(), true)
     const viewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!

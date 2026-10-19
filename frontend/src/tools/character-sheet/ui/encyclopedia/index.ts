@@ -5,8 +5,9 @@ export {
   CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE,
   hasCharacterEncyclopediaDrag,
   hasCharacterEncyclopediaSpellDrag,
+  hasCharacterEncyclopediaTypeDrag,
   readCharacterEncyclopediaDrag,
   toCharacterEncyclopediaEntry,
   writeCharacterEncyclopediaDrag,
 } from './characterEncyclopediaDrag'
-export type { CharacterEncyclopediaEntry, CharacterEncyclopediaMode } from './characterEncyclopediaDrag'
+export type { CharacterEncyclopediaEntry, CharacterEncyclopediaMode, CharacterIdentityEncyclopediaMode } from './characterEncyclopediaDrag'

@@ -1,7 +1,7 @@
 import { useState, type DragEvent } from 'react'
 import { characterSheetActions } from '../../model'
 import { ContentEditor } from '../../../../shared/ui'
-import { hasCharacterEncyclopediaDrag, hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
+import { hasCharacterEncyclopediaTypeDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
 import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 import { SheetSection } from '../SheetSection'
 import type { CharacterSheetViewModel } from './sheetViewModel'
@@ -26,8 +26,7 @@ export function CharacterEquipmentSection({
     <SheetSection className={styles.section} contentLayout="editor" title="Снаряжение"
       data-item-drop-target={itemDragOver}
       onDragOver={(event: DragEvent<HTMLElement>) => {
-        if (!onEncyclopediaItemDrop || !hasCharacterEncyclopediaDrag(event.dataTransfer)
-          || hasCharacterEncyclopediaSpellDrag(event.dataTransfer)
+        if (!onEncyclopediaItemDrop || !hasCharacterEncyclopediaTypeDrag(event.dataTransfer, 'item')
           || !(event.target instanceof Element)
           || !event.target.closest('[data-content-editor-frame]')) return
         event.preventDefault()

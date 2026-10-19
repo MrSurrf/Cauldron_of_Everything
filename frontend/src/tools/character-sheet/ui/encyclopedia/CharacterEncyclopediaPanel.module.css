@@ -47,11 +47,12 @@
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   border-bottom: var(--border-width-default) solid var(--color-content-border);
 }
 
 .tab {
+  grid-column: span 2;
   min-height: var(--control-height-md);
   padding: var(--space-2) var(--space-3);
   border: 0;
@@ -60,6 +61,10 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   font: inherit;
+}
+
+.tab:nth-child(-n + 2) {
+  grid-column: span 3;
 }
 
 .tab:hover,

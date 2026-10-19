@@ -11,6 +11,13 @@ import type { CharacterEncyclopediaEntry, CharacterEncyclopediaMode } from './ch
 import styles from './CharacterEncyclopediaPanel.module.css'
 
 const PAGE_SIZE = 30
+const SECTIONS: Record<CharacterEncyclopediaMode, { label: string; singular: string; search: string; placeholder: string }> = {
+  item: { label: 'Предметы', singular: 'Предмет', search: 'Поиск предметов', placeholder: 'Название предмета…' },
+  spell: { label: 'Заклинания', singular: 'Заклинание', search: 'Поиск заклинаний', placeholder: 'Название заклинания…' },
+  class: { label: 'Классы', singular: 'Класс', search: 'Поиск классов', placeholder: 'Название класса…' },
+  race: { label: 'Расы', singular: 'Раса', search: 'Поиск рас', placeholder: 'Название расы…' },
+  background: { label: 'Предыстории', singular: 'Предыстория', search: 'Поиск предысторий', placeholder: 'Название предыстории…' },
+}
 
 type SearchResult = {
   key: string
@@ -44,6 +51,7 @@ function entryTags(entry: CharacterEncyclopediaEntry): string[] {
     return [entry.level === 0 ? 'Заговор' : entry.level === null ? '' : `${entry.level}-й уровень`, text(summary.school)]
       .filter(Boolean)
   }
+  if (entry.entityType !== 'item') return [entry.nameEn].filter(Boolean)
   return [text(summary.type ?? summary.item_type), text(summary.rarity), text(summary.cost ?? summary.price)]
     .filter(Boolean)
 }
@@ -69,6 +77,7 @@ export function CharacterEncyclopediaPanel({
   const currentResult = result?.mode === mode ? result : null
   const loading = currentResult?.key !== searchKey
   const currentDetail = detail?.key === detailKey ? detail : null
+  const section = SECTIONS[mode]
 
   useEffect(() => {
     const controller = new AbortController()
@@ -135,24 +144,25 @@ export function CharacterEncyclopediaPanel({
       </header>
 
       <div className={styles.tabs} role="tablist" aria-label="Раздел энциклопедии">
-        <button type="button" role="tab" aria-selected={mode === 'item'} aria-controls="character-encyclopedia-results"
-          className={styles.tab} onClick={() => changeMode('item')}>Предметы</button>
-        <button type="button" role="tab" aria-selected={mode === 'spell'} aria-controls="character-encyclopedia-results"
-          className={styles.tab} onClick={() => changeMode('spell')}>Заклинания</button>
+        {(Object.keys(SECTIONS) as CharacterEncyclopediaMode[]).map((key) =>
+          <button key={key} type="button" role="tab" aria-selected={mode === key} aria-controls="character-encyclopedia-results"
+            className={styles.tab} onClick={() => changeMode(key)}>{SECTIONS[key].label}</button>)}
       </div>
 
       <div className={styles.search}>
-        <TextInput type="search" aria-label={mode === 'item' ? 'Поиск предметов' : 'Поиск заклинаний'}
-          placeholder={mode === 'item' ? 'Название предмета…' : 'Название заклинания…'} value={query}
+        <TextInput type="search" aria-label={section.search}
+          placeholder={section.placeholder} value={query}
           onChange={(event) => { setQuery(event.target.value); setContentQuery(null); setPage(1) }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') { setContentQuery(query.trim() || null); setPage(1); event.preventDefault() }
           }} />
-        <p>Перетащите запись на лист или нажмите «Добавить».</p>
+        <p>{mode === 'class' || mode === 'race' || mode === 'background'
+          ? `Перетащите запись в поле «${section.singular}» или нажмите «Добавить».`
+          : 'Перетащите запись на лист или нажмите «Добавить».'}</p>
       </div>
 
       <ScrollArea id="character-encyclopedia-results" rootClassName={styles.results} role="tabpanel"
-        aria-label={mode === 'item' ? 'Предметы энциклопедии' : 'Заклинания энциклопедии'} aria-busy={loading}>
+        aria-label={`${section.label} энциклопедии`} aria-busy={loading}>
         {!currentResult && <p className={styles.message} role="status">Загрузка…</p>}
         {currentResult?.error && !loading && <div className={styles.message} role="alert">
           <p>{currentResult.error}</p>
@@ -181,7 +191,7 @@ export function CharacterEncyclopediaPanel({
 
       {selectedEntry && <section className={styles.preview} aria-label={`Карточка: ${selectedEntry.name}`}>
         <div className={styles.previewHeader}>
-          <div><span className={styles.eyebrow}>{mode === 'spell' ? 'Заклинание' : 'Предмет'}</span><h3>{selectedEntry.name}</h3></div>
+          <div><span className={styles.eyebrow}>{section.singular}</span><h3>{selectedEntry.name}</h3></div>
           <Button size="sm" onClick={() => onAdd(selectedEntry)}>Добавить</Button>
         </div>
         {selectedEntry.nameEn && <p className={styles.originalName}>{selectedEntry.nameEn}</p>}

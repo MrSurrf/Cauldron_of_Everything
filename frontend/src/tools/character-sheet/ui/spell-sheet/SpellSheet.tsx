@@ -10,7 +10,7 @@ import {
   type SpellSlotLevel,
   type SpellSlotState,
 } from '../../model'
-import { ClassNameField } from '../ClassNameField'
+import { EncyclopediaIdentityField } from '../encyclopedia/EncyclopediaIdentityField'
 import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
 import {
   FormulaField,
@@ -203,13 +203,13 @@ export function SpellSheet({
           <div className={styles.summaryValue}>
             <span className={styles.summaryLabel}>Класс заклинателя</span>
             {onClassNameChange
-              ? <ClassNameField
+              ? <EncyclopediaIdentityField
                   aria-label="Класс заклинателя"
                   className={styles.classInput}
                   fieldClassName={styles.classField}
-                  placeholder="Выберите или введите"
+                  placeholder="Введите или перетащите класс"
                   rootClassName={styles.classFrame}
-                  spellcasterOnly
+                  entityType="class"
                   value={spellcasting.className}
                   onValueChange={onClassNameChange}
                 />

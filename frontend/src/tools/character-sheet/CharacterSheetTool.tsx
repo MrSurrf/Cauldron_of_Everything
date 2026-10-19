@@ -127,6 +127,11 @@ function CharacterSheetWorkspace({
 
   function addEntry(entry: CharacterEncyclopediaEntry) {
     setImportError('')
+    if (entry.entityType === 'class' || entry.entityType === 'race' || entry.entityType === 'background') {
+      const field = entry.entityType === 'class' ? 'className' : entry.entityType
+      dispatch(characterSheetActions.patchIdentity({ [field]: entry.name }))
+      return
+    }
     if (entry.entityType === 'item') {
       dispatch(characterSheetActions.importEquipmentItem(entry.id, equipmentItemSource(entry)))
       hydrateEntry(entry)

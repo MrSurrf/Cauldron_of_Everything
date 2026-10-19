@@ -3,7 +3,13 @@ import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
 export const CHARACTER_ENCYCLOPEDIA_DRAG_TYPE = 'application/x-cauldron-character-encyclopedia'
 export const CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE = 'application/x-cauldron-character-encyclopedia-spell'
 
-export type CharacterEncyclopediaMode = 'item' | 'spell'
+const CHARACTER_ENCYCLOPEDIA_MODES = ['item', 'spell', 'class', 'race', 'background'] as const
+export type CharacterEncyclopediaMode = typeof CHARACTER_ENCYCLOPEDIA_MODES[number]
+export type CharacterIdentityEncyclopediaMode = Extract<CharacterEncyclopediaMode, 'class' | 'race' | 'background'>
+
+function isCharacterEncyclopediaMode(value: unknown): value is CharacterEncyclopediaMode {
+  return CHARACTER_ENCYCLOPEDIA_MODES.some((mode) => mode === value)
+}
 
 export type CharacterEncyclopediaEntry = {
   id: number
@@ -29,7 +35,7 @@ function spellLevel(value: unknown): number | null {
 }
 
 export function toCharacterEncyclopediaEntry(entry: EncyclopediaEntry): CharacterEncyclopediaEntry | null {
-  if (entry.entity_type !== 'item' && entry.entity_type !== 'spell') return null
+  if (!isCharacterEncyclopediaMode(entry.entity_type)) return null
   const summary = isRecord(entry.summary) ? entry.summary : isRecord(entry.data) ? entry.data : {}
   return {
     id: entry.id,
@@ -43,7 +49,7 @@ export function toCharacterEncyclopediaEntry(entry: EncyclopediaEntry): Characte
 
 export function writeCharacterEncyclopediaDrag(dataTransfer: DataTransfer, entry: CharacterEncyclopediaEntry): void {
   dataTransfer.setData(CHARACTER_ENCYCLOPEDIA_DRAG_TYPE, JSON.stringify(entry))
-  if (entry.entityType === 'spell') dataTransfer.setData(CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE, '1')
+  dataTransfer.setData(`${CHARACTER_ENCYCLOPEDIA_DRAG_TYPE}-${entry.entityType}`, '1')
   dataTransfer.setData('text/plain', entry.name)
   dataTransfer.effectAllowed = 'copy'
 }
@@ -53,8 +59,12 @@ export function hasCharacterEncyclopediaDrag(dataTransfer: DataTransfer): boolea
 }
 
 export function hasCharacterEncyclopediaSpellDrag(dataTransfer: DataTransfer): boolean {
+  return hasCharacterEncyclopediaTypeDrag(dataTransfer, 'spell')
+}
+
+export function hasCharacterEncyclopediaTypeDrag(dataTransfer: DataTransfer, mode: CharacterEncyclopediaMode): boolean {
   return hasCharacterEncyclopediaDrag(dataTransfer)
-    && Array.from(dataTransfer.types).includes(CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE)
+    && Array.from(dataTransfer.types).includes(`${CHARACTER_ENCYCLOPEDIA_DRAG_TYPE}-${mode}`)
 }
 
 export function readCharacterEncyclopediaDrag(dataTransfer: DataTransfer): CharacterEncyclopediaEntry | null {
@@ -62,7 +72,7 @@ export function readCharacterEncyclopediaDrag(dataTransfer: DataTransfer): Chara
   if (!raw) return null
   try {
     const value: unknown = JSON.parse(raw)
-    if (!isRecord(value) || (value.entityType !== 'item' && value.entityType !== 'spell')
+    if (!isRecord(value) || !isCharacterEncyclopediaMode(value.entityType)
       || !Number.isSafeInteger(value.id) || Number(value.id) < 1
       || typeof value.name !== 'string' || !value.name.trim()) return null
     return {
