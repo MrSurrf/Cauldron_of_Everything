@@ -28,9 +28,26 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
   const menuRef = useRef<HTMLDivElement>(null)
   const membersRef = useRef<HTMLDivElement>(null)
   const connectionSource = actions.connectionSource
+  const arrivalKey = data.display?.arrivalKey
   const visual = nodeVisual(data.entityType)
   const minimum = nodeMinimumSize(data.entityType)
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
+  useEffect(() => {
+    const node = nodeRef.current
+    if (!node || draft || arrivalKey === undefined) return
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (reducedMotion.matches) return
+    // Анимируется внутренний article: размеры и transform оболочки React Flow остаются стабильными.
+    const animation = node.animate([
+      { opacity: 0.3, translate: '0 -10px', filter: 'drop-shadow(0 10px 14px color-mix(in srgb, var(--node-accent) 36%, transparent))' },
+      { opacity: 1, translate: '0 0', filter: 'drop-shadow(0 0 10px color-mix(in srgb, var(--node-accent) 24%, transparent))', offset: 0.7 },
+      { opacity: 1, translate: '0 0', filter: 'drop-shadow(0 0 0 transparent)' },
+    ], { duration: 420, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' })
+    const stop = () => animation.cancel()
+    reducedMotion.addEventListener('change', stop)
+    node.addEventListener('pointerdown', stop)
+    return () => { reducedMotion.removeEventListener('change', stop); node.removeEventListener('pointerdown', stop); animation.cancel() }
+  }, [arrivalKey, draft, nodeRef])
   useEffect(() => {
     if (!menuOpen && !membersOpen) return
     const close = (event: PointerEvent) => {
@@ -61,15 +78,15 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
   return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
-    data-connecting={Boolean(connectionSource && connectionSource !== id)}
-    aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenuOpen(true) }}>
+    data-connecting={Boolean(connectionSource && connectionSource !== id)} data-arrival-key={arrivalKey}
+    aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
       minWidth={minimum.width} minHeight={minimum.height} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
     {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} />}
-    <div className={styles.nodeTopline}>
+    {!connectionSource && <div className={styles.nodeTopline}>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}
           onClick={event => { event.stopPropagation(); setMembersOpen(value => !value); setMenuOpen(false) }}>{members.length} внутри</button>
@@ -113,24 +130,20 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.remove(id) }}>Удалить со схемы</button>
         </div>}
       </div>
-    </div>
+    </div>}
     {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
         {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
       </div>
     </div> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
-    {!actions.readOnly && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
+    {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
       <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
         aria-label={`Соединить ${label}: ${data.title}`} title={`Соединить ${label}`}
         onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
         onClick={event => {
-          // Во время соединения клик по точке другой ноды обрабатывается общим onNodeClick.
-          if (connectionSource && connectionSource !== id) return
           event.stopPropagation()
-          if (!connectionSource) {
-            setMenuOpen(false); setMembersOpen(false)
-            actions.startConnection(id, { x: event.clientX, y: event.clientY })
-          }
+          setMenuOpen(false); setMembersOpen(false)
+          actions.startConnection(id, { x: event.clientX, y: event.clientY })
         }} />)}
     <Handle id="out" type="source" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
   </article>

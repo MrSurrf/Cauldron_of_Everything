@@ -59,15 +59,13 @@
   animation: previewFlow 800ms linear infinite;
 }
 .previewEndpoint { fill: var(--color-canvas-background); stroke: currentColor; stroke-width: 2px; }
-.previewTarget { fill: currentColor; opacity: 0.12; animation: targetPulse 1.2s ease-in-out infinite; }
 .connectionPreview[data-target='true'] .previewLine { stroke-dasharray: none; }
 @keyframes edgeAppear { from { opacity: 0; } to { opacity: 1; } }
 @keyframes edgeDepart { to { opacity: 0; } }
 @keyframes connectionDraw { 0% { stroke-dashoffset: 1; opacity: 0.7; } 70% { stroke-dashoffset: 0; opacity: 0.35; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes previewFlow { to { stroke-dashoffset: -28; } }
-@keyframes targetPulse { 50% { r: 12px; opacity: 0.22; } }
 @media (prefers-reduced-motion: reduce) {
-  .edge, .connectionPreview, .previewLine, .previewTarget { animation: none; }
+  .edge, .connectionPreview, .previewLine { animation: none; }
   .edge[data-removing='true'] { animation: none; opacity: 0; }
   .trace { display: none; }
   .line, .halo, .endpoint { transition: none; }

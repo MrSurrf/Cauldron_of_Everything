@@ -55,8 +55,7 @@ export function ConnectionPreview({ source, target, pointer, appearance: data }:
   return <ViewportPortal><svg className={styles.connectionPreview} aria-hidden="true" data-connection-preview="" data-target={Boolean(to)}
     style={{ '--edge-color': edgeColorToken(appearance.color) } as CSSProperties}>
     <path className={styles.previewLine} d={path} data-connection-path="" />
-    {to && <circle className={styles.previewTarget} cx={points.target.x} cy={points.target.y} r={9} />}
     <circle className={styles.previewEndpoint} cx={points.source.x} cy={points.source.y} r={3.5} />
-    <circle className={styles.previewEndpoint} cx={points.target.x} cy={points.target.y} r={4} />
+    {!to && <circle className={styles.previewEndpoint} cx={points.target.x} cy={points.target.y} r={4} />}
   </svg></ViewportPortal>
 }

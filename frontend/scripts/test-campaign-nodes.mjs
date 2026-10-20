@@ -23,7 +23,7 @@ const initial = { version: 3, activeId: 'first', entities, layout: { libraryWidt
     ] },
     { id: 'second', name: 'Вторая схема', nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } },
   ] }
-const browser = await chromium.launch()
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {})
 const page = await browser.newPage({ viewport: { width: 1700, height: 1100 } })
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
@@ -149,6 +149,8 @@ try {
   await node('creature').getByRole('button', { name: /^Соединить снизу:/ }).click()
   await node('spell').hover()
   assert.equal(await node('spell').locator('article').getAttribute('data-connecting'), 'true')
+  assert.equal(await node('spell').getByRole('button', { name: /^Соединить / }).count(), 0, 'Цель выбирается всей нодой, без точек соединения')
+  assert.equal(await node('creature').getByRole('button', { name: /^Соединить / }).count(), 0, 'Во время выбора цели точки источника скрыты')
   await page.getByRole('status').filter({ hasText: 'Выберите второй узел' }).waitFor()
   await page.screenshot({ path: join(tmpdir(), 'campaign-contour-preview.png') })
   await page.keyboard.press('Escape')
@@ -156,7 +158,7 @@ try {
   await node('creature').hover()
   await node('creature').getByRole('button', { name: /^Соединить слева:/ }).click()
   await node('spell').hover()
-  await node('spell').getByRole('button', { name: /^Соединить справа:/ }).click()
+  await node('spell').getByRole('heading').click()
   assert.equal((await saved()).diagrams[0].edges.length, 5)
   await page.keyboard.press('Control+z')
   assert.equal((await saved()).diagrams[0].edges.length, 4)

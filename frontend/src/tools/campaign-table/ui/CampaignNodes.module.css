@@ -135,9 +135,8 @@
 .connectionPort[data-side='right'] { left: calc(100% + 10px); top: 50%; }
 .connectionPort[data-side='bottom'] { left: 50%; top: calc(100% + 10px); }
 .connectionPort[data-side='left'] { left: -10px; top: 50%; }
-.mindNode:hover .connectionPort, .mindNode:focus-within .connectionPort, .mindNode[data-connection-source='true'] .connectionPort { opacity: 1; pointer-events: auto; }
+.mindNode:hover .connectionPort, .mindNode:focus-within .connectionPort { opacity: 1; pointer-events: auto; }
 .connectionPort:hover::after, .connectionPort:focus-visible::after { width: 10px; height: 10px; background: var(--node-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--node-accent) 15%, transparent); }
-.mindNode[data-connecting='true']:hover .connectionPort::after { border-color: var(--selection-marker-fill); }
 
 .draftNode { min-height: 4.5rem; background: var(--color-surface-default); border: 1px solid var(--color-border-accent); border-radius: var(--radius-sm); }
 .draftNode > span { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
