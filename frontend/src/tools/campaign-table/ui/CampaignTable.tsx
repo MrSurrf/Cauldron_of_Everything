@@ -13,7 +13,9 @@ import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { NodeRenderer } from './NodeRenderer'
 import { ConnectionPreview, ContourEdge } from './ContourEdge'
-import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeVisual } from '../model/nodeGeometry'
+import { DepartingConnections } from './DepartingConnections'
+import { useDepartingConnections } from './useDepartingConnections'
+import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import { TableHistory } from '../model/tableHistory'
 import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
 import { LibrarySidebar } from './LibrarySidebar'
@@ -53,7 +55,8 @@ function compactNode(node: TableNode, expanded = false): TableNode {
     ...node, width: EXPANDED_CREATURE_WIDTH, height: undefined, data: { ...node.data, display: { creatureExpanded: true } },
   }
   return canResizeNode(node.data.entityType)
-    ? { ...node, width: node.width ?? nodeVisual(node.data.entityType).width }
+    ? { ...node, width: Math.max(nodeMinimumSize(node.data.entityType).width, node.width ?? nodeVisual(node.data.entityType).width),
+      height: node.height === undefined ? undefined : Math.max(nodeMinimumSize(node.data.entityType).height, node.height) }
     : { ...node, width: nodeVisual(node.data.entityType).width, height: undefined }
 }
 
@@ -76,6 +79,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
 }) {
   const flow = useReactFlow<TableNode, TableEdge>()
   const canvasRef = useRef<HTMLDivElement>(null)
+  const { connections: departingConnections, capture: captureDepartingConnections } = useDepartingConnections(canvasRef)
   const creationRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
@@ -101,13 +105,16 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     return () => document.removeEventListener('keydown', handleHistory)
   }, [readOnly, editorEntityId, draft, history])
   const linking = connectionSource !== null && diagram.nodes.some(node => node.id === connectionSource && !node.data.locationId)
-  const cancelConnection = () => { setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) }
+  const cancelConnection = (animate = true) => {
+    if (animate) captureDepartingConnections(new Set(), true)
+    setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null)
+  }
   useEffect(() => {
     if (!connectionSource) return
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) } }
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { captureDepartingConnections(new Set(), true); setConnectionSource(null); setConnectionTarget(null); setConnectionPointer(null) } }
     document.addEventListener('keydown', escape)
     return () => document.removeEventListener('keydown', escape)
-  }, [connectionSource])
+  }, [connectionSource, captureDepartingConnections])
   const center = () => {
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
@@ -168,7 +175,17 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     else setSelection({ kind: 'node', id, editing: true })
   }
   const openReference = (reference: LibraryReference) => setSelection({ kind: 'library', reference })
-  const remove = (id: string) => { if (!readOnly) onChange(current => removeInstances(current, new Set([id]))) }
+  const remove = (id: string) => {
+    if (readOnly) return
+    captureDepartingConnections(new Set(diagram.edges.filter(edge => edge.source === id || edge.target === id).map(edge => edge.id)))
+    onChange(current => removeInstances(current, new Set([id])))
+  }
+  const removeEdge = (id: string) => {
+    if (readOnly) return
+    captureDepartingConnections(new Set([id]))
+    onChange(current => ({ ...current, edges: current.edges.filter(edge => edge.id !== id) }))
+    setSelection(null)
+  }
   const release = (id: string) => { if (!readOnly) onChange(current => moveToLocation(current, id)) }
   const duplicate = (id: string) => {
     if (readOnly) return
@@ -188,7 +205,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     setSelection(null)
     if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
   }
-  return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, release, duplicate,
+  return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, removeEdge, release, duplicate,
     toggleCreature: id => setExpandedCreatures(current => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id); else next.add(id)
@@ -230,7 +247,9 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
         <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => ({ ...compactNode(node, expandedCreatures.has(node.id)), hidden: hidden.has(node.id),
           measured: node.data.entityType === 'creature' ? creatureMeasurements.get(node.id) ?? node.measured : node.measured,
           className: [node.className, linking ? 'nopan' : undefined].filter(Boolean).join(' '), draggable: node.id === draft?.node.id ? false : node.draggable }))}
-          edges={diagram.edges.map(edge => ({ ...edge, type: 'contour', sourceHandle: 'out', targetHandle: 'in', hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+          edges={diagram.edges.map(edge => ({ ...edge, type: 'contour', sourceHandle: 'out', targetHandle: 'in',
+            selected: selection?.kind === 'edge' && selection.id === edge.id,
+            hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly && !linking} nodesConnectable={false} edgesReconnectable={false}
           onNodesChange={changes => {
@@ -263,12 +282,15 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
             }
             history.endGesture()
           }}
-          onEdgesChange={readOnly ? undefined : changes => onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))}
+          onEdgesChange={readOnly ? undefined : changes => {
+            captureDepartingConnections(new Set(changes.filter(change => change.type === 'remove').map(change => change.id)))
+            onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))
+          }}
           onNodeClick={(_, node) => {
             setAnchor(null)
             if (linking && !readOnly) {
               if (node.id !== connectionSource && node.id !== draft?.node.id) {
-                onChange(current => ({ ...current, edges: addEdge({ id: crypto.randomUUID(), source: connectionSource!, target: node.id }, current.edges) })); cancelConnection()
+                onChange(current => ({ ...current, edges: addEdge({ id: crypto.randomUUID(), source: connectionSource!, target: node.id, data: { pathStyle: 'bezier' } }, current.edges) })); cancelConnection(false)
               }
               return
             }
@@ -282,12 +304,17 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY) }}
           onMoveStart={() => setAnchor(null)}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
-          deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} onBeforeDelete={async () => !focusIsEditing()} aria-label="Холст кампании"
+          deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} onBeforeDelete={async ({ edges }) => {
+            if (focusIsEditing()) return false
+            captureDepartingConnections(new Set(edges.map(edge => edge.id)))
+            return true
+          }} aria-label="Холст кампании"
         >
           <Background gap={24} size={1} color="var(--color-border-default)" /><Controls showInteractive={false} />
           {linking && <ConnectionPreview source={connectionSource!} target={connectionTarget} pointer={connectionPointer} />}
+          <DepartingConnections connections={departingConnections} />
         </ReactFlow>
-        {linking && <div className={styles.connectionMode} role="status">Выберите второй узел <button type="button" onClick={cancelConnection}>Отмена · Esc</button></div>}
+        {linking && <div className={styles.connectionMode} role="status">Выберите второй узел <button type="button" onClick={() => cancelConnection()}>Отмена · Esc</button></div>}
         {anchor && !readOnly && !draft && <div ref={creationRef} className={styles.creationLayer}>
           <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
             style={{ left: anchor.menuX, top: anchor.menuY }}>

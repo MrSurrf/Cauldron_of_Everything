@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { center, connectionPoints, contourBox, contourPoint, nodeVisuals } from './nodeGeometry'
+import { center, connectionPoints, contourBox, contourPoint, nodeVisuals, shapePolygon } from './nodeGeometry'
 import type { ShapeBox } from './nodeGeometry'
 
 describe('присоединение к контуру', () => {
@@ -21,6 +21,23 @@ describe('присоединение к контуру', () => {
     const point = contourPoint({ ...box, shape: 'octagon' }, { x: 160, y: 170 })
     expect(point.x).toBeCloseTo(96)
     expect(point.y).toBeCloseTo(106)
+  })
+  it.each([[190, 128], [520, 130], [220, 360], [860, 520]])('сгиб записки сохраняет 24 × 24 px при размере %i × %i', (width, height) => {
+    const polygon = shapePolygon('note', width, height)
+    expect(width - polygon[1][0]).toBe(24)
+    expect(polygon[2][1]).toBe(24)
+    const point = contourPoint({ x: 0, y: 0, width, height, shape: 'note' }, { x: width, y: 0 })
+    // Связь приходит на видимую диагональ сгиба, а не в пустой угол bounding box.
+    expect(point.x - point.y).toBeCloseTo(width - 24)
+    expect(point.x).toBeLessThan(width)
+    expect(point.y).toBeGreaterThan(0)
+  })
+  it.each([[220, 96], [600, 100], [240, 420]])('наконечник квеста не растягивается при размере %i × %i', (width, height) => {
+    const polygon = shapePolygon('quest', width, height)
+    expect(width - polygon[1][0]).toBe(18)
+    expect(polygon[2]).toEqual([width, height / 2])
+    expect(polygon[0]).toEqual([7, 0])
+    expect(contourPoint({ x: 0, y: 0, width, height, shape: 'quest' }, { x: width * 2, y: height / 2 })).toEqual({ x: width, y: height / 2 })
   })
   it('перестраивает обе точки при перемещении соседа через вертикаль', () => {
     const right = connectionPoints(box, { ...box, x: 300 })

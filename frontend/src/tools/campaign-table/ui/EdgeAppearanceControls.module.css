@@ -1,0 +1,40 @@
+.controls { display: grid; gap: var(--space-4); }
+.controls fieldset { padding: 0; margin: 0; min-width: 0; border: 0; }
+.controls legend { padding: 0; margin-bottom: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-1); }
+.choice {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2) var(--space-1);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: border-color var(--motion-duration-fast), background var(--motion-duration-fast), color var(--motion-duration-fast);
+}
+.choice svg { display: block; width: 2.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.choice:hover, .color:hover { border-color: var(--color-brand); color: var(--color-text-primary); }
+.choice[aria-pressed='true'] { color: var(--color-brand-bright); background: var(--color-surface-accent); border-color: var(--color-brand); }
+.colors { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.color {
+  display: grid;
+  place-items: center;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  padding: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-round);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+  transition: border-color var(--motion-duration-fast), box-shadow var(--motion-duration-fast);
+}
+.color > span { display: block; width: 1rem; height: 1rem; border-radius: inherit; background: var(--swatch-color); }
+.color[aria-pressed='true'] { border-color: var(--swatch-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--swatch-color) 16%, transparent); }
+.choice:focus-visible, .color:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
+.controls fieldset:disabled .choice, .controls fieldset:disabled .color { cursor: default; opacity: var(--disabled-opacity); }
+@media (prefers-reduced-motion: reduce) { .choice, .color { transition: none; } }

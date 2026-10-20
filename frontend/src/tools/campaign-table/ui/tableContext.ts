@@ -14,6 +14,7 @@ export type TableActions = {
   open: (id: string) => void
   edit: (id: string) => void
   remove: (id: string) => void
+  removeEdge: (id: string) => void
   release: (id: string) => void
   duplicate: (id: string) => void
   toggleCreature: (id: string) => void

@@ -5,6 +5,13 @@ import type { NodeEntityType } from './table'
 export type NodeShape = 'circle' | 'rectangle' | 'octagon' | 'diamond' | 'square' | 'quest' | 'shield' | 'note'
 export type NodeVisual = { shape: NodeShape; width: number; badge: boolean }
 export const canResizeNode = (type: EntityType) => ['location', 'note', 'quest'].includes(type)
+export function nodeMinimumSize(type: EntityType) {
+  if (type === 'location') return { width: 220, height: 148 }
+  if (type === 'quest') return { width: 220, height: 96 }
+  if (type === 'note') return { width: 190, height: 128 }
+  return { width: 160, height: 72 }
+}
+export const NOTE_FOLD_SIZE = 24
 export const EXPANDED_CREATURE_WIDTH = 368
 export const nodeVisuals = {
   playerCharacter: { shape: 'circle', width: 180, badge: true },
@@ -30,6 +37,19 @@ export const polygons: Record<Exclude<NodeShape, 'circle'>, [number, number][]> 
   shield: [[0, 0], [1, 0], [1, 0.7], [0.5, 1], [0, 0.7]],
   note: [[0, 0], [0.87, 0], [1, 0.2], [1, 1], [0, 1]],
 }
+/** Срезы карточек заданы в пикселях: resize не растягивает сгиб бумаги и наконечник квеста. */
+export function shapePolygon(shape: Exclude<NodeShape, 'circle'>, width: number, height: number): [number, number][] {
+  if (shape === 'note') {
+    const fold = Math.min(NOTE_FOLD_SIZE, width / 3, height / 3)
+    return [[0, 0], [width - fold, 0], [width, fold], [width, height], [0, height]]
+  }
+  if (shape === 'quest') {
+    const tip = Math.min(18, width / 8, height / 3)
+    const cut = Math.min(7, height / 6)
+    return [[cut, 0], [width - tip, 0], [width, height / 2], [width - tip, height], [cut, height], [0, height - cut], [0, cut]]
+  }
+  return polygons[shape].map(([x, y]) => [x * width, y * height])
+}
 export type ShapeBox = { x: number; y: number; width: number; height: number; shape: NodeShape }
 export function contourBox(type: EntityType, position: XYPosition, width: number, height: number, expanded = false): ShapeBox {
   if (type === 'creature' && expanded) return { ...position, width, height, shape: 'rectangle' }
@@ -49,7 +69,7 @@ export function contourPoint(box: ShapeBox, toward: XYPosition): XYPosition {
     const scale = 1 / Math.hypot(dx / (box.width / 2), dy / (box.height / 2))
     return { x: origin.x + dx * scale, y: origin.y + dy * scale }
   }
-  const points = polygons[box.shape].map(([x, y]) => ({ x: box.x + x * box.width, y: box.y + y * box.height }))
+  const points = shapePolygon(box.shape, box.width, box.height).map(([x, y]) => ({ x: box.x + x, y: box.y + y }))
   let distance = Infinity
   for (let i = 0; i < points.length; i++) {
     const a = points[i], b = points[(i + 1) % points.length]

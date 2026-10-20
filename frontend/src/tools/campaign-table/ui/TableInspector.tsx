@@ -15,10 +15,11 @@ import { InstanceStatBlockPanel } from './InstanceStatBlockPanel'
 import { NodePanelHeader } from './NodePanelHeader'
 import type { LibraryReference } from '../model/library'
 import { canContain, moveToLocation } from '../model/table'
-import { canResizeNode } from '../model/nodeGeometry'
+import { canResizeNode, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import type { Diagram, TableNode } from '../model/table'
 import { ResizeGrip } from './ResizeGrip'
 import { useTableActions } from './tableContext'
+import { EdgeAppearanceControls } from './EdgeAppearanceControls'
 import styles from './CampaignTable.module.css'
 
 export type Selection = { kind: 'node'; id: string; editing: boolean } | { kind: 'edge'; id: string } | { kind: 'library'; reference: LibraryReference }
@@ -88,11 +89,12 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
           <label>Описание</label><ContentEditor accessibleLabel="Описание экземпляра" value={node.data.description} onValueChange={value => field('description', value)} rows={5} renderPreview showStructureActions />
           <details className={styles.placementDetails}><summary>Размещение на схеме</summary>
           <div className={styles.geometry}>{(['x', 'y', 'width', 'height'] as const).filter(key => key === 'x' || key === 'y' || canResizeNode(node.data.entityType)).map(key => <label key={key}>{({ x: 'X', y: 'Y', width: 'Ширина', height: 'Высота' })[key]}
-            <input aria-label={`Узел: ${key}`} type="number" value={key === 'x' || key === 'y' ? node.position[key] : node[key] ?? 260} onChange={event => {
+            <input aria-label={`Узел: ${key}`} type="number" min={key === 'width' || key === 'height' ? nodeMinimumSize(node.data.entityType)[key] : undefined}
+              value={key === 'x' || key === 'y' ? node.position[key] : node[key] ?? (key === 'width' ? nodeVisual(node.data.entityType).width : node.measured?.height ?? nodeMinimumSize(node.data.entityType).height)} onChange={event => {
               const value = event.target.valueAsNumber
               if (!Number.isFinite(value)) return
               changeNode(item => key === 'x' || key === 'y' ? { ...item, position: { ...item.position, [key]: value } }
-                : { ...item, [key]: Math.max(key === 'width' ? (item.type === 'location' ? 300 : 220) : (item.type === 'location' ? 200 : 130), value) })
+                : { ...item, [key]: Math.max(nodeMinimumSize(item.data.entityType)[key], value) })
             }} /></label>)}</div>
           {canContain(node) && <div className={styles.statField}><span>Расположение</span><Combobox aria-label="Локация экземпляра" value={node.data.locationId ?? ''}
             options={[{ value: '', label: 'На холсте' }, ...diagram.nodes.filter(item => item.type === 'location').map(item => ({ value: item.id, label: item.data.title }))]}
@@ -111,12 +113,15 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
       </>}
       {edge && <div className={styles.editorFields}>
         <label>Подпись<TextInput aria-label="Подпись связи" value={edge.label ?? ''} readOnly={readOnly} onChange={event => onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, label: event.target.value } : item) }))} /></label>
+        <EdgeAppearanceControls data={edge.data} disabled={readOnly} onChange={patch => {
+          if (!readOnly) onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, data: { ...item.data, ...patch } } : item) }))
+        }} />
         <ContentEditor accessibleLabel="Описание связи" value={edge.data?.description ?? ''} readOnly={readOnly} renderPreview onValueChange={description => onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, data: { ...item.data, description } } : item) }))} />
         {(['source', 'target'] as const).map(key => <div key={key} className={styles.statField}><span>{key === 'source' ? 'Откуда' : 'Куда'}</span><Combobox aria-label={key === 'source' ? 'Начало связи' : 'Конец связи'} value={edge[key]} readOnly={readOnly}
           options={diagram.nodes.filter(item => item.id !== edge[key === 'source' ? 'target' : 'source']).map(item => ({ value: item.id, label: item.data.title }))}
           onValueChange={value => { if (value !== null) onChange(current => ({ ...current, edges: current.edges.map(item => item.id === edge.id ? { ...item, [key]: value } : item) })) }} />
         </div>)}
-        {!readOnly && <Button size="sm" onClick={() => onChange(current => ({ ...current, edges: current.edges.filter(item => item.id !== edge.id) }))}>Удалить связь</Button>}
+        {!readOnly && <Button size="sm" variant="secondary" onClick={() => actions.removeEdge(edge.id)}>Удалить связь</Button>}
       </div>}
       {reference && !readOnly && !editing && (selection.kind === 'library' || !node || !hasInstanceEditor(node.data.entityType)) && <>
         {selection.kind === 'library' && canPlaceReference(reference) && <Button size="sm" onClick={() => onAdd(reference)}>Добавить на холст</Button>}

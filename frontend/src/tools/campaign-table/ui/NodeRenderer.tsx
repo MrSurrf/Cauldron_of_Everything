@@ -3,12 +3,12 @@ import { Handle, NodeResizer, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
-import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
-import styles from './CampaignTable.module.css'
+import styles from './CampaignNodes.module.css'
 import { useCreatureMorph } from './useCreatureMorph'
 
 function plainText(value: string) {
@@ -17,7 +17,7 @@ function plainText(value: string) {
   return typeof DOMParser === 'undefined' ? separated.trim() : new DOMParser().parseFromString(separated, 'text/html').body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>) {
+export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<TableNode>) {
   const actions = useTableActions()
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
@@ -29,6 +29,7 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const membersRef = useRef<HTMLDivElement>(null)
   const connectionSource = actions.connectionSource
   const visual = nodeVisual(data.entityType)
+  const minimum = nodeMinimumSize(data.entityType)
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
   useEffect(() => {
     if (!menuOpen && !membersOpen) return
@@ -59,14 +60,15 @@ export function NodeRenderer({ id, data, type, selected }: NodeProps<TableNode>)
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
   return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
-    data-selected={selected} data-connecting={Boolean(connectionSource && connectionSource !== id)}
+    data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
+    data-connecting={Boolean(connectionSource && connectionSource !== id)}
     aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
-      minWidth={190} minHeight={80} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
+      minWidth={minimum.width} minHeight={minimum.height} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
-    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'square' : visual.shape} />}
+    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} />}
     <div className={styles.nodeTopline}>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}

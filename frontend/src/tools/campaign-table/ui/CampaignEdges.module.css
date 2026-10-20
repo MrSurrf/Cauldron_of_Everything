@@ -1,0 +1,74 @@
+.edge {
+  color: var(--edge-color);
+  animation: edgeAppear var(--motion-duration-normal) ease-out both;
+}
+.line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--motion-duration-fast), stroke-width var(--motion-duration-fast), opacity var(--motion-duration-fast);
+}
+.halo {
+  fill: none;
+  stroke: var(--edge-color);
+  stroke-width: 10px;
+  stroke-linecap: round;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast);
+}
+.edge:hover .halo { opacity: 0.08; }
+.edge[data-selected='true'] .halo { opacity: 0.13; }
+.endpoint {
+  fill: var(--color-canvas-background);
+  stroke: var(--edge-color);
+  stroke-width: 1.6px;
+  pointer-events: none;
+  transition: r var(--motion-duration-fast), fill var(--motion-duration-fast);
+}
+.edge[data-selected='true'] .endpoint { r: 4px; fill: var(--edge-color); }
+.arrow { fill: none; stroke: var(--edge-color); stroke-width: 1.8px; stroke-linecap: round; stroke-linejoin: round; }
+.trace {
+  fill: none;
+  stroke: var(--edge-color);
+  stroke-width: 4px;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  pointer-events: none;
+  animation: connectionDraw 440ms ease-out both;
+}
+.edge[data-removing='true'] { pointer-events: none; animation: edgeDepart 180ms ease-in forwards; }
+.edge[data-removing='true'] .trace { display: none; }
+.connectionPreview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+  color: var(--edge-color, var(--color-brand-bright));
+  animation: edgeAppear var(--motion-duration-fast) ease-out both;
+}
+.previewLine {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-dasharray: 7 7;
+  animation: previewFlow 800ms linear infinite;
+}
+.previewEndpoint { fill: var(--color-canvas-background); stroke: currentColor; stroke-width: 2px; }
+.previewTarget { fill: currentColor; opacity: 0.12; animation: targetPulse 1.2s ease-in-out infinite; }
+.connectionPreview[data-target='true'] .previewLine { stroke-dasharray: none; }
+@keyframes edgeAppear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes edgeDepart { to { opacity: 0; } }
+@keyframes connectionDraw { 0% { stroke-dashoffset: 1; opacity: 0.7; } 70% { stroke-dashoffset: 0; opacity: 0.35; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes previewFlow { to { stroke-dashoffset: -28; } }
+@keyframes targetPulse { 50% { r: 12px; opacity: 0.22; } }
+@media (prefers-reduced-motion: reduce) {
+  .edge, .connectionPreview, .previewLine, .previewTarget { animation: none; }
+  .edge[data-removing='true'] { animation: none; opacity: 0; }
+  .trace { display: none; }
+  .line, .halo, .endpoint { transition: none; }
+}
