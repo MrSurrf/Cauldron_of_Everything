@@ -5,6 +5,8 @@ import { placementLibrarySection } from './library'
 import { parseTable as parseLegacyTable } from './legacyTable'
 import { validStatBlock } from './instanceStatBlock'
 import type { InstanceStatBlock } from './instanceStatBlock'
+import { persistedEdgeAppearance, validEdgeAppearance } from './edgeAppearance'
+import type { EdgeAppearance, EdgeMotion } from './edgeAppearance'
 
 export const NODE_ENTITY_TYPES = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note'] as const
 export type NodeEntityType = typeof NODE_ENTITY_TYPES[number]
@@ -19,7 +21,7 @@ export type CanvasEntity = BaseEntity & {
 }
 export type PlacementData = { entityId: string; locationId?: string }
 export type EntityNode = Node<PlacementData, 'entity' | 'location' | 'note'>
-export type TableEdge = Edge<{ description?: string }> & { label?: string }
+export type TableEdge = Edge<{ description?: string } & EdgeAppearance & EdgeMotion> & { label?: string }
 export type StoredDiagram = { id: string; name: string; nodes: EntityNode[]; edges: TableEdge[]; viewport: Viewport }
 export type CampaignTable = {
   version: 3; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
@@ -31,7 +33,7 @@ export type InstanceData = PlacementData & {
   title: string; description: string; facts: string; state: string
   statBlock?: InstanceStatBlock
   /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
-  display?: { creatureExpanded?: boolean }
+  display?: { creatureExpanded?: boolean; arrivalKey?: number }
 }
 export type TableNode = Node<InstanceData, EntityNode['type']>
 export type Diagram = Omit<StoredDiagram, 'nodes'> & { nodes: TableNode[] }
@@ -153,7 +155,8 @@ export function serializeTable(table: CampaignTable): string {
   return JSON.stringify({ ...table, diagrams: table.diagrams.map(diagram => ({ ...diagram,
     nodes: diagram.nodes.map(({ id, type, position, data, width, height }) => ({ id, type, position,
       data: { entityId: data.entityId, ...(data.locationId ? { locationId: data.locationId } : {}) }, width, height })),
-    edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label, data })),
+    edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label,
+      ...(data ? { data: { ...(data.description !== undefined ? { description: data.description } : {}), ...persistedEdgeAppearance(data) } } : {}) })),
   })) })
 }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) }
@@ -222,7 +225,7 @@ export function parseTable(raw: string): CampaignTable {
     for (const edge of diagram.edges) {
       if (!record(edge) || !text(edge.id) || !edge.id || edgeIds.has(edge.id) || !text(edge.source) || !text(edge.target)
         || !nodes.has(edge.source) || !nodes.has(edge.target) || edge.source === edge.target || (edge.label !== undefined && !text(edge.label))
-        || (edge.data !== undefined && (!record(edge.data) || (edge.data.description !== undefined && !text(edge.data.description))))) return invalid()
+        || (edge.data !== undefined && (!record(edge.data) || (edge.data.description !== undefined && !text(edge.data.description)) || !validEdgeAppearance(edge.data)))) return invalid()
       edgeIds.add(edge.id)
     }
   }

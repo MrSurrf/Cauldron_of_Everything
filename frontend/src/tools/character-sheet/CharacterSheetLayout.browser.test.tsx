@@ -82,8 +82,8 @@ async function settleSheetLayout(container: HTMLElement) {
 }
 
 async function selectEncyclopediaSection(container: HTMLElement, label: string) {
-  const selector = container.querySelector<HTMLInputElement>('[role="combobox"][aria-label="Раздел энциклопедии"]')!
-  if (selector.value === label) return
+  const selector = container.querySelector<HTMLButtonElement>('[role="combobox"][aria-label="Раздел энциклопедии"]')!
+  if (selector.textContent === label) return
   await act(async () => { await userEvent.click(selector) })
   const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]'))
     .find((candidate) => candidate.textContent === label)!

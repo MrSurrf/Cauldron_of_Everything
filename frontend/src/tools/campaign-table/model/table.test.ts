@@ -13,6 +13,18 @@ function fixture() {
   return { table, a, b, creature }
 }
 describe('нормализованный документ кампании', () => {
+  it('сохраняет оформление связей и исключает временные состояния анимации', () => {
+    const { table, a, b } = fixture()
+    table.diagrams[0].edges = [{ id: 'styled', source: a.node.id, target: b.node.id,
+      data: { description: 'Тайный путь', pathStyle: 'step', lineStyle: 'dotted', color: 'gold', direction: 'forward', removing: true, animationKey: 7 } }]
+    const restored = parseTable(serializeTable(table))
+    expect(restored.diagrams[0].edges[0].data).toEqual({ description: 'Тайный путь', pathStyle: 'step', lineStyle: 'dotted', color: 'gold', direction: 'forward' })
+    for (const patch of [{ color: 'unknown' }, { pathStyle: 'invalid' }, { lineStyle: 7 }, { direction: false }]) {
+      const broken = structuredClone(restored)
+      Object.assign(broken.diagrams[0].edges[0].data!, patch)
+      expect(() => parseTable(JSON.stringify(broken))).toThrow()
+    }
+  })
   it('скрывает запрещённые разделы и восстанавливает старый выбор без потери схем', () => {
     expect(PLACEMENT_LIBRARY_SECTIONS.map(([id]) => id)).toEqual(['creature', 'spell', 'item', 'character', 'campaign'])
     const { table } = fixture()

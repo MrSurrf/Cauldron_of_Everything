@@ -4,8 +4,8 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-3);
   border: var(--border-width-default) solid var(--color-content-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-default);
@@ -51,8 +51,36 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-1);
-  margin-bottom: var(--space-2);
+  padding-block: var(--space-1);
+  border-bottom: var(--border-width-default) solid var(--color-content-border);
+  border-radius: var(--radius-sm);
+  transition:
+    opacity var(--motion-duration-fast),
+    background var(--motion-duration-fast);
 }
+
+.row:hover,
+.row:focus-within {
+  background: var(--color-surface-muted);
+}
+
+.row[data-dragging='true'] {
+  opacity: 0.4;
+  background: var(--color-surface-accent);
+}
+
+.row > .iconAction { opacity: 0.6; }
+.row:hover > .iconAction,
+.row:focus-within > .iconAction { opacity: 1; }
+
+.card.card {
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: var(--space-2);
+  background: transparent;
+}
+
+.card.card::after { display: none; }
 
 .entry {
   display: block;
@@ -67,7 +95,6 @@
   text-align: left;
 }
 
-.entry:hover,
 .entry[aria-pressed='true'] {
   outline: var(--border-width-default) solid var(--color-border-accent);
 }
@@ -98,12 +125,34 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  min-height: 32px;
+  padding-top: var(--space-2);
   color: var(--color-text-subtle);
   font-size: var(--font-size-xs);
 }
 
 .pagination > span {
   text-align: center;
+}
+
+.toolButton.toolButton,
+.iconAction.iconAction {
+  clip-path: none;
+  border-radius: var(--radius-sm);
+  --button-font-size: var(--font-size-xs);
+  --button-min-height: 32px;
+}
+
+.toolButton.toolButton { --button-padding-inline: var(--space-3); }
+.iconAction.iconAction {
+  width: 32px;
+  min-width: 32px;
+  --button-padding-inline: 0px;
+  --button-font-size: var(--font-size-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row { transition: none; }
 }
 
 @container catalog-sidebar (max-width: 24rem) {

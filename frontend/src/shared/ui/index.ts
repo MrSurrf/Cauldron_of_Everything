@@ -11,6 +11,8 @@ export type {
 export { Checkbox } from './Checkbox'
 export type { CheckboxProps } from './Checkbox'
 export { Combobox } from './Combobox'
+export { Select } from './Select'
+export type { SelectOption, SelectProps } from './Select'
 export type {
   ComboboxFilter,
   ComboboxOption,

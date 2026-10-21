@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Button, Checkbox, Combobox, TextInput } from '../../../shared/ui'
+import { Button, Checkbox, IconButton, Select, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { RichContent } from '../../../shared/ui/RichContent'
 import styles from './CampaignTable.module.css'
+import panelStyles from './CampaignPanels.module.css'
 
 const labels: Record<string, string> = {
   name: 'Название', nameEn: 'Название на английском', name_en: 'Название на английском', size: 'Размер', creatureType: 'Вид существа', creature_type: 'Вид существа', alignment: 'Мировоззрение',
@@ -38,7 +39,7 @@ const optionLabels: Record<string, string> = {
 
 export function StatHtmlField({ label, value, readOnly, onChange }: { label: string; value: string; readOnly?: boolean; onChange: (value: string) => void }) {
   return <div className={styles.statField}><span>{label}</span>
-    <RichContent html={value} className={styles.statHtmlEditor} contentEditable={!readOnly} suppressContentEditableWarning
+    <RichContent html={value} className={`${styles.statHtmlEditor} ${panelStyles.htmlField}`} contentEditable={!readOnly} suppressContentEditableWarning
       role={readOnly ? undefined : 'textbox'} aria-label={label} aria-multiline={!readOnly || undefined}
       onClick={event => { if (!readOnly && (event.target as HTMLElement).closest('a')) event.preventDefault() }}
       onPaste={event => {
@@ -59,12 +60,13 @@ export function StatBlockField({ field, value, path = '', readOnly = false, onCh
 }) {
   const [newField, setNewField] = useState('')
   const label = statFieldLabel(field), accessible = path ? `${path}: ${label}` : label
-  if (Array.isArray(value)) return <fieldset className={styles.statGroup}><legend>{label}</legend>
-    {value.map((item, index) => <div key={index} className={styles.statArrayRow}>
+  if (Array.isArray(value)) return <fieldset className={`${styles.statGroup} ${panelStyles.group}`}><legend>{label}</legend>
+    {value.map((item, index) => <div key={index} className={`${styles.statArrayRow} ${panelStyles.arrayRow}`}>
       <StatBlockField field={String(index + 1)} value={item} path={accessible} readOnly={readOnly} onChange={next => onChange(value.map((entry, i) => i === index ? next : entry))} />
-      {!readOnly && <Button size="sm" variant="secondary" aria-label={`Удалить: ${accessible} ${index + 1}`} onClick={() => onChange(value.filter((_, i) => i !== index))}>×</Button>}
+      {!readOnly && <IconButton size="sm" variant="secondary" decoration="bare" className={panelStyles.remove} aria-label={`Удалить: ${accessible} ${index + 1}`} onClick={() => onChange(value.filter((_, i) => i !== index))}
+        icon={<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10 M15 5 5 15" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" /></svg>} />}
     </div>)}
-    {!readOnly && <Button size="sm" variant="secondary" onClick={() => {
+    {!readOnly && <Button size="sm" variant="secondary" decoration="bare" className={panelStyles.action} onClick={() => {
       const item = structuredClone(templates[field] ?? (value.length ? value[value.length - 1] : ''))
       if (item && typeof item === 'object' && 'id' in item) item.id = crypto.randomUUID()
       onChange([...value, item])
@@ -75,33 +77,33 @@ export function StatBlockField({ field, value, path = '', readOnly = false, onCh
     const defaults = field === 'save' ? { ability: 'strength', dc: null }
       : field === 'armorClass' ? { details: [] }
       : /Умения и действия/.test(path) && /^\d+$/.test(field) ? { subtitle: '', usage: '', attackBonus: null, save: { ability: 'strength', dc: null }, damage: [], range: '', target: '', effect: '', conditions: [], rolls: [] } : {}
-    return <fieldset className={styles.statGroup}><legend>{label}</legend>{Object.entries({ ...defaults, ...record }).filter(([key]) => !['id', 'slug', 'entityType'].includes(key)).map(([key, item]) =>
+    return <fieldset className={`${styles.statGroup} ${panelStyles.group}`}><legend>{label}</legend>{Object.entries({ ...defaults, ...record }).filter(([key]) => !['id', 'slug', 'entityType'].includes(key)).map(([key, item]) =>
       <StatBlockField key={key} field={key} value={item} path={accessible} readOnly={readOnly} onChange={next => {
         const changed = { ...record, [key]: next }
         if (key === 'html') { delete changed.entries; delete changed.introduction }
         onChange(changed)
       }} />)}
       {!readOnly && field === 'skills' && <div className={styles.statArrayRow}>
-        <TextInput aria-label="Название навыка" value={newField} onChange={event => setNewField(event.target.value)} />
-        <Button size="sm" disabled={!newField.trim() || newField.trim() in record} onClick={() => { onChange({ ...record, [newField.trim()]: '' }); setNewField('') }}>Добавить навык</Button>
+        <TextInput rootClassName={panelStyles.fieldControl} aria-label="Название навыка" value={newField} onChange={event => setNewField(event.target.value)} />
+        <Button size="sm" variant="secondary" decoration="bare" className={panelStyles.action} disabled={!newField.trim() || newField.trim() in record} onClick={() => { onChange({ ...record, [newField.trim()]: '' }); setNewField('') }}>Добавить навык</Button>
       </div>}
     </fieldset>
   }
   if (field === 'html' || field.endsWith('_html') || (field === 'description' && /Умения и действия/.test(path))) return <StatHtmlField label={accessible} value={String(value ?? '')} readOnly={readOnly} onChange={onChange} />
   if (typeof value === 'boolean') return <Checkbox label={label} aria-label={accessible} checked={value} disabled={readOnly} onCheckedChange={onChange} />
   if (field === 'description' || field === 'introduction' || (typeof value === 'string' && value.includes('\n'))) return <div className={styles.statField}><span>{label}</span>
-    <ContentEditor accessibleLabel={accessible} value={String(value ?? '')} readOnly={readOnly} onValueChange={onChange} rows={3} renderPreview />
+    <ContentEditor rootClassName={panelStyles.contentEditor} accessibleLabel={accessible} value={String(value ?? '')} readOnly={readOnly} onValueChange={onChange} rows={3} renderPreview />
   </div>
   const choices = options[field] ?? (field === 'type' && /Зрение/.test(path) ? ['normal', 'darkvision', 'blindsight', 'truesight', 'tremorsense']
     : field === 'type' && /Урон/.test(path) ? options.damageType
     : field === 'type' && /Разделы статблока/.test(path) ? ['traits', 'actions', 'bonus-actions', 'reactions', 'legendary-actions', 'lair-actions', 'regional-effects', 'description', 'custom']
     : field === 'ability' ? ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] : undefined)
-  if (choices) return <div className={styles.statField}><span>{label}</span><Combobox aria-label={accessible} value={String(value ?? '')} readOnly={readOnly}
+  if (choices) return <div className={styles.statField}><span>{label}</span><Select aria-label={accessible} value={String(value ?? '')} readOnly={readOnly}
     options={[{ value: '', label: 'Не указано' }, ...choices.map(option => ({ value: option, label: optionLabels[option] ?? labels[option] ?? option })),
       ...(value && !choices.includes(String(value)) ? [{ value: String(value), label: String(value) }] : [])]}
-    onValueChange={next => { if (next !== null) onChange(next) }} />
+    onValueChange={onChange} />
   </div>
   if (typeof value === 'number' || value === null) return <label className={styles.statField}>{label}<input className={styles.statNumber} aria-label={accessible} type="number" value={value == null ? '' : value} readOnly={readOnly}
     onChange={event => { const number = event.target.valueAsNumber; onChange(Number.isFinite(number) ? number : undefined) }} /></label>
-  return <label className={styles.statField}>{label}<TextInput aria-label={accessible} value={value == null ? '' : String(value)} readOnly={readOnly} onChange={event => onChange(event.target.value)} /></label>
+  return <label className={styles.statField}>{label}<TextInput rootClassName={panelStyles.fieldControl} aria-label={accessible} value={value == null ? '' : String(value)} readOnly={readOnly} onChange={event => onChange(event.target.value)} /></label>
 }

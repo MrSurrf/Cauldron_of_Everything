@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchEncyclopedia } from '../../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
-import { Button, Combobox, ListCard, ScrollArea, TextInput } from '../../../../shared/ui'
+import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../../shared/ui'
 import catalogStyles from '../../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { RichContent } from '../../../../shared/ui/RichContent'
 import {
@@ -141,11 +141,11 @@ export function CharacterEncyclopediaPanel({
     <aside className={[catalogStyles.panel, styles.panel, className].filter(Boolean).join(' ')} aria-label="Энциклопедия для листа персонажа" data-preview={Boolean(selectedEntry)}>
       <header className={catalogStyles.header}>
         <h2>Энциклопедия</h2>
-        <Button size="sm" variant="secondary" decoration="minimal" aria-label="Закрыть энциклопедию" onClick={onClose}>×</Button>
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label="Закрыть энциклопедию" onClick={onClose}>×</Button>
       </header>
 
       <div className={catalogStyles.filters}>
-        <Combobox aria-label="Раздел энциклопедии" value={mode}
+        <Select aria-label="Раздел энциклопедии" value={mode}
           options={(Object.keys(SECTIONS) as CharacterEncyclopediaMode[]).map((value) => ({ value, label: SECTIONS[value].label }))}
           onValueChange={(value) => { if (value !== null) changeMode(value as CharacterEncyclopediaMode) }} />
         <TextInput type="search" aria-label={section.search}
@@ -164,7 +164,7 @@ export function CharacterEncyclopediaPanel({
         {!currentResult && <p className={catalogStyles.message} role="status">Загрузка…</p>}
         {currentResult?.error && !loading && <div className={catalogStyles.message} role="alert">
           <p>{currentResult.error}</p>
-          <Button size="sm" onClick={() => setAttempt((value) => value + 1)}>Повторить</Button>
+          <Button size="sm" variant="secondary" decoration="minimal" className={catalogStyles.toolButton} onClick={() => setAttempt((value) => value + 1)}>Повторить</Button>
         </div>}
         {currentResult && !loading && !currentResult.error && currentResult.entries.length === 0 &&
           <p className={catalogStyles.message} role="status">Записи не найдены.</p>}
@@ -176,18 +176,18 @@ export function CharacterEncyclopediaPanel({
               writeCharacterEncyclopediaDrag(event.dataTransfer, entry)
               beginDrag(event, entry)
             }}>
-            <ListCard name={entry.name} tags={entryTags(entry)} />
+            <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)} />
           </button>
-          <Button size="sm" variant="secondary" decoration="minimal" aria-label={`Добавить: ${entry.name}`}
+          <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить: ${entry.name}`}
             title="Добавить на лист" onClick={() => onAdd(entry)}>+</Button>
         </div>)}
       </ScrollArea>
 
       <div className={catalogStyles.pagination}>
-        <Button size="sm" variant="secondary" disabled={page <= 1} aria-label="Предыдущая страница"
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} disabled={page <= 1} aria-label="Предыдущая страница"
           onClick={() => setPage((value) => Math.max(1, value - 1))}>←</Button>
         <span>{page} · {currentResult?.count ?? '…'} записей</span>
-        <Button size="sm" variant="secondary" disabled={loading || !currentResult || page * PAGE_SIZE >= currentResult.count}
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} disabled={loading || !currentResult || page * PAGE_SIZE >= currentResult.count}
           aria-label="Следующая страница" onClick={() => setPage((value) => value + 1)}>→</Button>
       </div>
 

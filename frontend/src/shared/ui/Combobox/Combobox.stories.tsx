@@ -2,6 +2,7 @@ import type {
   Meta,
   StoryObj,
 } from '@storybook/react-vite'
+import { useState } from 'react'
 import {
   expect,
   fn,
@@ -68,6 +69,20 @@ const options: ComboboxOption[] = [
 ]
 
 const submitAttempt = fn()
+const controlledSubmitAttempt = fn()
+
+function RetainedSelectionExample() {
+  const [value, setValue] = useState('wizard')
+  const [query, setQuery] = useState('')
+  return <form onSubmit={event => { event.preventDefault(); controlledSubmitAttempt(new FormData(event.currentTarget)) }}>
+    <Combobox label="Класс персонажа" name="classId" options={options} value={value} required
+      onQueryChange={setQuery} onValueChange={next => { if (next !== null) setValue(next) }} />
+    <output data-testid="confirmed-value">{value}</output>
+    <output data-testid="search-query">{query}</output>
+    <button type="button" onClick={() => setValue('cleric')}>Выбрать жреца извне</button>
+    <button type="submit">Сохранить</button>
+  </form>
+}
 
 function FormBehaviorExample() {
   return (
@@ -231,6 +246,56 @@ export const SearchAndSelect: Story = {
         screen.queryByRole('listbox'),
       ).not.toBeInTheDocument()
     })
+  },
+}
+
+export const ControlledRetainedSelection: Story = {
+  name: 'Управляемый выбор сохраняется во время поиска',
+  render: () => <RetainedSelectionExample />,
+  play: async ({ canvas, canvasElement }) => {
+    controlledSubmitAttempt.mockClear()
+    const input = canvas.getByRole('combobox')
+    const hiddenInput = canvasElement.querySelector('input[type="hidden"][name="classId"]')
+    const form = canvasElement.querySelector('form')!
+
+    await userEvent.click(input)
+    await userEvent.type(input, 'бер')
+    await expect(input).toHaveValue('бер')
+    await expect(canvas.getByTestId('search-query')).toHaveTextContent('бер')
+    await expect(canvas.getByTestId('confirmed-value')).toHaveTextContent('wizard')
+    await expect(hiddenInput).toHaveValue('wizard')
+    await expect(screen.getAllByRole('option')).toHaveLength(1)
+    await expect(screen.getByRole('option', { name: /Варвар/ })).toBeVisible()
+    await expect(input).toBeInvalid()
+    form.requestSubmit()
+    await expect(controlledSubmitAttempt).not.toHaveBeenCalled()
+
+    await userEvent.keyboard('{Enter}')
+    await expect(input).toHaveValue('Варвар')
+    await expect(input).toBeValid()
+    await expect(hiddenInput).toHaveValue('barbarian')
+    await expect(canvas.getByTestId('search-query')).toBeEmptyDOMElement()
+
+    await userEvent.click(input)
+    await userEvent.type(input, 'бард')
+    await expect(input).toHaveValue('бард')
+    await expect(screen.getAllByRole('option')).toHaveLength(1)
+    await expect(input).toBeInvalid()
+    await userEvent.keyboard('{Escape}')
+    await expect(input).toHaveValue('Варвар')
+    await expect(input).toBeValid()
+    await expect(hiddenInput).toHaveValue('barbarian')
+    await expect(canvas.getByTestId('search-query')).toBeEmptyDOMElement()
+
+    await userEvent.click(input)
+    await userEvent.type(input, 'бард')
+    // Обновление извне без blur должно также сбросить локальный фильтр.
+    canvas.getByRole('button', { name: 'Выбрать жреца извне' }).click()
+    await waitFor(() => { expect(input).toHaveValue('Жрец') })
+    await expect(input).toBeValid()
+    await expect(hiddenInput).toHaveValue('cleric')
+    await expect(screen.getAllByRole('option')).toHaveLength(options.length)
+    await userEvent.keyboard('{Escape}')
   },
 }
 
