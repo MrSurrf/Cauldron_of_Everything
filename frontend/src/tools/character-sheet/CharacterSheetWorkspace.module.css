@@ -43,8 +43,11 @@
   backface-visibility: hidden;
   transform: scale(var(--book-scale)) translate3d(0, 0, 0);
   transform-origin: top center;
-  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing);
+  /* FLIP-переход в useSheetLayoutMotion: размеры не интерполируются по кадрам. */
+  transition-property: transform;
 }
+
+.book[data-layout-moving='true'] { will-change: transform; }
 
 .book[data-spells-open='true'] {
   transform: scale(var(--book-scale))
@@ -58,18 +61,6 @@
 /* В узкой host-панели transform должен уменьшать и занимаемое книгой место. */
 .workspace[data-fit-width='true'] .book {
   margin-inline: calc((var(--book-scale) - 1) * var(--book-page-width) / 2);
-  transition: none;
-}
-
-/* Масштаб и занимаемое листом место меняются вместе с выдвижной энциклопедией. */
-.workspace[data-library-mounted='true'] .book {
-  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing),
-    height var(--sheet-slide-duration) var(--sheet-slide-easing);
-}
-.workspace[data-fit-width='true'][data-library-mounted='true'] .book {
-  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing),
-    height var(--sheet-slide-duration) var(--sheet-slide-easing),
-    margin-inline var(--sheet-slide-duration) var(--sheet-slide-easing);
 }
 
 .characterPanel,
@@ -206,14 +197,14 @@
   height: 100%;
   min-width: 0;
   pointer-events: none;
-  transition: flex-basis var(--sheet-slide-duration) var(--sheet-slide-easing),
-    width var(--sheet-slide-duration) var(--sheet-slide-easing);
 }
 .libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
 
 .libraryReveal {
   position: absolute;
-  inset: 0;
+  /* Окно не сжимается при закрытии: панель целиком уходит за правый край. */
+  inset: 0 0 0 auto;
+  width: 24rem;
   overflow: clip;
   pointer-events: none;
 }
@@ -293,8 +284,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .book,
-  .workspace[data-library-mounted='true'] .book,
-  .workspace[data-fit-width='true'][data-library-mounted='true'] .book,
   .spellDrawer,
   .libraryDock,
   .libraryDrawer { transition: none; }

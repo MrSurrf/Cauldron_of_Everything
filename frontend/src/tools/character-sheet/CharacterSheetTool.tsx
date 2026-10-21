@@ -40,6 +40,7 @@ import dragStyles from './ui/encyclopedia/characterEncyclopediaDragFeedback.modu
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
+import { useSheetLayoutMotion } from './useSheetLayoutMotion'
 import styles from './CharacterSheetWorkspace.module.css'
 
 const ABILITY_NAMES = {
@@ -80,6 +81,17 @@ function CharacterSheetWorkspace({
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
   const libraryTrigger = useRef<HTMLButtonElement>(null)
+  const { book, captureLayout } = useSheetLayoutMotion(`${libraryOpen}:${spellsOpen}:${fitWidth}`, workspaceWidth)
+
+  function changeSpellsOpen(open: boolean) {
+    if (open !== spellsOpen) captureLayout()
+    setSpellsOpen(open)
+  }
+
+  function changeLibraryOpen(open: boolean) {
+    if (open !== libraryOpen) captureLayout()
+    setLibraryOpen(open)
+  }
 
   function expandSpellTab(button: HTMLButtonElement) {
     const moving = button.parentElement?.getAnimations()
@@ -179,7 +191,7 @@ function CharacterSheetWorkspace({
     dispatch(characterSheetActions.addSpell(spell))
     hydrateEntry(entry, existing?.id ?? spell.id)
     setSpellSheetMounted(true)
-    setSpellsOpen(true)
+    changeSpellsOpen(true)
   }
 
   const emptySpellcasting = createEmptySpellcasting()
@@ -208,6 +220,7 @@ function CharacterSheetWorkspace({
     data-library-open={libraryOpen} data-spells-open={spellsOpen}>
     <div className={styles.sheetSpace} aria-label="Листы персонажа">
       <div
+        ref={book}
         className={`${styles.book} ${dragStyles.scene}`}
         data-encyclopedia-drag-active={Boolean(draggedEntry) || undefined}
         data-spells-open={spellsOpen}
@@ -296,7 +309,7 @@ function CharacterSheetWorkspace({
                 setSpellTabExpanded(false)
                 const nextOpen = !spellsOpen
                 if (nextOpen) setSpellSheetMounted(true)
-                setSpellsOpen(nextOpen)
+                changeSpellsOpen(nextOpen)
                 if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
               }}><span className={styles.pageTabContent} aria-hidden="true">
                 <span className={styles.pageTabLabel}>Лист<br />заклинаний</span>
@@ -316,7 +329,7 @@ function CharacterSheetWorkspace({
         title="Открыть энциклопедию"
         aria-expanded={false}
         aria-label="Открыть энциклопедию для листа персонажа"
-        onClick={() => { setLibraryMounted(true); setLibraryOpen(true) }}>
+        onClick={() => { setLibraryMounted(true); changeLibraryOpen(true) }}>
         <span className={styles.libraryTriggerContent}>
           <span className={styles.libraryTriggerIcon} aria-hidden="true"><BookIcon /></span>
           <span>Энциклопедия</span>
@@ -334,7 +347,7 @@ function CharacterSheetWorkspace({
             mode={libraryMode}
             onModeChange={setLibraryMode}
             onAdd={addEntry}
-            onClose={() => setLibraryOpen(false)}
+            onClose={() => changeLibraryOpen(false)}
           />}
         </div>
       </div>

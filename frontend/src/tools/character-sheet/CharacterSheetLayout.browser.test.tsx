@@ -1557,7 +1557,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(toggle.getBoundingClientRect().left - hoverOffset * returnedScale).toBeCloseTo(toggleRect.left, 0)
   })
 
-  it('выдвигает энциклопедию с правого края и плавно выделяет место под колонку', async () => {
+  it('выдвигает энциклопедию с правого края без покадровой перераскладки колонки', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
     const container = await mountCharacterSheet()
     const trigger = container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!
@@ -1565,6 +1565,7 @@ describe('Character Sheet fixed desktop composition', () => {
     const drawer = container.querySelector<HTMLElement>('[data-encyclopedia-drawer]')!
     const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
     const spellDrawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    const initialBook = book.getBoundingClientRect()
     expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
     expect(drawer.getBoundingClientRect().left).toBeCloseTo(dock.getBoundingClientRect().right, 0)
     await act(async () => { await userEvent.click(trigger); await nextFrame() })
@@ -1573,11 +1574,19 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(getComputedStyle(drawer).transitionDuration).toBe(getComputedStyle(spellDrawer).transitionDuration)
     expect(getComputedStyle(drawer).transitionTimingFunction).toBe(getComputedStyle(spellDrawer).transitionTimingFunction)
     expect(drawer.getAnimations()).toHaveLength(1)
-    expect(dock.getAnimations().length).toBeGreaterThan(0)
+    expect(dock.getAnimations()).toHaveLength(0)
+    expect(book.getAnimations()).toHaveLength(1)
     const opening = [dock, drawer, book].flatMap(element => element.getAnimations())
+    await act(async () => {
+      opening.forEach(animation => { animation.pause(); animation.currentTime = 0 })
+      await nextFrame()
+    })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(initialBook.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(initialBook.width, 1)
+    const layoutHeight = book.offsetHeight
     let previousVisibleWidth = 0
-    let previousDockWidth = 128
     let previousOffset = 384
+    let previousBookWidth = initialBook.width
     for (const time of [100, 280, 480]) {
       await act(async () => {
         opening.forEach(animation => { animation.pause(); animation.currentTime = time })
@@ -1591,12 +1600,14 @@ describe('Character Sheet fixed desktop composition', () => {
       expect(bounds.right).toBeGreaterThan(dockBounds.right)
       expect(visibleWidth).toBeGreaterThan(previousVisibleWidth)
       expect(visibleWidth).toBeLessThan(384)
-      expect(dockBounds.width).toBeGreaterThan(previousDockWidth)
+      expect(dockBounds.width).toBeCloseTo(384, 0)
+      expect(book.offsetHeight).toBe(layoutHeight)
+      expect(book.getBoundingClientRect().width).toBeLessThan(previousBookWidth)
       expect(bounds.width).toBeCloseTo(384, 0) // Контент не сжимается вместе с выдвижным окном.
       expect(getComputedStyle(panel).opacity).toBe('1')
       expect(getComputedStyle(panel).filter).toBe('none')
       previousVisibleWidth = visibleWidth
-      previousDockWidth = dockBounds.width
+      previousBookWidth = book.getBoundingClientRect().width
       previousOffset = offset
     }
     await act(async () => { opening.forEach(animation => animation.finish()); await nextFrame() })
@@ -1609,10 +1620,76 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(drawer).toHaveAttribute('aria-hidden', 'true')
     expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
     expect(drawer.getAnimations()).toHaveLength(1)
+    expect(drawer.parentElement!.getBoundingClientRect().width).toBeCloseTo(384, 0)
     await settleSheetLayout(container)
     expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBeNull()
     expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
     expect(document.activeElement).toBe(container.querySelector('[data-encyclopedia-trigger]'))
+  })
+
+  it.each([false, true])('сохраняет transform-only переход в узкой панели (fitWidth=%s)', async (fitWidth) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet(createMockSpellcasterSheet(), fitWidth)
+    await act(async () => { container.style.width = '640px'; await nextFrame() })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const before = book.getBoundingClientRect()
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    const animation = book.getAnimations()[0]
+    expect(animation).toBeDefined()
+    const frames = (animation.effect as KeyframeEffect).getKeyframes()
+    frames.forEach(frame => {
+      expect(frame.transform).toBeDefined()
+      expect(frame.height).toBeUndefined()
+      expect(frame.width).toBeUndefined()
+      expect(frame.marginInline).toBeUndefined()
+    })
+    const height = book.offsetHeight
+    await act(async () => { animation.pause(); animation.currentTime = 0; await nextFrame() })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(before.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(before.width, 1)
+    for (const time of [100, 280, 480]) {
+      await act(async () => { animation.currentTime = time; await nextFrame() })
+      expect(book.offsetHeight).toBe(height)
+    }
+    await settleSheetLayout(container)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+  })
+
+  it('не запускает анимацию листа при reduced motion', async () => {
+    const matchMedia = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation(query => {
+      const result = matchMedia(query)
+      if (query === '(prefers-reduced-motion: reduce)') {
+        Object.defineProperty(result, 'matches', { value: true })
+      }
+      return result
+    })
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(0)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(0)
+    await settleSheetLayout(container)
+  })
+
+  it('отменяет движение при изменении ширины окна и подгоняет лист под новый размер', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(1)
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 180 })
+      container.style.width = '900px'
+      await nextFrame()
+    })
+    expect(book.getAnimations()).toHaveLength(0)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+    expect(book.getBoundingClientRect().width).toBeCloseTo(900 - 384 - 16, 0)
   })
 
   it('разворачивает закрывающуюся энциклопедию без повторного монтажа и запоздалого исчезновения', async () => {
@@ -1623,7 +1700,19 @@ describe('Character Sheet fixed desktop composition', () => {
     const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
     await act(async () => { panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!.click(); await nextFrame() })
     expect(panel.closest('[data-encyclopedia-drawer]')).toHaveAttribute('inert')
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 180 })
+      await nextFrame()
+    })
+    const reversingBounds = book.getBoundingClientRect()
     await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 0 })
+      await nextFrame()
+    })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(reversingBounds.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(reversingBounds.width, 1)
     await settleSheetLayout(container)
     await act(async () => { await new Promise(resolve => window.setTimeout(resolve, 800)) })
     expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
