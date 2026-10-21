@@ -113,6 +113,23 @@ function expectAvailableEncyclopediaZones(container: HTMLElement, expected: HTML
   expected.forEach((zone) => expect(available).toContain(zone))
 }
 
+function isDragDimmed(element: HTMLElement, container: HTMLElement) {
+  for (let current: HTMLElement | null = element; current && container.contains(current); current = current.parentElement) {
+    const brightness = getComputedStyle(current).filter.match(/brightness\(([\d.]+)\)/)
+    if (brightness && Number(brightness[1]) < 0.9) return true
+  }
+  return false
+}
+
+function expectCyanGradient(element: HTMLElement) {
+  const edge = getComputedStyle(element, '::after')
+  const cyan = getComputedStyle(document.documentElement).getPropertyValue('--selection-marker-fill').trim()
+  expect(edge.backgroundImage).toContain('linear-gradient')
+  expect(edge.getPropertyValue('--drop-edge-color')).toContain(cyan)
+  expect(edge.pointerEvents).toBe('none')
+  expect(getComputedStyle(element).outlineStyle).not.toBe('dashed')
+}
+
 const encyclopediaDragEntries = {
   class: { id: 201, entity_type: 'class', name: 'Чародей', name_en: 'Sorcerer', summary: {} },
   item: { id: 202, entity_type: 'item', name: 'Лунный кинжал', name_en: 'Moon Dagger', summary: {} },
@@ -367,6 +384,12 @@ describe('Character Sheet fixed desktop composition', () => {
       const { source, transfer } = await startEncyclopediaDrag(container, encyclopediaDragEntries.class.name)
       // Все подходящие поля видны ещё до первого dragover.
       expectAvailableEncyclopediaZones(container, inputs)
+      const raceInput = container.querySelector<HTMLInputElement>('[data-encyclopedia-drop-zone="race"]')!
+      await expect.poll(() => isDragDimmed(raceInput, container)).toBe(true)
+      inputs.forEach((input) => {
+        expect(isDragDimmed(input, container)).toBe(false)
+        expectCyanGradient(input.parentElement!)
+      })
       expect(source).toHaveAttribute('data-encyclopedia-dragging', 'true')
       expect(container.querySelector('[data-drop-active="true"]')).toBeNull()
       const over = await dispatchEncyclopediaDrag(inputs[0], 'dragover', transfer)
@@ -384,6 +407,7 @@ describe('Character Sheet fixed desktop composition', () => {
         })
       }
       expectAvailableEncyclopediaZones(container, [])
+      await expect.poll(() => isDragDimmed(raceInput, container)).toBe(false)
       expect(container.querySelector('[data-drop-active="true"]')).toBeNull()
       expect(source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
       expect(inputs.map((input) => input.value)).toEqual(originalValues)
@@ -416,6 +440,11 @@ describe('Character Sheet fixed desktop composition', () => {
     const spellCount = container.querySelectorAll('[data-spell-entry]').length
     let drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.item.name)
     expectAvailableEncyclopediaZones(container, [equipment])
+    expectCyanGradient(equipment)
+    expect(isDragDimmed(equipment, container)).toBe(false)
+    await expect.poll(() => isDragDimmed(classInput, container)).toBe(true)
+    const quickBar = container.querySelector<HTMLElement>('[data-character-sheet-layout="body"] > section')!
+    await expect.poll(() => isDragDimmed(quickBar, container)).toBe(true)
 
     await dispatchEncyclopediaDrag(classInput, 'dragover', drag.transfer)
     expect(drag.transfer.dropEffect).toBe('none')
@@ -426,6 +455,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount)
     expectAvailableEncyclopediaZones(container, [])
     expect(container.querySelector('[data-drop-received="true"]')).toBeNull()
+    await expect.poll(() => isDragDimmed(classInput, container)).toBe(false)
 
     drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.item.name)
     const over = await dispatchEncyclopediaDrag(editorFrame, 'dragover', drag.transfer)
@@ -446,6 +476,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expectAvailableEncyclopediaZones(container, [])
     expect(drag.source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
     expect(classInput.value).toBe(originalClass)
+    await expect.poll(() => isDragDimmed(quickBar, container)).toBe(false)
     expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount)
   })
 
@@ -466,6 +497,11 @@ describe('Character Sheet fixed desktop composition', () => {
     const originalNames = Array.from(container.querySelectorAll('[data-spell-entry]')).map((spell) => spell.textContent)
     let drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.spell.name)
     expectAvailableEncyclopediaZones(container, [targetLevel])
+    expectCyanGradient(targetLevel)
+    expect(isDragDimmed(targetLevel, container)).toBe(false)
+    await expect.poll(() => isDragDimmed(wrongLevel, container)).toBe(true)
+    const equipment = container.querySelector<HTMLElement>('[data-encyclopedia-drop-zone="item"]')!
+    await expect.poll(() => isDragDimmed(equipment, container)).toBe(true)
 
     await dispatchEncyclopediaDrag(wrongLevel, 'dragover', drag.transfer)
     expect(wrongLevel).not.toHaveAttribute('data-drop-active', 'true')
@@ -486,9 +522,11 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(targetLevel).not.toHaveAttribute('data-drop-active', 'true')
     expectAvailableEncyclopediaZones(container, [])
     expect(drag.source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
+    await expect.poll(() => isDragDimmed(wrongLevel, container)).toBe(false)
 
     drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.unknownSpell.name)
     expectAvailableEncyclopediaZones(container, levels)
+    await expect.poll(() => levels.every((level) => !isDragDimmed(level, container))).toBe(true)
     await dispatchEncyclopediaDrag(drag.source, 'dragend', drag.transfer)
     expectAvailableEncyclopediaZones(container, [])
     expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount + 1)

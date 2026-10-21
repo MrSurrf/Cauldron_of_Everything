@@ -29,8 +29,6 @@
 .iconAction.iconAction { width: 32px; min-width: 32px; --button-padding-inline: 0px; --button-font-size: var(--font-size-lg); }
 .workspace { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, var(--library-width, 30%)); flex: 1; min-height: 0; gap: var(--space-2); }
 .workspace[data-public='true'], .workspace[data-collapsed='true'] { grid-template-columns: minmax(0, 1fr); }
-.workspace:has(> .localEntityPanel) { grid-template-columns: minmax(0, 1fr) minmax(300px, var(--inspector-width)) minmax(260px, var(--library-width, 30%)); }
-.workspace[data-public='true']:has(> .localEntityPanel), .workspace[data-collapsed='true']:has(> .localEntityPanel) { grid-template-columns: minmax(0, 1fr) minmax(300px, var(--inspector-width)); }
 .board { min-width: 0; min-height: 0; border: var(--border-width-default) solid var(--color-content-border); border-radius: var(--radius-md); background: var(--color-surface-default); }
 .bestiary { animation: libraryEnter 180ms var(--motion-easing-standard) both; }
 .hint { margin: 0; font-size: var(--font-size-xs); line-height: var(--line-height-normal); color: var(--color-text-subtle); }
@@ -55,6 +53,9 @@
 .canvas { position: relative; flex: 1; min-height: 0; background: var(--cursor-background-image, none), var(--color-background); }
 .canvas[data-library-drop-zone='true']::after { content: ''; position: absolute; inset: 6px; z-index: 5; border: 1px solid var(--color-brand-muted); border-radius: var(--radius-sm); pointer-events: none; animation: dropReveal var(--motion-duration-fast) ease-out; }
 .dropHint { position: absolute; z-index: 6; bottom: var(--space-5); left: 50%; translate: -50% 0; padding: var(--space-2) var(--space-4); border: 1px solid var(--color-content-border); border-radius: var(--radius-round); color: var(--color-text-secondary); background: var(--color-surface-default); box-shadow: var(--shadow-panel); font-size: var(--font-size-xs); white-space: nowrap; pointer-events: none; animation: dropReveal var(--motion-duration-fast) ease-out; }
+.canvas[data-transfer-pending='true'] :global(.react-flow) { pointer-events: none; }
+.transferNotice { position: absolute; z-index: 6; bottom: var(--space-5); left: 50%; translate: -50% 0; display: flex; align-items: center; gap: var(--space-3); max-width: calc(100% - var(--space-5) * 2); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-content-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: var(--color-surface-default); box-shadow: var(--shadow-panel); font-size: var(--font-size-xs); }
+.transferNotice button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: var(--font-size-lg); }
 .canvas :global(.react-flow) {
   --xy-background-color: transparent;
   --xy-edge-stroke: var(--color-brand);
@@ -96,7 +97,7 @@
 .statHtmlEditor[contenteditable='true']:focus { outline: 1px solid var(--color-border-accent); }
 .placementDetails { margin-block: var(--space-3); }
 .placementDetails summary { cursor: pointer; color: var(--color-text-subtle); font-size: var(--font-size-sm); }
-.instanceCharacterSheet { width: 100%; min-width: 0; height: clamp(12rem, calc(100cqh - 6rem), 70rem); overflow: hidden; }
+.instanceCharacterSheet { width: 100%; min-width: 0; height: clamp(12rem, calc(100cqh - 8rem), 70rem); overflow: hidden; }
 .instanceCharacterSheet > .instanceCharacterDocument { min-width: 0; min-height: 0; }
 .nodeCreatureCard { width: 100%; max-height: 32rem; overflow: auto; border-radius: var(--radius-sm); background: var(--color-surface-default); font-family: var(--font-family-body); text-align: left; }
 .nodeCreatureCard > p, .nodeCreatureCard > div[role='alert'] { margin: 0; padding: var(--space-3); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
@@ -118,9 +119,11 @@
 .inspectorWindow { position: absolute; z-index: 10; right: calc(var(--library-width) + var(--space-2)); top: 0; bottom: 0; width: var(--inspector-width); max-width: calc(100% - var(--library-width) - var(--space-2)); display: flex; flex-direction: column; background: var(--color-surface-default); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-md); box-shadow: var(--shadow-panel); }
 .workspace[data-public='true'] .inspectorWindow, .workspace[data-collapsed='true'] .inspectorWindow { right: 0; max-width: 100%; }
 .inspectorWindow { container: instance-editor / size; }
+.inspectorWindow[data-inventory-drop-target='true'] [data-character-sheet-slot='equipment'] { border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--selection-marker-fill), 0 0 16px color-mix(in srgb, var(--selection-marker-fill) 28%, transparent); }
 .panelScrollArea { flex: 1; min-height: 0; }
 .inspectorBody { padding: var(--space-2) var(--space-3); min-height: 0; overflow: auto; }
-.localEntityPanel, .localEntityEditor { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-md); background: var(--color-surface-default); }
+.localEntityPanel, .localEntityEditor { display: flex; flex-direction: column; min-width: 0; min-height: 0; border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-md); background: var(--color-surface-default); }
+.localEntityEditor { position: relative; }
 .localEntityBody, .localEntityEditorBody { display: grid; align-content: start; gap: var(--space-3); min-height: 0; padding: var(--space-3); }
 .localEntityType, .localEntityMeta { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
 .localEntityField { display: grid; gap: var(--space-1); min-width: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
@@ -177,7 +180,6 @@
   .workspace, .workspace:has(> .localEntityPanel), .workspace[data-public='true']:has(> .localEntityPanel), .workspace[data-collapsed='true']:has(> .localEntityPanel) { grid-template-columns: minmax(0, 1fr); }
   .inspectorWindow { position: fixed; right: 0; top: var(--site-header-height, 5rem); bottom: 0; max-width: 95vw; }
   .board { height: min(65svh, 38rem); }
-  .localEntityPanel { min-height: 16rem; max-height: 45svh; }
   .localEntityEditor { min-height: 65svh; }
   .bestiary { height: min(55svh, 32rem); }
 }

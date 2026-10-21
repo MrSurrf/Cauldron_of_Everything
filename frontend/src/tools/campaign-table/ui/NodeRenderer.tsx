@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Handle, NodeResizer, Position } from '@xyflow/react'
+import { Handle, NodeResizer, Position, useViewport } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
+import type { CSSProperties } from 'react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
-import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
+import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
+import { containerOf } from '../model/nodeContainment'
 import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
@@ -17,8 +19,9 @@ function plainText(value: string) {
   return typeof DOMParser === 'undefined' ? separated.trim() : new DOMParser().parseFromString(separated, 'text/html').body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<TableNode>) {
+export function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
   const actions = useTableActions()
+  const { zoom } = useViewport()
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -72,12 +75,15 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
       }} onBlur={event => { if (draftFinished.current) return; draftFinished.current = true; if (event.currentTarget.value.trim()) draft.commit(event.currentTarget.value); else draft.cancel() }} />
   </article>
 
-  const members = type === 'location' ? actions.diagram.nodes.filter(node => node.data.locationId === id) : []
+  const members = actions.diagram.nodes.filter(node => containerOf(node) === id)
+  const box = contourBox(data.entityType, { x: 0, y: 0 }, width ?? visual.width, height ?? minimum.height, creatureExpanded)
+  const origin = center(box)
   const localEntity = !data.reference
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
   return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
+    data-drop-target={actions.dropTarget === id || undefined}
     data-connecting={Boolean(connectionSource && connectionSource !== id)} data-arrival-key={arrivalKey}
     aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
@@ -93,6 +99,7 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
         {membersOpen && <div className={styles.nodeMembersList}>
           {members.map(member => <div key={member.id} className={styles.member} draggable={!actions.readOnly} onDragStart={event => {
             event.stopPropagation(); event.dataTransfer.setData(INSTANCE_DRAG_TYPE, member.id); event.dataTransfer.effectAllowed = 'move'
+            actions.beginInstanceDrag(member.id)
           }}>
             <button type="button" onClick={event => { event.stopPropagation(); actions.open(member.id) }}>{member.data.title}</button>
             {!actions.readOnly && <><button type="button" title="Редактировать экземпляр" aria-label={`Редактировать: ${member.data.title}`} onClick={event => { event.stopPropagation(); actions.edit(member.id) }}>✎</button>
@@ -136,15 +143,19 @@ export function NodeRenderer({ id, data, type, selected, dragging }: NodeProps<T
         {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
       </div>
     </div> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
-    {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) =>
-      <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
-        aria-label={`Соединить ${label}: ${data.title}`} title={`Соединить ${label}`}
-        onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}
+    {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
+      const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
+        y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })
+      return <button key={side} type="button" className={`${styles.connectionPort} nodrag nopan`} data-side={side}
+        style={{ left: point.x, top: point.y, '--port-scale': 1 / zoom } as CSSProperties}
+        aria-label={`Соединить ${label}: ${data.title}`} title="Создать связь: нажмите или потяните к другой ноде"
+        onPointerDown={event => actions.beginConnection(id, event)} onDoubleClick={event => event.stopPropagation()}
         onClick={event => {
           event.stopPropagation()
           setMenuOpen(false); setMembersOpen(false)
           actions.startConnection(id, { x: event.clientX, y: event.clientY })
-        }} />)}
+        }} />
+    })}
     <Handle id="out" type="source" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
   </article>
 }

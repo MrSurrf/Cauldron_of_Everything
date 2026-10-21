@@ -228,7 +228,7 @@ export function SpellSheet({
     </div>}
 
     <div className={styles.content}>
-      <div className={styles.summary} aria-label="Характеристики заклинателя">
+      <div className={styles.summary} data-spellcasting-summary aria-label="Характеристики заклинателя">
         <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div className={styles.summaryValue}>
@@ -290,7 +290,7 @@ export function SpellSheet({
         </SheetSection>
       </div>
 
-      <div className={styles.levelGrid}>
+      <div className={styles.levelGrid} data-spell-level-grid>
         {LEVELS.map((level) => {
           const levelSpells = spells.filter((spell) => spell.level === level)
           const pool = level === 0 ? null : slots[level]

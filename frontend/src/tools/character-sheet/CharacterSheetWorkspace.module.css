@@ -55,6 +55,12 @@
     );
 }
 
+/* В узкой host-панели transform должен уменьшать и занимаемое книгой место. */
+.workspace[data-fit-width='true'] .book {
+  margin-inline: calc((var(--book-scale) - 1) * var(--book-page-width) / 2);
+  transition: none;
+}
+
 .characterPanel,
 .spellPanel {
   position: relative;

@@ -3,6 +3,7 @@ import { Button, ScrollArea, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { entityLabel } from '../model/library'
 import type { CanvasEntity, Diagram, TableNode } from '../model/table'
+import { containerOf } from '../model/nodeContainment'
 import { ResizeGrip } from './ResizeGrip'
 import { NodePanelHeader } from './NodePanelHeader'
 import { useTableActions } from './tableContext'
@@ -30,9 +31,9 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
   onResize: (width: number) => void; onClose: () => void; onOpenFull: () => void; onUpdate: (changes: EntityChanges) => void
 }) {
   const actions = useTableActions()
-  const members = node.type === 'location' ? diagram.nodes.filter(item => item.data.locationId === node.id) : []
+  const members = diagram.nodes.filter(item => containerOf(item) === node.id)
   const connectionCount = diagram.edges.filter(edge => edge.source === node.id || edge.target === node.id).length
-  return <aside className={`${styles.localEntityPanel} ${panelStyles.panel}`} aria-label="Инспектор объекта" data-campaign-panel="entity">
+  return <aside className={`${styles.inspectorWindow} ${styles.localEntityPanel} ${panelStyles.panel}`} aria-label="Инспектор объекта" data-campaign-panel="entity">
     <ResizeGrip label="Ширина Inspector" width={width} min={300} onResize={onResize} />
     <NodePanelHeader title={entityLabel(entity.entityType)} closeLabel="Закрыть Inspector" onClose={onClose} />
     <ScrollArea aria-label="Inspector объекта" rootClassName={styles.panelScrollArea} contentClassName={`${styles.localEntityBody} ${panelStyles.body} ${panelStyles.contentTransition}`}>
@@ -42,7 +43,10 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
           onValueChange={description => onUpdate({ description })} rows={3} renderPreview />
       </div>
       {members.length > 0 && <section className={styles.localEntitySection}><h3>Содержимое</h3>
-        <ul>{members.map(member => <li key={member.id}>{member.data.title}</li>)}</ul>
+        <ul>{members.map(member => <li key={member.id} className={styles.member}>
+          <button type="button" onClick={() => actions.open(member.id)}>{member.data.title}</button>
+          {!readOnly && <button type="button" onClick={() => actions.release(member.id)}>Извлечь</button>}
+        </li>)}</ul>
       </section>}
       <p className={styles.localEntityMeta}>Связей: {connectionCount}</p>
       <Button size="sm" variant="secondary" decoration="minimal" className={panelStyles.action} onClick={onOpenFull}>Открыть полностью</Button>

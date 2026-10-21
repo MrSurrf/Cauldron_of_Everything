@@ -35,6 +35,8 @@ import {
   spellDetailPatch,
 } from './ui/encyclopedia/characterEntryImport'
 import { CharacterEncyclopediaDragProvider } from './ui/encyclopedia/CharacterEncyclopediaDragProvider'
+import { useCharacterEncyclopediaDrag } from './ui/encyclopedia/useCharacterEncyclopediaDrag'
+import dragStyles from './ui/encyclopedia/characterEncyclopediaDragFeedback.module.css'
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
@@ -56,15 +58,17 @@ const LIBRARY_DOCK_WIDTH = {
 const SHEET_SPACE_GUTTER = 16
 
 type CharacterSheetWorkspaceProps = Pick<CharacterSheetToolProps,
-  'className' | 'onPortraitFileSelect' | 'onPortraitRemove'
+  'className' | 'fitWidth' | 'onPortraitFileSelect' | 'onPortraitRemove'
 >
 
 function CharacterSheetWorkspace({
   className,
+  fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
+  const { entry: draggedEntry } = useCharacterEncyclopediaDrag()
   const [spellsOpen, setSpellsOpen] = useState(false)
   const [spellTabExpanded, setSpellTabExpanded] = useState(false)
   const [spellSheetMounted, setSpellSheetMounted] = useState(false)
@@ -189,10 +193,11 @@ function CharacterSheetWorkspace({
 
   return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
     style={{ '--book-min-width': `${spreadWidth}px` } as CSSProperties}
-    data-library-open={libraryOpen} data-spells-open={spellsOpen}>
+    data-fit-width={fitWidth || undefined} data-library-open={libraryOpen} data-spells-open={spellsOpen}>
     <div className={styles.sheetSpace} aria-label="Листы персонажа">
       <div
-        className={styles.book}
+        className={`${styles.book} ${dragStyles.scene}`}
+        data-encyclopedia-drag-active={Boolean(draggedEntry) || undefined}
         data-spells-open={spellsOpen}
         style={{ '--book-scale': pageScale } as CSSProperties}
       >
@@ -335,6 +340,7 @@ export type CharacterSheetToolProps = {
 
 export function CharacterSheetTool({
   className,
+  fitWidth,
   document,
   initialDocument,
   onDocumentChange,
@@ -350,6 +356,7 @@ export function CharacterSheetTool({
       <CharacterEncyclopediaDragProvider>
         <CharacterSheetWorkspace
           className={className}
+          fitWidth={fitWidth}
           onPortraitFileSelect={onPortraitFileSelect}
           onPortraitRemove={onPortraitRemove}
         />

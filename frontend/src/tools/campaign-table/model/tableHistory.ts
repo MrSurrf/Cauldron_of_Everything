@@ -1,11 +1,22 @@
 import type { CampaignTable, StoredDiagram } from './table'
+import { changeDiagram, resolveDiagram } from './table'
+import { parseContentSource } from '../../../shared/ui/ContentEditor'
 
 type Graph = Pick<StoredDiagram, 'nodes' | 'edges'>
 type Change = { before: Graph; after: Graph }
-const graph = (diagram: StoredDiagram): Graph => ({
-  nodes: diagram.nodes.map(({ id, type, data, position, width, height }) => ({ id, type, data: { ...data }, position: { ...position }, width, height })),
+const graph = (table: CampaignTable, diagram: StoredDiagram): Graph => ({
+  nodes: diagram.nodes.map(({ id, type, data, position, width, height }) => {
+    const owner = data.containerId ? diagram.nodes.find(node => node.id === data.containerId) : undefined
+    const block = owner ? table.entities.find(entity => entity.id === owner.data.entityId)?.statBlock : undefined
+    const key = encodeURIComponent(JSON.stringify([diagram.id, id]))
+    const source = block?.kind === 'playerCharacter' ? block.document.equipmentContentText : undefined
+    const widget = source ? parseContentSource(source).find(block => block.kind === 'item' && block.attributes['campaign-placement'] === key) : undefined
+    return { id, type, data: { ...data, ...(widget && source ? { equipmentSource: source.slice(widget.sourceRange.start, widget.sourceRange.end) } : {}) }, position: { ...position }, width, height }
+  }),
   edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label, data: data ? { ...data } : undefined })),
 })
+// Кэш виджета нужен для восстановления удалённого предмета, но правки его текста — не шаг истории графа.
+const signature = (graph: Graph) => JSON.stringify({ ...graph, nodes: graph.nodes.map(node => ({ ...node, data: { ...node.data, equipmentSource: undefined } })) })
 
 /** История графа по схемам. Entity, viewport, выделение и layout не откатываются. */
 export class TableHistory {
@@ -24,8 +35,8 @@ export class TableHistory {
     for (const diagram of after.diagrams) {
       const previous = before.diagrams.find(item => item.id === diagram.id)
       if (!previous) continue
-      const change = { before: graph(previous), after: graph(diagram) }
-      if (JSON.stringify(change.before) === JSON.stringify(change.after)) continue
+      const change = { before: graph(before, previous), after: graph(after, diagram) }
+      if (signature(change.before) === signature(change.after)) continue
       this.past.set(diagram.id, [...(this.past.get(diagram.id) ?? []), change].slice(-100))
       this.future.delete(diagram.id)
     }
@@ -41,6 +52,6 @@ export class TableHistory {
     if (!change) return table
     to.set(table.activeId, [...(to.get(table.activeId) ?? []), change])
     const restored = structuredClone(redo ? change.after : change.before)
-    return { ...table, diagrams: table.diagrams.map(diagram => diagram.id === table.activeId ? { ...diagram, ...restored } : diagram) }
+    return changeDiagram(table, table.activeId, current => resolveDiagram(table, { ...current, ...restored }))
   }
 }

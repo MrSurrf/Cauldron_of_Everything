@@ -14,7 +14,8 @@ import { hasInstanceEditor } from '../model/instanceStatBlock'
 import { InstanceStatBlockPanel } from './InstanceStatBlockPanel'
 import { NodePanelHeader } from './NodePanelHeader'
 import type { LibraryReference } from '../model/library'
-import { canContain, moveToLocation } from '../model/table'
+import { canContain } from '../model/table'
+import { canPlaceInside, containerOf } from '../model/nodeContainment'
 import { canResizeNode, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import type { Diagram, TableNode } from '../model/table'
 import { ResizeGrip } from './ResizeGrip'
@@ -71,7 +72,8 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
     if (node && !readOnly) onChange(current => ({ ...current, nodes: current.nodes.map(item => item.id === node.id ? update(item) : item) }))
   }
   const field = (key: 'title' | 'facts' | 'description', value: string) => changeNode(item => ({ ...item, data: { ...item.data, [key]: value } }))
-  return <aside className={`${styles.inspectorWindow} ${panelStyles.panel}`} aria-label="Карточка и редактор" data-campaign-panel="inspector">
+  return <aside className={`${styles.inspectorWindow} ${panelStyles.panel}`} aria-label="Карточка и редактор" data-campaign-panel="inspector"
+    data-inventory-drop-target={Boolean(node && actions.dropTarget === node.id) || undefined}>
     <ResizeGrip label="Ширина карточки" width={width} min={300} onResize={onResize} />
     <NodePanelHeader title={edge ? 'Связь' : entityLabel(node?.data.entityType ?? reference!.entityType)} closeLabel="Закрыть карточку" onClose={onClose} />
     <ScrollArea key={editing ? 'editing' : 'viewing'} aria-label="Карточка и редактор" rootClassName={styles.panelScrollArea}
@@ -98,9 +100,9 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
               changeNode(item => key === 'x' || key === 'y' ? { ...item, position: { ...item.position, [key]: value } }
                 : { ...item, [key]: Math.max(nodeMinimumSize(item.data.entityType)[key], value) })
             }} /></label>)}</div>
-          {canContain(node) && <div className={styles.statField}><span>Расположение</span><Combobox rootClassName={panelStyles.fieldControl} aria-label="Локация экземпляра" value={node.data.locationId ?? ''}
-            options={[{ value: '', label: 'На холсте' }, ...diagram.nodes.filter(item => item.type === 'location').map(item => ({ value: item.id, label: item.data.title }))]}
-            onValueChange={value => { if (value !== null) onChange(current => moveToLocation(current, node.id, value || undefined)) }} />
+          {canContain(node) && <div className={styles.statField}><span>Расположение</span><Combobox rootClassName={panelStyles.fieldControl} aria-label="Локация экземпляра" value={containerOf(node) ?? ''}
+            options={[{ value: '', label: 'На холсте' }, ...diagram.nodes.filter(item => canPlaceInside(node, item)).map(item => ({ value: item.id, label: item.data.title }))]}
+            onValueChange={value => { if (value !== null) actions.placeInside(node.id, value || undefined) }} />
           </div>}
           </details>
           <p className={styles.hint}>Изменяется Entity этого экземпляра во всех её размещениях. Оригинал в библиотеке остаётся прежним.</p>
@@ -109,7 +111,7 @@ export function TableInspector({ selection, width, onResize, onClose, onChange, 
           {!hasInstanceEditor(node.data.entityType) && node.data.facts && <p>{node.data.facts}</p>}
           {node.data.description && <ContentEditor rootClassName={panelStyles.contentEditor} accessibleLabel="Описание экземпляра" value={node.data.description} onValueChange={ignoreChange} readOnly renderPreview />}
         </>}
-        {node.type === 'location' && <section><h3 className={styles.inspectorTitle}>Содержимое</h3>{diagram.nodes.filter(item => item.data.locationId === node.id).map(item => <div key={item.id} className={styles.member}>
+        {(node.type === 'location' || node.data.entityType === 'playerCharacter') && <section><h3 className={styles.inspectorTitle}>Содержимое</h3>{diagram.nodes.filter(item => containerOf(item) === node.id).map(item => <div key={item.id} className={styles.member}>
           <button type="button" onClick={() => actions.open(item.id)}>{item.data.title}</button>{!readOnly && <><button type="button" onClick={() => actions.edit(item.id)}>Изменить / перенести</button><button type="button" onClick={() => actions.release(item.id)}>Извлечь</button></>}
         </div>)}</section>}
       </>}

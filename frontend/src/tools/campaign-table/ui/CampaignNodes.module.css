@@ -34,7 +34,7 @@
   --node-stroke: color-mix(in srgb, var(--node-accent) 86%, var(--color-text-secondary));
   --node-stroke-width: 1.25px;
 }
-.mindNode[data-dragging='true'] { filter: drop-shadow(0 5px 8px color-mix(in srgb, var(--palette-black) 32%, transparent)); }
+.mindNode[data-dragging='true'] { opacity: 0.65; filter: drop-shadow(0 5px 8px color-mix(in srgb, var(--palette-black) 32%, transparent)); }
 .mindNode[data-connecting='true'] { cursor: crosshair; }
 .mindNode[data-connecting='true']:hover { --node-stroke: var(--selection-marker-fill); }
 .mindNode[data-connecting='true']:hover { --node-stroke-width: 1.25px; }
@@ -98,6 +98,7 @@
 
 .nodeTopline { position: absolute; z-index: 5; top: -28px; right: 0; left: 0; display: flex; align-items: center; gap: var(--space-1); pointer-events: none; }
 .nodeTopline > * { pointer-events: auto; }
+.nodeActions::after, .nodeMembers::after { content: ''; position: absolute; top: 100%; right: 0; left: 0; height: 6px; pointer-events: auto; }
 .nodeActions, .nodeMembers { position: relative; flex: 0 0 auto; }
 .nodeActions { margin-left: auto; }
 .nodeQuickActions { display: flex; gap: 3px; }
@@ -139,14 +140,13 @@
 .mindNode .nodeResizeHandle:global(.react-flow__resize-control.handle) { width: 24px; height: 24px; border: 0; border-radius: 0; background: transparent; }
 .nodeResizeHandle::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border: 1px solid var(--node-stroke); border-radius: 2px; background: var(--color-surface-default); transition: background var(--motion-duration-fast); }
 .nodeResizeHandle:hover::after { background: var(--node-accent); }
-.connectionPort { position: absolute; z-index: 4; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; transform: translate(-50%, -50%); cursor: crosshair; opacity: 0; pointer-events: none; }
+.connectionPort { position: absolute; z-index: 4; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; transform: translate(-50%, -50%) scale(var(--port-scale, 1)); cursor: crosshair; opacity: 0; pointer-events: none; touch-action: none; }
 .connectionPort::after { content: ''; display: block; width: 7px; height: 7px; margin: auto; box-sizing: border-box; border: 1px solid var(--node-stroke); border-radius: 50%; background: var(--color-surface-default); transition: width var(--motion-duration-fast), height var(--motion-duration-fast), box-shadow var(--motion-duration-fast); }
-.connectionPort[data-side='top'] { left: 50%; top: -10px; }
-.connectionPort[data-side='right'] { left: calc(100% + 10px); top: 50%; }
-.connectionPort[data-side='bottom'] { left: 50%; top: calc(100% + 10px); }
-.connectionPort[data-side='left'] { left: -10px; top: 50%; }
-.mindNode:hover .connectionPort, .mindNode:focus-within .connectionPort { opacity: 1; pointer-events: auto; }
+.mindNode:hover .connectionPort, .mindNode:focus-within .connectionPort, .mindNode[data-selected='true'] .connectionPort { opacity: 1; pointer-events: auto; }
+.mindNode[data-drop-target='true'] { --node-stroke: var(--selection-marker-fill); --node-stroke-width: 2px; }
+.mindNode[data-drop-target='true'] .nodeOutline { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--selection-marker-fill) 40%, transparent)); }
 .connectionPort:hover::after, .connectionPort:focus-visible::after { width: 10px; height: 10px; background: var(--node-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-accent) 12%, transparent); }
+.mindNode[data-dragging='true'] .nodeTopline, .mindNode[data-dragging='true'] .connectionPort { opacity: 0; pointer-events: none; }
 
 .draftNode { min-height: 4.5rem; background: var(--node-surface); border: 1px solid var(--node-stroke); border-radius: var(--radius-sm); }
 .draftNode > span { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
