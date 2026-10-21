@@ -309,10 +309,10 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
             </form></>}
         </div>}><Button size="sm" variant="secondary" decoration="bare" className={styles.toolButton} aria-label={`Выбрать схему: ${diagram.name}`}>{diagram.name} <span aria-hidden="true">⌄</span></Button></Popover>
         <span className={styles.schemeCount}>{diagram.nodes.length} узлов · {diagram.edges.length} связей</span>
-        {!readOnly && libraryCollapsed && <Button size="sm" variant="secondary" decoration="bare" className={styles.toolButton} onClick={onToggleLibrary}>Библиотека</Button>}
+        <Button size="sm" variant="secondary" decoration="bare" className={styles.toolButton} onClick={() => void flow.fitView({ padding: 0.25, maxZoom: 1 })}>Показать всё</Button>
       </div>
         <div className={styles.actions}>
-          <Button size="sm" variant="secondary" decoration="bare" className={styles.toolButton} onClick={() => void flow.fitView({ padding: 0.25, maxZoom: 1 })}>Показать всё</Button>
+          {!readOnly && libraryCollapsed && <Button size="sm" variant="secondary" decoration="bare" className={styles.toolButton} onClick={onToggleLibrary}>Библиотека</Button>}
         </div>
       </header>
       <div ref={canvasRef} className={styles.canvas} data-cursor-light-background="" data-linking={linking}

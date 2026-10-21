@@ -56,6 +56,12 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await reset()
 
+  const libraryButton = await page.getByRole('button', { name: 'Библиотека', exact: true }).boundingBox()
+  const fitButton = await page.getByRole('button', { name: 'Показать всё', exact: true }).boundingBox()
+  const board = await page.getByRole('region', { name: 'Схема кампании', exact: true }).boundingBox()
+  assert.ok(libraryButton.x > fitButton.x, 'Библиотека справа от Показать всё')
+  assert.ok(board.x + board.width - libraryButton.x - libraryButton.width < 20, 'Библиотека у правого края шапки')
+
   // Порт лежит на реальной окружности, а не на прямоугольнике подписи.
   const geometry = await node('playerCharacter').evaluate(element => {
     const shape = element.querySelector('svg[class*="nodeOutline"]').getBoundingClientRect()

@@ -1481,6 +1481,9 @@ describe('Character Sheet fixed desktop composition', () => {
     const sheetRect = sheetPage.getBoundingClientRect()
 
     expect(toggleRect.height).toBeCloseTo(48, 0)
+    expect(getComputedStyle(toggle).backgroundImage).toBe('none')
+    expect(getComputedStyle(toggle).clipPath).toBe('none')
+    expect(getComputedStyle(toggle).borderTopRightRadius).not.toBe('0px')
     expect(sheetRect.right - toggleRect.left).toBeGreaterThan(4)
     expect(toggleRect.right).toBeGreaterThan(sheetRect.right)
     expect(icon.firstElementChild).not.toBeNull()
@@ -1510,6 +1513,8 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(getComputedStyle(label).fontFamily).toContain('Gilroy')
     expect(getComputedStyle(label).fontWeight).toBe('400')
     expect(getComputedStyle(label).opacity).toBe('1')
+    expect(getComputedStyle(toggle).backgroundImage).toBe('none')
+    expect(getComputedStyle(toggle).boxShadow).toBe('none')
 
     await act(async () => {
       await clickSpellSheetTab(toggle)
@@ -1552,7 +1557,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(toggle.getBoundingClientRect().left - hoverOffset * returnedScale).toBeCloseTo(toggleRect.left, 0)
   })
 
-  it('выдвигает энциклопедию из-за края листа и плавно выделяет место под колонку', async () => {
+  it('выдвигает энциклопедию с правого края и плавно выделяет место под колонку', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
     const container = await mountCharacterSheet()
     const trigger = container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!
@@ -1561,6 +1566,7 @@ describe('Character Sheet fixed desktop composition', () => {
     const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
     const spellDrawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
     expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
+    expect(drawer.getBoundingClientRect().left).toBeCloseTo(dock.getBoundingClientRect().right, 0)
     await act(async () => { await userEvent.click(trigger); await nextFrame() })
     const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
     expect(panel).not.toBeNull()
@@ -1571,6 +1577,7 @@ describe('Character Sheet fixed desktop composition', () => {
     const opening = [dock, drawer, book].flatMap(element => element.getAnimations())
     let previousVisibleWidth = 0
     let previousDockWidth = 128
+    let previousOffset = 384
     for (const time of [100, 280, 480]) {
       await act(async () => {
         opening.forEach(animation => { animation.pause(); animation.currentTime = time })
@@ -1578,6 +1585,10 @@ describe('Character Sheet fixed desktop composition', () => {
       })
       const bounds = panel.getBoundingClientRect(), dockBounds = dock.getBoundingClientRect()
       const visibleWidth = Math.min(bounds.right, dockBounds.right) - Math.max(bounds.left, dockBounds.left)
+      const offset = new DOMMatrixReadOnly(getComputedStyle(drawer).transform).m41
+      expect(offset).toBeGreaterThan(0)
+      expect(offset).toBeLessThan(previousOffset)
+      expect(bounds.right).toBeGreaterThan(dockBounds.right)
       expect(visibleWidth).toBeGreaterThan(previousVisibleWidth)
       expect(visibleWidth).toBeLessThan(384)
       expect(dockBounds.width).toBeGreaterThan(previousDockWidth)
@@ -1586,9 +1597,11 @@ describe('Character Sheet fixed desktop composition', () => {
       expect(getComputedStyle(panel).filter).toBe('none')
       previousVisibleWidth = visibleWidth
       previousDockWidth = dockBounds.width
+      previousOffset = offset
     }
     await act(async () => { opening.forEach(animation => animation.finish()); await nextFrame() })
     expect(dock.getBoundingClientRect().width).toBeCloseTo(384, 0)
+    expect(panel.getBoundingClientRect().right).toBeCloseTo(dock.getBoundingClientRect().right, 0)
     const close = panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!
     await act(async () => { await userEvent.click(close); await nextFrame() })
     expect(drawer.dataset.state).toBe('closing')
@@ -1634,6 +1647,13 @@ describe('Character Sheet fixed desktop composition', () => {
 
     expect(trigger.textContent).toContain('Энциклопедия')
     expect(trigger.querySelector('svg')).not.toBeNull()
+    expect(trigger).toHaveAttribute('data-decoration', 'bare')
+    expect(getComputedStyle(trigger).backgroundImage).toBe('none')
+    expect(getComputedStyle(trigger, '::before').display).toBe('none')
+    expect(getComputedStyle(trigger).textTransform).toBe('none')
+    expect(trigger.getBoundingClientRect().height).toBeCloseTo(36, 0)
+    await act(async () => { await userEvent.hover(trigger); await nextFrame() })
+    expect(getComputedStyle(trigger).backgroundImage).toBe('none')
     expect(getComputedStyle(trigger).writingMode).not.toBe('vertical-rl')
     expect(trigger.getBoundingClientRect().top).toBeCloseTo(
       sheet.getBoundingClientRect().top,

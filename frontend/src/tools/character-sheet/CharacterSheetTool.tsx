@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
-import { PlaceholderIcon } from '../../shared/ui'
+import { BookIcon, Button } from '../../shared/ui'
 import {
   CharacterSheetProvider,
   FORMULA_FIELD_KEYS,
@@ -310,16 +310,18 @@ function CharacterSheetWorkspace({
       </div>
     </div>
     <div className={styles.libraryDock} data-encyclopedia-dock data-open={libraryOpen}>
-      {!libraryOpen && <button type="button" className={styles.libraryTrigger}
+      {!libraryOpen && <Button size="sm" variant="secondary" decoration="bare" className={styles.libraryTrigger}
         ref={libraryTrigger}
         data-encyclopedia-trigger
         title="Открыть энциклопедию"
         aria-expanded={false}
         aria-label="Открыть энциклопедию для листа персонажа"
         onClick={() => { setLibraryMounted(true); setLibraryOpen(true) }}>
-        <span className={styles.libraryTriggerIcon} aria-hidden="true"><PlaceholderIcon /></span>
-        <span>Энциклопедия</span>
-      </button>}
+        <span className={styles.libraryTriggerContent}>
+          <span className={styles.libraryTriggerIcon} aria-hidden="true"><BookIcon /></span>
+          <span>Энциклопедия</span>
+        </span>
+      </Button>}
       <div className={styles.libraryReveal}>
         <div className={styles.libraryDrawer} data-encyclopedia-drawer
           data-state={libraryOpen ? 'open' : libraryMounted ? 'closing' : 'closed'}

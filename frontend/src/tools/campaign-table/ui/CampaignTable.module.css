@@ -116,7 +116,8 @@
 .creationMenu > button { padding: var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-primary); font: inherit; font-size: var(--font-size-sm); text-align: left; cursor: pointer; }
 .creationMenu > button:hover:not(:disabled), .creationMenu > button:focus-visible { background: var(--color-surface-accent); color: var(--color-heading-primary); }
 .creationMenu > button:disabled { color: var(--color-text-subtle); cursor: default; }
-.inspectorWindow { position: absolute; z-index: 10; right: calc(var(--library-width) + var(--space-2)); top: 0; bottom: 0; width: var(--inspector-width); max-width: calc(100% - var(--library-width) - var(--space-2)); display: flex; flex-direction: column; background: var(--color-surface-default); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-md); box-shadow: var(--shadow-panel); }
+/* Не перекрываем шапку схемы: библиотека должна открываться и при выбранной ноде. */
+.inspectorWindow { position: absolute; z-index: 10; right: calc(var(--library-width) + var(--space-2)); top: calc(var(--control-height-md) + 2 * var(--border-width-default)); bottom: 0; width: var(--inspector-width); max-width: calc(100% - var(--library-width) - var(--space-2)); display: flex; flex-direction: column; background: var(--color-surface-default); border: var(--border-width-default) solid var(--color-border-accent); border-radius: var(--radius-md); box-shadow: var(--shadow-panel); }
 .workspace[data-public='true'] .inspectorWindow, .workspace[data-collapsed='true'] .inspectorWindow { right: 0; max-width: 100%; }
 .inspectorWindow { container: instance-editor / size; }
 .inspectorWindow[data-inventory-drop-target='true'] [data-character-sheet-slot='equipment'] { border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--selection-marker-fill), 0 0 16px color-mix(in srgb, var(--selection-marker-fill) 28%, transparent); }

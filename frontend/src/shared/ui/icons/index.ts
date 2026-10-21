@@ -1,4 +1,5 @@
 export { AttunementIcon } from './AttunementIcon'
+export { BookIcon } from './BookIcon'
 export { DiceIcon } from './DiceIcon'
 export type { DiceIconProps } from './DiceIcon'
 export { DICE_TYPES, getDiceTypeFromExpression } from './dice'
