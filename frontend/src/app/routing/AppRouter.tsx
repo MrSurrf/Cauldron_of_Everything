@@ -46,6 +46,7 @@ const MockTarrasquePage = lazy(
 )
 const EncyclopediaPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaPage'))
 const ArticlesPage = lazy(() => import('../../pages/articles/ArticlesPage'))
+const ArticleEditorPage = lazy(() => import('../../pages/articles/ArticleEditorPage'))
 const SpellsPage = lazy(() => import('../../pages/encyclopedia/SpellsPage'))
 const ItemsPage = lazy(() => import('../../pages/encyclopedia/ItemsPage'))
 const ClassesPage = lazy(() => import('../../pages/encyclopedia/ClassesPage'))
@@ -118,6 +119,7 @@ function RoutedApp() {
               <Route path="/characters" element={<CharactersPage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
               <Route path="/articles" element={<ArticlesPage />} />
+              <Route path="/articles/create" element={<ArticleEditorPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/item/:slug" element={<ItemEntityPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
