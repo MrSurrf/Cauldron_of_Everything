@@ -74,10 +74,12 @@ function CharacterSheetWorkspace({
   const [spellSheetMounted, setSpellSheetMounted] = useState(false)
   const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [libraryMounted, setLibraryMounted] = useState(false)
   const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
+  const libraryTrigger = useRef<HTMLButtonElement>(null)
 
   function expandSpellTab(button: HTMLButtonElement) {
     const moving = button.parentElement?.getAnimations()
@@ -94,6 +96,15 @@ function CharacterSheetWorkspace({
     const fallback = window.setTimeout(() => setSpellSheetMounted(false), 750)
     return () => window.clearTimeout(fallback)
   }, [spellSheetMounted, spellsOpen])
+
+  useEffect(() => {
+    if (libraryOpen || !libraryMounted) return
+    const focus = window.requestAnimationFrame(() => libraryTrigger.current?.focus({ preventScroll: true }))
+    // transitionend не придёт при reduced motion или прерванной CSS-анимации.
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750
+    const fallback = window.setTimeout(() => setLibraryMounted(false), delay)
+    return () => { window.cancelAnimationFrame(focus); window.clearTimeout(fallback) }
+  }, [libraryMounted, libraryOpen])
 
   useEffect(() => {
     const root = workspace.current
@@ -193,7 +204,8 @@ function CharacterSheetWorkspace({
 
   return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
     style={{ '--book-min-width': `${spreadWidth}px` } as CSSProperties}
-    data-fit-width={fitWidth || undefined} data-library-open={libraryOpen} data-spells-open={spellsOpen}>
+    data-fit-width={fitWidth || undefined} data-library-mounted={libraryMounted || undefined}
+    data-library-open={libraryOpen} data-spells-open={spellsOpen}>
     <div className={styles.sheetSpace} aria-label="Листы персонажа">
       <div
         className={`${styles.book} ${dragStyles.scene}`}
@@ -297,23 +309,33 @@ function CharacterSheetWorkspace({
         </div>
       </div>
     </div>
-    <div className={styles.libraryDock} data-open={libraryOpen}>
+    <div className={styles.libraryDock} data-encyclopedia-dock data-open={libraryOpen}>
       {!libraryOpen && <button type="button" className={styles.libraryTrigger}
+        ref={libraryTrigger}
         data-encyclopedia-trigger
         title="Открыть энциклопедию"
         aria-expanded={false}
         aria-label="Открыть энциклопедию для листа персонажа"
-        onClick={() => setLibraryOpen(true)}>
+        onClick={() => { setLibraryMounted(true); setLibraryOpen(true) }}>
         <span className={styles.libraryTriggerIcon} aria-hidden="true"><PlaceholderIcon /></span>
         <span>Энциклопедия</span>
       </button>}
-      {libraryOpen && <CharacterEncyclopediaPanel
-        className={styles.library}
-        mode={libraryMode}
-        onModeChange={setLibraryMode}
-        onAdd={addEntry}
-        onClose={() => setLibraryOpen(false)}
-      />}
+      <div className={styles.libraryReveal}>
+        <div className={styles.libraryDrawer} data-encyclopedia-drawer
+          data-state={libraryOpen ? 'open' : libraryMounted ? 'closing' : 'closed'}
+          aria-hidden={!libraryOpen} inert={!libraryOpen}
+          onTransitionEnd={event => {
+            if (event.target === event.currentTarget && event.propertyName === 'transform' && !libraryOpen) setLibraryMounted(false)
+          }}>
+          {libraryMounted && <CharacterEncyclopediaPanel
+            className={styles.library}
+            mode={libraryMode}
+            onModeChange={setLibraryMode}
+            onAdd={addEntry}
+            onClose={() => setLibraryOpen(false)}
+          />}
+        </div>
+      </div>
     </div>
     {importError && <div className={styles.importError} role="alert">
       <span>{importError}</span>

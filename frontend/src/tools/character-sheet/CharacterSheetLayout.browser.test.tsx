@@ -76,7 +76,8 @@ async function settleSheetLayout(container: HTMLElement) {
     await nextFrame()
     const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
     const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
-    ;[book, drawer].flatMap((element) => element.getAnimations()).forEach((animation) => animation.finish())
+    const encyclopedia = Array.from(container.querySelectorAll<HTMLElement>('[data-encyclopedia-dock], [data-encyclopedia-drawer]'))
+    ;[book, drawer, ...encyclopedia].flatMap((element) => element.getAnimations()).forEach((animation) => animation.finish())
     await nextFrame()
   })
 }
@@ -1549,6 +1550,77 @@ describe('Character Sheet fixed desktop composition', () => {
     const returnedScale = characterPanel.getBoundingClientRect().width / characterPanel.offsetWidth
     const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
     expect(toggle.getBoundingClientRect().left - hoverOffset * returnedScale).toBeCloseTo(toggleRect.left, 0)
+  })
+
+  it('выдвигает энциклопедию из-за края листа и плавно выделяет место под колонку', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const trigger = container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!
+    const dock = container.querySelector<HTMLElement>('[data-encyclopedia-dock]')!
+    const drawer = container.querySelector<HTMLElement>('[data-encyclopedia-drawer]')!
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const spellDrawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
+    await act(async () => { await userEvent.click(trigger); await nextFrame() })
+    const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
+    expect(panel).not.toBeNull()
+    expect(getComputedStyle(drawer).transitionDuration).toBe(getComputedStyle(spellDrawer).transitionDuration)
+    expect(getComputedStyle(drawer).transitionTimingFunction).toBe(getComputedStyle(spellDrawer).transitionTimingFunction)
+    expect(drawer.getAnimations()).toHaveLength(1)
+    expect(dock.getAnimations().length).toBeGreaterThan(0)
+    const opening = [dock, drawer, book].flatMap(element => element.getAnimations())
+    let previousVisibleWidth = 0
+    let previousDockWidth = 128
+    for (const time of [100, 280, 480]) {
+      await act(async () => {
+        opening.forEach(animation => { animation.pause(); animation.currentTime = time })
+        await nextFrame()
+      })
+      const bounds = panel.getBoundingClientRect(), dockBounds = dock.getBoundingClientRect()
+      const visibleWidth = Math.min(bounds.right, dockBounds.right) - Math.max(bounds.left, dockBounds.left)
+      expect(visibleWidth).toBeGreaterThan(previousVisibleWidth)
+      expect(visibleWidth).toBeLessThan(384)
+      expect(dockBounds.width).toBeGreaterThan(previousDockWidth)
+      expect(bounds.width).toBeCloseTo(384, 0) // Контент не сжимается вместе с выдвижным окном.
+      expect(getComputedStyle(panel).opacity).toBe('1')
+      expect(getComputedStyle(panel).filter).toBe('none')
+      previousVisibleWidth = visibleWidth
+      previousDockWidth = dockBounds.width
+    }
+    await act(async () => { opening.forEach(animation => animation.finish()); await nextFrame() })
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(384, 0)
+    const close = panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!
+    await act(async () => { await userEvent.click(close); await nextFrame() })
+    expect(drawer.dataset.state).toBe('closing')
+    expect(drawer).toHaveAttribute('inert')
+    expect(drawer).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
+    expect(drawer.getAnimations()).toHaveLength(1)
+    await settleSheetLayout(container)
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBeNull()
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
+    expect(document.activeElement).toBe(container.querySelector('[data-encyclopedia-trigger]'))
+  })
+
+  it('разворачивает закрывающуюся энциклопедию без повторного монтажа и запоздалого исчезновения', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    await settleSheetLayout(container)
+    const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
+    await act(async () => { panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!.click(); await nextFrame() })
+    expect(panel.closest('[data-encyclopedia-drawer]')).toHaveAttribute('inert')
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    await settleSheetLayout(container)
+    await act(async () => { await new Promise(resolve => window.setTimeout(resolve, 800)) })
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
+    expect(panel.closest('[data-encyclopedia-drawer]')).toHaveAttribute('data-state', 'open')
+    expect(panel.closest('[data-encyclopedia-drawer]')).not.toHaveAttribute('inert')
+    // Энциклопедия не мешает одновременному раскрытию листа заклинаний.
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!); await nextFrame() })
+    await settleSheetLayout(container)
+    expect(container.querySelector('[data-spell-sheet-panel]')).not.toBeNull()
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
   })
 
   it('скрывает верхнюю кнопку энциклопедии после открытия боковой панели', async () => {
