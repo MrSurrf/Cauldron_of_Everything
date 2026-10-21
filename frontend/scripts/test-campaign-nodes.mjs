@@ -54,6 +54,7 @@ try {
   await page.reload()
   await page.getByRole('button', { name: 'Свернуть библиотеку' }).click()
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__node').length === 9)
+  await page.evaluate(() => document.fonts.ready)
   const pane = page.locator('.react-flow__pane')
   assert.equal(await pane.evaluate(el => getComputedStyle(el).cursor), 'default')
   // Даже во время панорамирования пустого холста не показываем руку для drag ноды.
@@ -65,7 +66,15 @@ try {
     assert.equal(await node(type).locator('article').getAttribute('data-entity-type'), type)
     assert.equal(await node(type).locator('.react-flow__handle').first().evaluate(el => getComputedStyle(el).opacity), '0')
     assert.equal(await node(type).getByRole('button', { name: /^Соединить / }).count(), 4)
+    const typography = await node(type).getByRole('heading').evaluate(element => ({ family: getComputedStyle(element).fontFamily, weight: getComputedStyle(element).fontWeight }))
+    assert.ok(typography.family.includes('Greengoth Regular'), `${type}: название должно использовать заголовочный шрифт дизайн-кода`)
+    assert.equal(typography.weight, '400', `${type}: без искусственного жирного начертания`)
+    for (const summary of await node(type).locator('[class*="nodeSummary"]').all()) {
+      assert.ok((await summary.evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'), `${type}: описание должно использовать основной шрифт`)
+    }
   }
+  assert.ok((await node('spell').getByLabel('Уровень заклинания: 3').locator('span').evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'))
+  assert.ok((await page.locator('.react-flow__edge-text').first().evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'))
   assert.equal(await node('playerCharacter').locator('circle').count(), 1)
   assert.equal(await node('npc').locator('circle').count(), 1)
   assert.equal(await node('spell').locator('article').getAttribute('data-shape'), 'diamond')
