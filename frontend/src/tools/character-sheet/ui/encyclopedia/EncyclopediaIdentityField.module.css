@@ -1,5 +1,0 @@
-.dropTarget.dropTarget {
-  outline: var(--border-width-strong) solid var(--color-border-accent);
-  outline-offset: calc(-1 * var(--border-width-strong));
-  background: var(--color-surface-accent);
-}

@@ -1,11 +1,12 @@
-import { useState, type DragEvent } from 'react'
+import type { DragEvent } from 'react'
 import { characterSheetActions } from '../../model'
 import { ContentEditor } from '../../../../shared/ui'
 import { hasCharacterEncyclopediaTypeDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
+import { useCharacterEncyclopediaDropTarget } from '../encyclopedia/useCharacterEncyclopediaDrag'
+import dragStyles from '../encyclopedia/characterEncyclopediaDragFeedback.module.css'
 import { createResourceMaximumEvaluator } from './resourceMaximumEvaluator'
 import { SheetSection } from '../SheetSection'
 import type { CharacterSheetViewModel } from './sheetViewModel'
-import styles from './CharacterEquipmentSection.module.css'
 
 export type CharacterEquipmentSectionProps = {
   sheet: CharacterSheetViewModel
@@ -16,34 +17,43 @@ export function CharacterEquipmentSection({
   sheet,
   onEncyclopediaItemDrop,
 }: CharacterEquipmentSectionProps) {
-  const [itemDragOver, setItemDragOver] = useState(false)
+  const feedback = useCharacterEncyclopediaDropTarget('item', Boolean(onEncyclopediaItemDrop))
   const {
     dispatch,
     document,
   } = sheet
 
+  function handleDragOver(event: DragEvent<HTMLElement>) {
+    if (!onEncyclopediaItemDrop || !hasCharacterEncyclopediaTypeDrag(event.dataTransfer, 'item')) return
+    const matches = event.target instanceof Element && Boolean(event.target.closest('[data-content-editor-frame]'))
+    event.preventDefault()
+    event.dataTransfer.dropEffect = matches ? 'copy' : 'none'
+    feedback.setActive(matches)
+  }
+
   return (
-    <SheetSection className={styles.section} contentLayout="editor" title="Снаряжение"
-      data-item-drop-target={itemDragOver}
-      onDragOver={(event: DragEvent<HTMLElement>) => {
-        if (!onEncyclopediaItemDrop || !hasCharacterEncyclopediaTypeDrag(event.dataTransfer, 'item')
-          || !(event.target instanceof Element)
-          || !event.target.closest('[data-content-editor-frame]')) return
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'copy'
-        if (!itemDragOver) setItemDragOver(true)
-      }}
+    <SheetSection className={[dragStyles.target, feedback.available && dragStyles.available,
+      feedback.active && dragStyles.active, feedback.received && dragStyles.received].filter(Boolean).join(' ')}
+      contentLayout="editor" title="Снаряжение"
+      data-encyclopedia-drop-zone="item"
+      data-encyclopedia-drop-available={feedback.available || undefined}
+      data-item-drop-target={feedback.active}
+      data-drop-active={feedback.active || undefined}
+      data-drop-received={feedback.received || undefined}
+      onDragEnter={handleDragOver}
+      onDragOver={handleDragOver}
       onDragLeave={(event: DragEvent<HTMLElement>) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setItemDragOver(false)
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) feedback.setActive(false)
       }}
       onDrop={(event: DragEvent<HTMLElement>) => {
-        setItemDragOver(false)
+        feedback.setActive(false)
         if (!onEncyclopediaItemDrop || !(event.target instanceof Element)
           || !event.target.closest('[data-content-editor-frame]')
           || readCharacterEncyclopediaDrag(event.dataTransfer)?.entityType !== 'item') return
         event.preventDefault()
         event.stopPropagation()
         onEncyclopediaItemDrop(event.dataTransfer)
+        feedback.receive()
       }}>
       <ContentEditor
           evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}

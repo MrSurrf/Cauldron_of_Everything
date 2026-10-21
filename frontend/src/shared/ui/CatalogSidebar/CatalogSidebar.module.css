@@ -1,0 +1,113 @@
+.panel {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width-default) solid var(--color-content-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+  container: catalog-sidebar / inline-size;
+}
+
+.header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.header h2 {
+  margin: 0;
+  font: 400 var(--font-size-lg)/1.2 var(--font-family-heading);
+}
+
+.filters {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(8rem, 42%) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.results {
+  flex: 1;
+  min-height: 6rem;
+}
+
+.row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.entry {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: grab;
+  text-align: left;
+}
+
+.entry:hover,
+.entry[aria-pressed='true'] {
+  outline: var(--border-width-default) solid var(--color-border-accent);
+}
+
+.entry:active {
+  cursor: grabbing;
+}
+
+.entry:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-interactive);
+  outline-offset: var(--border-width-strong);
+}
+
+.message {
+  margin: 0;
+  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.message p {
+  margin: 0 0 var(--space-2);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+}
+
+.pagination > span {
+  text-align: center;
+}
+
+@container catalog-sidebar (max-width: 24rem) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -50,6 +50,9 @@ export function toCharacterEncyclopediaEntry(entry: EncyclopediaEntry): Characte
 export function writeCharacterEncyclopediaDrag(dataTransfer: DataTransfer, entry: CharacterEncyclopediaEntry): void {
   dataTransfer.setData(CHARACTER_ENCYCLOPEDIA_DRAG_TYPE, JSON.stringify(entry))
   dataTransfer.setData(`${CHARACTER_ENCYCLOPEDIA_DRAG_TYPE}-${entry.entityType}`, '1')
+  if (entry.entityType === 'spell' && entry.level !== null) {
+    dataTransfer.setData(`${CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE}-level-${entry.level}`, '1')
+  }
   dataTransfer.setData('text/plain', entry.name)
   dataTransfer.effectAllowed = 'copy'
 }
@@ -65,6 +68,13 @@ export function hasCharacterEncyclopediaSpellDrag(dataTransfer: DataTransfer): b
 export function hasCharacterEncyclopediaTypeDrag(dataTransfer: DataTransfer, mode: CharacterEncyclopediaMode): boolean {
   return hasCharacterEncyclopediaDrag(dataTransfer)
     && Array.from(dataTransfer.types).includes(`${CHARACTER_ENCYCLOPEDIA_DRAG_TYPE}-${mode}`)
+}
+
+/** Уровень доступен даже в protected mode, когда браузер скрывает getData(). */
+export function hasCharacterEncyclopediaSpellLevelDrag(dataTransfer: DataTransfer, level: number): boolean {
+  if (!hasCharacterEncyclopediaSpellDrag(dataTransfer)) return false
+  const levelType = Array.from(dataTransfer.types).find(type => type.startsWith(`${CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE}-level-`))
+  return levelType === undefined || levelType === `${CHARACTER_ENCYCLOPEDIA_SPELL_DRAG_TYPE}-level-${level}`
 }
 
 export function readCharacterEncyclopediaDrag(dataTransfer: DataTransfer): CharacterEncyclopediaEntry | null {

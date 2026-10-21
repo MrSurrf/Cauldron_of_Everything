@@ -34,6 +34,7 @@ import {
   equipmentItemSource,
   spellDetailPatch,
 } from './ui/encyclopedia/characterEntryImport'
+import { CharacterEncyclopediaDragProvider } from './ui/encyclopedia/CharacterEncyclopediaDragProvider'
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
@@ -346,11 +347,13 @@ export function CharacterSheetTool({
       initialDocument={initialDocument}
       onDocumentChange={onDocumentChange}
     >
-      <CharacterSheetWorkspace
-        className={className}
-        onPortraitFileSelect={onPortraitFileSelect}
-        onPortraitRemove={onPortraitRemove}
-      />
+      <CharacterEncyclopediaDragProvider>
+        <CharacterSheetWorkspace
+          className={className}
+          onPortraitFileSelect={onPortraitFileSelect}
+          onPortraitRemove={onPortraitRemove}
+        />
+      </CharacterEncyclopediaDragProvider>
     </CharacterSheetProvider>
   )
 }

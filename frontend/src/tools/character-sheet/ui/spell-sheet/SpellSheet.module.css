@@ -267,6 +267,7 @@
 .removeButton:hover { color: var(--palette-purple-300); }
 .emptyLevel { margin: var(--sheet-layout-gap) 0; color: var(--color-text-disabled); font-size: 0.625rem; }
 .dropHint { display: none; margin-top: auto; padding: var(--sheet-layout-gap); color: var(--palette-purple-300); text-align: center; font-size: 0.625rem; }
+.levelCard[data-encyclopedia-drop-available='true'] .dropHint,
 .levelCard[data-drop-target='true'] .dropHint { display: block; }
 .root button:focus-visible,
 .abilitySelect:focus-visible { outline: 2px solid var(--palette-purple-300); outline-offset: 2px; }
