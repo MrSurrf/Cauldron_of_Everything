@@ -54,11 +54,17 @@ type Story = StoryObj<typeof meta>
 
 export const Catalog: Story = {
   play: async ({ canvas }) => {
-    const search = canvas.getByRole('searchbox', { name: 'Поиск по названию и содержанию карточки' })
+    const search = canvas.getByRole('searchbox', { name: 'Поиск по названию; Enter — поиск по содержимому карточек' })
     await expect(await canvas.findByText('Найдено: 3')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: /Арло Киттоу/ })).toBeVisible()
     await waitFor(() => expect(search).toBeEnabled())
+    await userEvent.type(search, 'Ар')
+    await waitFor(() => expect(canvas.getByText('Найдено: 1')).toBeVisible())
+    await expect(canvas.queryByRole('button', { name: /Болотник/ })).not.toBeInTheDocument()
+    await userEvent.clear(search)
     await userEvent.type(search, 'исследователь')
+    await expect(canvas.getByText('Найдено: 0')).toBeVisible()
+    await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(canvas.getByText('Найдено: 1')).toBeVisible())
     await expect(canvas.queryByRole('heading', { name: 'А', level: 3 })).not.toBeInTheDocument()
     await userEvent.clear(search)

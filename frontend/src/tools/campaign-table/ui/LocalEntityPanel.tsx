@@ -3,10 +3,12 @@ import { Button, ScrollArea, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { entityLabel } from '../model/library'
 import type { CanvasEntity, Diagram, TableNode } from '../model/table'
+import { containerOf } from '../model/nodeContainment'
 import { ResizeGrip } from './ResizeGrip'
 import { NodePanelHeader } from './NodePanelHeader'
 import { useTableActions } from './tableContext'
 import styles from './CampaignTable.module.css'
+import panelStyles from './CampaignPanels.module.css'
 
 type EntityChanges = Partial<Pick<CanvasEntity, 'name' | 'description'>>
 
@@ -19,7 +21,7 @@ function NameField({ entity, readOnly, onUpdate }: { entity: CanvasEntity; readO
     else setDraftName(entity.name)
   }
   return <label className={styles.localEntityField}>Название
-    <TextInput aria-label="Название Entity" value={draftName} readOnly={readOnly} onChange={event => { canceled.current = false; setDraftName(event.target.value) }}
+    <TextInput rootClassName={panelStyles.fieldControl} aria-label="Название Entity" value={draftName} readOnly={readOnly} onChange={event => { canceled.current = false; setDraftName(event.target.value) }}
       onBlur={save} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur(); if (event.key === 'Escape') { canceled.current = true; event.currentTarget.blur() } }} />
   </label>
 }
@@ -29,26 +31,29 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
   onResize: (width: number) => void; onClose: () => void; onOpenFull: () => void; onUpdate: (changes: EntityChanges) => void
 }) {
   const actions = useTableActions()
-  const members = node.type === 'location' ? diagram.nodes.filter(item => item.data.locationId === node.id) : []
+  const members = diagram.nodes.filter(item => containerOf(item) === node.id)
   const connectionCount = diagram.edges.filter(edge => edge.source === node.id || edge.target === node.id).length
-  return <aside className={styles.localEntityPanel} aria-label="Инспектор объекта">
+  return <aside className={`${styles.inspectorWindow} ${styles.localEntityPanel} ${panelStyles.panel}`} aria-label="Инспектор объекта" data-campaign-panel="entity">
     <ResizeGrip label="Ширина Inspector" width={width} min={300} onResize={onResize} />
     <NodePanelHeader title={entityLabel(entity.entityType)} closeLabel="Закрыть Inspector" onClose={onClose} />
-    <ScrollArea aria-label="Inspector объекта" rootClassName={styles.panelScrollArea} contentClassName={styles.localEntityBody}>
+    <ScrollArea aria-label="Inspector объекта" rootClassName={styles.panelScrollArea} contentClassName={`${styles.localEntityBody} ${panelStyles.body} ${panelStyles.contentTransition}`}>
       <NameField key={entity.id} entity={entity} readOnly={readOnly} onUpdate={onUpdate} />
       <div className={styles.localEntityField}><span>Краткое описание</span>
-        <ContentEditor accessibleLabel="Описание Entity" value={entity.description} readOnly={readOnly}
+        <ContentEditor rootClassName={panelStyles.contentEditor} accessibleLabel="Описание Entity" value={entity.description} readOnly={readOnly}
           onValueChange={description => onUpdate({ description })} rows={3} renderPreview />
       </div>
       {members.length > 0 && <section className={styles.localEntitySection}><h3>Содержимое</h3>
-        <ul>{members.map(member => <li key={member.id}>{member.data.title}</li>)}</ul>
+        <ul>{members.map(member => <li key={member.id} className={styles.member}>
+          <button type="button" onClick={() => actions.open(member.id)}>{member.data.title}</button>
+          {!readOnly && <button type="button" onClick={() => actions.release(member.id)}>Извлечь</button>}
+        </li>)}</ul>
       </section>}
       <p className={styles.localEntityMeta}>Связей: {connectionCount}</p>
-      <Button size="sm" onClick={onOpenFull}>Открыть полностью</Button>
+      <Button size="sm" variant="secondary" decoration="minimal" className={panelStyles.action} onClick={onOpenFull}>Открыть полностью</Button>
       {readOnly && <p className={styles.hint}>Только материалы, разрешённые сервером для публичного стола.</p>}
-      {!readOnly && <details className={styles.localEntityActions}><summary>Дополнительные действия</summary>
-        <button type="button" onClick={() => actions.duplicate(node.id)}>Дублировать размещение</button>
-        <button type="button" onClick={() => { actions.remove(node.id); onClose() }}>Убрать со схемы</button>
+      {!readOnly && <details className={`${styles.localEntityActions} ${panelStyles.additional} ${panelStyles.disclosure}`}><summary>Дополнительные действия</summary>
+        <Button size="sm" variant="secondary" decoration="bare" className={panelStyles.action} onClick={() => actions.duplicate(node.id)}>Дублировать размещение</Button>
+        <Button size="sm" variant="secondary" decoration="bare" className={`${panelStyles.action} ${panelStyles.danger}`} onClick={() => { actions.remove(node.id); onClose() }}>Убрать со схемы</Button>
       </details>}
     </ScrollArea>
   </aside>
@@ -57,17 +62,17 @@ export function LocalEntityInspector({ entity, node, diagram, width, readOnly, o
 export function LocalEntityEditor({ entity, diagramName, readOnly, onBack, onUpdate }: {
   entity: CanvasEntity; diagramName: string; readOnly: boolean; onBack: () => void; onUpdate: (changes: EntityChanges) => void
 }) {
-  return <section className={styles.localEntityEditor} aria-label="Редактор Entity">
-    <nav className={styles.localEntityTabs} role="tablist" aria-label="Рабочие вкладки">
+  return <section className={`${styles.localEntityEditor} ${panelStyles.panel}`} aria-label="Редактор Entity" data-campaign-panel="editor">
+    <nav className={`${styles.localEntityTabs} ${panelStyles.tabs}`} role="tablist" aria-label="Рабочие вкладки">
       <button type="button" role="tab" aria-selected="false" onClick={onBack}>{diagramName}</button>
       <button type="button" role="tab" aria-selected="true">{entity.name}</button>
     </nav>
-    <ScrollArea aria-label="Редактор Entity" rootClassName={styles.panelScrollArea} contentClassName={styles.localEntityEditorBody} role="tabpanel">
+    <ScrollArea key={entity.id} aria-label="Редактор Entity" rootClassName={styles.panelScrollArea} contentClassName={`${styles.localEntityEditorBody} ${panelStyles.contentTransition}`} role="tabpanel">
       <span className={styles.localEntityType}>{entityLabel(entity.entityType)}</span>
       <h2>{entity.name}</h2>
       <NameField key={entity.id} entity={entity} readOnly={readOnly} onUpdate={onUpdate} />
       <label className={styles.localEntityField}>Описание</label>
-      <ContentEditor accessibleLabel="Полное описание Entity" value={entity.description} readOnly={readOnly}
+      <ContentEditor rootClassName={panelStyles.contentEditor} accessibleLabel="Полное описание Entity" value={entity.description} readOnly={readOnly}
         onValueChange={description => onUpdate({ description })} rows={12} renderPreview showStructureActions />
     </ScrollArea>
   </section>

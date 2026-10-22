@@ -7,9 +7,11 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from 'react-router-dom'
 
 import { SiteHeader } from '../layouts/SiteHeader'
+import AuthPage from '../../pages/auth/AuthPage'
 import { AccessGate } from './AccessGate'
 import styles from './AppRouter.module.css'
 
@@ -19,12 +21,16 @@ const SurveyRoutePage = lazy(
 const DevHomePage = lazy(
   () => import('../../pages/dev/DevHomePage'),
 )
+const HomePage = lazy(() => import('../../pages/home/HomePage'))
 const ProfilePage = lazy(
   () => import('../../pages/profile/ProfilePage'),
 )
 const CampaignTableRoutePage = lazy(() => import('../../pages/campaign-table/CampaignTableRoutePage'))
 const CharacterSheetRoutePage = lazy(
   () => import('../../pages/character-sheet/CharacterSheetRoutePage'),
+)
+const CharactersPage = lazy(
+  () => import('../../pages/characters/CharactersPage'),
 )
 const BestiaryEntityPage = lazy(
   () =>
@@ -40,10 +46,14 @@ const MockTarrasquePage = lazy(
 )
 const EncyclopediaPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaPage'))
 const ArticlesPage = lazy(() => import('../../pages/articles/ArticlesPage'))
+const ArticleEditorPage = lazy(() => import('../../pages/articles/ArticleEditorPage'))
 const SpellsPage = lazy(() => import('../../pages/encyclopedia/SpellsPage'))
+const ItemsPage = lazy(() => import('../../pages/encyclopedia/ItemsPage'))
+const ClassesPage = lazy(() => import('../../pages/encyclopedia/ClassesPage'))
 const BackgroundsPage = lazy(() => import('../../pages/encyclopedia/BackgroundsPage'))
 const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
 const EncyclopediaEntryPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaEntryPage'))
+const ItemEntityPage = lazy(() => import('../../pages/encyclopedia/ItemEntityPage'))
 
 function RouteFallback() {
   return (
@@ -73,29 +83,48 @@ function BestiaryRoute() {
   return <BestiaryPage key={location.search} />
 }
 
-export function AppRouter() {
+function LoginPreviewPage() {
+  const navigate = useNavigate()
+
   return (
-    <BrowserRouter>
-      <AccessGate>
+    <AuthPage
+      onLogin={() => navigate('/')}
+      onBack={() => navigate('/')}
+    />
+  )
+}
+
+function RoutedApp() {
+  const location = useLocation()
+
+  return (
+    <AccessGate>
       <div className={styles.shell}>
-        <SiteHeader />
+        {location.pathname !== '/dev/login-preview' && <SiteHeader />}
         <div className={styles.content}>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route
                 path="/"
-                element={<DevHomePage />}
+                element={<HomePage />}
               />
+              <Route path="/dev" element={<DevHomePage />} />
               <Route
                 path="/survey"
                 element={<SurveyRoutePage />}
               />
+              <Route path="/dev/login-preview" element={<LoginPreviewPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-table" element={<CampaignTableRoutePage />} />
+              <Route path="/characters" element={<CharactersPage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
               <Route path="/articles" element={<ArticlesPage />} />
+              <Route path="/articles/create" element={<ArticleEditorPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
+              <Route path="/encyclopedia/item/:slug" element={<ItemEntityPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
+              <Route path="/encyclopedia/items" element={<ItemsPage />} />
+              <Route path="/encyclopedia/classes" element={<ClassesPage />} />
               <Route path="/encyclopedia/backgrounds" element={<BackgroundsPage />} />
               <Route path="/encyclopedia/:sectionId" element={<EncyclopediaSectionPage />} />
               <Route
@@ -126,7 +155,14 @@ export function AppRouter() {
           </Suspense>
         </div>
       </div>
-      </AccessGate>
+    </AccessGate>
+  )
+}
+
+export function AppRouter() {
+  return (
+    <BrowserRouter>
+      <RoutedApp />
     </BrowserRouter>
   )
 }

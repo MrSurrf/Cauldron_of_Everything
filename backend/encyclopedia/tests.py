@@ -79,6 +79,33 @@ class CreatureListApiTests(TestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["id"], self.creature.id)
 
+    def test_name_prefix_only_matches_start_of_name(self):
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Аббат",
+            slug="abbot",
+            content_html="",
+            content_text="Горный орёл",
+        )
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="«Горный страж»",
+            slug="mountain-guardian",
+            content_html="",
+            content_text="",
+        )
+        response = self.client.get(
+            "/api/encyclopedia/", {"type": "creature", "name_prefix": "го"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertIn(self.creature.id, [item["id"] for item in response.json()["results"]])
+
+        response = self.client.get(
+            "/api/encyclopedia/", {"type": "creature", "q": "Горный орёл"}
+        )
+        self.assertEqual(response.json()["count"], 2)
+
     def test_slug_lookup_is_exact_even_for_similar_names(self):
         Entity.objects.create(
             entity_type=Entity.Type.CREATURE,

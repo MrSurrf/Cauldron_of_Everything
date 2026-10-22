@@ -3,6 +3,7 @@ import type {
   NumericFieldState,
 } from '../characterSheet.types'
 import { ABILITY_KEYS } from '../characterSheet.types'
+import { getEffectiveSpellcastingAbility } from '../spellcastingAbility'
 import { getRulesetDefinition } from '../rulesets/registry'
 import {
   abilityModifierVariable,
@@ -191,6 +192,12 @@ export function buildCharacterSheetFormulaFields(
   document: CharacterSheetDocument,
 ): Record<string, FormulaFieldDefinition> {
   const ruleset = getRulesetDefinition(document.rulesetId)
+  const spellcastingAbility = getEffectiveSpellcastingAbility(document)
+  const defaultSpellcastingField: NumericFieldState = {
+    mode: 'formula',
+    manualValue: null,
+    formulaOverride: null,
+  }
   const fields: Record<string, FormulaFieldDefinition> = {
     LEVEL: { state: document.identity.level },
     EXPERIENCE: { state: document.identity.experience },
@@ -229,6 +236,14 @@ export function buildCharacterSheetFormulaFields(
     [FORMULA_FIELD_KEYS.maximumHitPoints]: { state: document.hitPoints.maximum },
     [FORMULA_FIELD_KEYS.currentHitPoints]: { state: document.hitPoints.current },
     [FORMULA_FIELD_KEYS.temporaryHitPoints]: { state: document.hitPoints.temporary },
+    [FORMULA_FIELD_KEYS.spellSaveDc]: {
+      state: document.spellcasting?.saveDc ?? defaultSpellcastingField,
+      defaultFormula: `8 + PROFICIENCY + ${abilityModifierVariable(spellcastingAbility)}`,
+    },
+    [FORMULA_FIELD_KEYS.spellAttackBonus]: {
+      state: document.spellcasting?.attackBonus ?? defaultSpellcastingField,
+      defaultFormula: `PROFICIENCY + ${abilityModifierVariable(spellcastingAbility)}`,
+    },
   }
 
   ABILITY_KEYS.forEach((ability) => {

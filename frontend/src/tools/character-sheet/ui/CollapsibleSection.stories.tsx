@@ -5,7 +5,9 @@ import type {
 import {
   expect,
   fn,
+  screen,
   userEvent,
+  waitFor,
 } from 'storybook/test'
 
 import { CollapsibleSection } from './CollapsibleSection'
@@ -49,10 +51,21 @@ export const Default: Story = {
       'aria-expanded',
       'true',
     )
+    await userEvent.hover(toggle)
+    await expect(
+      await screen.findByRole('tooltip'),
+    ).toHaveTextContent(
+      'Свернуть секцию «Особенности происхождения»',
+    )
     await userEvent.click(toggle)
     await expect(
-      canvas.queryByText(/Произвольное содержимое/),
+      screen.queryByRole('tooltip'),
     ).not.toBeInTheDocument()
+    await waitFor(async () => {
+      await expect(
+        canvas.queryByText(/Произвольное содержимое/),
+      ).not.toBeInTheDocument()
+    })
   },
 }
 

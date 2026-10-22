@@ -12,3 +12,8 @@ export function catalogFirstLetter(value: string): string {
   const firstLetter = catalogNameKey(value).match(/\p{L}/u)?.[0]
   return firstLetter?.toLocaleUpperCase('ru-RU') ?? '#'
 }
+
+export function catalogNameStartsWith(name: string, query: string): boolean {
+  const normalize = (value: string) => value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim()
+  return normalize(catalogNameKey(name)).startsWith(normalize(query))
+}

@@ -130,15 +130,22 @@ state, reference?, statBlock? }`. Поддерживаются `playerCharacter`
 материалы Entity; нельзя автоматически публиковать закрытую копию целиком.
 
 - Каждый узел содержит только собственный UUID, `type: entity|location|note`,
-  `position`, необязательные `width`/`height`, `data: { entityId, locationId? }`.
+  `position`, необязательные `width`/`height`, `data: { entityId, locationId?, containerId?, equipmentSource? }`.
   `data.entityId` ссылается на Entity уровня стола. Размеры отсутствуют для авторазмера.
   Содержательные поля в `node.data` отклоняются валидатором.
 - `reference` принадлежит Entity: `{ source: encyclopedia|character|campaign,
   entityId, entityType, name, slug, facts: string[] }`. Оригинал не изменяется.
   Новый DnD из библиотеки создаёт независимую Entity-экземпляр со ссылкой на оригинал.
   Размещение на другой схеме использует ту же Entity; правки отражаются во всех её размещениях.
-- `data.locationId` — существующая группировка размещений в той же схеме, только для creature/playerCharacter/npc.
+- `data.locationId` — существующая группировка размещений в той же схеме, только для creature/playerCharacter/npc/item.
   Дети хранятся плоско, визуально показаны списком. Вложенные локации запрещены.
+- `data.containerId` — принадлежность предмета ноде playerCharacter в той же схеме;
+  одновременно с `locationId` не допускается. Получатель должен иметь локальный статблок
+  playerCharacter. Предмет представлен штатным виджетом в `equipmentContentText` с
+  `campaign-placement`, однозначно кодирующим ID схемы и размещения. Извлечение удаляет
+  именно этот виджет, не одноимённые предметы. Необязательный `equipmentSource` у предмета
+  сохраняет правки виджета при извлечении; это контент ContentEditor, не доверенный HTML.
+  Перенос и Undo/Redo синхронно изменяют принадлежность и снаряжение.
 - Ребро: `{ id, source, target, label?,
   data?: { description?: string } }`. Нет связей между схемами или с отсутствующими узлами.
 - `description` использует формат существующего ContentEditor, не сырой доверенный HTML.

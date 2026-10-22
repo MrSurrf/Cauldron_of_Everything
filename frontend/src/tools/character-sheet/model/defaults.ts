@@ -4,6 +4,8 @@ import type {
   NumericFieldState,
   ProficiencyState,
   RulesetId,
+  SpellcastingState,
+  SpellSlotLevel,
   SkillState,
 } from './characterSheet.types'
 import { ABILITY_KEYS } from './characterSheet.types'
@@ -29,6 +31,22 @@ export const createClientId = (prefix: string) => {
   return uuid
     ? `${prefix}-${uuid}`
     : `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+export const SPELL_SLOT_LEVELS: readonly SpellSlotLevel[] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+export function createEmptySpellcasting(): SpellcastingState {
+  return {
+    className: '',
+    ability: 'wisdom',
+    abilityMode: 'automatic',
+    saveDc: formulaNumericField(null),
+    attackBonus: formulaNumericField(null),
+    slotMode: 'automatic',
+    slots: Object.fromEntries(SPELL_SLOT_LEVELS.map(level => [level, { maximum: 0, used: 0 }])) as SpellcastingState['slots'],
+    spells: [],
+    concentratingOnId: null,
+  }
 }
 
 const createAbilityRecord = () =>
@@ -125,6 +143,7 @@ export function createEmptyCharacterSheet(
       pp: manualNumericField(0),
     },
     equipmentContentText: '',
+    spellcasting: createEmptySpellcasting(),
     personality: {
       traits: [],
       ideals: [],

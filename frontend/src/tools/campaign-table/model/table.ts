@@ -5,6 +5,9 @@ import { placementLibrarySection } from './library'
 import { parseTable as parseLegacyTable } from './legacyTable'
 import { validStatBlock } from './instanceStatBlock'
 import type { InstanceStatBlock } from './instanceStatBlock'
+import { persistedEdgeAppearance, validEdgeAppearance } from './edgeAppearance'
+import type { EdgeAppearance, EdgeMotion } from './edgeAppearance'
+import { canPlaceInside, containerOf, moveInside, syncContainedEquipment } from './nodeContainment'
 
 export const NODE_ENTITY_TYPES = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note'] as const
 export type NodeEntityType = typeof NODE_ENTITY_TYPES[number]
@@ -17,9 +20,9 @@ export type CanvasEntity = BaseEntity & {
   reference?: LibraryReference
   statBlock?: InstanceStatBlock
 }
-export type PlacementData = { entityId: string; locationId?: string }
+export type PlacementData = { entityId: string; locationId?: string; containerId?: string; equipmentSource?: string }
 export type EntityNode = Node<PlacementData, 'entity' | 'location' | 'note'>
-export type TableEdge = Edge<{ description?: string }> & { label?: string }
+export type TableEdge = Edge<{ description?: string } & EdgeAppearance & EdgeMotion> & { label?: string }
 export type StoredDiagram = { id: string; name: string; nodes: EntityNode[]; edges: TableEdge[]; viewport: Viewport }
 export type CampaignTable = {
   version: 3; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
@@ -31,7 +34,7 @@ export type InstanceData = PlacementData & {
   title: string; description: string; facts: string; state: string
   statBlock?: InstanceStatBlock
   /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
-  display?: { creatureExpanded?: boolean }
+  display?: { creatureExpanded?: boolean; arrivalKey?: number }
 }
 export type TableNode = Node<InstanceData, EntityNode['type']>
 export type Diagram = Omit<StoredDiagram, 'nodes'> & { nodes: TableNode[] }
@@ -67,8 +70,18 @@ export function createInstance(reference: LibraryReference, position: XYPosition
 export function placeCanvasObject(table: CampaignTable, diagramId: string, object: { entity: CanvasEntity; node: EntityNode }, name: string): CampaignTable {
   if (!name.trim() || !table.diagrams.some(item => item.id === diagramId)
     || table.entities.some(entity => entity.id === object.entity.id)) return table
-  return { ...table, entities: [...table.entities, { ...object.entity, name: name.trim() }],
-    diagrams: table.diagrams.map(item => item.id === diagramId ? { ...item, nodes: [...item.nodes, object.node] } : item) }
+  const entity = { ...object.entity, name: name.trim() }
+  const extended = { ...table, entities: [...table.entities, entity] }
+  return changeDiagram(extended, diagramId, diagram => {
+    let node = resolveNode(object.node, entity)
+    const targetId = containerOf(node)
+    const target = diagram.nodes.find(item => item.id === targetId)
+    if (targetId && (!target || !canPlaceInside(node, target)
+      || (target.data.entityType === 'playerCharacter' && target.data.statBlock?.kind !== 'playerCharacter'))) {
+      node = { ...node, data: { ...node.data, locationId: undefined, containerId: undefined } }
+    }
+    return { ...diagram, nodes: [...diagram.nodes, node] }
+  })
 }
 export function placeExistingEntity(table: CampaignTable, diagramId: string, entityId: string, position: XYPosition): CampaignTable {
   const entity = table.entities.find(item => item.id === entityId)
@@ -90,7 +103,9 @@ export function resolveDiagram(table: CampaignTable, diagram: StoredDiagram): Di
   return { ...diagram, nodes: diagram.nodes.map(node => resolveNode(node, entities.get(node.data.entityId)!)) }
 }
 function placement(node: TableNode): EntityNode {
-  return { ...node, data: { entityId: node.data.entityId, ...(node.data.locationId ? { locationId: node.data.locationId } : {}) } }
+  return { ...node, data: { entityId: node.data.entityId, ...(node.data.locationId ? { locationId: node.data.locationId } : {}),
+    ...(node.data.containerId ? { containerId: node.data.containerId } : {}),
+    ...(node.data.equipmentSource ? { equipmentSource: node.data.equipmentSource } : {}) } }
 }
 // Граница между существующими UI-редакторами и нормализованным документом.
 // Геометрия остаётся у размещения; изменения содержимого попадают в Entity.
@@ -98,7 +113,7 @@ export function changeDiagram(table: CampaignTable, id: string, update: (diagram
   const stored = table.diagrams.find(diagram => diagram.id === id)
   if (!stored) return table
   const before = resolveDiagram(table, stored)
-  const after = update(before)
+  let after = update(before)
   const previousNodes = new Map(before.nodes.map(node => [node.id, node.data]))
   const entities = new Map(table.entities.map(entity => [entity.id, entity]))
   for (const node of after.nodes) {
@@ -110,6 +125,7 @@ export function changeDiagram(table: CampaignTable, id: string, update: (diagram
       entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description, facts: data.facts, state: data.state, statBlock: data.statBlock })
     }
   }
+  after = syncContainedEquipment(before, after, entities)
   return { ...table, entities: [...entities.values()], diagrams: table.diagrams.map(diagram => diagram.id === id
     ? { ...after, nodes: after.nodes.map(placement) } : diagram) }
 }
@@ -126,34 +142,32 @@ export function duplicatePlacement(table: CampaignTable, diagramId: string, node
   const entityCopy = { ...structuredClone(entity), id, slug: id }
   if (entityCopy.statBlock?.kind === 'creature') entityCopy.statBlock.entity.id = id
   if (entityCopy.statBlock?.kind === 'playerCharacter') entityCopy.statBlock.document.id = id
-  return { ...table, entities: id === entity.id ? table.entities : [...table.entities, entityCopy],
-    diagrams: table.diagrams.map(item => item.id === diagramId ? { ...item, nodes: [...item.nodes, copy] } : item) }
+  const extended = { ...table, entities: id === entity.id ? table.entities : [...table.entities, entityCopy] }
+  return changeDiagram(extended, diagramId, current => ({ ...current, nodes: [...current.nodes, resolveNode(copy, entityCopy)] }))
 }
 export function canContain(node: TableNode): boolean {
-  return ['creature', 'playerCharacter', 'npc'].includes(node.data.entityType)
+  return ['creature', 'playerCharacter', 'npc', 'item'].includes(node.data.entityType)
 }
 export function moveToLocation(diagram: Diagram, id: string, locationId?: string, position?: XYPosition): Diagram {
-  const node = diagram.nodes.find(item => item.id === id)
-  const location = diagram.nodes.find(item => item.id === locationId && item.type === 'location')
-  if (!node || (locationId && (!location || !canContain(node)))) return diagram
-  const previous = diagram.nodes.find(item => item.id === node.data.locationId)
-  return { ...diagram, nodes: diagram.nodes.map(item => item.id === id ? { ...item,
-    position: position ?? (previous && !locationId ? { x: previous.position.x + (previous.width ?? 240) + 40, y: previous.position.y } : item.position),
-    data: { ...item.data, locationId } } : item) }
+  if (locationId && diagram.nodes.find(item => item.id === locationId)?.type !== 'location') return diagram
+  return moveInside(diagram, id, locationId, position)
 }
 export function removeInstances(diagram: Diagram, ids: Set<string>): Diagram {
   const nodes = diagram.nodes.filter(node => !ids.has(node.id)).map(node => {
-    if (!node.data.locationId || !ids.has(node.data.locationId)) return node
-    const parent = diagram.nodes.find(item => item.id === node.data.locationId)!
-    return { ...node, position: { x: parent.position.x + 30, y: parent.position.y + 40 }, data: { ...node.data, locationId: undefined } }
+    const parentId = containerOf(node)
+    if (!parentId || !ids.has(parentId)) return node
+    const parent = diagram.nodes.find(item => item.id === parentId)!
+    return { ...node, position: { x: parent.position.x + (parent.width ?? 240) + 40, y: parent.position.y }, data: { ...node.data, locationId: undefined, containerId: undefined } }
   })
   return { ...diagram, nodes, edges: diagram.edges.filter(edge => !ids.has(edge.source) && !ids.has(edge.target)) }
 }
 export function serializeTable(table: CampaignTable): string {
   return JSON.stringify({ ...table, diagrams: table.diagrams.map(diagram => ({ ...diagram,
     nodes: diagram.nodes.map(({ id, type, position, data, width, height }) => ({ id, type, position,
-      data: { entityId: data.entityId, ...(data.locationId ? { locationId: data.locationId } : {}) }, width, height })),
-    edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label, data })),
+      data: { entityId: data.entityId, ...(data.locationId ? { locationId: data.locationId } : {}), ...(data.containerId ? { containerId: data.containerId } : {}),
+        ...(data.equipmentSource ? { equipmentSource: data.equipmentSource } : {}) }, width, height })),
+    edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label,
+      ...(data ? { data: { ...(data.description !== undefined ? { description: data.description } : {}), ...persistedEdgeAppearance(data) } } : {}) })),
   })) })
 }
 function record(value: unknown): value is Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) }
@@ -209,20 +223,27 @@ export function parseTable(raw: string): CampaignTable {
       if (!record(node) || !text(node.id) || !node.id || nodes.has(node.id) || !point(node.position) || !record(node.data)
         || !text(node.data.entityId) || !entities.has(node.data.entityId)
         || node.type !== placementType(entities.get(node.data.entityId)!.entityType)
-        || Object.keys(node.data).some(key => !['entityId', 'locationId'].includes(key))
+        || Object.keys(node.data).some(key => !['entityId', 'locationId', 'containerId', 'equipmentSource'].includes(key))
         || (node.data.locationId !== undefined && (!text(node.data.locationId) || !node.data.locationId))
+        || (node.data.containerId !== undefined && (!text(node.data.containerId) || !node.data.containerId || node.data.locationId !== undefined))
+        || (node.data.equipmentSource !== undefined && (!text(node.data.equipmentSource) || entities.get(node.data.entityId)!.entityType !== 'item'))
         || (node.width !== undefined && (!finite(node.width) || node.width < 80)) || (node.height !== undefined && (!finite(node.height) || node.height < 48))) return invalid()
       nodes.set(node.id, node as EntityNode)
     }
     for (const node of nodes.values()) {
-      if (node.data.locationId && (!['creature', 'playerCharacter', 'npc'].includes(entities.get(node.data.entityId)!.entityType)
+      if (node.data.locationId && (!['creature', 'playerCharacter', 'npc', 'item'].includes(entities.get(node.data.entityId)!.entityType)
         || nodes.get(node.data.locationId)?.type !== 'location')) return invalid()
+      if (node.data.containerId) {
+        const target = nodes.get(node.data.containerId)
+        if (!target || !canPlaceInside(resolveNode(node, entities.get(node.data.entityId)!), resolveNode(target, entities.get(target.data.entityId)!))
+          || entities.get(target.data.entityId)?.statBlock?.kind !== 'playerCharacter') return invalid()
+      }
     }
     const edgeIds = new Set<string>()
     for (const edge of diagram.edges) {
       if (!record(edge) || !text(edge.id) || !edge.id || edgeIds.has(edge.id) || !text(edge.source) || !text(edge.target)
         || !nodes.has(edge.source) || !nodes.has(edge.target) || edge.source === edge.target || (edge.label !== undefined && !text(edge.label))
-        || (edge.data !== undefined && (!record(edge.data) || (edge.data.description !== undefined && !text(edge.data.description))))) return invalid()
+        || (edge.data !== undefined && (!record(edge.data) || (edge.data.description !== undefined && !text(edge.data.description)) || !validEdgeAppearance(edge.data)))) return invalid()
       edgeIds.add(edge.id)
     }
   }

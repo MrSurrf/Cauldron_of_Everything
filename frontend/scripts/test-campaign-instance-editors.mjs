@@ -142,7 +142,7 @@ try {
   // Запрещённые разделы скрыты; меню использует общий компонент, не native select.
   assert.equal(await page.locator('select').count(), 0)
   await page.getByRole('combobox', { name: 'Раздел библиотеки' }).click()
-  assert.deepEqual(await page.getByRole('option').allTextContents(), ['Бестиарий', 'Заклинания', 'Магические предметы'])
+  assert.deepEqual(await page.getByRole('option').locator('span:first-child').allTextContents(), ['Бестиарий', 'Заклинания', 'Магические предметы'])
   await page.screenshot({ path: join(tmpdir(), 'campaign-library-dropdown.png') })
   await page.keyboard.press('Escape')
   // Поддельный DnD запрещён независимо от отсутствия категории в меню.

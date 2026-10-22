@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button, Combobox, ListCard, Panel, SegmentedControl, TextInput } from '../../shared/ui'
+import { ArticleCard } from './ArticleCard'
 import { articleCategories, articleFixtures } from './articleFixtures'
-import type { ArticleCategory, ArticlePreview } from './articleFixtures'
+import type { ArticleCategory } from './articleFixtures'
 import styles from './ArticlesPage.module.css'
 
 type CategoryFilter = ArticleCategory | 'all'
@@ -18,9 +20,6 @@ const viewOptions = [
   { value: 'grid', label: 'Плитки' },
   { value: 'list', label: 'Список' },
 ] as const
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
-})
 const popularArticles = [...articleFixtures]
   .sort((a, b) => b.popularity - a.popularity)
   .slice(0, 5)
@@ -29,36 +28,11 @@ function categoryLabel(category: ArticleCategory) {
   return articleCategories.find(item => item.id === category)?.label ?? ''
 }
 
-function ArticleCard({ article, featured }: { article: ArticlePreview; featured: boolean }) {
-  const titleId = `article-title-${article.id}`
-
-  return (
-    <article className={styles.article} data-featured={featured || undefined} aria-labelledby={titleId}>
-      <Panel className={styles.articlePanel} padding="none">
-        <div className={styles.articleContent}>
-          <div className={styles.cover} aria-hidden="true" />
-          <div className={styles.articleCopy}>
-            <span className={styles.categoryBadge}>{categoryLabel(article.category)}</span>
-            <h2 id={titleId}>{article.title}</h2>
-            <p className={styles.description}>{article.description}</p>
-            <footer className={styles.articleMeta}>
-              <div className={styles.author}>
-                <span>{article.author}</span>
-                <time dateTime={article.publishedAt}>{dateFormatter.format(new Date(`${article.publishedAt}T00:00:00Z`))}</time>
-              </div>
-              <span className={styles.readingTime}>{article.readingMinutes} мин чтения</span>
-            </footer>
-          </div>
-        </div>
-      </Panel>
-    </article>
-  )
-}
-
 function ArticlesSidebar({ category, onCategoryChange }: {
   category: CategoryFilter
   onCategoryChange: (value: CategoryFilter) => void
 }) {
+  const navigate = useNavigate()
   const categories = [{ id: 'all', label: 'Все статьи' }, ...articleCategories] as const
 
   return (
@@ -67,7 +41,7 @@ function ArticlesSidebar({ category, onCategoryChange }: {
         <section aria-labelledby="articles-write-title">
           <h2 id="articles-write-title">Напиши статью</h2>
           <p>Поделитесь опытом, идеями и вдохновением с сообществом.</p>
-          <Button size="md" fullWidth icon={null} disabled title="Публикация статей скоро станет доступна">
+          <Button size="md" fullWidth icon={null} onClick={() => navigate('/articles/create')}>
             Создать статью
           </Button>
         </section>
@@ -125,15 +99,20 @@ function ArticlesSidebar({ category, onCategoryChange }: {
 
 export default function ArticlesPage() {
   const [query, setQuery] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [sort, setSort] = useState<ArticleSort>('newest')
   const [view, setView] = useState('grid')
   const [page, setPage] = useState(1)
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
+  const fullSearch = Boolean(normalizedQuery && submittedQuery === normalizedQuery)
   const filteredArticles = articleFixtures
     .filter(article => category === 'all' || article.category === category)
-    .filter(article => !normalizedQuery || [article.title, article.description, article.author, categoryLabel(article.category)]
-      .some(value => value.toLocaleLowerCase('ru-RU').includes(normalizedQuery)))
+    .filter(article => !normalizedQuery || (fullSearch
+      ? normalizedQuery.split(/\s+/).every(word =>
+        [article.title, article.description, article.author, categoryLabel(article.category)]
+          .some(value => value.toLocaleLowerCase('ru-RU').includes(word)))
+      : article.title.toLocaleLowerCase('ru-RU').startsWith(normalizedQuery)))
     .sort((a, b) => sort === 'popular' ? b.popularity - a.popularity
       : sort === 'shortest' ? a.readingMinutes - b.readingMinutes : b.publishedAt.localeCompare(a.publishedAt))
   const pageCount = Math.max(1, Math.ceil(filteredArticles.length / PAGE_SIZE))
@@ -160,9 +139,13 @@ export default function ArticlesPage() {
       <div className={styles.container}>
         <div className={styles.toolbar}>
           <div className={styles.search} role="search" aria-label="Поиск по статьям">
-            <TextInput type="search" icon={null} aria-label="Поиск статей, тем или авторов"
-              placeholder="Поиск статей, тем или авторов…" value={query}
-              onChange={event => { setQuery(event.target.value); setPage(1) }} />
+            <TextInput type="search" aria-label="Поиск по названию; Enter — поиск по содержимому статей"
+              className={styles.searchInput} rootClassName={styles.searchFrame}
+              placeholder="Название; Enter — поиск по содержимому" value={query}
+              onChange={event => { setQuery(event.target.value); setSubmittedQuery(''); setPage(1) }}
+              onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                event.preventDefault(); setSubmittedQuery(query.trim().toLocaleLowerCase('ru-RU')); setPage(1)
+              } }} />
           </div>
           <div className={styles.displayControls}>
             <Combobox aria-label="Сортировка статей" listboxLabel="Порядок статей"

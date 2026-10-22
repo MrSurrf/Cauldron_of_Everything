@@ -6,13 +6,31 @@ const allowedTags = new Set([
   'a',
   'blockquote',
   'br',
+  'code',
+  'dd',
+  'dl',
+  'dt',
   'em',
+  'h2',
   'h3',
   'h4',
+  'h5',
+  'h6',
+  'hr',
   'li',
   'ol',
   'p',
+  'small',
+  'span',
   'strong',
+  'sub',
+  'sup',
+  'table',
+  'tbody',
+  'td',
+  'th',
+  'thead',
+  'tr',
   'ul',
 ])
 
@@ -32,8 +50,8 @@ function sanitizeRichHtml(html: string) {
           return ''
         }
 
-        if (normalizedName === 'br') {
-          return '<br>'
+        if (normalizedName === 'br' || normalizedName === 'hr') {
+          return `<${normalizedName}>`
         }
 
         if (

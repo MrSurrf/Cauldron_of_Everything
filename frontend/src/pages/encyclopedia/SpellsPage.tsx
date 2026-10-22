@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recordVisit } from '../../entities/encyclopedia'
 import { Button, Checkbox, ListCard, Panel, Popover, TextInput } from '../../shared/ui'
 import { fetchEncyclopedia } from './encyclopediaApi'
-import { catalogFirstLetter } from './catalogAlphabet'
+import { catalogFirstLetter, catalogNameStartsWith } from './catalogAlphabet'
 import { loadSpells, type CatalogSpell } from './spellCatalog'
 import {
   emptySpellFilters, filterSpells, spellFacetOptions, SPELL_FACETS,
@@ -59,8 +59,11 @@ export default function SpellsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initialQuery = searchParams.get('search') ?? ''
-  const [filters, setFilters] = useState<SpellFilters>(() => ({ ...emptySpellFilters(), query: initialQuery }))
+  const [filters, setFilters] = useState<SpellFilters>(emptySpellFilters)
   const [searchDraft, setSearchDraft] = useState(initialQuery)
+  const [submittedQuery, setSubmittedQuery] = useState(initialQuery.trim())
+  const [searchResult, setSearchResult] = useState<{ query: string; spells: CatalogSpell[] } | null>(null)
+  const [searchError, setSearchError] = useState('')
   const [catalog, setCatalog] = useState<CatalogSpell[]>([])
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -69,8 +72,14 @@ export default function SpellsPage() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const selected = showFavorites ? undefined : catalog.find((spell) => spell.id === selectedId)
-  const results = useMemo(() => showFavorites ? [] : filterSpells(catalog, filters), [catalog, filters, showFavorites])
+  const searchableCatalog = useMemo(() => submittedQuery
+    ? searchResult && searchResult.query === submittedQuery ? searchResult.spells : []
+    : catalog, [submittedQuery, searchResult, catalog])
+  const searchPending = Boolean(submittedQuery && searchResult?.query !== submittedQuery && !searchError)
+  const selected = showFavorites ? undefined : searchableCatalog.find((spell) => spell.id === selectedId)
+  const results = useMemo(() => showFavorites ? [] : filterSpells(searchableCatalog, filters)
+    .filter((spell) => submittedQuery || catalogNameStartsWith(spell.name, searchDraft)),
+  [searchableCatalog, filters, showFavorites, submittedQuery, searchDraft])
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
@@ -90,6 +99,19 @@ export default function SpellsPage() {
     })
     return () => controller.abort()
   }, [attempt])
+
+  useEffect(() => {
+    if (status !== 'ready' || !submittedQuery) return
+    const controller = new AbortController()
+    loadSpells(controller.signal, submittedQuery).then((spells) => {
+      if (controller.signal.aborted) return
+      setSearchResult({ query: submittedQuery, spells })
+      setSearchError('')
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted) setSearchError(cause instanceof Error ? cause.message : 'Не удалось выполнить поиск')
+    })
+    return () => controller.abort()
+  }, [status, submittedQuery, attempt])
 
   useEffect(() => {
     if (selectedId === null) return
@@ -115,7 +137,9 @@ export default function SpellsPage() {
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    updateFilters((current) => ({ ...current, query: searchDraft.trim() }))
+    setSearchError('')
+    setSubmittedQuery(searchDraft.trim())
+    updateFilters((current) => ({ ...current, letter: '' }))
   }
 
   function renderSpell(spell: CatalogSpell) {
@@ -138,7 +162,6 @@ export default function SpellsPage() {
           name={spell.name}
           metric={spell.level || '—'}
           metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
-          tags={[spell.school || 'Школа не указана']}
         />
         {hasMarkers && <span className={styles.spellMarkers} aria-label="Особые свойства заклинания">
           {hasConcentration && <span title="Концентрация" aria-label="Концентрация">К</span>}
@@ -168,13 +191,18 @@ export default function SpellsPage() {
           <TextInput
             className={base.searchInput} fieldClassName={`${base.searchField} ${styles.searchField}`}
             rootClassName={base.compactControl}
-            type="search" aria-label="Поиск по разделу" placeholder="Поиск по разделу"
+            type="search" aria-label="Поиск по названию; Enter — поиск по содержимому карточек" placeholder="Название; Enter — поиск по содержимому"
             value={searchDraft} disabled={status !== 'ready'}
-            onChange={(event) => setSearchDraft(event.target.value)}
+            onChange={(event) => {
+              setSearchDraft(event.target.value)
+              setSubmittedQuery('')
+              setSearchError('')
+              updateFilters((current) => ({ ...current, letter: '' }))
+            }}
           />
           {SPELL_FACETS.map((facet) => <FacetControl
-            key={facet.key} spells={catalog} facet={facet} filters={filters}
-            disabled={status !== 'ready'} onToggle={toggleFacet}
+            key={facet.key} spells={searchableCatalog} facet={facet} filters={filters}
+            disabled={status !== 'ready' || searchPending} onToggle={toggleFacet}
           />)}
         </div>
         <div className={styles.filterFooter}>
@@ -192,7 +220,7 @@ export default function SpellsPage() {
               onCheckedChange={(checked) => updateFilters((current) => ({ ...current, excludeTce: checked }))}
             />
             <Button variant="secondary" decoration="minimal" size="sm" disabled={status !== 'ready'}
-              onClick={() => { setSearchDraft(''); updateFilters(() => emptySpellFilters()) }}>Сбросить фильтры</Button>
+              onClick={() => { setSearchDraft(''); setSubmittedQuery(''); setSearchError(''); updateFilters(() => emptySpellFilters()) }}>Сбросить фильтры</Button>
             <Button variant="primary" size="sm" type="submit" icon={null} disabled={status !== 'ready'}>Поиск</Button>
           </div>
         </div>
@@ -202,6 +230,10 @@ export default function SpellsPage() {
     <div className={base.layout}>
       <Panel className={base.listPanel} padding="compact">
         {status === 'loading' && <p className={base.loadStatus} role="status">Загружаем заклинания…</p>}
+        {searchPending && <p className={base.loadStatus} role="status">Ищем заклинания…</p>}
+        {searchError && <div className={base.loadStatus} role="alert">Не удалось выполнить поиск: {searchError}.
+          <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setSearchError(''); setAttempt((value) => value + 1) }}>Повторить</Button>
+        </div>}
         {status === 'error' && <div className={base.loadStatus} role="alert">{error}
           <Button variant="secondary" decoration="minimal" size="md" onClick={() => { setStatus('loading'); setAttempt((value) => value + 1) }}>Повторить</Button>
         </div>}
@@ -215,7 +247,7 @@ export default function SpellsPage() {
           <span className={base.count} role="status">Найдено: {results.length}</span>
         </div>
         {showFavorites ? <p className={base.empty}>В избранном пока ничего нет.</p>
-          : status === 'ready' && results.length === 0 && <p className={base.empty}>Заклинания не найдены. Измените фильтры или запрос.</p>}
+          : status === 'ready' && results.length === 0 && !searchPending && !searchError && <p className={base.empty}>Заклинания не найдены. Измените фильтры или запрос.</p>}
         {filters.sort === 'name' && results.length > 18
           ? <div className={base.creatureGroups}>{groupByLetter(visible).map(({ letter, entries }) =>
             <section className={base.letterGroup} key={letter} aria-label={`Заклинания на букву ${letter}`}>

@@ -23,7 +23,7 @@ const initial = { version: 3, activeId: 'first', entities, layout: { libraryWidt
     ] },
     { id: 'second', name: 'Вторая схема', nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } },
   ] }
-const browser = await chromium.launch()
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {})
 const page = await browser.newPage({ viewport: { width: 1700, height: 1100 } })
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
@@ -54,6 +54,7 @@ try {
   await page.reload()
   await page.getByRole('button', { name: 'Свернуть библиотеку' }).click()
   await page.waitForFunction(() => document.querySelectorAll('.react-flow__node').length === 9)
+  await page.evaluate(() => document.fonts.ready)
   const pane = page.locator('.react-flow__pane')
   assert.equal(await pane.evaluate(el => getComputedStyle(el).cursor), 'default')
   // Даже во время панорамирования пустого холста не показываем руку для drag ноды.
@@ -65,7 +66,15 @@ try {
     assert.equal(await node(type).locator('article').getAttribute('data-entity-type'), type)
     assert.equal(await node(type).locator('.react-flow__handle').first().evaluate(el => getComputedStyle(el).opacity), '0')
     assert.equal(await node(type).getByRole('button', { name: /^Соединить / }).count(), 4)
+    const typography = await node(type).getByRole('heading').evaluate(element => ({ family: getComputedStyle(element).fontFamily, weight: getComputedStyle(element).fontWeight }))
+    assert.ok(typography.family.includes('Greengoth Regular'), `${type}: название должно использовать заголовочный шрифт дизайн-кода`)
+    assert.equal(typography.weight, '400', `${type}: без искусственного жирного начертания`)
+    for (const summary of await node(type).locator('[class*="nodeSummary"]').all()) {
+      assert.ok((await summary.evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'), `${type}: описание должно использовать основной шрифт`)
+    }
   }
+  assert.ok((await node('spell').getByLabel('Уровень заклинания: 3').locator('span').evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'))
+  assert.ok((await page.locator('.react-flow__edge-text').first().evaluate(element => getComputedStyle(element).fontFamily)).includes('Gilroy'))
   assert.equal(await node('playerCharacter').locator('circle').count(), 1)
   assert.equal(await node('npc').locator('circle').count(), 1)
   assert.equal(await node('spell').locator('article').getAttribute('data-shape'), 'diamond')
@@ -149,6 +158,8 @@ try {
   await node('creature').getByRole('button', { name: /^Соединить снизу:/ }).click()
   await node('spell').hover()
   assert.equal(await node('spell').locator('article').getAttribute('data-connecting'), 'true')
+  assert.equal(await node('spell').getByRole('button', { name: /^Соединить / }).count(), 0, 'Цель выбирается всей нодой, без точек соединения')
+  assert.equal(await node('creature').getByRole('button', { name: /^Соединить / }).count(), 0, 'Во время выбора цели точки источника скрыты')
   await page.getByRole('status').filter({ hasText: 'Выберите второй узел' }).waitFor()
   await page.screenshot({ path: join(tmpdir(), 'campaign-contour-preview.png') })
   await page.keyboard.press('Escape')
@@ -156,7 +167,7 @@ try {
   await node('creature').hover()
   await node('creature').getByRole('button', { name: /^Соединить слева:/ }).click()
   await node('spell').hover()
-  await node('spell').getByRole('button', { name: /^Соединить справа:/ }).click()
+  await node('spell').getByRole('heading').click()
   assert.equal((await saved()).diagrams[0].edges.length, 5)
   await page.keyboard.press('Control+z')
   assert.equal((await saved()).diagrams[0].edges.length, 4)

@@ -1,4 +1,3 @@
-import { Panel, ScrollArea } from '../../../../shared/ui'
 import styles from '../../CharacterSheetTool.module.css'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
@@ -24,7 +23,6 @@ import {
 import { ProficienciesEditor } from './ProficienciesEditor'
 import { getSheetStyle } from './sheetAppearance'
 import { useCharacterSheetViewModel } from './sheetViewModel'
-import { useSheetFitWidth } from './useSheetFitWidth'
 
 const PERSONALITY_SECTION_ORDER = [
   'traits',
@@ -35,22 +33,21 @@ const PERSONALITY_SECTION_ORDER = [
 
 export type CharacterSheetContentProps = {
   className?: string
-  fitWidth?: boolean
   onPortraitFileSelect?: (
     file: File,
     characterId: string,
   ) => void
   onPortraitRemove?: (characterId: string) => void
+  onEncyclopediaItemDrop?: (transfer: DataTransfer) => void
 }
 
 export function CharacterSheetContent({
   className,
-  fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
+  onEncyclopediaItemDrop,
 }: CharacterSheetContentProps) {
   const sheet = useCharacterSheetViewModel()
-  const { viewportRef, pageRef, scale } = useSheetFitWidth(fitWidth)
   const { document } = sheet
   const rootClassName = [styles.root, className]
     .filter(Boolean)
@@ -62,23 +59,15 @@ export function CharacterSheetContent({
       data-density={document.appearance.density}
       style={getSheetStyle(document.appearance)}
     >
-      <Panel className={styles.panel} padding="none">
-        <div className={styles.shell}>
-          <ScrollArea
-            ref={viewportRef}
+      <div className={styles.shell}>
+          <div
             aria-label="Лист персонажа"
             className={styles.viewport}
-            data-cursor-light-background=""
-            contentClassName={styles.document}
-            orientation={fitWidth ? 'vertical' : 'both'}
-            rootClassName={styles.scrollArea}
+            role="region"
+            tabIndex={0}
           >
-            <div
-              ref={pageRef}
-              className={styles.sheetPage}
-              data-character-sheet-page={true}
-              style={fitWidth ? { zoom: scale } : undefined}
-            >
+            <div className={styles.document}>
+              <div className={styles.sheetPage} data-character-sheet-page={true}>
               <CharacterIdentitySection
                 sheet={sheet}
                 onPortraitFileSelect={onPortraitFileSelect}
@@ -210,7 +199,7 @@ export function CharacterSheetContent({
                     className={styles.equipmentSlot}
                     data-character-sheet-slot="equipment"
                   >
-                    <CharacterEquipmentSection sheet={sheet} />
+                    <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
                   </div>
 
                   <div
@@ -251,10 +240,10 @@ export function CharacterSheetContent({
                   </div>
                 </div>
               </div>
+              </div>
             </div>
-          </ScrollArea>
-        </div>
-      </Panel>
+          </div>
+      </div>
     </div>
   )
 }

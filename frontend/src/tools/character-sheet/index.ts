@@ -7,6 +7,7 @@ export type { CharacterPortraitProps } from './ui/identity'
 export {
   createEmptyCharacterSheet,
   createMockCharacterSheet,
+  createMockSpellcasterSheet,
   EMPTY_CHARACTER_SHEET,
   MOCK_CHARACTER_SHEET,
 } from './model'

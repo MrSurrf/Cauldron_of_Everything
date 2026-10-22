@@ -16,6 +16,8 @@ export const FORMULA_FIELD_KEYS = {
   maximumHitPoints: 'MAX_HIT_POINTS',
   currentHitPoints: 'CURRENT_HIT_POINTS',
   temporaryHitPoints: 'TEMPORARY_HIT_POINTS',
+  spellSaveDc: 'SPELL_SAVE_DC',
+  spellAttackBonus: 'SPELL_ATTACK_BONUS',
 } as const
 
 export const hitDieFormulaVariable = (

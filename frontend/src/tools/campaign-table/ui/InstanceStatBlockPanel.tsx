@@ -11,6 +11,7 @@ import type { LibraryReference } from '../model/library'
 import { EntityReferenceLinks } from './EntityReferenceLinks'
 import { StatBlockField, StatHtmlField } from './StatBlockFields'
 import styles from './CampaignTable.module.css'
+import panelStyles from './CampaignPanels.module.css'
 
 const creatureFields = {
   nameEn: '', size: '', creatureType: '', alignment: '', armorClass: { value: '', details: [] }, hitPoints: '', speed: '',
@@ -52,7 +53,7 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
     const identity = statBlockIdentity(next)
     onChange({ statBlock: structuredClone(next), facts: identity.facts, ...(identity.title.trim() ? { title: identity.title } : {}) })
   }
-  if (!snapshot) return <div>{result?.error ? <div role="alert"><p>{result.error}</p><Button size="sm" onClick={() => { setResult(null); setAttempt(value => value + 1) }}>Повторить</Button></div>
+  if (!snapshot) return <div>{result?.error ? <div role="alert"><p>{result.error}</p><Button size="sm" variant="secondary" decoration="minimal" className={panelStyles.action} onClick={() => { setResult(null); setAttempt(value => value + 1) }}>Повторить</Button></div>
     : <p role="status">{readOnly ? 'Статблок не опубликован.' : 'Загрузка статблока…'}</p>}</div>
   if (!editing) {
     if (snapshot.kind === 'creature') return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><CreatureFullView entity={{ ...snapshot.entity, id: data.entityId, name: data.title }} className={styles.fullCard} /></EntityReferenceLinks>
@@ -69,8 +70,8 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
     <CharacterSheetTool fitWidth className={styles.instanceCharacterDocument} document={snapshot.document} onDocumentChange={document => update({ ...snapshot, document })} />
   </div>
   if (snapshot.kind === 'creature') return <div className={styles.statEditor} aria-label="Полный статблок существа">
-    <label className={styles.statField}>Название<TextInput aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entity: { ...snapshot.entity, name: event.target.value } })} /></label>
-    {creatureGroups.map(([title, keys], index) => <details key={title} className={styles.statEditorGroup} open={index < 2}><summary>{title}</summary>
+    <label className={styles.statField}>Название<TextInput rootClassName={panelStyles.fieldControl} aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entity: { ...snapshot.entity, name: event.target.value } })} /></label>
+    {creatureGroups.map(([title, keys], index) => <details key={title} className={`${styles.statEditorGroup} ${panelStyles.disclosure}`} open={index < 2}><summary>{title}</summary>
       {keys.map(key => <StatBlockField key={key} field={key} value={snapshot.entity[key as keyof CreatureEntity] ?? creatureFields[key]}
         onChange={value => update({ ...snapshot, entity: { ...snapshot.entity, [key]: value } })} />)}
     </details>)}
@@ -79,7 +80,7 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
   const defaults = snapshot.kind === 'spell' ? { level: '', school: '', casting_time: '', range: '', duration: '', components: '', concentration: false, ritual: false }
     : { item_type: '', rarity: '', cost: '', weight: '', attunement: '' }
   return <div className={styles.statEditor} aria-label={snapshot.kind === 'spell' ? 'Полный статблок заклинания' : 'Полная карточка предмета'}>
-    <label className={styles.statField}>Название<TextInput aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entry: { ...entry, name: event.target.value } })} /></label>
+    <label className={styles.statField}>Название<TextInput rootClassName={panelStyles.fieldControl} aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entry: { ...entry, name: event.target.value } })} /></label>
     <StatBlockField field="name_en" value={entry.name_en} onChange={value => update({ ...snapshot, entry: { ...entry, name_en: String(value) } })} />
     {Object.entries({ ...defaults, ...entry.data }).filter(([key]) => !['tooltips', 'tables', 'sections', 'content_html', 'content_text', 'description_html'].includes(key) && !(key === 'cost' && entry.data?.price != null)).map(([key, value]) =>
       <StatBlockField key={key} field={key} value={value} onChange={next => update({ ...snapshot, entry: { ...entry, data: { ...entry.data, [key]: next } } })} />)}

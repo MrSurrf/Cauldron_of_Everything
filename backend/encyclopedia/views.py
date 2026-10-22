@@ -9,6 +9,14 @@ from .models import Entity
 from .serializers import EntityDetailSerializer, EntityListSerializer
 
 
+def name_starts_with(name, prefix):
+    """Сравнение названий для живого поиска, включая кириллицу и ё/е."""
+    first_letter = next((index for index, char in enumerate(name) if char.isalpha()), len(name))
+    return name[first_letter:].casefold().replace("ё", "е").startswith(
+        prefix.casefold().replace("ё", "е")
+    )
+
+
 class EntityPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = "page_size"
@@ -26,7 +34,8 @@ class EntityListView(generics.ListAPIView):
     """
     GET /api/encyclopedia/ — список сущностей энциклопедии.
     Параметры: ?type=spell (фильтр по типу), ?slug=... (точная запись),
-    ?q=... (поиск по названию и тексту), ?page=, ?page_size=.
+    ?name_prefix=... (начало названия), ?q=... (поиск по названию и тексту),
+    ?page=, ?page_size=.
     """
 
     serializer_class = EntityListSerializer
@@ -44,11 +53,20 @@ class EntityListView(generics.ListAPIView):
         slug = self.request.query_params.get("slug")
         if slug:
             queryset = queryset.filter(slug=slug)
+        name_prefix = self.request.query_params.get("name_prefix", "").strip()
+        if name_prefix:
+            # SQLite LIKE не учитывает регистр кириллицы. Названий пока немного,
+            # поэтому фильтруем только id и name до пагинации.
+            matching_ids = [
+                entity_id
+                for entity_id, name in queryset.values_list("id", "name")
+                if name_starts_with(name, name_prefix)
+            ]
+            queryset = queryset.filter(id__in=matching_ids)
         query = self.request.query_params.get("q", "").strip()
         if query:
-            # Как в прежнем клиентском поиске: каждое слово может быть в любом поле.
-            words = query.split() if entity_type == Entity.Type.CREATURE else [query]
-            for word in words:
+            # Каждое слово может встречаться в названии или внутри карточки.
+            for word in query.split():
                 queryset = queryset.filter(
                     Q(name__icontains=word)
                     | Q(name_en__icontains=word)

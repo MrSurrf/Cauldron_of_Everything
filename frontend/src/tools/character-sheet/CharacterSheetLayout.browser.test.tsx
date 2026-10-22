@@ -7,12 +7,17 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 
 import '../../app/styles/global.css'
 import '../../shared/styles/tokens.css'
 import { CharacterSheetTool } from './CharacterSheetTool'
-import { createMockCharacterSheet } from './model'
+import { createMockCharacterSheet, createMockSpellcasterSheet } from './model'
+import {
+  CHARACTER_ENCYCLOPEDIA_DRAG_TYPE,
+  writeCharacterEncyclopediaDrag,
+} from './ui/encyclopedia'
 
 let mountedRoot: Root | null = null
 let mountedContainer: HTMLDivElement | null = null
@@ -60,6 +65,92 @@ function roundedWidth(element: Element) {
   return Math.round(element.getBoundingClientRect().width)
 }
 
+async function clickSpellSheetTab(toggle: HTMLElement) {
+  // Под листом скрыта подпись: нажимаем на видимую иконку язычка.
+  await userEvent.click(toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!)
+}
+
+async function settleSheetLayout(container: HTMLElement) {
+  await act(async () => {
+    await nextFrame()
+    await nextFrame()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    const encyclopedia = Array.from(container.querySelectorAll<HTMLElement>('[data-encyclopedia-dock], [data-encyclopedia-drawer]'))
+    ;[book, drawer, ...encyclopedia].flatMap((element) => element.getAnimations()).forEach((animation) => animation.finish())
+    await nextFrame()
+  })
+}
+
+async function selectEncyclopediaSection(container: HTMLElement, label: string) {
+  const selector = container.querySelector<HTMLButtonElement>('[role="combobox"][aria-label="Раздел энциклопедии"]')!
+  if (selector.textContent === label) return
+  await act(async () => { await userEvent.click(selector) })
+  const option = Array.from(document.querySelectorAll<HTMLElement>('[role="option"]'))
+    .find((candidate) => candidate.textContent === label)!
+  await act(async () => { await userEvent.click(option) })
+}
+
+async function dispatchEncyclopediaDrag(target: HTMLElement, type: string, transfer: DataTransfer) {
+  const event = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer })
+  await act(async () => { target.dispatchEvent(event) })
+  return event
+}
+
+async function startEncyclopediaDrag(container: HTMLElement, name: string) {
+  await expect.poll(async () => {
+    await act(async () => { await nextFrame() })
+    return container.querySelector<HTMLButtonElement>(`[aria-label="Показать карточку: ${name}"]`)
+  }).not.toBeNull()
+  const source = container.querySelector<HTMLButtonElement>(`[aria-label="Показать карточку: ${name}"]`)!
+  const transfer = new DataTransfer()
+  await dispatchEncyclopediaDrag(source, 'dragstart', transfer)
+  return { source, transfer }
+}
+
+function expectAvailableEncyclopediaZones(container: HTMLElement, expected: HTMLElement[]) {
+  const available = Array.from(container.querySelectorAll<HTMLElement>('[data-encyclopedia-drop-available="true"]'))
+  expect(available).toHaveLength(expected.length)
+  expected.forEach((zone) => expect(available).toContain(zone))
+}
+
+function isDragDimmed(element: HTMLElement, container: HTMLElement) {
+  for (let current: HTMLElement | null = element; current && container.contains(current); current = current.parentElement) {
+    const brightness = getComputedStyle(current).filter.match(/brightness\(([\d.]+)\)/)
+    if (brightness && Number(brightness[1]) < 0.9) return true
+  }
+  return false
+}
+
+function expectCyanGradient(element: HTMLElement) {
+  const edge = getComputedStyle(element, '::after')
+  const cyan = getComputedStyle(document.documentElement).getPropertyValue('--selection-marker-fill').trim()
+  expect(edge.backgroundImage).toContain('linear-gradient')
+  expect(edge.getPropertyValue('--drop-edge-color')).toContain(cyan)
+  expect(edge.pointerEvents).toBe('none')
+  expect(getComputedStyle(element).outlineStyle).not.toBe('dashed')
+}
+
+const encyclopediaDragEntries = {
+  class: { id: 201, entity_type: 'class', name: 'Чародей', name_en: 'Sorcerer', summary: {} },
+  item: { id: 202, entity_type: 'item', name: 'Лунный кинжал', name_en: 'Moon Dagger', summary: {} },
+  spell: { id: 203, entity_type: 'spell', name: 'Туманный шаг', name_en: 'Misty Step', summary: { level: 2 } },
+  unknownSpell: { id: 204, entity_type: 'spell', name: 'Неизвестное заклинание', name_en: 'Unknown Spell', summary: {} },
+}
+
+function mockEncyclopediaDragEntries() {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = new URL(String(input))
+    const entries = Object.values(encyclopediaDragEntries)
+    const detailId = Number(url.pathname.match(/\/(\d+)\/$/)?.[1])
+    const detail = entries.find((entry) => entry.id === detailId)
+    const results = entries.filter((entry) => entry.entity_type === url.searchParams.get('type'))
+    return new Response(JSON.stringify(detail ?? { count: results.length, results }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  })
+}
+
 function expectTextEditorSpacing(container: HTMLElement, count: number) {
   const sections = container.querySelectorAll<HTMLElement>(
     '[data-content-layout="editor"]:not([data-open="false"])',
@@ -95,9 +186,353 @@ afterEach(async () => {
   mountedContainer?.remove()
   mountedRoot = null
   mountedContainer = null
+  vi.restoreAllMocks()
 })
 
 describe('Character Sheet fixed desktop composition', () => {
+  it('занимает всю высоту обоими листами после смены размеров окна и состояния энциклопедии', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const characterViewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
+    for (const [width, height] of [[1885, 800], [1440, 796], [2560, 1336], [1100, 640]]) {
+      await act(async () => {
+        container.style.width = `${width}px`
+        container.style.height = `${height}px`
+      })
+      for (const open of [false, true]) {
+        const toggle = container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!
+        await settleSheetLayout(container)
+        if ((toggle.getAttribute('aria-expanded') === 'true') !== open) {
+          await act(async () => { await clickSpellSheetTab(toggle) })
+        }
+        await settleSheetLayout(container)
+        expect(characterViewport.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+        expect(characterViewport.getBoundingClientRect().bottom).toBeCloseTo(container.getBoundingClientRect().bottom, 0)
+        const spellPanel = container.querySelector<HTMLElement>('[data-spell-sheet-panel]')
+        if (open) {
+          expect(spellPanel!.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+          expect(spellPanel!.getBoundingClientRect().bottom).toBeCloseTo(characterViewport.getBoundingClientRect().bottom, 0)
+        }
+      }
+    }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ count: 0, results: [] })))
+    await act(async () => { await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!) })
+    await settleSheetLayout(container)
+    expect(characterViewport.getBoundingClientRect().height).toBeCloseTo(container.clientHeight, 0)
+    // Низ обоих листов доступен и после изменения высоты scrollport.
+    for (const scroller of [characterViewport, container.querySelector<HTMLElement>('[data-spell-sheet-panel] [class*="scroller"]')!]) {
+      await act(async () => { scroller.scrollTop = scroller.scrollHeight; await nextFrame() })
+      expect(scroller.scrollTop + scroller.clientHeight).toBeGreaterThanOrEqual(scroller.scrollHeight - 1)
+    }
+  })
+
+  it('не меняет масштаб и положение листов только из-за смены DPR монитора', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!) })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const before = book.getBoundingClientRect()
+    const scale = book.style.getPropertyValue('--book-scale')
+    vi.spyOn(window, 'devicePixelRatio', 'get').mockReturnValue(window.devicePixelRatio * 2)
+    await act(async () => { window.dispatchEvent(new Event('resize')) })
+    await settleSheetLayout(container)
+    expect(book.style.getPropertyValue('--book-scale')).toBe(scale)
+    expect(book.getBoundingClientRect().left).toBeCloseTo(before.left, 0)
+    expect(book.getBoundingClientRect().height).toBeCloseTo(before.height, 0)
+  })
+
+  it('сохраняет приближение и отдаление браузера, не теряя края листов при zoom', async () => {
+    let cssWindowWidth = 1200
+    vi.spyOn(window, 'outerWidth', 'get').mockReturnValue(1200)
+    vi.spyOn(window, 'innerWidth', 'get').mockImplementation(() => cssWindowWidth)
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!) })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const workspace = container.querySelector<HTMLElement>('[data-library-open][data-spells-open]')!
+    const scale = Number(book.style.getPropertyValue('--book-scale'))
+    const width = book.getBoundingClientRect().width
+    // При zoom 200% внешнее окно прежнее, а его CSS-ширина вдвое меньше.
+    await act(async () => {
+      cssWindowWidth = 600
+      container.style.width = '600px'
+      window.dispatchEvent(new Event('resize'))
+    })
+    await settleSheetLayout(container)
+    expect(Number(book.style.getPropertyValue('--book-scale'))).toBeCloseTo(scale, 3)
+    // Автоподгонка не уменьшает лист обратно: CSS-ширина сохраняется,
+    // значит при browser zoom 200% его физическая ширина удваивается.
+    expect(book.getBoundingClientRect().width).toBeCloseTo(width, 0)
+    expect(workspace.scrollWidth).toBeGreaterThan(workspace.clientWidth)
+    expect(book.getBoundingClientRect().left).toBeGreaterThanOrEqual(workspace.getBoundingClientRect().left)
+    await act(async () => { workspace.scrollLeft = workspace.scrollWidth; await nextFrame() })
+    const spells = container.querySelector<HTMLElement>('[data-spell-sheet-panel]')!
+    expect(spells.getBoundingClientRect().right).toBeLessThanOrEqual(workspace.getBoundingClientRect().right)
+    await act(async () => {
+      cssWindowWidth = 1600
+      container.style.width = '1600px'
+      window.dispatchEvent(new Event('resize'))
+    })
+    await settleSheetLayout(container)
+    expect(Number(book.style.getPropertyValue('--book-scale'))).toBeCloseTo(scale, 3)
+    expect(workspace.scrollWidth).toBeLessThanOrEqual(workspace.clientWidth + 1)
+  })
+
+  it('переносит классы, расы и предыстории из API энциклопедии в соответствующие поля', async () => {
+    const entries = {
+      class: { id: 101, entity_type: 'class', name: 'Волшебник', name_en: 'Wizard' },
+      race: { id: 102, entity_type: 'race', name: 'Эльф', name_en: 'Elf' },
+      background: { id: 103, entity_type: 'background', name: 'Мудрец', name_en: 'Sage' },
+    }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = new URL(String(input))
+      const mode = url.searchParams.get('type') as keyof typeof entries
+      return new Response(JSON.stringify({ count: entries[mode] ? 1 : 0, results: entries[mode] ? [entries[mode]] : [] }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    const container = await mountCharacterSheet()
+    function field(labelText: string) {
+      const label = Array.from(container.querySelectorAll('label')).find((label) => label.textContent === labelText)!
+      return document.getElementById(label.htmlFor) as HTMLInputElement
+    }
+    expect(field('Класс').getAttribute('role')).not.toBe('combobox')
+    await act(async () => {
+      await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!)
+    })
+    for (const [mode, sectionName, fieldName] of [
+      ['class', 'Классы', 'Класс'], ['race', 'Расы', 'Раса'], ['background', 'Предыстории', 'Предыстория'],
+    ] as const) {
+      const entry = entries[mode]
+      await selectEncyclopediaSection(container, sectionName)
+      await expect.poll(async () => {
+        await act(async () => { await nextFrame() })
+        return container.querySelector(`[aria-label="Показать карточку: ${entry.name}"]`)
+      }).not.toBeNull()
+      const input = field(fieldName)
+      const transfer = new DataTransfer()
+      await act(async () => {
+        container.querySelector(`[aria-label="Показать карточку: ${entry.name}"]`)!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: transfer }))
+      })
+      expect(JSON.parse(transfer.getData(CHARACTER_ENCYCLOPEDIA_DRAG_TYPE)).entityType).toBe(mode)
+      const dragOver = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer })
+      await act(async () => { input.dispatchEvent(dragOver) })
+      expect(dragOver.defaultPrevented).toBe(true)
+      expect(input.closest('[data-drop-active="true"]')).not.toBeNull()
+      await act(async () => {
+        input.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+      })
+      expect(input.value).toBe(entry.name)
+      expect(input.closest('[data-drop-active="true"]')).toBeNull()
+      expect(input.closest('[data-drop-received="true"]')).not.toBeNull()
+      // Кнопка добавления использует тот же путь обновления данных листа.
+      await act(async () => {
+        await userEvent.fill(input, 'Свой вариант')
+        await userEvent.click(container.querySelector<HTMLElement>(`[aria-label="Добавить: ${entry.name}"]`)!)
+      })
+      expect(input.value).toBe(entry.name)
+    }
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('type=background'))).toBe(true)
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
+  })
+
+  it('не вставляет запись чужого типа в поле класса и оставляет ручной ввод в обоих листах', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const label = Array.from(container.querySelectorAll('label')).find((label) => label.textContent === 'Класс')!
+    const input = document.getElementById(label.htmlFor) as HTMLInputElement
+    const originalValue = input.value
+    const transfer = new DataTransfer()
+    writeCharacterEncyclopediaDrag(transfer, { id: 102, entityType: 'race', name: 'Эльф', nameEn: 'Elf', level: null, summary: {} })
+    await act(async () => {
+      input.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+    })
+    expect(transfer.dropEffect).toBe('none')
+    const drop = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer })
+    await act(async () => { input.dispatchEvent(drop) })
+    expect(drop.defaultPrevented).toBe(true)
+    expect(input.value).toBe(originalValue)
+    await act(async () => {
+      await userEvent.fill(input, 'Домашний класс')
+      await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!)
+    })
+    const casterInput = container.querySelector<HTMLInputElement>('[aria-label="Класс заклинателя"]')!
+    expect(casterInput.tagName).toBe('INPUT')
+    expect(casterInput.getAttribute('role')).not.toBe('combobox')
+    await act(async () => { await userEvent.fill(casterInput, 'Свой заклинатель') })
+    expect(casterInput.value).toBe('Свой заклинатель')
+    expect(input.value).toBe('Домашний класс')
+    writeCharacterEncyclopediaDrag(transfer, { id: 101, entityType: 'class', name: 'Друид', nameEn: 'Druid', level: null, summary: {} })
+    await act(async () => {
+      casterInput.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }))
+    })
+    expect(casterInput.value).toBe('Друид')
+    expect(input.value).toBe('Домашний класс')
+  })
+
+  it('подсвечивает оба поля класса с начала переноса и очищает подсказки при отмене', async () => {
+    mockEncyclopediaDragEntries()
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => {
+      await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!)
+    })
+    await settleSheetLayout(container)
+    await act(async () => { await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!) })
+    await selectEncyclopediaSection(container, 'Классы')
+    const inputs = Array.from(container.querySelectorAll<HTMLInputElement>('[data-encyclopedia-drop-zone="class"]'))
+    expect(inputs).toHaveLength(2)
+    const originalValues = inputs.map((input) => input.value)
+
+    for (const cancel of ['dragend', 'Escape', 'blur'] as const) {
+      const { source, transfer } = await startEncyclopediaDrag(container, encyclopediaDragEntries.class.name)
+      // Все подходящие поля видны ещё до первого dragover.
+      expectAvailableEncyclopediaZones(container, inputs)
+      const raceInput = container.querySelector<HTMLInputElement>('[data-encyclopedia-drop-zone="race"]')!
+      await expect.poll(() => isDragDimmed(raceInput, container)).toBe(true)
+      inputs.forEach((input) => {
+        expect(isDragDimmed(input, container)).toBe(false)
+        expectCyanGradient(input.parentElement!)
+      })
+      expect(source).toHaveAttribute('data-encyclopedia-dragging', 'true')
+      expect(container.querySelector('[data-drop-active="true"]')).toBeNull()
+      const over = await dispatchEncyclopediaDrag(inputs[0], 'dragover', transfer)
+      expect(over.defaultPrevented).toBe(true)
+      expect(inputs[0]).toHaveAttribute('data-drop-active', 'true')
+      expect(inputs[1]).not.toHaveAttribute('data-drop-active', 'true')
+
+      if (cancel === 'dragend') {
+        await dispatchEncyclopediaDrag(source, 'dragend', transfer)
+      } else {
+        await act(async () => {
+          window.dispatchEvent(cancel === 'Escape'
+            ? new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
+            : new Event('blur'))
+        })
+      }
+      expectAvailableEncyclopediaZones(container, [])
+      await expect.poll(() => isDragDimmed(raceInput, container)).toBe(false)
+      expect(container.querySelector('[data-drop-active="true"]')).toBeNull()
+      expect(source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
+      expect(inputs.map((input) => input.value)).toEqual(originalValues)
+    }
+
+    const { source, transfer } = await startEncyclopediaDrag(container, encyclopediaDragEntries.class.name)
+    await dispatchEncyclopediaDrag(inputs[1], 'drop', transfer)
+    expect(inputs[1].value).toBe(encyclopediaDragEntries.class.name)
+    expect(inputs[0].value).toBe(originalValues[0])
+    expect(inputs[1]).toHaveAttribute('data-drop-received', 'true')
+    expect(getComputedStyle(inputs[1].parentElement!).animationName).not.toBe('none')
+    expectAvailableEncyclopediaZones(container, [])
+    expect(source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
+  })
+
+  it('подсвечивает для предмета только снаряжение и добавляет его после переноса в редактор', async () => {
+    mockEncyclopediaDragEntries()
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => {
+      await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!)
+    })
+    await settleSheetLayout(container)
+    await act(async () => { await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!) })
+    await selectEncyclopediaSection(container, 'Предметы')
+    const equipment = container.querySelector<HTMLElement>('[data-encyclopedia-drop-zone="item"]')!
+    const editorFrame = equipment.querySelector<HTMLElement>('[data-content-editor-frame]')!
+    const classInput = container.querySelector<HTMLInputElement>('[data-encyclopedia-drop-zone="class"]')!
+    const originalClass = classInput.value
+    const originalEquipment = editorFrame.textContent
+    const spellCount = container.querySelectorAll('[data-spell-entry]').length
+    let drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.item.name)
+    expectAvailableEncyclopediaZones(container, [equipment])
+    expectCyanGradient(equipment)
+    expect(isDragDimmed(equipment, container)).toBe(false)
+    await expect.poll(() => isDragDimmed(classInput, container)).toBe(true)
+    const quickBar = container.querySelector<HTMLElement>('[data-character-sheet-layout="body"] > section')!
+    await expect.poll(() => isDragDimmed(quickBar, container)).toBe(true)
+
+    await dispatchEncyclopediaDrag(classInput, 'dragover', drag.transfer)
+    expect(drag.transfer.dropEffect).toBe('none')
+    expect(classInput).not.toHaveAttribute('data-drop-active', 'true')
+    await dispatchEncyclopediaDrag(classInput, 'drop', drag.transfer)
+    expect(classInput.value).toBe(originalClass)
+    expect(editorFrame.textContent).toBe(originalEquipment)
+    expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount)
+    expectAvailableEncyclopediaZones(container, [])
+    expect(container.querySelector('[data-drop-received="true"]')).toBeNull()
+    await expect.poll(() => isDragDimmed(classInput, container)).toBe(false)
+
+    drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.item.name)
+    const over = await dispatchEncyclopediaDrag(editorFrame, 'dragover', drag.transfer)
+    expect(over.defaultPrevented).toBe(true)
+    expect(equipment).toHaveAttribute('data-drop-active', 'true')
+    await dispatchEncyclopediaDrag(equipment.querySelector<HTMLElement>('h2')!, 'dragover', drag.transfer)
+    expect(equipment).not.toHaveAttribute('data-drop-active', 'true')
+    expect(drag.transfer.dropEffect).toBe('none')
+    expectAvailableEncyclopediaZones(container, [equipment])
+    const reentered = await dispatchEncyclopediaDrag(editorFrame, 'dragover', drag.transfer)
+    expect(equipment).toHaveAttribute('data-drop-active', 'true')
+    expect(reentered.defaultPrevented).toBe(true)
+    await dispatchEncyclopediaDrag(editorFrame, 'drop', drag.transfer)
+    expect(equipment.textContent).toContain(encyclopediaDragEntries.item.name)
+    expect(equipment).toHaveAttribute('data-drop-received', 'true')
+    expect(getComputedStyle(equipment).animationName).not.toBe('none')
+    expect(equipment).not.toHaveAttribute('data-drop-active', 'true')
+    expectAvailableEncyclopediaZones(container, [])
+    expect(drag.source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
+    expect(classInput.value).toBe(originalClass)
+    await expect.poll(() => isDragDimmed(quickBar, container)).toBe(false)
+    expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount)
+  })
+
+  it('подсвечивает уровень заклинания, отклоняет чужой уровень и предлагает все уровни для неизвестного', async () => {
+    mockEncyclopediaDragEntries()
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => {
+      await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!)
+    })
+    await settleSheetLayout(container)
+    await act(async () => { await userEvent.click(container.querySelector<HTMLElement>('[data-encyclopedia-trigger]')!) })
+    await selectEncyclopediaSection(container, 'Заклинания')
+    const levels = Array.from(container.querySelectorAll<HTMLElement>('[data-encyclopedia-drop-zone="spell"]'))
+    expect(levels).toHaveLength(10)
+    const targetLevel = levels.find((level) => level.dataset.spellDropLevel === '2')!
+    const wrongLevel = levels.find((level) => level.dataset.spellDropLevel === '1')!
+    const spellCount = container.querySelectorAll('[data-spell-entry]').length
+    const originalNames = Array.from(container.querySelectorAll('[data-spell-entry]')).map((spell) => spell.textContent)
+    let drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.spell.name)
+    expectAvailableEncyclopediaZones(container, [targetLevel])
+    expectCyanGradient(targetLevel)
+    expect(isDragDimmed(targetLevel, container)).toBe(false)
+    await expect.poll(() => isDragDimmed(wrongLevel, container)).toBe(true)
+    const equipment = container.querySelector<HTMLElement>('[data-encyclopedia-drop-zone="item"]')!
+    await expect.poll(() => isDragDimmed(equipment, container)).toBe(true)
+
+    await dispatchEncyclopediaDrag(wrongLevel, 'dragover', drag.transfer)
+    expect(wrongLevel).not.toHaveAttribute('data-drop-active', 'true')
+    await dispatchEncyclopediaDrag(wrongLevel, 'drop', drag.transfer)
+    expect(Array.from(container.querySelectorAll('[data-spell-entry]')).map((spell) => spell.textContent)).toEqual(originalNames)
+    expect(wrongLevel).not.toHaveAttribute('data-drop-received', 'true')
+    expectAvailableEncyclopediaZones(container, [])
+
+    drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.spell.name)
+    const over = await dispatchEncyclopediaDrag(targetLevel.querySelector<HTMLElement>('h2')!, 'dragover', drag.transfer)
+    expect(over.defaultPrevented).toBe(true)
+    expect(targetLevel).toHaveAttribute('data-drop-active', 'true')
+    await dispatchEncyclopediaDrag(targetLevel, 'drop', drag.transfer)
+    expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount + 1)
+    expect(targetLevel.textContent).toContain(encyclopediaDragEntries.spell.name)
+    expect(targetLevel).toHaveAttribute('data-drop-received', 'true')
+    expect(getComputedStyle(targetLevel).animationName).not.toBe('none')
+    expect(targetLevel).not.toHaveAttribute('data-drop-active', 'true')
+    expectAvailableEncyclopediaZones(container, [])
+    expect(drag.source).not.toHaveAttribute('data-encyclopedia-dragging', 'true')
+    await expect.poll(() => isDragDimmed(wrongLevel, container)).toBe(false)
+
+    drag = await startEncyclopediaDrag(container, encyclopediaDragEntries.unknownSpell.name)
+    expectAvailableEncyclopediaZones(container, levels)
+    await expect.poll(() => levels.every((level) => !isDragDimmed(level, container))).toBe(true)
+    await dispatchEncyclopediaDrag(drag.source, 'dragend', drag.transfer)
+    expectAvailableEncyclopediaZones(container, [])
+    expect(container.querySelectorAll('[data-spell-entry]')).toHaveLength(spellCount + 1)
+  })
+
   it('масштабирует весь лист под панель, сохраняя геометрию и доступность полей', async () => {
     const container = await mountCharacterSheet(createMockCharacterSheet(), true)
     const viewport = container.querySelector<HTMLElement>('[aria-label="Лист персонажа"][tabindex]')!
@@ -114,11 +549,11 @@ describe('Character Sheet fixed desktop composition', () => {
         await nextFrame()
         await nextFrame()
       })
-      // После появления вертикального scrollbar ширина viewport измеряется повторно.
+      // Масштаб всего разворота меняется после измерения контейнера.
       for (let frame = 0; frame < 4; frame += 1) {
         await act(async () => { await nextFrame() })
       }
-      const scale = Number(getComputedStyle(sheetPage).zoom)
+      const scale = sheetPage.getBoundingClientRect().width / sheetPage.offsetWidth
       expect(scale).toBeGreaterThan(0)
       expect(scale).toBeLessThanOrEqual(1)
       expect(sheetPage.offsetWidth).toBe(964)
@@ -151,7 +586,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(roundedWidth(container.querySelector('[data-character-sheet-page]')!)).toBe(964)
   })
 
-  it('сохраняет исходную раскладку в узкой панели и прокручивает лист в обе стороны', async () => {
+  it('сохраняет раскладку в узкой панели без горизонтальной прокрутки', async () => {
     const container = await mountCharacterSheet()
     await act(async () => {
       container.style.height = '640px'
@@ -171,15 +606,20 @@ describe('Character Sheet fixed desktop composition', () => {
         await nextFrame()
         await nextFrame()
       })
-      if (width < 1000) expect(viewport.scrollWidth).toBeGreaterThan(viewport.clientWidth)
+      await settleSheetLayout(container)
+      expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 1)
       expect(viewport.clientHeight).toBeGreaterThan(0)
       expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(container.getBoundingClientRect().bottom + 1)
       expect(getComputedStyle(viewport).scrollbarWidth).toBe('none')
-      expect(roundedWidth(sheetPage)).toBe(964)
+      expect(sheetPage.offsetWidth).toBe(964)
+      const scale = sheetPage.getBoundingClientRect().width / sheetPage.offsetWidth
       Array.from(body.children).forEach((element, index) => {
         const rect = element.getBoundingClientRect()
         const origin = body.getBoundingClientRect()
-        expect({ x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }).toEqual(columns[index])
+        expect((rect.left - origin.left) / scale).toBeCloseTo(columns[index].x, 0)
+        expect((rect.top - origin.top) / scale).toBeCloseTo(columns[index].y, 0)
+        expect(rect.width / scale).toBeCloseTo(columns[index].width, 0)
+        expect(rect.height / scale).toBeCloseTo(columns[index].height, 0)
       })
     }
     await act(async () => {
@@ -188,11 +628,11 @@ describe('Character Sheet fixed desktop composition', () => {
       await nextFrame()
     })
     await act(async () => {
-      viewport.scrollTo({ left: viewport.scrollWidth, top: viewport.scrollHeight, behavior: 'instant' })
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'instant' })
       await nextFrame()
     })
     const lastSection = container.querySelector<HTMLElement>('[data-character-sheet-personality="flaws"]')!
-    expect(viewport.scrollLeft).toBeGreaterThan(0)
+    expect(viewport.scrollLeft).toBe(0)
     expect(lastSection.getBoundingClientRect().right).toBeLessThanOrEqual(viewport.getBoundingClientRect().right + 1)
     expect(lastSection.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1)
   })
@@ -281,6 +721,12 @@ describe('Character Sheet fixed desktop composition', () => {
     await act(async () => {
       container.querySelectorAll<HTMLButtonElement>('[data-character-sheet-personality] button[aria-expanded="false"]')
         .forEach(button => button.click())
+      await nextFrame()
+      container.querySelectorAll<HTMLElement>(
+        '[data-character-sheet-personality] [data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
       await nextFrame()
     })
     expectTextEditorSpacing(container, 8)
@@ -538,6 +984,12 @@ describe('Character Sheet fixed desktop composition', () => {
     await act(async () => {
       traitsToggle.click()
       await nextFrame()
+      personalitySections.querySelectorAll<HTMLElement>(
+        '[data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
     })
 
     const featuresAfter = features.getBoundingClientRect()
@@ -562,6 +1014,12 @@ describe('Character Sheet fixed desktop composition', () => {
 
     await act(async () => {
       toggles.slice(1).forEach((toggle) => toggle.click())
+      await nextFrame()
+      personalitySections.querySelectorAll<HTMLElement>(
+        '[data-animated-disclosure]',
+      ).forEach((section) => {
+        section.getAnimations().forEach((animation) => animation.finish())
+      })
       await nextFrame()
     })
 
@@ -932,5 +1390,468 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(
       savingThrow.closest('[data-saving-throw-row]')?.getAttribute('data-rank'),
     ).toBe('none')
+  })
+
+  it('анимирует оба листа и размонтирует лист заклинаний только после закрытия', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const toggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    const book = toggle.closest<HTMLElement>('[data-spells-open]')!
+
+    await act(async () => {
+      await clickSpellSheetTab(toggle)
+      await nextFrame()
+    })
+
+    const panel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    expect(book.dataset.spellsOpen).toBe('true')
+    expect(panel.dataset.state).toBe('open')
+    expect(getComputedStyle(book).transitionProperty).toBe('transform')
+    expect(book.style.zoom).toBe('')
+    expect(book.style.getPropertyValue('--book-scale')).not.toBe('')
+    expect(getComputedStyle(panel).filter).toBe('none')
+    expect(getComputedStyle(panel).opacity).toBe('1')
+
+    // Во всём ходе движения язычок остаётся прикреплён к краю листа.
+    const openingAnimations = [book, drawer].flatMap(element => element.getAnimations())
+    expect(openingAnimations).toHaveLength(2)
+    for (const time of [100, 280, 480]) {
+      await act(async () => {
+        openingAnimations.forEach(animation => {
+          animation.pause()
+          animation.currentTime = time
+        })
+        await nextFrame()
+      })
+      const panelRect = panel.getBoundingClientRect()
+      const tabRect = toggle.getBoundingClientRect()
+      const scale = panelRect.width / panel.offsetWidth
+      const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
+      expect((tabRect.right - panelRect.right) / scale - hoverOffset).toBeCloseTo(30, 1)
+      expect(getComputedStyle(panel).opacity).toBe('1')
+    }
+    await act(async () => {
+      openingAnimations.forEach(animation => animation.finish())
+      await nextFrame()
+    })
+
+    const initiallyExpandedSpell = panel.querySelector<HTMLElement>(
+      '[data-spell-entry][data-expanded="true"] [data-animated-disclosure]',
+    )!
+    expect(initiallyExpandedSpell.dataset.state).toBe('open')
+    expect(getComputedStyle(initiallyExpandedSpell).animationName).toBe('none')
+
+    await act(async () => {
+      await clickSpellSheetTab(toggle)
+      await nextFrame()
+    })
+
+    expect(book.dataset.spellsOpen).toBe('false')
+    expect(panel.dataset.state).toBe('closing')
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBe(panel)
+    expect(panel).toHaveAttribute('inert')
+
+    await act(async () => {
+      ;[book, drawer].forEach(element => {
+        element.getAnimations().forEach(animation => animation.finish())
+      })
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-spell-sheet-panel]')).toBeNull()
+  })
+
+  it('выдвигает язычок вправо и показывает подпись перед иконкой при наведении', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const toggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    const icon = toggle.querySelector<HTMLElement>('[data-spell-sheet-icon]')!
+    const arrow = toggle.querySelector<HTMLElement>('[data-spell-sheet-arrow]')!
+    const book = toggle.closest<HTMLElement>('[data-spells-open]')!
+    const characterPanel = book.firstElementChild as HTMLElement
+    const sheetPage = container.querySelector<HTMLElement>(
+      '[data-character-sheet-page]',
+    )!
+    const toggleRect = toggle.getBoundingClientRect()
+    const sheetRect = sheetPage.getBoundingClientRect()
+
+    expect(toggleRect.height).toBeCloseTo(48, 0)
+    expect(getComputedStyle(toggle).backgroundImage).toBe('none')
+    expect(getComputedStyle(toggle).clipPath).toBe('none')
+    expect(getComputedStyle(toggle).borderTopRightRadius).not.toBe('0px')
+    expect(sheetRect.right - toggleRect.left).toBeGreaterThan(4)
+    expect(toggleRect.right).toBeGreaterThan(sheetRect.right)
+    expect(icon.firstElementChild).not.toBeNull()
+    expect(getComputedStyle(icon.firstElementChild!).maskImage).not.toBe('none')
+    expect(arrow.textContent).toBe('›')
+    expect(icon.getBoundingClientRect().width).toBeGreaterThan(
+      arrow.getBoundingClientRect().width,
+    )
+
+    const label = toggle.querySelector<HTMLElement>('br')!.parentElement!
+    expect(getComputedStyle(label).opacity).toBe('0')
+    await act(async () => {
+      await userEvent.hover(icon)
+      await nextFrame()
+    })
+    await act(async () => {
+      await nextFrame()
+      toggle.getAnimations({ subtree: true }).forEach(animation => animation.finish())
+      await nextFrame()
+    })
+    const hoverRect = toggle.getBoundingClientRect()
+    const scale = characterPanel.getBoundingClientRect().width / characterPanel.offsetWidth
+    expect(hoverRect.width).toBeCloseTo(toggleRect.width, 1)
+    expect(hoverRect.left - toggleRect.left).toBeCloseTo(87.2 * scale, 1)
+    expect(label.getBoundingClientRect().left).toBeGreaterThanOrEqual(sheetRect.right)
+    expect(label.getBoundingClientRect().right).toBeLessThan(icon.getBoundingClientRect().left)
+    expect(getComputedStyle(label).fontFamily).toContain('Gilroy')
+    expect(getComputedStyle(label).fontWeight).toBe('400')
+    expect(getComputedStyle(label).opacity).toBe('1')
+    expect(getComputedStyle(toggle).backgroundImage).toBe('none')
+    expect(getComputedStyle(toggle).boxShadow).toBe('none')
+
+    await act(async () => {
+      await clickSpellSheetTab(toggle)
+      await nextFrame()
+    })
+
+    expect(arrow.textContent).toBe('‹')
+    const spellPanel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    const drawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+
+    await act(async () => {
+      ;[book, toggle, drawer].forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
+    })
+
+    const openToggleRect = toggle.getBoundingClientRect()
+    const spellPanelRect = spellPanel.getBoundingClientRect()
+    expect(
+      openToggleRect.left - characterPanel.getBoundingClientRect().right,
+    ).toBeGreaterThan(300)
+    expect(openToggleRect.left).toBeLessThan(spellPanelRect.right)
+    expect(openToggleRect.right).toBeGreaterThan(spellPanelRect.right)
+
+    await act(async () => {
+      await clickSpellSheetTab(toggle)
+      await nextFrame()
+      ;[book, toggle, drawer].forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.finish())
+      })
+      await nextFrame()
+    })
+
+    expect(arrow.textContent).toBe('›')
+    const returnedScale = characterPanel.getBoundingClientRect().width / characterPanel.offsetWidth
+    const hoverOffset = new DOMMatrixReadOnly(getComputedStyle(toggle).transform).m41
+    expect(toggle.getBoundingClientRect().left - hoverOffset * returnedScale).toBeCloseTo(toggleRect.left, 0)
+  })
+
+  it('выдвигает энциклопедию с правого края без покадровой перераскладки колонки', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const trigger = container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!
+    const dock = container.querySelector<HTMLElement>('[data-encyclopedia-dock]')!
+    const drawer = container.querySelector<HTMLElement>('[data-encyclopedia-drawer]')!
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const spellDrawer = container.querySelector<HTMLElement>('[data-spell-sheet-drawer]')!
+    const initialBook = book.getBoundingClientRect()
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
+    expect(drawer.getBoundingClientRect().left).toBeCloseTo(dock.getBoundingClientRect().right, 0)
+    await act(async () => { await userEvent.click(trigger); await nextFrame() })
+    const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
+    expect(panel).not.toBeNull()
+    expect(getComputedStyle(drawer).transitionDuration).toBe(getComputedStyle(spellDrawer).transitionDuration)
+    expect(getComputedStyle(drawer).transitionTimingFunction).toBe(getComputedStyle(spellDrawer).transitionTimingFunction)
+    expect(drawer.getAnimations()).toHaveLength(1)
+    expect(dock.getAnimations()).toHaveLength(0)
+    expect(book.getAnimations()).toHaveLength(1)
+    const opening = [dock, drawer, book].flatMap(element => element.getAnimations())
+    await act(async () => {
+      opening.forEach(animation => { animation.pause(); animation.currentTime = 0 })
+      await nextFrame()
+    })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(initialBook.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(initialBook.width, 1)
+    const layoutHeight = book.offsetHeight
+    let previousVisibleWidth = 0
+    let previousOffset = 384
+    let previousBookWidth = initialBook.width
+    for (const time of [100, 280, 480]) {
+      await act(async () => {
+        opening.forEach(animation => { animation.pause(); animation.currentTime = time })
+        await nextFrame()
+      })
+      const bounds = panel.getBoundingClientRect(), dockBounds = dock.getBoundingClientRect()
+      const visibleWidth = Math.min(bounds.right, dockBounds.right) - Math.max(bounds.left, dockBounds.left)
+      const offset = new DOMMatrixReadOnly(getComputedStyle(drawer).transform).m41
+      expect(offset).toBeGreaterThan(0)
+      expect(offset).toBeLessThan(previousOffset)
+      expect(bounds.right).toBeGreaterThan(dockBounds.right)
+      expect(visibleWidth).toBeGreaterThan(previousVisibleWidth)
+      expect(visibleWidth).toBeLessThan(384)
+      expect(dockBounds.width).toBeCloseTo(384, 0)
+      expect(book.offsetHeight).toBe(layoutHeight)
+      expect(book.getBoundingClientRect().width).toBeLessThan(previousBookWidth)
+      expect(bounds.width).toBeCloseTo(384, 0) // Контент не сжимается вместе с выдвижным окном.
+      expect(getComputedStyle(panel).opacity).toBe('1')
+      expect(getComputedStyle(panel).filter).toBe('none')
+      previousVisibleWidth = visibleWidth
+      previousBookWidth = book.getBoundingClientRect().width
+      previousOffset = offset
+    }
+    await act(async () => { opening.forEach(animation => animation.finish()); await nextFrame() })
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(384, 0)
+    expect(panel.getBoundingClientRect().right).toBeCloseTo(dock.getBoundingClientRect().right, 0)
+    const close = panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!
+    await act(async () => { await userEvent.click(close); await nextFrame() })
+    expect(drawer.dataset.state).toBe('closing')
+    expect(drawer).toHaveAttribute('inert')
+    expect(drawer).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
+    expect(drawer.getAnimations()).toHaveLength(1)
+    expect(drawer.parentElement!.getBoundingClientRect().width).toBeCloseTo(384, 0)
+    await settleSheetLayout(container)
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBeNull()
+    expect(dock.getBoundingClientRect().width).toBeCloseTo(128, 0)
+    expect(document.activeElement).toBe(container.querySelector('[data-encyclopedia-trigger]'))
+  })
+
+  it.each([false, true])('сохраняет transform-only переход в узкой панели (fitWidth=%s)', async (fitWidth) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet(createMockSpellcasterSheet(), fitWidth)
+    await act(async () => { container.style.width = '640px'; await nextFrame() })
+    await settleSheetLayout(container)
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    const before = book.getBoundingClientRect()
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    const animation = book.getAnimations()[0]
+    expect(animation).toBeDefined()
+    const frames = (animation.effect as KeyframeEffect).getKeyframes()
+    frames.forEach(frame => {
+      expect(frame.transform).toBeDefined()
+      expect(frame.height).toBeUndefined()
+      expect(frame.width).toBeUndefined()
+      expect(frame.marginInline).toBeUndefined()
+    })
+    const height = book.offsetHeight
+    await act(async () => { animation.pause(); animation.currentTime = 0; await nextFrame() })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(before.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(before.width, 1)
+    for (const time of [100, 280, 480]) {
+      await act(async () => { animation.currentTime = time; await nextFrame() })
+      expect(book.offsetHeight).toBe(height)
+    }
+    await settleSheetLayout(container)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+  })
+
+  it('не запускает анимацию листа при reduced motion', async () => {
+    const matchMedia = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation(query => {
+      const result = matchMedia(query)
+      if (query === '(prefers-reduced-motion: reduce)') {
+        Object.defineProperty(result, 'matches', { value: true })
+      }
+      return result
+    })
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(0)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(0)
+    await settleSheetLayout(container)
+  })
+
+  it('отменяет движение при изменении ширины окна и подгоняет лист под новый размер', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet()
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    expect(book.getAnimations()).toHaveLength(1)
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 180 })
+      container.style.width = '900px'
+      await nextFrame()
+    })
+    expect(book.getAnimations()).toHaveLength(0)
+    expect(book).not.toHaveAttribute('data-layout-moving')
+    expect(book.getBoundingClientRect().width).toBeCloseTo(900 - 384 - 16, 0)
+  })
+
+  it('разворачивает закрывающуюся энциклопедию без повторного монтажа и запоздалого исчезновения', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ count: 0, results: [] })))
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    await settleSheetLayout(container)
+    const panel = container.querySelector<HTMLElement>('[aria-label="Энциклопедия для листа персонажа"]')!
+    await act(async () => { panel.querySelector<HTMLButtonElement>('[aria-label="Закрыть энциклопедию"]')!.click(); await nextFrame() })
+    expect(panel.closest('[data-encyclopedia-drawer]')).toHaveAttribute('inert')
+    const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 180 })
+      await nextFrame()
+    })
+    const reversingBounds = book.getBoundingClientRect()
+    await act(async () => { container.querySelector<HTMLButtonElement>('[data-encyclopedia-trigger]')!.click(); await nextFrame() })
+    await act(async () => {
+      book.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 0 })
+      await nextFrame()
+    })
+    expect(book.getBoundingClientRect().left).toBeCloseTo(reversingBounds.left, 1)
+    expect(book.getBoundingClientRect().width).toBeCloseTo(reversingBounds.width, 1)
+    await settleSheetLayout(container)
+    await act(async () => { await new Promise(resolve => window.setTimeout(resolve, 800)) })
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
+    expect(panel.closest('[data-encyclopedia-drawer]')).toHaveAttribute('data-state', 'open')
+    expect(panel.closest('[data-encyclopedia-drawer]')).not.toHaveAttribute('inert')
+    // Энциклопедия не мешает одновременному раскрытию листа заклинаний.
+    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!); await nextFrame() })
+    await settleSheetLayout(container)
+    expect(container.querySelector('[data-spell-sheet-panel]')).not.toBeNull()
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).toBe(panel)
+  })
+
+  it('скрывает верхнюю кнопку энциклопедии после открытия боковой панели', async () => {
+    const container = await mountCharacterSheet()
+    const trigger = container.querySelector<HTMLButtonElement>(
+      '[data-encyclopedia-trigger]',
+    )!
+    const sheet = container.querySelector<HTMLElement>(
+      '[data-character-sheet-page]',
+    )!
+
+    expect(trigger.textContent).toContain('Энциклопедия')
+    expect(trigger.querySelector('svg')).not.toBeNull()
+    expect(trigger).toHaveAttribute('data-decoration', 'bare')
+    expect(getComputedStyle(trigger).backgroundImage).toBe('none')
+    expect(getComputedStyle(trigger, '::before').display).toBe('none')
+    expect(getComputedStyle(trigger).textTransform).toBe('none')
+    expect(trigger.getBoundingClientRect().height).toBeCloseTo(36, 0)
+    await act(async () => { await userEvent.hover(trigger); await nextFrame() })
+    expect(getComputedStyle(trigger).backgroundImage).toBe('none')
+    expect(getComputedStyle(trigger).writingMode).not.toBe('vertical-rl')
+    expect(trigger.getBoundingClientRect().top).toBeCloseTo(
+      sheet.getBoundingClientRect().top,
+      0,
+    )
+
+    await act(async () => {
+      await userEvent.click(trigger)
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-encyclopedia-trigger]')).toBeNull()
+    expect(container.querySelector('[aria-label="Энциклопедия для листа персонажа"]')).not.toBeNull()
+
+    const close = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Закрыть энциклопедию"]',
+    )!
+    await act(async () => {
+      await userEvent.click(close)
+      await nextFrame()
+    })
+
+    expect(container.querySelector('[data-encyclopedia-trigger]')).not.toBeNull()
+  })
+
+  it('анимирует раскрытие и закрытие личностных разделов и карточек заклинаний', async () => {
+    const container = await mountCharacterSheet(createMockSpellcasterSheet())
+    const traits = container.querySelector<HTMLElement>(
+      '[data-character-sheet-personality="traits"]',
+    )!
+    const traitsToggle = traits.querySelector<HTMLButtonElement>(
+      'button[aria-expanded]',
+    )!
+
+    expect(traits.querySelector('[data-animated-disclosure]')).toBeNull()
+
+    await act(async () => {
+      await userEvent.click(traitsToggle)
+      await nextFrame()
+    })
+
+    const openedTraits = traits.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(traitsToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(openedTraits.dataset.state).toBe('opening')
+    expect(getComputedStyle(openedTraits).animationName).not.toBe('none')
+
+    await act(async () => {
+      await userEvent.click(traitsToggle)
+      await nextFrame()
+    })
+
+    const closingTraits = traits.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(closingTraits).toBe(openedTraits)
+    expect(closingTraits.dataset.state).toBe('closing')
+    expect(closingTraits).toHaveAttribute('inert')
+
+    await act(async () => {
+      closingTraits.dispatchEvent(
+        new AnimationEvent('animationend', { bubbles: true }),
+      )
+      await nextFrame()
+    })
+
+    expect(traits.querySelector('[data-animated-disclosure]')).toBeNull()
+
+    const spellSheetToggle = container.querySelector<HTMLButtonElement>(
+      '[data-spell-sheet-toggle]',
+    )!
+    await act(async () => {
+      await clickSpellSheetTab(spellSheetToggle)
+      await nextFrame()
+    })
+
+    const spellPanel = container.querySelector<HTMLElement>(
+      '[data-spell-sheet-panel]',
+    )!
+    const spellToggle = spellPanel.querySelector<HTMLButtonElement>(
+      '[data-spell-entry] button[aria-expanded="true"]',
+    )!
+    const spell = spellToggle.closest<HTMLElement>('article')!
+    const openedDetails = spell.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+
+    expect(openedDetails.dataset.state).toBe('open')
+
+    await act(async () => {
+      await userEvent.click(spellToggle)
+      await nextFrame()
+    })
+
+    const closingDetails = spell.querySelector<HTMLElement>(
+      '[data-animated-disclosure]',
+    )!
+    expect(spellToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(closingDetails).toBe(openedDetails)
+    expect(closingDetails.dataset.state).toBe('closing')
+
+    await act(async () => {
+      closingDetails.dispatchEvent(
+        new AnimationEvent('animationend', { bubbles: true }),
+      )
+      await nextFrame()
+    })
+
+    expect(spell.querySelector('[data-animated-disclosure]')).toBeNull()
   })
 })

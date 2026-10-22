@@ -33,6 +33,9 @@ export function DevHomeMenu() {
           <MenuButton icon={null} onClick={() => navigate('/profile')}>
             Профиль
           </MenuButton>
+          <MenuButton icon={null} onClick={() => navigate('/dev/login-preview')}>
+            Страница входа
+          </MenuButton>
           <MenuButton icon={null} onClick={() => setGuideOpen(true)}>
             Guide — знакомство с Виззом и Сукки
           </MenuButton>

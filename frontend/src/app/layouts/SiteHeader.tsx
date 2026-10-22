@@ -12,7 +12,10 @@ import {
 } from 'react-router-dom'
 
 import { TextInput } from '../../shared/ui/TextInput'
-import { PlaceholderIcon } from '../../shared/ui/icons'
+import {
+  NotificationIcon,
+  PlaceholderIcon,
+} from '../../shared/ui/icons'
 import styles from './SiteHeader.module.css'
 
 type MenuId = 'find-table' | 'tools' | 'my-table'
@@ -47,12 +50,12 @@ const HEADER_MENUS: readonly HeaderMenu[] = [
   {
     id: 'tools',
     label: 'Инструменты',
-    pathPrefixes: ['/tools/', '/survey'],
+    pathPrefixes: ['/characters', '/tools/', '/survey'],
     items: [
       {
-        label: 'Лист персонажа',
-        description: 'Интерактивный лист героя',
-        to: '/tools/character-sheet',
+        label: 'Мои персонажи',
+        description: 'Герои, чарлисты и кампании',
+        to: '/characters',
       },
       {
         label: 'Опросник',
@@ -173,7 +176,7 @@ export function SiteHeader() {
     const query = searchQuery.trim()
     navigate(
       query
-        ? `/encyclopedia?search=${encodeURIComponent(query)}`
+        ? `/encyclopedia?search=${encodeURIComponent(query)}&search_mode=full`
         : '/encyclopedia',
     )
   }
@@ -294,6 +297,14 @@ export function SiteHeader() {
             />
           </form>
 
+          <NavLink
+            className={({ isActive }) => `${styles.workshopLink} ${isActive ? styles.workshopLinkActive : ''}`}
+            to="/dev"
+            onClick={closeNavigation}
+          >
+            Мастерская
+          </NavLink>
+
           <button
             className={`${styles.iconButton} ${styles.mobileMenuButton}`}
             type="button"
@@ -310,7 +321,7 @@ export function SiteHeader() {
             type="button"
             aria-label="Уведомления"
           >
-            <PlaceholderIcon />
+            <NotificationIcon />
             <span className={styles.notificationDot} aria-hidden={true} />
           </button>
 

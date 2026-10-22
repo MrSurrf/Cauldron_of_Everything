@@ -1,0 +1,293 @@
+.workspace {
+  --sheet-slide-duration: 620ms;
+  --sheet-slide-easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.sheetSpace {
+  display: flex;
+  flex: 1 1 auto;
+  /* При браузерном zoom края разворота должны оставаться доступны прокруткой. */
+  min-width: var(--book-min-width, 0);
+  min-height: 0;
+  height: 100%;
+  align-items: stretch;
+  justify-content: center;
+  overflow: visible;
+}
+
+.book {
+  --book-page-width: 61.875rem;
+  --book-page-inset: 0.8125rem;
+  --book-scale: 1;
+
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  width: var(--book-page-width);
+  /* transform уменьшает и область прокрутки: компенсируем только её высоту,
+     сохраняя GPU-анимацию всего разворота и обычный размер содержимого. */
+  height: calc(100% / var(--book-scale));
+  min-height: 0;
+  align-items: stretch;
+  margin-inline: auto;
+  backface-visibility: hidden;
+  transform: scale(var(--book-scale)) translate3d(0, 0, 0);
+  transform-origin: top center;
+  /* FLIP-переход в useSheetLayoutMotion: размеры не интерполируются по кадрам. */
+  transition-property: transform;
+}
+
+.book[data-layout-moving='true'] { will-change: transform; }
+
+.book[data-spells-open='true'] {
+  transform: scale(var(--book-scale))
+    translate3d(
+      calc((var(--book-page-width) + var(--space-2)) / -2),
+      0,
+      0
+    );
+}
+
+/* В узкой host-панели transform должен уменьшать и занимаемое книгой место. */
+.workspace[data-fit-width='true'] .book {
+  margin-inline: calc((var(--book-scale) - 1) * var(--book-page-width) / 2);
+}
+
+.characterPanel,
+.spellPanel {
+  position: relative;
+  flex: 0 0 var(--book-page-width);
+  width: var(--book-page-width);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.characterPanel { z-index: 2; }
+.characterContent {
+  width: 100%;
+  height: 100%;
+}
+.spellReveal {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: calc(100% - var(--book-page-inset));
+  width: calc(var(--book-page-width) + var(--space-2) + 8rem);
+  height: 100%;
+  /* Край чарлиста скрывает и содержимое, и язычок, включая прозрачные поля. */
+  overflow: clip;
+  pointer-events: none;
+}
+
+.spellDrawer {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--book-page-width));
+  width: var(--book-page-width);
+  height: 100%;
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing);
+}
+
+.book[data-spells-open='true'] .spellDrawer {
+  transform: translate3d(
+    calc(var(--book-page-width) + var(--book-page-inset) + var(--space-2)),
+    0,
+    0
+  );
+}
+
+.spellPanel {
+  z-index: 1;
+  contain: layout paint;
+  isolation: isolate;
+  pointer-events: auto;
+}
+
+.pageTab,
+.libraryTrigger {
+  position: absolute;
+  z-index: 3;
+  border: var(--border-width-default) solid var(--color-content-border);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-default);
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform var(--motion-duration-fast), background-color var(--motion-duration-fast),
+    border-color var(--motion-duration-fast), color var(--motion-duration-fast);
+}
+
+.pageTab {
+  --page-tab-label-space: 5rem;
+
+  top: 44%;
+  right: -1.875rem;
+  z-index: 0;
+  display: flex;
+  width: calc(2.75rem + var(--page-tab-label-space));
+  height: 3rem;
+  padding: 0 0.2rem 0 0.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  clip-path: none;
+  pointer-events: auto;
+  transition:
+    transform var(--motion-duration-fast),
+    background-color var(--motion-duration-fast),
+    border-color var(--motion-duration-fast),
+    color var(--motion-duration-fast);
+}
+
+.pageTab[data-expanded='true'] {
+  transform: translate3d(calc(var(--page-tab-label-space) + 0.45rem), 0, 0);
+  border-color: var(--color-brand-muted);
+  background: var(--color-surface-muted);
+  color: var(--color-brand-bright);
+}
+
+.pageTabContent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pageTabLabel {
+  flex: 0 0 auto;
+  width: var(--page-tab-label-space);
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font: 400 var(--font-size-xs)/1.15 var(--font-family-body);
+  text-align: left;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast);
+}
+
+.pageTab[data-expanded='true'] .pageTabLabel { opacity: 1; }
+
+.pageTabIcon {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-brand-bright);
+  place-items: center;
+}
+
+.pageTabArrow {
+  font: 0.875rem/1 var(--font-family-body);
+}
+
+.libraryDock {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 8rem;
+  width: 8rem;
+  height: 100%;
+  min-width: 0;
+  pointer-events: none;
+}
+.libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
+
+.libraryReveal {
+  position: absolute;
+  /* Окно не сжимается при закрытии: панель целиком уходит за правый край. */
+  inset: 0 0 0 auto;
+  width: 24rem;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.libraryDrawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 24rem;
+  height: 100%;
+  transform: translate3d(100%, 0, 0);
+  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing);
+}
+
+.libraryDock[data-open='true'] .libraryDrawer { transform: translate3d(0, 0, 0); }
+
+.libraryTrigger.libraryTrigger {
+  top: 0.375rem;
+  right: 0;
+  display: inline-flex;
+  width: 8.75rem;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0 var(--space-2);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: var(--border-width-default) solid var(--color-content-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  color: var(--color-text-secondary);
+  clip-path: none;
+  font: 400 var(--font-size-xs)/1 var(--font-family-body);
+  letter-spacing: normal;
+  text-transform: none;
+  pointer-events: auto;
+}
+
+.libraryTriggerContent { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+.libraryTriggerIcon {
+  display: grid;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  place-items: center;
+  color: var(--color-brand-bright);
+}
+
+.libraryTriggerIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.libraryTrigger.libraryTrigger:hover,
+.libraryTrigger.libraryTrigger:focus-visible { border-color: var(--color-brand-muted); background: var(--color-surface-muted); color: var(--color-text-primary); filter: none; }
+.pageTab:focus-visible,
+.libraryTrigger:focus-visible { outline: 2px solid var(--color-brand-bright); outline-offset: 2px; }
+
+.library { width: 100%; height: 100%; pointer-events: auto; }
+
+.importError {
+  position: absolute;
+  z-index: 6;
+  right: 2.5rem;
+  bottom: var(--space-3);
+  display: flex;
+  max-width: min(28rem, calc(100% - 5rem));
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text-primary);
+  background: var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--font-size-sm);
+}
+.importError button { border: 0; color: var(--color-brand-bright); background: transparent; cursor: pointer; font: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .book,
+  .spellDrawer,
+  .libraryDock,
+  .libraryDrawer { transition: none; }
+  .pageTab,
+  .pageTabLabel,
+  .libraryTrigger { transition: none; }
+}

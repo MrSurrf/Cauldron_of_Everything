@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { ListCard, Panel, PlaceholderIcon, ScrollArea } from '../../shared/ui'
+import { ListCard, Panel, ScrollArea } from '../../shared/ui'
 import { clearHistory, fetchPopularEncyclopedia } from '../../entities/encyclopedia'
 import type { EncyclopediaVisit, PopularEncyclopediaEntry } from '../../entities/encyclopedia'
 import { entryPath } from './encyclopediaApi'
@@ -9,15 +9,9 @@ import { encyclopediaGroups, encyclopediaSections, sectionPath, typeLabel } from
 import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import styles from './EncyclopediaDashboard.module.css'
 
-const descriptions: Record<string, string> = {
-  directories: 'Существа, персонажи и их особенности. Всё, что оживляет мир.',
-  magic: 'Заклинания, магические предметы и всё, что наполняет мир силой.',
-  rules: 'Ключевые правила, системы и механики игры.',
-}
-
 function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] }) {
   const gridRef = useRef<HTMLDivElement>(null)
-  const [columns, setColumns] = useState(Math.min(5, group.sections.length))
+  const [columns, setColumns] = useState(5)
   const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
@@ -26,7 +20,7 @@ function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] })
     const observer = new ResizeObserver(() => {
       const gap = Number.parseFloat(getComputedStyle(grid).columnGap) || 0
       const minWidth = 11 * Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
-      setColumns(Math.min(5, group.sections.length, Math.max(1, Math.floor((grid.clientWidth + gap) / (minWidth + gap)))))
+      setColumns(Math.min(5, Math.max(1, Math.floor((grid.clientWidth + gap) / (minWidth + gap)))))
     })
     observer.observe(grid)
     return () => observer.disconnect()
@@ -35,30 +29,26 @@ function SectionGroup({ group }: { group: (typeof encyclopediaGroups)[number] })
   const hasMore = columns < group.sections.length
   const sections = expanded ? group.sections : group.sections.slice(0, columns)
 
-  return <Panel className={styles.groupPanel} padding="normal" aria-labelledby={`encyclopedia-${group.id}`}>
-    <section>
-      <div className={styles.groupHeading}>
-        <span className={styles.groupIcon} aria-hidden="true"><PlaceholderIcon /></span>
-        <div className={styles.groupCopy}>
-          <h2 id={`encyclopedia-${group.id}`}>{group.title}</h2>
-          <p>{descriptions[group.id]}</p>
-        </div>
-        {hasMore && <button type="button" className={styles.expandButton}
-          aria-controls={`section-grid-${group.id}`} aria-expanded={expanded}
-          aria-label={`${expanded ? 'Свернуть' : 'Показать все разделы'}: ${group.title}`}
-          onClick={() => setExpanded(value => !value)}>
-          <span>{expanded ? 'Свернуть' : 'Все разделы'}</span><span className={styles.chevron} aria-hidden="true" />
-        </button>}
+  return <section className={styles.groupSection} aria-labelledby={`encyclopedia-${group.id}`}>
+    <div className={styles.groupHeading}>
+      <div className={styles.groupCopy}>
+        <h2 id={`encyclopedia-${group.id}`}>{group.title}</h2>
       </div>
-      <div ref={gridRef} className={styles.sectionGrid} id={`section-grid-${group.id}`} data-group={group.id}
-        style={{ '--section-columns': columns } as CSSProperties}>
-        {sections.map(section => <Link className={styles.sectionButton} to={sectionPath(section)} key={section.id}>
-          <ListCard appearance="navigation" name={section.title} tags={[section.description]}
-            icon={<EncyclopediaSectionIcon sectionId={section.id} />} />
-        </Link>)}
-      </div>
-    </section>
-  </Panel>
+      {hasMore && <button type="button" className={styles.expandButton}
+        aria-controls={`section-grid-${group.id}`} aria-expanded={expanded}
+        aria-label={`${expanded ? 'Свернуть' : 'Показать все разделы'}: ${group.title}`}
+        onClick={() => setExpanded(value => !value)}>
+        <span>{expanded ? 'Свернуть' : 'Все разделы'}</span><span className={styles.chevron} aria-hidden="true" />
+      </button>}
+    </div>
+    <div ref={gridRef} className={styles.sectionGrid} id={`section-grid-${group.id}`} data-group={group.id}
+      style={{ '--section-columns': columns } as CSSProperties}>
+      {sections.map(section => <Link className={styles.sectionButton} to={sectionPath(section)} key={section.id}>
+        <ListCard appearance="navigation" name={section.title} tags={[section.description]}
+          icon={<EncyclopediaSectionIcon sectionId={section.id} />} />
+      </Link>)}
+    </div>
+  </section>
 }
 
 function VisitLink({ visit }: { visit: EncyclopediaVisit }) {
@@ -87,7 +77,7 @@ function PopularPanel() {
 
   return <Panel className={styles.sidebarPanel} padding="compact">
     <section className={styles.sidebarSection} aria-labelledby="encyclopedia-popular">
-      <h2 id="encyclopedia-popular"><span aria-hidden="true"><PlaceholderIcon /></span>Популярное</h2>
+      <h2 id="encyclopedia-popular">Популярное</h2>
       <ScrollArea aria-label="Популярные материалы" orientation="vertical" rootClassName={styles.panelScroll}>
         {!current ? <p className={styles.empty} role="status">Загружаем общий рейтинг…</p>
           : current.error ? <div role="status"><p className={styles.empty}>Общий рейтинг пока недоступен.</p>
@@ -103,17 +93,19 @@ function PopularPanel() {
   </Panel>
 }
 
-export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[] }) {
+export const EncyclopediaDashboard = memo(function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[] }) {
 
   return <div className={styles.dashboard}>
-    <div className={styles.groups}>
-      {encyclopediaGroups.map(group => <SectionGroup key={group.id} group={group} />)}
-    </div>
+    <Panel className={styles.groupsPanel} padding="normal">
+      <div className={styles.groups}>
+        {encyclopediaGroups.map(group => <SectionGroup key={group.id} group={group} />)}
+      </div>
+    </Panel>
     <aside className={styles.sidebar} aria-label="Подборки энциклопедии">
       <Panel className={styles.sidebarPanel} padding="compact">
         <section className={styles.sidebarSection} aria-labelledby="encyclopedia-history">
           <div className={styles.sidebarHeading}>
-            <h2 id="encyclopedia-history"><span aria-hidden="true"><PlaceholderIcon /></span>Недавно открывали</h2>
+            <h2 id="encyclopedia-history">Недавно открывали</h2>
             {history.length > 0 && <button type="button" className={styles.textAction} onClick={clearHistory}>Очистить историю</button>}
           </div>
           <ScrollArea id="recent-visits" aria-label="История посещений" orientation="vertical" rootClassName={styles.panelScroll}>
@@ -125,4 +117,4 @@ export function EncyclopediaDashboard({ history }: { history: EncyclopediaVisit[
       <PopularPanel />
     </aside>
   </div>
-}
+})

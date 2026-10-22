@@ -1,0 +1,110 @@
+.source {
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-easing-standard),
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    filter var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.source[data-encyclopedia-dragging='true'] {
+  opacity: 0.45;
+  transform: scale(0.97);
+  cursor: grabbing;
+}
+
+.preview.preview {
+  position: fixed;
+  z-index: var(--z-index-overlay);
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: var(--space-2);
+  border: var(--border-width-default) solid var(--selection-marker-fill);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text-primary);
+  opacity: 1;
+  transform: rotate(-2deg);
+  pointer-events: none;
+}
+
+.target {
+  position: relative;
+  isolation: isolate;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.target::after {
+  --drop-edge-color: color-mix(in srgb, var(--selection-marker-fill) 42%, transparent);
+  content: '';
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(to bottom, var(--drop-edge-color), transparent) top / 100% 1rem no-repeat,
+    linear-gradient(to top, var(--drop-edge-color), transparent) bottom / 100% 1rem no-repeat,
+    linear-gradient(to right, var(--drop-edge-color), transparent) left / 1rem 100% no-repeat,
+    linear-gradient(to left, var(--drop-edge-color), transparent) right / 1rem 100% no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.available.available {
+  outline: none;
+  border-color: color-mix(in srgb, var(--selection-marker-fill) 38%, transparent);
+  box-shadow: inset 0 0 1rem color-mix(in srgb, var(--selection-marker-fill) 16%, transparent);
+}
+
+.available::after { opacity: 0.7; }
+
+.active.active {
+  outline: none;
+  border-color: color-mix(in srgb, var(--selection-marker-fill) 76%, transparent);
+  box-shadow: inset 0 0 1.25rem color-mix(in srgb, var(--selection-marker-fill) 28%, transparent);
+}
+
+.active::after { --drop-edge-color: color-mix(in srgb, var(--selection-marker-fill) 58%, transparent); opacity: 1; }
+
+.received.received {
+  animation: entity-attached 520ms var(--motion-easing-standard);
+}
+
+.received::after { opacity: 0.85; }
+
+/* Затемняем самостоятельные блоки, не затрагивая родителей доступной зоны. */
+.scene :is(
+  [data-character-sheet-layout='body'] > section,
+  [data-character-sheet-column] > div,
+  [data-spellcasting-summary] > section,
+  [data-spell-level-grid] > section
+) {
+  transition: filter var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.scene[data-encyclopedia-drag-active='true'] :is(
+  [data-character-sheet-layout='body'] > section,
+  [data-character-sheet-column] > div,
+  [data-spellcasting-summary] > section,
+  [data-spell-level-grid] > section
+):not([data-encyclopedia-drop-available='true']):not(:has([data-encyclopedia-drop-available='true'])) {
+  filter: brightness(0.38) saturate(0.65);
+}
+
+@keyframes entity-attached {
+  0%, 30% {
+    box-shadow: inset 0 0 1.5rem color-mix(in srgb, var(--selection-marker-fill) 48%, transparent);
+  }
+  100% { box-shadow: inset 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .source, .target, .target::after,
+  .scene :is([data-character-sheet-layout='body'] > section, [data-character-sheet-column] > div,
+    [data-spellcasting-summary] > section, [data-spell-level-grid] > section) { transition: none; }
+  .source[data-encyclopedia-dragging='true'], .preview.preview { transform: none; }
+  .received.received { animation: none; box-shadow: inset 0 0 1rem color-mix(in srgb, var(--selection-marker-fill) 28%, transparent); }
+}

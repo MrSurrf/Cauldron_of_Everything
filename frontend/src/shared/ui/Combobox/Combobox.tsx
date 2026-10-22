@@ -33,6 +33,7 @@ import type {
 type QueryState = {
   query: string
   selectionValue: string | null
+  previousSelectionValue?: string | null
 }
 
 type PopupStyle = CSSProperties & {
@@ -198,7 +199,9 @@ export const Combobox = forwardRef<
   )
   const validQueryState =
     isOpen &&
-    queryState?.selectionValue === selectedValue
+    (queryState?.selectionValue === selectedValue ||
+      (controlledValue &&
+        queryState?.previousSelectionValue === selectedValue))
       ? queryState
       : null
   const inputValue =
@@ -207,7 +210,6 @@ export const Combobox = forwardRef<
     (allowCustomValue ? selectedValue ?? '' : '')
   const hasUncommittedQuery =
     !allowCustomValue &&
-    selectedValue === null &&
     validQueryState !== null &&
     validQueryState.query.length > 0
   const filterQuery =
@@ -410,6 +412,8 @@ export const Combobox = forwardRef<
       selectionValue: clearsSelection
         ? null
         : selectedValue,
+      // Родитель может сохранять прежний выбор до подтверждения нового варианта.
+      previousSelectionValue: selectedValue,
     })
     onQueryChange?.(nextQuery)
 

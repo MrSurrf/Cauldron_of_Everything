@@ -53,8 +53,9 @@ export function groupBackgroundsBySource(entries: CatalogBackground[]) {
   ).map(([source, items]) => ({ source, entries: [...items].sort((a, b) => collator.compare(a.name, b.name) || a.id - b.id) }))
 }
 
-export async function loadBackgrounds(signal: AbortSignal): Promise<CatalogBackground[]> {
+export async function loadBackgrounds(signal: AbortSignal, query = ''): Promise<CatalogBackground[]> {
   const params = new URLSearchParams({ type: 'background', page_size: '100' })
+  if (query.trim()) params.set('q', query.trim())
   const first = await fetchEncyclopedia<BackgroundPage>(`?${params}`, signal)
   const pages = await Promise.all(Array.from({ length: Math.max(0, Math.ceil(first.count / 100) - 1) }, (_, index) =>
     fetchEncyclopedia<BackgroundPage>(`?${params}&page=${index + 2}`, signal),
