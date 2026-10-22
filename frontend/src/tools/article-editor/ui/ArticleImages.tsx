@@ -4,8 +4,10 @@ import type { ChangeEvent } from 'react'
 import { Button, ScrollArea, Select, TextArea, TextInput } from '../../../shared/ui'
 import { captureImageAssetRepository, DEFAULT_IMAGE_EDITS } from '../model'
 import type { ArticleImage } from '../model'
-import { getArticleImageDimensions, normalizeArticleCrop, renderArticleImage, validateArticleImageFile } from './articleImageProcessing'
+import { getArticleImageDimensions, normalizeArticleCrop, validateArticleImageFile } from './articleImageProcessing'
 import type { ArticleImageDimensions } from './articleImageProcessing'
+import { ArticleCropFrame } from './ArticleCropFrame'
+import { ArticlePhoto } from './ArticlePhoto'
 import styles from './ArticleImages.module.css'
 
 type ArticleImagesProps = {
@@ -17,42 +19,7 @@ type ArticleImagesProps = {
   usedImageIds?: string[]
 }
 
-/** Небольшие копии не используют полноразмерный canvas; временные URL освобождаются при замене. */
-export function ArticlePhoto({ image, className, maxSize = 1200 }: {
-  image: ArticleImage
-  className?: string
-  maxSize?: number
-}) {
-  const [result, setResult] = useState<{ key: string; scope: string; assetId: string; url?: string; error?: string } | null>(null)
-  const repository = captureImageAssetRepository()
-  const renderKey = JSON.stringify([repository.scope, image.assetId, image.edits, maxSize])
-
-  useEffect(() => {
-    let cancelled = false
-    let url: string | undefined
-    // Объединяем частые движения ползунка, сохраняя предыдущий кадр до готовности следующего.
-    const timer = window.setTimeout(() => {
-      void renderArticleImage(image, maxSize, repository).then(blob => {
-        if (cancelled) return
-        url = URL.createObjectURL(blob)
-        setResult({ key: renderKey, scope: repository.scope, assetId: image.assetId, url })
-      }).catch((cause: unknown) => {
-        if (!cancelled) setResult({ key: renderKey, scope: repository.scope, assetId: image.assetId, error: cause instanceof Error ? cause.message : 'Не удалось открыть фотографию.' })
-      })
-    }, 60)
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-      if (url) URL.revokeObjectURL(url)
-    }
-  // Метаданные alt/caption не требуют повторной обработки canvas.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderKey])
-
-  if (result?.error && result.key === renderKey) return <span className={`${styles.photoMessage} ${className ?? ''}`} role="status" data-article-image-error="">{result.error}</span>
-  if (!result?.url || result.scope !== repository.scope || result.assetId !== image.assetId) return <span className={`${styles.photoMessage} ${className ?? ''}`} role="status" data-article-image-loading="">Загрузка фотографии…</span>
-  return <img className={className} src={result.url} alt={image.alt} data-article-image-photo={image.id} aria-busy={result.key !== renderKey || undefined} />
-}
+export { ArticlePhoto } from './ArticlePhoto'
 
 const cropOptions = [
   { value: 'original', label: 'Оригинал' },
@@ -61,7 +28,7 @@ const cropOptions = [
   { value: '1:1', label: '1:1 — квадрат' },
   { value: '9:16', label: '9:16 — вертикальный кадр' },
   { value: '3:4', label: '3:4 — портретный' },
-  { value: 'custom', label: 'Произвольный кадр', disabled: true },
+  { value: 'custom', label: 'Произвольный кадр' },
 ]
 
 function freshEdits(): ArticleImage['edits'] {
@@ -103,17 +70,36 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
+  const [cropEditing, setCropEditing] = useState(false)
+  const [cropModes, setCropModes] = useState<Record<string, string>>({})
   const [dimensions, setDimensions] = useState<{ assetId: string; size: ArticleImageDimensions } | null>(null)
   const uploadRef = useRef<HTMLInputElement>(null)
   const replaceRef = useRef<HTMLInputElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const revealFrame = useRef(0)
   const mounted = useRef(true)
   const latest = useRef({ images, coverImageId, onChange, onCoverChange })
   useLayoutEffect(() => { latest.current = { images, coverImageId, onChange, onCoverChange } }, [images, coverImageId, onChange, onCoverChange])
   const selected = images.find(image => image.id === selectedId) ?? images.find(image => image.id === coverImageId) ?? images[0]
   const selectedAssetId = selected?.assetId
   const size = dimensions && selected && dimensions.assetId === selected.assetId ? dimensions.size : null
+  const cropIdentity = selected ? `${selected.id}:${selected.assetId}:${selected.edits.rotation}` : ''
+  const ratio = cropModes[cropIdentity] ?? (selected ? currentRatio(selected, size) : 'original')
+  const naturalRatio = size ? selected?.edits.rotation === 90 || selected?.edits.rotation === 270 ? size.height / size.width : size.width / size.height : 1
+  const lockedRatio = ratio === 'custom' ? undefined : ratio === 'original' ? naturalRatio
+    : Number(ratio.split(':')[0]) / Number(ratio.split(':')[1])
 
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  function rememberCropMode(value: string, rotation = selected?.edits.rotation) {
+    if (selected && rotation !== undefined) setCropModes(modes => ({ ...modes, [`${selected.id}:${selected.assetId}:${rotation}`]: value }))
+  }
+
+  function revealCrop() {
+    setCropEditing(true)
+    cancelAnimationFrame(revealFrame.current)
+    revealFrame.current = requestAnimationFrame(() => previewRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' }))
+  }
+
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; cancelAnimationFrame(revealFrame.current) } }, [])
   useEffect(() => {
     if (!selectedAssetId) return
     let cancelled = false
@@ -164,6 +150,7 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
           ? current.images.map(image => image.id === replacingId ? added[0] : image)
           : [...current.images, ...added])
         if (!current.coverImageId && !replacingId) current.onCoverChange(added[0].id)
+        setCropEditing(false)
         setSelectedId(added[0].id)
       }
       setNotice(errors.join(' '))
@@ -171,26 +158,23 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
   }
 
   function selectCrop(value: string | null) {
-    if (!selected || !size || !value || value === 'custom') return
+    if (!selected || !size || !value) return
+    rememberCropMode(value)
+    revealCrop()
+    if (value === 'custom') return
     if (value === 'original') { updateEdits({ crop: { x: 0, y: 0, width: 1, height: 1 } }); return }
     const [width, height] = value.split(':').map(Number)
-    updateEdits({ crop: fullCrop(size, selected.edits.rotation, width / height) })
-  }
-
-  function scaleCrop(percent: number) {
-    if (!selected) return
-    const crop = normalizeArticleCrop(selected.edits.crop)
-    const maxWidth = Math.min(1, crop.width / crop.height)
-    const maxHeight = Math.min(1, crop.height / crop.width)
-    const width = maxWidth * percent / 100
-    const height = maxHeight * percent / 100
-    updateEdits({ crop: normalizeArticleCrop({ width, height, x: crop.x + (crop.width - width) / 2, y: crop.y + (crop.height - height) / 2 }) })
+    const fitted = fullCrop(size, selected.edits.rotation, width / height)
+    const previous = normalizeArticleCrop(selected.edits.crop)
+    updateEdits({ crop: normalizeArticleCrop({ ...fitted, x: previous.x + previous.width / 2 - fitted.width / 2, y: previous.y + previous.height / 2 - fitted.height / 2 }) })
   }
 
   function rotate() {
     if (!selected) return
     const crop = selected.edits.crop
-    updateEdits({ rotation: ((selected.edits.rotation + 90) % 360) as ArticleImage['edits']['rotation'],
+    const rotation = ((selected.edits.rotation + 90) % 360) as ArticleImage['edits']['rotation']
+    rememberCropMode(ratio.includes(':') ? ratio.split(':').reverse().join(':') : ratio, rotation)
+    updateEdits({ rotation,
       crop: normalizeArticleCrop({ x: 1 - crop.y - crop.height, y: crop.x, width: crop.height, height: crop.width }) })
   }
 
@@ -200,13 +184,11 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
     onChange(remaining)
     if (coverImageId === selected.id) onCoverChange(remaining[0]?.id ?? null)
     setSelectedId(remaining[0]?.id ?? null)
+    setCropEditing(false)
     setNotice('')
   }
 
-  const crop = selected ? normalizeArticleCrop(selected.edits.crop) : null
-  const cropScale = crop ? Math.max(crop.width, crop.height) * 100 : 100
   const used = Boolean(selected && usedImageIds.includes(selected.id))
-  const ratio = selected ? currentRatio(selected, size) : 'original'
 
   return <aside className={styles.panel} aria-labelledby="article-images-heading" data-article-images="">
     <header className={styles.header}>
@@ -228,25 +210,26 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
         <Button size="md" variant="secondary" decoration="minimal" icon={null} disabled={busy} onClick={() => uploadRef.current?.click()}>Выбрать фотографии</Button>
       </div> : <>
         <div className={styles.selectedHeading}><span>{selected.id === coverImageId ? 'Обложка статьи' : 'Выбранное изображение'}</span><small>{images.findIndex(image => image.id === selected.id) + 1} / {images.length}</small></div>
-        <div className={styles.preview} data-article-image-selected={selected.id}>
-          <ArticlePhoto image={selected} className={styles.previewPhoto} maxSize={720} />
-          <span className={styles.ratioBadge} aria-hidden="true">{ratio === 'original' ? 'Оригинал' : ratio === 'custom' ? 'Произвольный' : ratio}</span>
+        <div className={styles.preview} ref={previewRef} data-article-image-selected={selected.id}>
+          {cropEditing && size ? <ArticleCropFrame key={`${selected.id}:${selected.assetId}:${selected.edits.rotation}:${ratio}`}
+            image={selected} dimensions={size} aspectRatio={lockedRatio} onCropChange={crop => updateEdits({ crop })} />
+            : <ArticlePhoto image={selected} className={styles.previewPhoto} maxSize={720} />}
+          {!cropEditing && <span className={styles.ratioBadge} aria-hidden="true">{ratio === 'original' ? 'Оригинал' : ratio === 'custom' ? 'Произвольный' : ratio}</span>}
         </div>
         <div className={styles.quickActions}>
+          <Button size="sm" variant="secondary" decoration="bare" icon={null} disabled={!size} aria-pressed={cropEditing}
+            onClick={() => { if (cropEditing) setCropEditing(false); else { rememberCropMode(ratio); revealCrop() } }} data-article-image-crop-toggle=""><span className={styles.actionLabel}><span aria-hidden="true">⌗</span>{cropEditing ? 'Готово' : 'Обрезать'}</span></Button>
           <Button size="sm" variant="secondary" decoration="bare" icon={null} disabled={!size} onClick={rotate} data-article-image-rotate=""><span className={styles.actionLabel}><span aria-hidden="true">↻</span>Повернуть</span></Button>
-          <Button size="sm" variant="secondary" decoration="bare" icon={null} onClick={() => updateEdits(freshEdits())} data-article-image-reset=""><span className={styles.actionLabel}><span aria-hidden="true">↺</span>Сбросить</span></Button>
+          <Button size="sm" variant="secondary" decoration="bare" icon={null} onClick={() => {
+            setCropModes(modes => Object.fromEntries(Object.entries(modes).filter(([key]) => !key.startsWith(`${selected.id}:`))))
+            setCropEditing(false); updateEdits(freshEdits())
+          }} data-article-image-reset=""><span className={styles.actionLabel}><span aria-hidden="true">↺</span>Сбросить</span></Button>
           <Button size="sm" variant="secondary" decoration="bare" icon={null} disabled={busy} onClick={() => replaceRef.current?.click()} data-article-image-replace=""><span className={styles.actionLabel}><span aria-hidden="true">↑</span>Заменить</span></Button>
         </div>
         <section className={styles.group} aria-labelledby="article-image-crop-heading">
           <h3 id="article-image-crop-heading">Кадрирование</h3>
           <Select aria-label="Пропорции кадра" value={ratio} options={cropOptions} disabled={!size} onValueChange={selectCrop} />
-          {crop && <div className={styles.adjustments}>
-            <ImageRange label="Размер кадра" min={20} max={100} value={cropScale} disabled={!size} onChange={scaleCrop} />
-            <ImageRange label="Положение по горизонтали" max={100} value={crop.width < 0.999 ? crop.x / (1 - crop.width) * 100 : 50}
-              disabled={!size || crop.width >= 0.999} onChange={value => updateEdits({ crop: { ...crop, x: (1 - crop.width) * value / 100 } })} />
-            <ImageRange label="Положение по вертикали" max={100} value={crop.height < 0.999 ? crop.y / (1 - crop.height) * 100 : 50}
-              disabled={!size || crop.height >= 0.999} onChange={value => updateEdits({ crop: { ...crop, y: (1 - crop.height) * value / 100 } })} />
-          </div>}
+          <p className={styles.hint}>{cropEditing ? 'Перемещайте рамку на фотографии. Размер меняется за углы и границы; «Готово» покажет результат.' : 'Нажмите «Обрезать», чтобы выбрать область рамкой прямо на фотографии.'}</p>
         </section>
         <section className={styles.group} aria-labelledby="article-image-color-heading">
           <h3 id="article-image-color-heading">Цвет и свет</h3>
@@ -272,7 +255,7 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
           <div className={styles.libraryHeading}><h3 id="article-image-library-heading">Все изображения</h3><span>{images.length}</span></div>
           <div className={styles.thumbnails}>
             {images.map(image => <button key={image.id} type="button" className={styles.thumbnail} aria-label={`Редактировать фотографию: ${image.name}`}
-              aria-pressed={image.id === selected.id} onClick={() => { setSelectedId(image.id); setNotice('') }} data-article-image-thumbnail={image.id}>
+              aria-pressed={image.id === selected.id} onClick={() => { setSelectedId(image.id); setCropEditing(false); setNotice('') }} data-article-image-thumbnail={image.id}>
               <ArticlePhoto image={image} className={styles.thumbnailPhoto} maxSize={180} />
               {image.id === coverImageId && <span className={styles.coverMark}>Обложка</span>}
             </button>)}
