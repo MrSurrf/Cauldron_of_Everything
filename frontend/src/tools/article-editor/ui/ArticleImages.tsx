@@ -22,13 +22,13 @@ type ArticleImagesProps = {
 export { ArticlePhoto } from './ArticlePhoto'
 
 const cropOptions = [
-  { value: 'original', label: 'Оригинал' },
+  { value: 'custom', label: 'Свободные пропорции' },
+  { value: 'original', label: 'Исходные пропорции' },
   { value: '16:9', label: '16:9 — широкий кадр' },
   { value: '4:3', label: '4:3 — классический' },
   { value: '1:1', label: '1:1 — квадрат' },
   { value: '9:16', label: '9:16 — вертикальный кадр' },
   { value: '3:4', label: '3:4 — портретный' },
-  { value: 'custom', label: 'Произвольный кадр' },
 ]
 
 function freshEdits(): ArticleImage['edits'] {
@@ -40,19 +40,6 @@ function fullCrop(dimensions: ArticleImageDimensions, rotation: number, ratio: n
   const width = Math.min(1, ratio / naturalRatio)
   const height = Math.min(1, naturalRatio / ratio)
   return { x: (1 - width) / 2, y: (1 - height) / 2, width, height }
-}
-
-function currentRatio(image: ArticleImage, dimensions: ArticleImageDimensions | null) {
-  const crop = image.edits.crop
-  if (Math.abs(crop.x) < 0.000001 && Math.abs(crop.y) < 0.000001 && Math.abs(crop.width - 1) < 0.000001 && Math.abs(crop.height - 1) < 0.000001) return 'original'
-  if (!dimensions) return 'custom'
-  const rotated = image.edits.rotation === 90 || image.edits.rotation === 270
-  const naturalRatio = rotated ? dimensions.height / dimensions.width : dimensions.width / dimensions.height
-  const ratio = naturalRatio * image.edits.crop.width / image.edits.crop.height
-  return ['16:9', '4:3', '1:1', '9:16', '3:4'].find(value => {
-    const [width, height] = value.split(':').map(Number)
-    return Math.abs(ratio - width / height) < 0.015
-  }) ?? 'custom'
 }
 
 function ImageRange({ label, value, min = 0, max = 200, onChange, disabled = false }: {
@@ -84,7 +71,8 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
   const selectedAssetId = selected?.assetId
   const size = dimensions && selected && dimensions.assetId === selected.assetId ? dimensions.size : null
   const cropIdentity = selected ? `${selected.id}:${selected.assetId}:${selected.edits.rotation}` : ''
-  const ratio = cropModes[cropIdentity] ?? (selected ? currentRatio(selected, size) : 'original')
+  // Геометрия сохранённого кадра не должна сама включать фиксацию пропорций.
+  const ratio = cropModes[cropIdentity] ?? 'custom'
   const naturalRatio = size ? selected?.edits.rotation === 90 || selected?.edits.rotation === 270 ? size.height / size.width : size.width / size.height : 1
   const lockedRatio = ratio === 'custom' ? undefined : ratio === 'original' ? naturalRatio
     : Number(ratio.split(':')[0]) / Number(ratio.split(':')[1])
@@ -214,7 +202,7 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
           {cropEditing && size ? <ArticleCropFrame key={`${selected.id}:${selected.assetId}:${selected.edits.rotation}:${ratio}`}
             image={selected} dimensions={size} aspectRatio={lockedRatio} onCropChange={crop => updateEdits({ crop })} />
             : <ArticlePhoto image={selected} className={styles.previewPhoto} maxSize={720} />}
-          {!cropEditing && <span className={styles.ratioBadge} aria-hidden="true">{ratio === 'original' ? 'Оригинал' : ratio === 'custom' ? 'Произвольный' : ratio}</span>}
+          {!cropEditing && <span className={styles.ratioBadge} aria-hidden="true">{ratio === 'original' ? 'Исходные' : ratio === 'custom' ? 'Свободный кадр' : ratio}</span>}
         </div>
         <div className={styles.quickActions}>
           <Button size="sm" variant="secondary" decoration="bare" icon={null} disabled={!size} aria-pressed={cropEditing}
@@ -229,7 +217,9 @@ export function ArticleImages({ images, coverImageId, onChange, onCoverChange, o
         <section className={styles.group} aria-labelledby="article-image-crop-heading">
           <h3 id="article-image-crop-heading">Кадрирование</h3>
           <Select aria-label="Пропорции кадра" value={ratio} options={cropOptions} disabled={!size} onValueChange={selectCrop} />
-          <p className={styles.hint}>{cropEditing ? 'Перемещайте рамку на фотографии. Размер меняется за углы и границы; «Готово» покажет результат.' : 'Нажмите «Обрезать», чтобы выбрать область рамкой прямо на фотографии.'}</p>
+          <p className={styles.hint}>{cropEditing
+            ? ratio === 'custom' ? 'Тяните углы или стороны свободно: ширина и высота независимы. «Готово» покажет результат.' : 'Пропорции зафиксированы. Для произвольной формы выберите «Свободные пропорции».'
+            : 'Нажмите «Обрезать». По умолчанию рамка свободная; пропорции фиксируются только при выборе из списка.'}</p>
         </section>
         <section className={styles.group} aria-labelledby="article-image-color-heading">
           <h3 id="article-image-color-heading">Цвет и свет</h3>
