@@ -5,6 +5,8 @@ import { recordVisit } from '../../entities/encyclopedia'
 import { entryPath, fetchEncyclopedia } from './encyclopediaApi'
 import type { EncyclopediaEntry } from './encyclopediaApi'
 import { typeLabel } from './encyclopediaSections'
+import { ClassFullView, toClassEntity } from '../../entities/character-class'
+import classStyles from './ClassEntityPage.module.css'
 import styles from './EncyclopediaPage.module.css'
 
 export default function EncyclopediaEntryPage() {
@@ -23,6 +25,9 @@ export default function EncyclopediaEntryPage() {
       .catch(() => { if (!controller.signal.aborted) setState({ id, error: 'Не удалось открыть материал. Он недоступен или соединение прервано.' }) })
     return () => controller.abort()
   }, [id, attempt])
+  if (current?.entry?.entity_type === 'class') {
+    return <main className={classStyles.page}><ClassFullView key={current.entry.id} entity={toClassEntity(current.entry)} /></main>
+  }
   return <main className={styles.page}><div className={styles.container}>
     <Link className={styles.back} to="/encyclopedia">← Энциклопедия</Link>
     {!current && <p role="status">Загружаем материал…</p>}

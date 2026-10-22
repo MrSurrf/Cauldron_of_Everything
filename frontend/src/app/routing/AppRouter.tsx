@@ -54,6 +54,7 @@ const BackgroundsPage = lazy(() => import('../../pages/encyclopedia/BackgroundsP
 const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
 const EncyclopediaEntryPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaEntryPage'))
 const ItemEntityPage = lazy(() => import('../../pages/encyclopedia/ItemEntityPage'))
+const ClassEntityPage = lazy(() => import('../../pages/encyclopedia/ClassEntityPage'))
 
 function RouteFallback() {
   return (
@@ -122,6 +123,7 @@ function RoutedApp() {
               <Route path="/articles/create" element={<ArticleEditorPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/item/:slug" element={<ItemEntityPage />} />
+              <Route path="/encyclopedia/class/:slug" element={<ClassEntityPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
               <Route path="/encyclopedia/items" element={<ItemsPage />} />
               <Route path="/encyclopedia/classes" element={<ClassesPage />} />
