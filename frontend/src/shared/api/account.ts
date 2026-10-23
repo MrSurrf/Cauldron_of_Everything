@@ -27,7 +27,6 @@ export type ProfileData = {
   title: string
   role: string
   bio: string
-  quote: string
   portrait: string | null
   theme: string
   visibility: ProfileVisibility

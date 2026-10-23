@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react'
 import { getProfile, patchProfile, uploadAvatar } from '../../shared/api/account'
 import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
 import { CharacterPortrait } from '../../tools/character-sheet'
-import { ProfileAchievements, ProfileAvatar, ProfileFacts, ProfileSection, TagList } from './ProfileParts'
+import { ProfileAchievements, ProfileAvatar, ProfileFacts, ProfileMemberships, ProfileSection, ProfileStats, RecentActivity, TagList } from './ProfileParts'
 import { cloneProfile, emptyProfile, gameSystems, genres, normalizeProfile, playStyles, privacyFields, themes, visibilityOptions } from './profileModel'
 import type { ProfileData } from './profileModel'
 import { readProfileCache, writeProfileCache } from './profileCache'
@@ -34,12 +34,14 @@ export default function ProfilePage() {
   const [loadError, setLoadError] = useState('')
   const [loadRevision, setLoadRevision] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [updatedAt, setUpdatedAt] = useState('')
   const [portraitRevision, setPortraitRevision] = useState(0)
   const pendingPortraitFile = useRef<File | null>(null)
   const portraitPreviewUrl = useRef<string | null>(null)
   const editingRef = useRef(false)
   const draftTouchedRef = useRef(false)
   const profile = editing ? draft : saved
+  const visibleLinks = profile.links.filter(link => link.label.trim() && link.value.trim())
   const theme = themes.find(item => item.value === profile.theme) ?? themes[0]
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(draft) !== JSON.stringify(saved),
@@ -59,6 +61,7 @@ export default function ProfilePage() {
         if (cancelled) return
         const normalized = normalizeProfile(remote.data)
         setSaved(normalized)
+        setUpdatedAt(remote.updated_at)
         writeProfileCache(normalized)
         if (!editingRef.current || !draftTouchedRef.current) setDraft(cloneProfile(normalized))
       } catch (error) {
@@ -135,6 +138,7 @@ export default function ProfilePage() {
       const confirmed = normalizeProfile(response.data, next)
       writeProfileCache(confirmed)
       setSaved(confirmed)
+      setUpdatedAt(response.updated_at)
       setDraft(cloneProfile(confirmed))
       pendingPortraitFile.current = null
       draftTouchedRef.current = false
@@ -219,8 +223,7 @@ export default function ProfilePage() {
     <main className={styles.page} style={{ '--profile-accent': theme.color } as CSSProperties} aria-busy={loading || saving}>
       <div className={styles.profile}>
         <Panel className={styles.hero} padding="none">
-          <div className={styles.profileCover} data-testid="profile-cover" aria-hidden="true" />
-          <div className={styles.heroBody}>
+          <div className={styles.heroBody} data-testid="profile-cover">
             <div className={styles.heroActions}>
               {editing ? <>
                 <span className={styles.modeLabel}>Редактирование профиля</span>
@@ -228,26 +231,27 @@ export default function ProfilePage() {
                 <Button size="sm" icon={null} disabled={saving || !hasUnsavedChanges} onClick={() => void saveProfile()}>{saving ? 'Сохранение…' : 'Сохранить'}</Button>
               </> : <Button size="sm" variant="secondary" icon={<EditIcon />} onClick={startEditing}>Редактировать профиль</Button>}
             </div>
-            <div className={styles.heroIdentity}>
+            <div className={styles.heroContent}>
               <div className={styles.heroPortrait}>
                 {editing
                   ? <CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} imageLabel={{ alt: 'Аватар профиля', action: 'изображение профиля' }} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} />
                   : <ProfileAvatar profile={profile} />}
               </div>
               <div className={styles.identityText}>
-                {profile.title && <p className={styles.eyebrow}>{profile.title}</p>}
-                <h1>{profile.name || 'Ваше имя'}</h1>
-                {profile.tagline && <p>{profile.tagline}</p>}
+                {profile.title.trim() && <p className={styles.eyebrow}>{profile.title.trim()}</p>}
+                {profile.name.trim() && <h1>{profile.name.trim()}</h1>}
+                {profile.tagline.trim() && <p>{profile.tagline.trim()}</p>}
                 <ProfileFacts profile={profile} />
               </div>
+              <ProfileStats profile={profile} />
             </div>
           </div>
         </Panel>
 
-        <div className={styles.noticeRow}>
+        {visibleNotice && <div className={styles.noticeRow}>
           <p className={notice?.kind === 'error' || loadError ? styles.error : styles.notice} role={notice?.kind === 'error' || loadError ? 'alert' : 'status'}>{visibleNotice}</p>
           {loadError && <Button size="sm" decoration="bare" variant="secondary" icon={null} onClick={retryLoad}>Повторить</Button>}
-        </div>
+        </div>}
 
         <div className={`${styles.columns} ${editing ? styles.columnsEditing : styles.columnsViewing}`}>
           <div className={styles.stack}>
@@ -260,17 +264,16 @@ export default function ProfilePage() {
               </div>
             </ProfileSection>}
 
-            <ProfileSection title="Обо мне">
-              {editing ? <TextArea aria-label="Обо мне" value={profile.bio} maxLength={2000} showCharacterCount onChange={event => update('bio', event.target.value)} /> : <p className={profile.bio ? styles.bio : styles.muted}>{profile.bio || 'Расскажите немного о себе.'}</p>}
-              <ProfileAchievements profile={saved} />
-            </ProfileSection>
-            <ProfileSection title="Любимые системы">{choices('systems', gameSystems)}</ProfileSection>
-            <ProfileSection title="Стиль игры">{choices('styles', playStyles)}</ProfileSection>
-            <ProfileSection title="Предпочитаю играть как">
-              {editing ? <div className={styles.roleChoices}>{['Мастер', 'Игрок'].map(role => <Button key={role} size="lg" fullWidth variant={profile.role === role ? 'primary' : 'secondary'} aria-pressed={profile.role === role} icon={<PlaceholderIcon />} onClick={() => update('role', role)}>{role}</Button>)}</div> : profile.role ? <div className={styles.factRow}><IconFrame size="2.75rem"><PlaceholderIcon /></IconFrame><div><h3>{profile.role}</h3><p className={styles.muted}>{profile.role === 'Мастер' ? 'Создаю миры, веду кампании и придумываю истории.' : 'Создаю персонажей и исследую их истории.'}</p></div></div> : <p className={styles.muted}>Роль пока не выбрана.</p>}
-            </ProfileSection>
-            <ProfileSection title="Любимые жанры и темы">{choices('genres', genres)}</ProfileSection>
-            <ProfileSection title="Контакты и ссылки">
+            {(editing || Boolean(profile.bio.trim())) && <ProfileSection title="Обо мне">
+              {editing ? <TextArea aria-label="Обо мне" value={profile.bio} maxLength={2000} showCharacterCount onChange={event => update('bio', event.target.value)} /> : <p className={styles.bio}>{profile.bio.trim()}</p>}
+            </ProfileSection>}
+            {(editing || profile.systems.some(value => value.trim())) && <ProfileSection title="Любимые системы">{choices('systems', gameSystems)}</ProfileSection>}
+            {(editing || profile.styles.some(value => value.trim())) && <ProfileSection title="Стиль игры">{choices('styles', playStyles)}</ProfileSection>}
+            {(editing || Boolean(profile.role.trim())) && <ProfileSection title="Предпочитаю играть как">
+              {editing ? <div className={styles.roleChoices}>{['Мастер', 'Игрок'].map(role => <Button key={role} size="lg" fullWidth variant={profile.role === role ? 'primary' : 'secondary'} aria-pressed={profile.role === role} icon={<PlaceholderIcon />} onClick={() => update('role', role)}>{role}</Button>)}</div> : <div className={styles.factRow}><IconFrame size="2.75rem"><PlaceholderIcon /></IconFrame><div><h3>{profile.role.trim()}</h3><p className={styles.muted}>{profile.role.trim() === 'Мастер' ? 'Создаю миры, веду кампании и придумываю истории.' : 'Создаю персонажей и исследую их истории.'}</p></div></div>}
+            </ProfileSection>}
+            {(editing || profile.genres.some(value => value.trim())) && <ProfileSection title="Любимые жанры и темы">{choices('genres', genres)}</ProfileSection>}
+            {(editing || visibleLinks.length > 0) && <ProfileSection title="Контакты и ссылки">
               {editing ? <div className={styles.stack}>
                 {profile.links.map((link, index) => <div className={styles.linkEditor} key={index}>
                   <TextInput label="Название" value={link.label} maxLength={50} onChange={event => updateLink(index, 'label', event.target.value)} />
@@ -278,34 +281,34 @@ export default function ProfilePage() {
                   <Button size="sm" decoration="bare" variant="secondary" icon={null} aria-label={`Удалить ссылку ${link.label || index + 1}`} onClick={() => update('links', profile.links.filter((_, linkIndex) => linkIndex !== index))}>Удалить</Button>
                 </div>)}
                 {profile.links.length < 10 && <Button className={styles.linkAction} size="sm" variant="secondary" icon={null} onClick={() => update('links', [...profile.links, { label: '', value: '' }])}>Добавить ссылку</Button>}
-              </div> : profile.links.length ? <div className={styles.stack}>{profile.links.map((link, index) => {
+              </div> : <div className={styles.stack}>{visibleLinks.map((link, index) => {
                 const href = externalHref(link.value)
                 return <div className={styles.contact} key={`${link.label}-${index}`}>
-                  <span className={styles.inlineIcon}><PlaceholderIcon />{link.label}</span>
-                  {href ? <a className={styles.profileLink} href={href} target="_blank" rel="noreferrer">{link.value}</a> : <span className={styles.muted}>{link.value}</span>}
+                  <span className={styles.inlineIcon}><PlaceholderIcon />{link.label.trim()}</span>
+                  {href ? <a className={styles.profileLink} href={href} target="_blank" rel="noreferrer">{link.value.trim()}</a> : <span className={styles.muted}>{link.value.trim()}</span>}
                 </div>
-              })}</div> : <p className={styles.muted}>Контакты пока не указаны.</p>}
-            </ProfileSection>
-            <ProfileSection title="Личная цитата">
-              {editing ? <TextArea aria-label="Личная цитата" value={profile.quote} maxLength={300} showCharacterCount onChange={event => update('quote', event.target.value)} /> : profile.quote ? <blockquote className={styles.quote}>{profile.quote}</blockquote> : <p className={styles.muted}>Цитата пока не указана.</p>}
-            </ProfileSection>
+              })}</div>}
+            </ProfileSection>}
           </div>
 
-          {editing && <aside className={styles.stack}>
-            <ProfileSection title="Оформление">
+          <aside className={styles.stack}>
+            {editing && <ProfileSection title="Оформление">
               <h3>Цветовая тема</h3>
               <div className={styles.swatches}>{themes.map(item => <button type="button" key={item.value} className={styles.swatch} style={{ '--swatch': item.color } as CSSProperties} aria-label={item.label} aria-pressed={profile.theme === item.value} onClick={() => update('theme', item.value)} />)}</div>
               <p className={styles.muted}>Акцентный цвет профиля · {theme.label}</p>
-            </ProfileSection>
-            <ProfileSection title="Приватность">
+            </ProfileSection>}
+            {editing && <ProfileSection title="Приватность">
               <div className={styles.stack}>
                 <Combobox label="Видимость профиля" options={visibilityOptions} value={profile.visibility} onValueChange={value => { if (value === 'all' || value === 'friends' || value === 'none') update('visibility', value) }} />
                 <Combobox label="Кто может писать" options={visibilityOptions} value={profile.messages} onValueChange={value => { if (value === 'all' || value === 'friends' || value === 'none') update('messages', value) }} />
-                <div className={styles.settingsGroup}><h3>Показывать в профиле</h3>{privacyChecks(['activity', 'articles', 'characters', 'followers'])}</div>
+                <div className={styles.settingsGroup}><h3>Счётчики и активность</h3>{privacyChecks(['activity', 'articles', 'characters', 'followers'])}</div>
                 <div className={styles.settingsGroup}><h3>Дополнительная информация</h3>{privacyChecks(['online', 'city'])}</div>
               </div>
-            </ProfileSection>
-          </aside>}
+            </ProfileSection>}
+            <ProfileSection title="Достижения"><ProfileAchievements profile={saved} /></ProfileSection>
+            <ProfileSection title="Кампании и клубы"><ProfileMemberships /></ProfileSection>
+            {profile.privacy.activity && updatedAt && <ProfileSection title="Недавняя активность"><RecentActivity updatedAt={updatedAt} /></ProfileSection>}
+          </aside>
         </div>
       </div>
     </main>

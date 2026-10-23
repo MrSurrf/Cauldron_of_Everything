@@ -18,11 +18,18 @@ export const visibilityOptions = [
 ]
 export const privacyFields = [
   { key: 'online', label: 'Показывать статус «Онлайн»' },
-  { key: 'activity', label: 'Показывать активность' },
-  { key: 'articles', label: 'Показывать статьи' },
-  { key: 'characters', label: 'Показывать чарлисты' },
-  { key: 'followers', label: 'Показывать количество подписчиков' },
+  { key: 'activity', label: 'Показывать недавнюю активность' },
+  { key: 'articles', label: 'Показывать число статей' },
+  { key: 'characters', label: 'Показывать число персонажей' },
+  { key: 'followers', label: 'Показывать число подписчиков' },
   { key: 'city', label: 'Показывать город' },
+] as const
+
+export const profileStats = [
+  { id: 'articles', label: 'Статей', privacy: 'articles' },
+  { id: 'characters', label: 'Персонажей', privacy: 'characters' },
+  { id: 'games', label: 'Проведено игр' },
+  { id: 'followers', label: 'Подписчиков', privacy: 'followers' },
 ] as const
 
 export const emptyProfile: ProfileData = {
@@ -32,7 +39,6 @@ export const emptyProfile: ProfileData = {
   title: '',
   role: '',
   bio: '',
-  quote: '',
   portrait: null,
   theme: 'purple',
   systems: [],
@@ -99,7 +105,6 @@ export function normalizeProfile(value: unknown, fallback: ProfileData = emptyPr
     title: stringValue(source.title, fallback.title),
     role: stringValue(source.role, fallback.role),
     bio: stringValue(source.bio, fallback.bio),
-    quote: stringValue(source.quote, fallback.quote),
     portrait: typeof source.portrait === 'string' || source.portrait === null ? source.portrait : fallback.portrait,
     theme: typeof source.theme === 'string' && themes.some(theme => theme.value === source.theme) ? source.theme : fallback.theme,
     systems: stringList(source.systems, fallback.systems),
