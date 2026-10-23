@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import type { ReactNode } from 'react'
 
-import { Panel, PlaceholderIcon } from '../../shared/ui'
+import { IconFrame, Panel, PlaceholderIcon } from '../../shared/ui'
 import type { ProfileData } from './profileModel'
 import styles from './ProfilePage.module.css'
 
@@ -18,10 +18,10 @@ export function ProfileSection({ title, children, action }: { title: string; chi
   )
 }
 
-export function ProfileAvatar({ profile, small = false }: { profile: ProfileData; small?: boolean }) {
+export function ProfileAvatar({ profile }: { profile: ProfileData }) {
   const profileName = profile.name.trim()
   return (
-    <div className={small ? styles.smallAvatar : styles.avatar}>
+    <div className={styles.avatar}>
       {profile.portrait
         ? <img src={profile.portrait} alt={profileName ? `Аватар ${profileName}` : 'Аватар профиля'} />
         : <span className={styles.avatarPlaceholder} aria-label="Аватар не выбран"><PlaceholderIcon /></span>}
@@ -37,25 +37,57 @@ export function ProfileFacts({ profile }: { profile: ProfileData }) {
   </div>
 }
 
-export function ProfilePreview({ profile }: { profile: ProfileData }) {
-  const visibilityNote = profile.visibility === 'friends'
-    ? 'Этот профиль видят только друзья.'
-    : profile.visibility === 'none'
-      ? 'Этот профиль виден только вам.'
-      : 'Так профиль выглядит для других пользователей.'
+export function ProfileAchievements({ profile }: { profile: ProfileData }) {
+  const achievements = [
+    {
+      id: 'introduction',
+      title: 'Знакомство состоялось',
+      description: 'Указать имя и рассказать о себе.',
+      earned: Boolean(profile.name.trim() && profile.bio.trim()),
+    },
+    {
+      id: 'portrait',
+      title: 'Лицо героя',
+      description: 'Добавить аватар профиля.',
+      earned: Boolean(profile.portrait),
+    },
+    {
+      id: 'role',
+      title: 'Место за столом',
+      description: 'Выбрать роль в игре.',
+      earned: Boolean(profile.role),
+    },
+    {
+      id: 'systems',
+      title: 'Игровой кругозор',
+      description: 'Добавить три любимые системы.',
+      earned: profile.systems.length >= 3,
+    },
+    {
+      id: 'contacts',
+      title: 'Всегда на связи',
+      description: 'Добавить контакт или ссылку.',
+      earned: profile.links.some(link => Boolean(link.label.trim() && link.value.trim())),
+    },
+  ]
+  const earnedCount = achievements.filter(achievement => achievement.earned).length
 
-  return <ProfileSection title="Предпросмотр профиля">
-    <div className={styles.previewCover} aria-hidden="true" />
-    <p className={styles.muted}>{visibilityNote}</p>
-    {profile.visibility === 'none'
-      ? null
-      : <>
-        <div className={styles.previewIdentity}><ProfileAvatar profile={profile} small /><div><h3>{profile.name || 'Имя не указано'}</h3>{profile.title && <p>{profile.title}</p>}</div></div>
-        {profile.tagline && <p className={styles.muted}>{profile.tagline}</p>}
-        <ProfileFacts profile={profile} />
-        {profile.quote && <blockquote className={styles.quote}>{profile.quote}</blockquote>}
-      </>}
-  </ProfileSection>
+  return <div className={styles.achievements}>
+    <div className={styles.achievementsHeading}>
+      <h3>Достижения</h3>
+      <span className={styles.muted}>{earnedCount} из {achievements.length}</span>
+    </div>
+    <div className={styles.achievementList} role="list" aria-label="Достижения профиля">
+      {achievements.map(achievement => <article className={styles.achievementCard} data-earned={achievement.earned} role="listitem" key={achievement.id}>
+        <IconFrame size="3.25rem"><PlaceholderIcon /></IconFrame>
+        <div>
+          <h3>{achievement.title}</h3>
+          <p>{achievement.description}</p>
+          <span>{achievement.earned ? 'Получено' : 'Не получено'}</span>
+        </div>
+      </article>)}
+    </div>
+  </div>
 }
 
 export function TagList({ values }: { values: string[] }) {

@@ -2,13 +2,6 @@ import type { ProfileData, ProfilePayload, ProfilePrivacy, ProfileVisibility } f
 
 export type { ProfileData } from '../../shared/api/account'
 
-export const profileTabs = [
-  { id: 'about', label: 'О себе' },
-  { id: 'personalization', label: 'Персонализация' },
-  { id: 'privacy', label: 'Приватность' },
-] as const
-
-export type ProfileTab = typeof profileTabs[number]['id']
 export const gameSystems = ['Dungeons & Dragons 5e', 'Pathfinder 2e', 'Call of Cthulhu', 'Vampire: The Masquerade', 'Blades in the Dark']
 export const playStyles = ['Ролевая игра и отыгрыш', 'Политика и интриги', 'Глубокий лор и мир', 'Тактические сражения', 'Исследование и загадки', 'Юмор и лёгкий тон']
 export const genres = ['Тёмное фэнтези', 'Готика', 'Ужасы', 'Мистика', 'Исследования', 'Древние цивилизации']
