@@ -11,6 +11,10 @@ import styles from './CharacterPortrait.module.css'
 export type CharacterPortraitProps = {
   characterName?: string
   disabled?: boolean
+  imageLabel?: {
+    alt: string
+    action: string
+  }
   onFileSelect?: (file: File) => void
   onRemove?: () => void
   portraitUrl: string | null
@@ -40,6 +44,7 @@ function PentagramPlaceholder() {
 export function CharacterPortrait({
   characterName = '',
   disabled = false,
+  imageLabel = { alt: 'Портрет персонажа', action: 'изображение персонажа' },
   onFileSelect,
   onRemove,
   portraitUrl,
@@ -50,8 +55,8 @@ export function CharacterPortrait({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const displayedUrl = previewUrl ?? portraitUrl
   const portraitAlt = characterName.trim()
-    ? `Портрет персонажа ${characterName.trim()}`
-    : 'Портрет персонажа'
+    ? `${imageLabel.alt} ${characterName.trim()}`
+    : imageLabel.alt
 
   useEffect(
     () => () => {
@@ -111,7 +116,7 @@ export function CharacterPortrait({
       <input
         ref={inputRef}
         className={styles.fileInput}
-        aria-label="Выбрать изображение персонажа"
+        aria-label={`Выбрать ${imageLabel.action}`}
         accept="image/*"
         disabled={disabled}
         tabIndex={-1}
@@ -123,8 +128,8 @@ export function CharacterPortrait({
         className={styles.picker}
         aria-label={
           displayedUrl
-            ? 'Заменить изображение персонажа'
-            : 'Загрузить изображение персонажа'
+            ? `Заменить ${imageLabel.action}`
+            : `Загрузить ${imageLabel.action}`
         }
         disabled={disabled}
         type="button"
@@ -149,7 +154,7 @@ export function CharacterPortrait({
         (previewUrl !== null || onRemove) && (
           <button
             className={styles.remove}
-            aria-label="Удалить изображение персонажа"
+            aria-label={`Удалить ${imageLabel.action}`}
             title="Удалить изображение"
             type="button"
             onClick={handleRemove}

@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import type { ReactNode } from 'react'
 
-import { Button, IconFrame, Panel, PlaceholderIcon } from '../../shared/ui'
+import { Panel, PlaceholderIcon } from '../../shared/ui'
 import type { ProfileData } from './profileModel'
 import styles from './ProfilePage.module.css'
 
@@ -19,54 +19,43 @@ export function ProfileSection({ title, children, action }: { title: string; chi
 }
 
 export function ProfileAvatar({ profile, small = false }: { profile: ProfileData; small?: boolean }) {
+  const profileName = profile.name.trim()
   return (
     <div className={small ? styles.smallAvatar : styles.avatar}>
       {profile.portrait
-        ? <img src={profile.portrait} alt={`Аватар ${profile.name}`} />
+        ? <img src={profile.portrait} alt={profileName ? `Аватар ${profileName}` : 'Аватар профиля'} />
         : <span className={styles.avatarPlaceholder} aria-label="Аватар не выбран"><PlaceholderIcon /></span>}
     </div>
   )
 }
 
-export function ProfileStats({ profile }: { profile: ProfileData }) {
-  const stats = [
-    ...(profile.privacy.articles ? [['12', 'Статей']] : []),
-    ...(profile.privacy.characters ? [['28', 'Чарлистов']] : []),
-    ['6', 'Проведённых игр'],
-    ...(profile.privacy.followers ? [['142', 'Подписчика']] : []),
-  ]
-  return <dl className={styles.stats}>{stats.map(([value, label]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-}
-
 export function ProfileFacts({ profile }: { profile: ProfileData }) {
   return <div className={styles.facts}>
-    {profile.privacy.city && <span><PlaceholderIcon />{profile.city}</span>}
-    <span><PlaceholderIcon />В игре с 2020</span>
-    <span><PlaceholderIcon />{profile.role}</span>
+    {profile.privacy.city && profile.city && <span><PlaceholderIcon />{profile.city}</span>}
+    {profile.role && <span><PlaceholderIcon />{profile.role}</span>}
     {profile.privacy.online && <span><i className={styles.onlineDot} />Онлайн</span>}
   </div>
 }
 
-export function ProfilePreview({ profile, onPreview }: { profile: ProfileData; onPreview?: () => void }) {
+export function ProfilePreview({ profile }: { profile: ProfileData }) {
+  const visibilityNote = profile.visibility === 'friends'
+    ? 'Этот профиль видят только друзья.'
+    : profile.visibility === 'none'
+      ? 'Этот профиль виден только вам.'
+      : 'Так профиль выглядит для других пользователей.'
+
   return <ProfileSection title="Предпросмотр профиля">
     <div className={styles.previewCover} aria-hidden="true" />
+    <p className={styles.muted}>{visibilityNote}</p>
     {profile.visibility === 'none'
-      ? <p className={styles.muted}>Профиль виден только вам.</p>
+      ? null
       : <>
-        <div className={styles.previewIdentity}><ProfileAvatar profile={profile} small /><div><h3>{profile.name}</h3><p>{profile.title}</p></div></div>
-        <p className={styles.muted}>{profile.tagline}</p>
+        <div className={styles.previewIdentity}><ProfileAvatar profile={profile} small /><div><h3>{profile.name || 'Имя не указано'}</h3>{profile.title && <p>{profile.title}</p>}</div></div>
+        {profile.tagline && <p className={styles.muted}>{profile.tagline}</p>}
         <ProfileFacts profile={profile} />
-        <ProfileStats profile={profile} />
         {profile.quote && <blockquote className={styles.quote}>{profile.quote}</blockquote>}
       </>}
-    {onPreview && <Button fullWidth size="sm" icon={null} variant="secondary" onClick={onPreview}>Посмотреть профиль</Button>}
   </ProfileSection>
-}
-
-export function EmptyBadges({ count = 5 }: { count?: number }) {
-  return <div className={styles.badgeSlots} aria-label="Места для значков">{Array.from({ length: count }, (_, i) => (
-    <div key={i} className={styles.badgeSlot} aria-label={`Пустое место ${i + 1}`}><IconFrame size="3rem"><PlaceholderIcon /></IconFrame></div>
-  ))}</div>
 }
 
 export function TagList({ values }: { values: string[] }) {

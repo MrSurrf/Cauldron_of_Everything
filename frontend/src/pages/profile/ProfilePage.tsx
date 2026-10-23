@@ -1,141 +1,190 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent } from 'react'
 
-import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
 import { getProfile, patchProfile, uploadAvatar } from '../../shared/api/account'
-import type { ProfilePayload } from '../../shared/api/account'
+import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
 import { CharacterPortrait } from '../../tools/character-sheet'
-import { EmptyBadges, ProfileAvatar, ProfileFacts, ProfilePreview, ProfileSection, ProfileStats, TagList } from './ProfileParts'
-import { activityFilters, activityItems, gameSystems, genres, initialProfile, playStyles, privacyFields, profileTabs, themes, visibilityOptions } from './profileModel'
+import { ProfileAvatar, ProfileFacts, ProfilePreview, ProfileSection, TagList } from './ProfileParts'
+import { cloneProfile, emptyProfile, gameSystems, genres, normalizeProfile, playStyles, privacyFields, profileTabs, themes, visibilityOptions } from './profileModel'
 import type { ProfileData, ProfileTab } from './profileModel'
-import { bindProfileCacheToAuth, readProfileCache, writeProfileCache } from './profileCache'
+import { readProfileCache, writeProfileCache } from './profileCache'
 import styles from './ProfilePage.module.css'
 
-// Сервер хранит поля ProfilePayload; аватар загружается отдельно и сохраняется как URL.
-function toPayload(profile: ProfileData): ProfilePayload {
-  return {
-    name: profile.name,
-    tagline: profile.tagline,
-    city: profile.city,
-    title: profile.title,
-    role: profile.role,
-    bio: profile.bio,
-    quote: profile.quote,
-    portrait: profile.portrait,
-    theme: profile.theme,
-    visibility: profile.visibility,
-    messages: profile.messages,
-    systems: profile.systems,
-    styles: profile.styles,
-    genres: profile.genres,
-    links: profile.links,
-    privacy: profile.privacy,
-  }
+type Notice = { kind: 'status' | 'error'; text: string } | null
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
+function externalHref(value: string): string | null {
+  const normalized = value.trim()
+  if (/^https?:\/\//i.test(normalized)) return normalized
+  if (/^www\./i.test(normalized)) return `https://${normalized}`
+  return null
 }
 
 export default function ProfilePage() {
+  const [initialProfile] = useState(() => readProfileCache() ?? cloneProfile(emptyProfile))
   const [tab, setTab] = useState<ProfileTab>('about')
   const [editing, setEditing] = useState(false)
-  const [saved, setSaved] = useState<ProfileData>(() => readProfileCache() ?? initialProfile)
-  const [draft, setDraft] = useState<ProfileData>(() => readProfileCache() ?? initialProfile)
-  const [filter, setFilter] = useState('Все')
-  const [notice, setNotice] = useState('')
+  const [saved, setSaved] = useState<ProfileData>(() => cloneProfile(initialProfile))
+  const [draft, setDraft] = useState<ProfileData>(() => cloneProfile(initialProfile))
+  const [notice, setNotice] = useState<Notice>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [loadRevision, setLoadRevision] = useState(0)
   const [saving, setSaving] = useState(false)
   const [portraitRevision, setPortraitRevision] = useState(0)
-  const imageUrls = useRef<string[]>([])
   const pendingPortraitFile = useRef<File | null>(null)
+  const portraitPreviewUrl = useRef<string | null>(null)
   const editingRef = useRef(false)
+  const draftTouchedRef = useRef(false)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   const profile = editing ? draft : saved
   const theme = themes.find(item => item.value === profile.theme) ?? themes[0]
+  const hasUnsavedChanges = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(saved),
+    [draft, saved],
+  )
 
-  useEffect(() => () => imageUrls.current.forEach(url => URL.revokeObjectURL(url)), [])
+  useEffect(() => () => {
+    if (portraitPreviewUrl.current) URL.revokeObjectURL(portraitPreviewUrl.current)
+  }, [])
 
-  // Загрузка профиля с сервера: он источник истины, кэш — только для мгновенного показа.
   useEffect(() => {
-    bindProfileCacheToAuth()
     let cancelled = false
+
     async function load() {
       try {
         const remote = await getProfile()
-        // Пока шёл запрос, пользователь мог начать редактирование — не перетираем его черновик.
-        if (cancelled || editingRef.current) return
-        const merged: ProfileData = { ...initialProfile, ...remote.data }
-        setSaved(merged)
-        setDraft(merged)
-        writeProfileCache(merged)
-      } catch {
-        if (!cancelled) setNotice('Не удалось загрузить профиль с сервера.')
+        if (cancelled) return
+        const normalized = normalizeProfile(remote.data)
+        setSaved(normalized)
+        writeProfileCache(normalized)
+        if (!editingRef.current || !draftTouchedRef.current) setDraft(cloneProfile(normalized))
+      } catch (error) {
+        if (!cancelled) setLoadError(errorMessage(error, 'Не удалось загрузить профиль с сервера.'))
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
+
     void load()
     return () => { cancelled = true }
-  }, [])
+  }, [loadRevision])
+
+  useEffect(() => {
+    if (!editing || !hasUnsavedChanges) return
+    const warnAboutUnsavedChanges = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnAboutUnsavedChanges)
+    return () => window.removeEventListener('beforeunload', warnAboutUnsavedChanges)
+  }, [editing, hasUnsavedChanges])
+
+  function releasePortraitPreview() {
+    if (!portraitPreviewUrl.current) return
+    URL.revokeObjectURL(portraitPreviewUrl.current)
+    portraitPreviewUrl.current = null
+  }
 
   function update<K extends keyof ProfileData>(key: K, value: ProfileData[K]) {
+    draftTouchedRef.current = true
     setDraft(current => ({ ...current, [key]: value }))
   }
 
   function startEditing() {
     editingRef.current = true
-    setDraft(saved)
+    draftTouchedRef.current = false
+    setDraft(cloneProfile(saved))
     setEditing(true)
-    setNotice('')
+    setNotice(null)
   }
 
-  async function finishEditing(save: boolean) {
-    if (save) {
-      if (!draft.name.trim()) {
-        setNotice('Укажите имя профиля перед сохранением.')
-        setTab('about')
-        return
-      }
-      const next = { ...draft, name: draft.name.trim() }
-      setSaving(true)
-      try {
-        let portraitUrl: string | null = next.portrait
-        if (pendingPortraitFile.current) {
-          portraitUrl = await uploadAvatar(pendingPortraitFile.current)
-        }
-        const savedProfile = { ...next, portrait: portraitUrl }
-        await patchProfile(toPayload(savedProfile))
-        writeProfileCache(savedProfile)
-        setSaved(savedProfile)
-        setDraft(savedProfile)
+  async function saveProfile() {
+    const name = draft.name.trim()
+    if (!name) {
+      setNotice({ kind: 'error', text: 'Укажите имя профиля перед сохранением.' })
+      setTab('about')
+      return
+    }
+
+    const links = draft.links
+      .map(link => ({ label: link.label.trim(), value: link.value.trim() }))
+      .filter(link => link.label || link.value)
+    if (links.some(link => !link.label || !link.value)) {
+      setNotice({ kind: 'error', text: 'Для каждой ссылки заполните название и адрес.' })
+      setTab('about')
+      return
+    }
+
+    let next = { ...draft, name, links }
+    setSaving(true)
+    setNotice(null)
+    try {
+      if (pendingPortraitFile.current) {
+        const portrait = await uploadAvatar(pendingPortraitFile.current)
         pendingPortraitFile.current = null
-        setEditing(false)
-        editingRef.current = false
-        setNotice('Изменения сохранены.')
-      } catch {
-        // Остаёмся в режиме редактирования, чтобы черновик не потерялся.
-        setNotice('Не удалось сохранить изменения. Попробуйте ещё раз.')
-      } finally {
-        setSaving(false)
+        next = { ...next, portrait }
+        const savedWithUploadedPortrait = { ...saved, portrait }
+        setSaved(savedWithUploadedPortrait)
+        writeProfileCache(savedWithUploadedPortrait)
+        setDraft(cloneProfile(next))
+        releasePortraitPreview()
       }
-    } else {
+
+      const response = await patchProfile(next)
+      const confirmed = normalizeProfile(response.data, next)
+      writeProfileCache(confirmed)
+      setSaved(confirmed)
+      setDraft(cloneProfile(confirmed))
       pendingPortraitFile.current = null
-      setDraft(saved)
+      draftTouchedRef.current = false
       setEditing(false)
       editingRef.current = false
-      setNotice('Изменения отменены.')
+      setNotice({ kind: 'status', text: 'Изменения сохранены.' })
+    } catch (error) {
+      setNotice({ kind: 'error', text: errorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.') })
+    } finally {
+      setSaving(false)
     }
+  }
+
+  function cancelEditing() {
+    pendingPortraitFile.current = null
+    releasePortraitPreview()
+    setPortraitRevision(value => value + 1)
+    setDraft(cloneProfile(saved))
+    draftTouchedRef.current = false
+    setEditing(false)
+    editingRef.current = false
+    setNotice({ kind: 'status', text: 'Изменения отменены.' })
   }
 
   function selectPhoto(file: File) {
     setPortraitRevision(value => value + 1)
-    if (file.size > 5 * 1024 * 1024) {
-      setNotice('Выберите изображение размером до 5 МБ.')
+    if (!file.type.startsWith('image/')) {
+      setNotice({ kind: 'error', text: 'Выберите файл изображения.' })
       return
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice({ kind: 'error', text: 'Выберите изображение размером до 5 МБ.' })
+      return
+    }
+
+    releasePortraitPreview()
     pendingPortraitFile.current = file
-    const url = URL.createObjectURL(file)
-    imageUrls.current.push(url)
-    update('portrait', url)
-    setNotice('')
+    const previewUrl = URL.createObjectURL(file)
+    portraitPreviewUrl.current = previewUrl
+    update('portrait', previewUrl)
+    setNotice(null)
   }
 
   function removePortrait() {
     pendingPortraitFile.current = null
+    releasePortraitPreview()
+    setPortraitRevision(value => value + 1)
     update('portrait', null)
   }
 
@@ -153,7 +202,9 @@ export default function ProfilePage() {
 
   function choices(key: 'systems' | 'styles' | 'genres', options: string[]) {
     return editing ? <div className={styles.checkGrid}>{options.map(label => <Checkbox
-      key={label} label={label} checked={profile[key].includes(label)}
+      key={label}
+      label={label}
+      checked={profile[key].includes(label)}
       onCheckedChange={checked => update(key, checked ? [...profile[key], label] : profile[key].filter(item => item !== label))}
     />)}</div> : <TagList values={profile[key]} />
   }
@@ -164,156 +215,125 @@ export default function ProfilePage() {
       : <div className={styles.settingRow} key={field.key}><span>{field.label}</span><span className={styles.muted}>{profile.privacy[field.key] ? 'Да' : 'Нет'}</span></div>)}</div>
   }
 
-  const editAction = !editing ? <Button size="sm" decoration="bare" variant="secondary" icon={<EditIcon />} onClick={startEditing}>Редактировать</Button> : undefined
-  const preview = <ProfilePreview profile={profile} onPreview={editing ? undefined : () => setTab('about')} />
+  function updateLink(index: number, key: 'label' | 'value', value: string) {
+    update('links', profile.links.map((link, linkIndex) => linkIndex === index ? { ...link, [key]: value } : link))
+  }
+
+  function retryLoad() {
+    setLoading(true)
+    setLoadError('')
+    setLoadRevision(value => value + 1)
+  }
+
+  const visibleNotice = notice?.text || loadError || (loading ? 'Загружаем профиль…' : editing ? 'Изменения сохранятся только после нажатия кнопки «Сохранить».' : '')
 
   return (
-    <main className={styles.page} style={{ '--profile-accent': theme.color } as CSSProperties}>
+    <main className={styles.page} style={{ '--profile-accent': theme.color } as CSSProperties} aria-busy={loading || saving}>
       <div className={styles.profile}>
         <Panel className={styles.hero}>
           <div className={styles.heroActions}>
             {editing ? <>
               <span className={styles.modeLabel}>Редактирование профиля</span>
-              <Button size="sm" variant="secondary" icon={null} onClick={() => void finishEditing(false)}>Отмена</Button>
-              <Button size="sm" icon={null} disabled={saving} onClick={() => void finishEditing(true)}>{saving ? 'Сохранение…' : 'Сохранить изменения'}</Button>
+              <Button size="sm" variant="secondary" icon={null} disabled={saving} onClick={cancelEditing}>Отмена</Button>
+              <Button size="sm" icon={null} disabled={saving || !hasUnsavedChanges} onClick={() => void saveProfile()}>{saving ? 'Сохранение…' : 'Сохранить'}</Button>
             </> : <Button size="sm" variant="secondary" icon={<EditIcon />} onClick={startEditing}>Редактировать профиль</Button>}
           </div>
           <div className={styles.heroIdentity}>
             <ProfileAvatar profile={profile} />
             <div className={styles.identityText}>
-              <p className={styles.eyebrow}>{profile.title}</p>
+              {profile.title && <p className={styles.eyebrow}>{profile.title}</p>}
               <h1>{profile.name || 'Ваше имя'}</h1>
-              <p>{profile.tagline}</p>
+              {profile.tagline && <p>{profile.tagline}</p>}
               <ProfileFacts profile={profile} />
             </div>
-            <ProfileStats profile={profile} />
           </div>
         </Panel>
 
         <div className={styles.tabs} role="tablist" aria-label="Разделы профиля">
           {profileTabs.map((item, index) => <button
-            key={item.id} ref={node => { tabRefs.current[index] = node }}
-            id={`profile-tab-${item.id}`} type="button" role="tab"
-            aria-selected={tab === item.id} aria-controls="profile-content"
-            tabIndex={tab === item.id ? 0 : -1} onClick={() => setTab(item.id)}
+            key={item.id}
+            ref={node => { tabRefs.current[index] = node }}
+            id={`profile-tab-${item.id}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            aria-controls="profile-content"
+            tabIndex={tab === item.id ? 0 : -1}
+            onClick={() => setTab(item.id)}
             onKeyDown={event => handleTabKey(event, index)}
           >{item.label}</button>)}
         </div>
 
-        <p className={styles.notice} role="status">{notice || (editing ? 'Настройте профиль и сохраните изменения, когда закончите.' : '')}</p>
+        <div className={styles.noticeRow}>
+          <p className={notice?.kind === 'error' || loadError ? styles.error : styles.notice} role={notice?.kind === 'error' || loadError ? 'alert' : 'status'}>{visibleNotice}</p>
+          {loadError && <Button size="sm" decoration="bare" variant="secondary" icon={null} onClick={retryLoad}>Повторить</Button>}
+        </div>
 
         <div id="profile-content" role="tabpanel" aria-labelledby={`profile-tab-${tab}`} tabIndex={0} className={styles.columns}>
-          {tab === 'about' && <>
-            <div className={styles.stack}>
+          <div className={styles.stack}>
+            {tab === 'about' && <>
               {editing && <ProfileSection title="Основная информация">
                 <div className={styles.fieldGrid}>
-                  <TextInput label="Имя профиля" value={profile.name} maxLength={40} required onChange={e => update('name', e.target.value)} />
-                  <TextInput label="Город" value={profile.city} maxLength={80} onChange={e => update('city', e.target.value)} />
-                  <TextInput fieldClassName={styles.fullSpan} label="Строка под именем" value={profile.tagline} maxLength={120} onChange={e => update('tagline', e.target.value)} />
+                  <TextInput label="Имя профиля" value={profile.name} maxLength={40} required onChange={event => update('name', event.target.value)} />
+                  <TextInput label="Город" value={profile.city} maxLength={80} onChange={event => update('city', event.target.value)} />
+                  <TextInput fieldClassName={styles.fullSpan} label="Строка под именем" value={profile.tagline} maxLength={120} onChange={event => update('tagline', event.target.value)} />
                 </div>
               </ProfileSection>}
-              <ProfileSection title="Обо мне" action={editAction}>
-                {editing ? <TextArea aria-label="Обо мне" value={profile.bio} maxLength={2000} showCharacterCount onChange={e => update('bio', e.target.value)} /> : <p className={styles.bio}>{profile.bio}</p>}
+              <ProfileSection title="Обо мне">
+                {editing ? <TextArea aria-label="Обо мне" value={profile.bio} maxLength={2000} showCharacterCount onChange={event => update('bio', event.target.value)} /> : <p className={profile.bio ? styles.bio : styles.muted}>{profile.bio || 'Расскажите немного о себе.'}</p>}
               </ProfileSection>
-              <ProfileSection title="Любимые системы" action={editAction}>{choices('systems', gameSystems)}</ProfileSection>
-              <ProfileSection title="Стиль игры" action={editAction}>{choices('styles', playStyles)}</ProfileSection>
+              <ProfileSection title="Любимые системы">{choices('systems', gameSystems)}</ProfileSection>
+              <ProfileSection title="Стиль игры">{choices('styles', playStyles)}</ProfileSection>
               <ProfileSection title="Предпочитаю играть как">
-                {editing ? <div className={styles.roleChoices}>{['Мастер', 'Игрок'].map(role => <Button key={role} size="lg" fullWidth variant={profile.role === role ? 'primary' : 'secondary'} aria-pressed={profile.role === role} icon={<PlaceholderIcon />} onClick={() => update('role', role)}>{role}</Button>)}</div> : <div className={styles.factRow}><IconFrame size="2.75rem"><PlaceholderIcon /></IconFrame><div><h3>{profile.role}</h3><p className={styles.muted}>{profile.role === 'Мастер' ? 'Создаю миры, веду кампании, придумываю истории.' : 'Создаю персонажей и исследую их истории.'}</p></div></div>}
+                {editing ? <div className={styles.roleChoices}>{['Мастер', 'Игрок'].map(role => <Button key={role} size="lg" fullWidth variant={profile.role === role ? 'primary' : 'secondary'} aria-pressed={profile.role === role} icon={<PlaceholderIcon />} onClick={() => update('role', role)}>{role}</Button>)}</div> : profile.role ? <div className={styles.factRow}><IconFrame size="2.75rem"><PlaceholderIcon /></IconFrame><div><h3>{profile.role}</h3><p className={styles.muted}>{profile.role === 'Мастер' ? 'Создаю миры, веду кампании и придумываю истории.' : 'Создаю персонажей и исследую их истории.'}</p></div></div> : <p className={styles.muted}>Роль пока не выбрана.</p>}
               </ProfileSection>
-              <ProfileSection title="Любимые жанры и темы" action={editAction}>{choices('genres', genres)}</ProfileSection>
-              <ProfileSection title="Контакты и ссылки" action={editAction}>
-                <div className={styles.stack}>{profile.links.map((link, index) => <div className={styles.contact} key={link.label}>
-                  <span className={styles.inlineIcon}><PlaceholderIcon />{link.label}</span>
-                  {editing ? <TextInput aria-label={link.label} value={link.value} onChange={e => update('links', profile.links.map((item, i) => i === index ? { ...item, value: e.target.value } : item))} /> : <span className={styles.muted}>{link.value || 'Не указано'}</span>}
-                </div>)}</div>
+              <ProfileSection title="Любимые жанры и темы">{choices('genres', genres)}</ProfileSection>
+              <ProfileSection title="Контакты и ссылки">
+                {editing ? <div className={styles.stack}>
+                  {profile.links.map((link, index) => <div className={styles.linkEditor} key={index}>
+                    <TextInput label="Название" value={link.label} maxLength={50} onChange={event => updateLink(index, 'label', event.target.value)} />
+                    <TextInput label="Адрес или контакт" value={link.value} maxLength={200} onChange={event => updateLink(index, 'value', event.target.value)} />
+                    <Button size="sm" decoration="bare" variant="secondary" icon={null} aria-label={`Удалить ссылку ${link.label || index + 1}`} onClick={() => update('links', profile.links.filter((_, linkIndex) => linkIndex !== index))}>Удалить</Button>
+                  </div>)}
+                  {profile.links.length < 10 && <Button className={styles.linkAction} size="sm" variant="secondary" icon={null} onClick={() => update('links', [...profile.links, { label: '', value: '' }])}>Добавить ссылку</Button>}
+                </div> : profile.links.length ? <div className={styles.stack}>{profile.links.map((link, index) => {
+                  const href = externalHref(link.value)
+                  return <div className={styles.contact} key={`${link.label}-${index}`}>
+                    <span className={styles.inlineIcon}><PlaceholderIcon />{link.label}</span>
+                    {href ? <a className={styles.profileLink} href={href} target="_blank" rel="noreferrer">{link.value}</a> : <span className={styles.muted}>{link.value}</span>}
+                  </div>
+                })}</div> : <p className={styles.muted}>Контакты пока не указаны.</p>}
               </ProfileSection>
-              <ProfileSection title="Личная цитата" action={editAction}>
-                {editing ? <TextArea aria-label="Личная цитата" value={profile.quote} maxLength={300} showCharacterCount onChange={e => update('quote', e.target.value)} /> : <blockquote className={styles.quote}>{profile.quote}</blockquote>}
+              <ProfileSection title="Личная цитата">
+                {editing ? <TextArea aria-label="Личная цитата" value={profile.quote} maxLength={300} showCharacterCount onChange={event => update('quote', event.target.value)} /> : profile.quote ? <blockquote className={styles.quote}>{profile.quote}</blockquote> : <p className={styles.muted}>Цитата пока не указана.</p>}
               </ProfileSection>
-            </div>
-            <aside className={styles.stack}>
-              <ProfileSection title="Кратко обо мне">
-                <div className={styles.stack}>{[[profile.title, 'Основная роль'], ...(profile.privacy.city ? [[profile.city, 'Местоположение']] : []), ['В игре с 2020 года', 'На платформе'], ...(profile.privacy.online ? [['Онлайн', 'Сейчас на сайте']] : [])].map(([value, label]) => <div className={styles.factRow} key={label}><IconFrame size="2.5rem"><PlaceholderIcon /></IconFrame><div>{value}<p className={styles.muted}>{label}</p></div></div>)}</div>
-              </ProfileSection>
-              {editing ? preview : <ProfileSection title="Избранные значки"><EmptyBadges /><p className={styles.muted}>Значки пока не выбраны.</p></ProfileSection>}
-              <ProfileSection title="Последняя активность">
-                <div className={styles.stack}>{activityItems.slice(0, 3).map(item => <div className={styles.factRow} key={item.id}><IconFrame size="2.25rem"><PlaceholderIcon /></IconFrame><div><p>{item.action}</p><p className={styles.muted}>{item.title}</p></div></div>)}</div>
-                <Button className={styles.sectionFooter} size="sm" decoration="bare" icon={null} onClick={() => setTab('activity')}>Показать всю активность</Button>
-              </ProfileSection>
-              <ProfileSection title="Статистика профиля"><ProfileStats profile={profile} /></ProfileSection>
-            </aside>
-          </>}
+            </>}
 
-          {tab === 'personalization' && <>
-            <div className={styles.stack}>
-              <ProfileSection title="Аватар" action={editAction}>
+            {tab === 'personalization' && <>
+              <ProfileSection title="Аватар">
                 <div className={styles.avatarEditor}>
-                  {editing ? <div className={styles.portraitPicker}><CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} /></div> : <ProfileAvatar profile={profile} />}
+                  {editing ? <div className={styles.portraitPicker}><CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} imageLabel={{ alt: 'Аватар профиля', action: 'изображение профиля' }} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} /></div> : <ProfileAvatar profile={profile} />}
                   <div><h3>{editing ? 'Добавьте своё изображение' : 'Фото профиля'}</h3><p className={styles.muted}>Изображение до 5 МБ</p><p className={styles.muted}>{editing ? 'Нажмите на портрет, чтобы выбрать файл.' : 'Аватар отображается в профиле и рядом с вашими публикациями.'}</p></div>
                 </div>
               </ProfileSection>
-              <ProfileSection title="Баннер профиля"><div className={styles.bannerPlaceholder}><PlaceholderIcon /><span>Место для баннера</span></div><p className={styles.muted}>Баннер не выбран</p></ProfileSection>
-              <ProfileSection title="Цветовая тема" action={editAction}>
+              <ProfileSection title="Титул">{editing ? <TextInput label="Ваш титул" value={profile.title} maxLength={30} showCharacterCount onChange={event => update('title', event.target.value)} /> : <p className={profile.title ? undefined : styles.muted}>{profile.title || 'Титул пока не указан.'}</p>}</ProfileSection>
+              <ProfileSection title="Цветовая тема">
                 <div className={styles.swatches}>{themes.map(item => <button type="button" key={item.value} className={styles.swatch} style={{ '--swatch': item.color } as CSSProperties} aria-label={item.label} aria-pressed={profile.theme === item.value} disabled={!editing} onClick={() => update('theme', item.value)} />)}</div>
                 <p className={styles.muted}>Акцентный цвет профиля · {theme.label}</p>
               </ProfileSection>
-              <ProfileSection title="Рамка аватара"><div className={styles.factRow}><IconFrame size="4rem"><PlaceholderIcon /></IconFrame><div><h3>Стандартная рамка</h3><p className={styles.muted}>Без дополнительного оформления</p></div></div></ProfileSection>
-              <ProfileSection title="Фон профиля"><div className={styles.backgroundPlaceholder}><PlaceholderIcon /><span>Фон не выбран</span></div></ProfileSection>
-            </div>
-            <aside className={styles.stack}>
-              <ProfileSection title="Титул" action={editAction}>{editing ? <TextInput label="Ваш титул" value={profile.title} maxLength={30} showCharacterCount onChange={e => update('title', e.target.value)} /> : <div className={styles.factRow}><IconFrame size="2.5rem"><PlaceholderIcon /></IconFrame>{profile.title}</div>}</ProfileSection>
-              <ProfileSection title="Значки"><EmptyBadges /><p className={styles.muted}>Места для избранных значков</p></ProfileSection>
-              <ProfileSection title="Отображение">{privacyChecks(['online', 'activity', 'followers'])}</ProfileSection>
-              {preview}
-            </aside>
-          </>}
+            </>}
 
-          {tab === 'activity' && <>
-            <div className={styles.stack}>
-              <ProfileSection title="Фильтр активности"><div className={styles.filters}>{activityFilters.map(value => <Button key={value} size="sm" icon={null} variant={filter === value ? 'primary' : 'secondary'} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</Button>)}</div></ProfileSection>
-              <ProfileSection title="Закреплённая активность"><div className={styles.activityRow}><div className={styles.mediaPlaceholder}><PlaceholderIcon /></div><div><p className={styles.eyebrow}>Закреплённая статья</p><h3>Тени за Туманными горами</h3><p className={styles.muted}>Мифология, вдохновение и ключевые фракции моего домашнего мира.</p></div></div></ProfileSection>
-              <ProfileSection title="Лента активности"><div className={styles.feed}>{activityItems.filter(item => filter === 'Все' || item.category === filter).map(item => <article className={styles.activityRow} key={item.id}>
-                <div className={styles.mediaPlaceholder}><PlaceholderIcon /></div><div><div className={styles.activityMeta}><span>{item.action}</span><span>{item.date}</span></div><h3>{item.title}</h3><p className={styles.muted}>{item.description}</p><span className={styles.tag}>{item.category}</span></div>
-              </article>)}</div></ProfileSection>
-            </div>
-            <aside className={styles.stack}>
-              <ProfileSection title="Сводка активности"><p className={styles.muted}>За последний месяц</p><dl className={styles.summaryStats}>{[['6', 'Публикаций'], ['3', 'Чарлиста'], ['2', 'Игры'], ['14', 'Комментариев']].map(([value, label]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></ProfileSection>
-              <ProfileSection title="Последний вход"><div className={styles.inlineIcon}><i className={styles.onlineDot} />Сейчас онлайн</div><p className={styles.muted}>Был(а) на сайте несколько секунд назад</p></ProfileSection>
-              <ProfileSection title="Недавние подписчики"><div className={styles.stack}>{['Morwen', 'Kaelthar', 'Лесная_Тень', 'D20Lover'].map((name, i) => <div className={styles.factRow} key={name}><IconFrame size="2.5rem"><PlaceholderIcon /></IconFrame><div>{name}<p className={styles.muted}>{i + 1} дн. назад</p></div></div>)}</div></ProfileSection>
-              {preview}
-            </aside>
-          </>}
-
-          {tab === 'achievements' && <>
-            <div className={styles.stack}>
-              <ProfileSection title="Избранные достижения"><EmptyBadges /><p className={styles.muted}>Здесь появятся избранные достижения.</p></ProfileSection>
-              <ProfileSection title="Все достижения"><div className={styles.emptyState}><PlaceholderIcon /><h3>Достижений пока нет</h3><p className={styles.muted}>Коллекция появится здесь.</p></div></ProfileSection>
-            </div>
-            <aside className={styles.stack}>
-              <ProfileSection title="Витрина значков"><EmptyBadges /><p className={styles.muted}>До пяти значков в вашем профиле.</p></ProfileSection>
-              <ProfileSection title="Недавно получено"><p className={styles.muted}>Пока пусто</p></ProfileSection>
-              {preview}
-            </aside>
-          </>}
-
-          {tab === 'privacy' && <>
-            <div className={styles.stack}>
-              <ProfileSection title="Профильные настройки" action={editAction}><p className={styles.muted}>Выберите, какую информацию о вас видят другие пользователи.</p></ProfileSection>
-              <ProfileSection title="Видимость профиля"><p className={styles.muted}>Кто может видеть ваш профиль и основную информацию.</p>{editing ? <Combobox label="Видимость профиля" options={visibilityOptions} value={profile.visibility} onValueChange={value => { if (value) update('visibility', value) }} /> : <p>{visibilityOptions.find(item => item.value === profile.visibility)?.label}</p>}</ProfileSection>
-              <ProfileSection title="Кто может писать"><p className={styles.muted}>Кто может отправлять вам личные сообщения.</p>{editing ? <Combobox label="Кто может писать" options={visibilityOptions} value={profile.messages} onValueChange={value => { if (value) update('messages', value) }} /> : <p>{visibilityOptions.find(item => item.value === profile.messages)?.label}</p>}</ProfileSection>
+            {tab === 'privacy' && <>
+              <ProfileSection title="Видимость профиля"><p className={styles.muted}>Кто может видеть ваш профиль и основную информацию.</p>{editing ? <Combobox label="Видимость профиля" options={visibilityOptions} value={profile.visibility} onValueChange={value => { if (value === 'all' || value === 'friends' || value === 'none') update('visibility', value) }} /> : <p>{visibilityOptions.find(item => item.value === profile.visibility)?.label}</p>}</ProfileSection>
+              <ProfileSection title="Кто может писать"><p className={styles.muted}>Кто может отправлять вам личные сообщения.</p>{editing ? <Combobox label="Кто может писать" options={visibilityOptions} value={profile.messages} onValueChange={value => { if (value === 'all' || value === 'friends' || value === 'none') update('messages', value) }} /> : <p>{visibilityOptions.find(item => item.value === profile.messages)?.label}</p>}</ProfileSection>
               <ProfileSection title="Показывать в профиле">{privacyChecks(['activity', 'articles', 'characters', 'followers'])}</ProfileSection>
               <ProfileSection title="Дополнительная информация">{privacyChecks(['online', 'city'])}</ProfileSection>
-              <ProfileSection title="Чёрный список"><p className={styles.muted}>Нет заблокированных пользователей.</p></ProfileSection>
-            </div>
-            <aside className={styles.stack}>
-              {preview}
-              <ProfileSection title="Текущие настройки"><div className={styles.stack}>
-                <div className={styles.settingRow}><span>Видимость профиля</span><span className={styles.muted}>{visibilityOptions.find(item => item.value === profile.visibility)?.label}</span></div>
-                <div className={styles.settingRow}><span>Сообщения</span><span className={styles.muted}>{visibilityOptions.find(item => item.value === profile.messages)?.label}</span></div>
-                {privacyFields.map(field => <div key={field.key} className={styles.settingRow}><span>{field.label.replace('Показывать ', '')}</span><span className={styles.muted}>{profile.privacy[field.key] ? 'Показывается' : 'Скрыто'}</span></div>)}
-              </div></ProfileSection>
-            </aside>
-          </>}
+            </>}
+          </div>
+
+          <aside className={styles.stack}>
+            <ProfilePreview profile={profile} />
+          </aside>
         </div>
       </div>
     </main>
