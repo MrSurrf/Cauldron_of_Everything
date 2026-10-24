@@ -1,10 +1,6 @@
 .derivedStat {
   --stat-cut: var(--space-2);
-  --stat-border: color-mix(
-      in srgb,
-      var(--color-content-border) 70%,
-      var(--color-border-accent)
-    );
+  --stat-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;
@@ -105,7 +101,7 @@
 }
 
 .compactFrame {
-  --input-border: color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-border: var(--sheet-inner-frame, var(--color-content-border));
   --input-inner-border: transparent;
   --input-surface-start:
     color-mix(in srgb, var(--color-surface-default) 88%, transparent);

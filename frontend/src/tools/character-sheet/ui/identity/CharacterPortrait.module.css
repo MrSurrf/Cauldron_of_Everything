@@ -20,12 +20,7 @@
   aspect-ratio: 1;
   overflow: hidden;
 
-  background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--color-border-accent) 64%, var(--color-border-default)),
-      var(--color-border-default) 43%,
-      color-mix(in srgb, var(--color-border-accent) 52%, var(--color-border-default))
-    );
+  background: var(--sheet-frame, var(--color-content-border));
   clip-path: var(--portrait-clip);
 
   filter:

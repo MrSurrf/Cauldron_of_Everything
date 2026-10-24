@@ -4,14 +4,6 @@
   font-family: var(--sheet-body-font, var(--font-family-body));
 }
 
-.section[data-open='true'] {
-  --section-border: color-mix(
-      in srgb,
-      var(--color-content-border) 64%,
-      var(--color-border-accent)
-    );
-}
-
 .header,
 .content {
   position: relative;
@@ -117,7 +109,7 @@
 }
 
 .compactFrame {
-  --input-border: color-mix(in srgb, var(--color-content-border) 68%, var(--color-border-accent));
+  --input-border: var(--sheet-inner-frame, var(--color-content-border));
   --input-inner-border: transparent;
   --input-surface-start: var(--color-surface-default);
   --input-surface-end: var(--color-surface-muted);

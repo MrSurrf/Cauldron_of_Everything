@@ -1,11 +1,7 @@
 .card {
   --cursor-reveal-border-color: var(--ability-border);
   --ability-cut: var(--space-2);
-  --ability-border: color-mix(
-      in srgb,
-      var(--color-content-border) 72%,
-      var(--color-border-accent)
-    );
+  --ability-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;

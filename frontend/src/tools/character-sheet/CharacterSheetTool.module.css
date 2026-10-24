@@ -1,15 +1,6 @@
 .root {
-  --sheet-frame: color-mix(
-      in srgb,
-      var(--color-content-border) 72%,
-      var(--palette-purple-300)
-    );
-  --sheet-frame-muted:
-    color-mix(
-      in srgb,
-      var(--color-content-border) 84%,
-      transparent
-    );
+  composes: palette from './ui/sheetFramePalette.module.css';
+
   --sheet-secondary-size: 0.625rem;
   --sheet-compact-text-size:
     var(--sheet-body-size, var(--font-size-sm));
@@ -277,12 +268,7 @@
 
 .armorClassStat::before {
   z-index: -2;
-  background: linear-gradient(
-      145deg,
-      var(--palette-purple-300),
-      var(--color-border-accent) 48%,
-      var(--palette-purple-700)
-    );
+  background: var(--sheet-frame);
 }
 
 .armorClassStat::after {

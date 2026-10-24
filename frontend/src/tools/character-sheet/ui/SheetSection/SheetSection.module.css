@@ -1,11 +1,7 @@
 .section {
   --cursor-reveal-border-color: var(--section-border);
   --section-cut: var(--space-2);
-  --section-border: color-mix(
-      in srgb,
-      var(--color-content-border) 78%,
-      var(--color-border-accent)
-    );
+  --section-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;

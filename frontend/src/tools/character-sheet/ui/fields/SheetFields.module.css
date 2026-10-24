@@ -1,5 +1,5 @@
 .compactFrame {
-  --input-border: color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-border: var(--sheet-inner-frame, var(--color-content-border));
   --input-inner-border: transparent;
   --input-surface-start:
     color-mix(in srgb, var(--color-surface-default) 92%, transparent);
