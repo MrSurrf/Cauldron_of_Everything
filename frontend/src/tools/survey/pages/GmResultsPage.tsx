@@ -312,6 +312,7 @@ function GmResultsPage() {
 
   function handleResultsScrollBarChange(
     value: number,
+    behavior: ScrollBehavior,
   ) {
     const node = resultsListRef.current
 
@@ -319,7 +320,10 @@ function GmResultsPage() {
       return
     }
 
-    node.scrollTop = value
+    node.scrollTo({
+      top: value,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : behavior,
+    })
     updateResultsScrollMetrics(node)
   }
 

@@ -1,0 +1,46 @@
+main,
+[data-cursor-light-background] {
+  --cursor-light-x: -1000px;
+  --cursor-light-y: -1000px;
+  --cursor-light-active: 0;
+  /* Первый слой фона: всегда под панелями, текстом и контролами. */
+  --cursor-background-image: radial-gradient(
+    circle calc(var(--cursor-light-size) / 2) at var(--cursor-light-x) var(--cursor-light-y),
+    color-mix(
+      in srgb,
+      var(--color-cursor-light) calc(var(--cursor-light-active) * var(--cursor-light-opacity) * 100%),
+      transparent
+    ),
+    transparent 70%
+  );
+}
+
+[data-cursor-reveal] {
+  /* Сброс наследования нужен в том числе для вложенных панелей. */
+  --cursor-reveal-x: -1000px;
+  --cursor-reveal-y: -1000px;
+  --cursor-reveal-active: 0;
+}
+
+[data-cursor-reveal][data-cursor-reveal='border'] {
+  border-image: radial-gradient(
+    circle var(--cursor-reveal-radius) at var(--cursor-reveal-x) var(--cursor-reveal-y),
+    color-mix(
+      in srgb,
+      var(--color-cursor-light) calc(var(--cursor-reveal-active) * var(--cursor-reveal-opacity) * 100%),
+      var(--cursor-reveal-border-color)
+    ),
+    var(--cursor-reveal-border-color)
+  ) 1;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active), (any-hover: none) {
+  main,
+  [data-cursor-light-background] {
+    --cursor-background-image: none;
+  }
+
+  [data-cursor-reveal][data-cursor-reveal='border'] {
+    border-image: none;
+  }
+}

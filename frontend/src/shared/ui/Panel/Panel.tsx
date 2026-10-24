@@ -58,11 +58,13 @@ export const Panel = forwardRef<
       className={rootClassName}
       data-padding={padding}
       data-variant={variant}
+      data-cursor-reveal=""
     >
       <span
         className={styles.frame}
         aria-hidden={true}
       >
+        <span className={styles.edgeLight} />
         <span className={styles.innerFrame} />
       </span>
 

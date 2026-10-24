@@ -1,25 +1,22 @@
 .gm-results-page,
 .gm-login-page {
   --gm-font:
-    'Gilroy',
-    Arial,
-    sans-serif;
+    var(--font-family-body);
 
   --gm-title-font:
-    'GothicRusWeb',
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   position: relative;
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   color: #ffffff;
   font-family: var(--gm-font);
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover
@@ -269,7 +266,7 @@
       calc(100vw - 48px)
     );
 
-  height: 100svh;
+  height: var(--app-viewport-height);
   min-height: 0;
 
   margin: 0 auto;
@@ -632,7 +629,7 @@
 
   height:
     calc(
-      100svh - 96px
+      var(--app-viewport-height) - 96px
     );
 
   min-height: 460px;
@@ -726,25 +723,6 @@
 
   overflow-y: auto;
 
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(168, 111, 218, 0.5)
-    transparent;
-}
-
-.gm-player-list::-webkit-scrollbar {
-  width: 5px;
-}
-
-.gm-player-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.gm-player-list::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-
-  background:
-    rgba(168, 111, 218, 0.5);
 }
 
 .gm-player-card {
