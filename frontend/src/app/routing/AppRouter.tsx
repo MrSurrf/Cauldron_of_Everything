@@ -46,6 +46,7 @@ const MockTarrasquePage = lazy(
 )
 const EncyclopediaPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaPage'))
 const ArticlesPage = lazy(() => import('../../pages/articles/ArticlesPage'))
+const ArticleEditorPage = lazy(() => import('../../pages/articles/ArticleEditorPage'))
 const SpellsPage = lazy(() => import('../../pages/encyclopedia/SpellsPage'))
 const ItemsPage = lazy(() => import('../../pages/encyclopedia/ItemsPage'))
 const ClassesPage = lazy(() => import('../../pages/encyclopedia/ClassesPage'))
@@ -53,6 +54,7 @@ const BackgroundsPage = lazy(() => import('../../pages/encyclopedia/BackgroundsP
 const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
 const EncyclopediaEntryPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaEntryPage'))
 const ItemEntityPage = lazy(() => import('../../pages/encyclopedia/ItemEntityPage'))
+const ClassEntityPage = lazy(() => import('../../pages/encyclopedia/ClassEntityPage'))
 
 function RouteFallback() {
   return (
@@ -118,8 +120,10 @@ function RoutedApp() {
               <Route path="/characters" element={<CharactersPage />} />
               <Route path="/encyclopedia" element={<EncyclopediaPage />} />
               <Route path="/articles" element={<ArticlesPage />} />
+              <Route path="/articles/create" element={<ArticleEditorPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/item/:slug" element={<ItemEntityPage />} />
+              <Route path="/encyclopedia/class/:slug" element={<ClassEntityPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
               <Route path="/encyclopedia/items" element={<ItemsPage />} />
               <Route path="/encyclopedia/classes" element={<ClassesPage />} />

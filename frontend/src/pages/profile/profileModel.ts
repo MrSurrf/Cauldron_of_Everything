@@ -1,12 +1,7 @@
-export const profileTabs = [
-  { id: 'personalization', label: 'Персонализация' },
-  { id: 'about', label: 'О себе' },
-  { id: 'activity', label: 'Активность' },
-  { id: 'achievements', label: 'Достижения' },
-  { id: 'privacy', label: 'Приватность' },
-] as const
+import type { ProfileData, ProfilePayload, ProfilePrivacy, ProfileVisibility } from '../../shared/api/account'
 
-export type ProfileTab = typeof profileTabs[number]['id']
+export type { ProfileData } from '../../shared/api/account'
+
 export const gameSystems = ['Dungeons & Dragons 5e', 'Pathfinder 2e', 'Call of Cthulhu', 'Vampire: The Masquerade', 'Blades in the Dark']
 export const playStyles = ['Ролевая игра и отыгрыш', 'Политика и интриги', 'Глубокий лор и мир', 'Тактические сражения', 'Исследование и загадки', 'Юмор и лёгкий тон']
 export const genres = ['Тёмное фэнтези', 'Готика', 'Ужасы', 'Мистика', 'Исследования', 'Древние цивилизации']
@@ -23,56 +18,101 @@ export const visibilityOptions = [
 ]
 export const privacyFields = [
   { key: 'online', label: 'Показывать статус «Онлайн»' },
-  { key: 'activity', label: 'Показывать активность' },
-  { key: 'articles', label: 'Показывать статьи' },
-  { key: 'characters', label: 'Показывать чарлисты' },
-  { key: 'followers', label: 'Показывать количество подписчиков' },
+  { key: 'activity', label: 'Показывать недавнюю активность' },
+  { key: 'articles', label: 'Показывать число статей' },
+  { key: 'characters', label: 'Показывать число персонажей' },
+  { key: 'followers', label: 'Показывать число подписчиков' },
   { key: 'city', label: 'Показывать город' },
 ] as const
 
-export type ProfileData = {
-  name: string
-  tagline: string
-  city: string
-  title: string
-  role: string
-  bio: string
-  quote: string
-  portrait: string | null
-  theme: string
-  systems: string[]
-  styles: string[]
-  genres: string[]
-  links: { label: string; value: string }[]
-  visibility: string
-  messages: string
-  privacy: Record<typeof privacyFields[number]['key'], boolean>
-}
+export const profileStats = [
+  { id: 'articles', label: 'Статей', privacy: 'articles' },
+  { id: 'characters', label: 'Персонажей', privacy: 'characters' },
+  { id: 'games', label: 'Проведено игр' },
+  { id: 'followers', label: 'Подписчиков', privacy: 'followers' },
+] as const
 
-export const initialProfile: ProfileData = {
-  name: 'Babaika',
-  tagline: 'Бросаю кубики и строю миры',
-  city: 'Москва',
-  title: 'Мастер миров',
-  role: 'Мастер',
-  bio: 'Привет! Я Babaika — игрок, мастер и вечный исследователь вымышленных миров. Люблю глубоких персонажей, моральные дилеммы и истории, в которых мрак и надежда идут рука об руку. Особенно тянет к тёмному фэнтези, готике и всему, где есть место тайнам, потерянным империям и странным богам.\n\nИграю, чтобы наблюдать, как рождаются истории, которые остаются с нами надолго.',
-  quote: 'Хорошая история начинается с правильной компании.',
+export const emptyProfile: ProfileData = {
+  name: '',
+  tagline: '',
+  city: '',
+  title: '',
+  role: '',
+  bio: '',
   portrait: null,
   theme: 'purple',
-  systems: gameSystems.slice(0, 3),
-  styles: [playStyles[0], playStyles[1], playStyles[2], playStyles[4]],
-  genres: genres.slice(0, 5),
-  links: [{ label: 'Discord', value: 'babaika_rpg' }, { label: 'Telegram', value: '@babaika_rpg' }, { label: 'ВКонтакте', value: 'vk.com/babaika' }],
+  systems: [],
+  styles: [],
+  genres: [],
+  links: [],
   visibility: 'all',
   messages: 'all',
   privacy: { online: true, activity: true, articles: true, characters: true, followers: true, city: true },
 }
 
-export const activityFilters = ['Все', 'Статьи', 'Игры', 'Чарлисты', 'Сообщество']
-export const activityItems = [
-  { id: 1, category: 'Статьи', action: 'Опубликована статья', title: 'Города, которые помнят', description: 'Исследование живых городов в фэнтези-мирах и того, как они влияют на историю.', date: '2 часа назад' },
-  { id: 2, category: 'Чарлисты', action: 'Обновлён чарлист', title: 'NPC: союзники и антагонисты', description: 'Новые персонажи, связи и заметки по текущей кампании.', date: 'Вчера' },
-  { id: 3, category: 'Игры', action: 'Проведена игра', title: 'Пепельные земли', description: 'Четыре героя, одна исчезнувшая империя и история, которая только начинается.', date: '2 дня назад' },
-  { id: 4, category: 'Сообщество', action: 'Оставлен комментарий', title: 'Искусство мастерства', description: 'Обсуждаем, как дать каждому персонажу место в общей истории.', date: '3 дня назад' },
-  { id: 5, category: 'Сообщество', action: 'Вступление в клуб', title: 'Писатели миров', description: 'Сообщество авторов, мастеров и любителей миростроения.', date: 'Неделю назад' },
-]
+const visibilityValues: ProfileVisibility[] = ['all', 'friends', 'none']
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function stringValue(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function stringList(value: unknown, fallback: string[]): string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string')
+    ? [...value]
+    : [...fallback]
+}
+
+function visibilityValue(value: unknown, fallback: ProfileVisibility): ProfileVisibility {
+  return typeof value === 'string' && visibilityValues.includes(value as ProfileVisibility)
+    ? value as ProfileVisibility
+    : fallback
+}
+
+export function cloneProfile(profile: ProfileData): ProfileData {
+  return {
+    ...profile,
+    systems: [...profile.systems],
+    styles: [...profile.styles],
+    genres: [...profile.genres],
+    links: profile.links.map(link => ({ ...link })),
+    privacy: { ...profile.privacy },
+  }
+}
+
+export function normalizeProfile(value: unknown, fallback: ProfileData = emptyProfile): ProfileData {
+  const source: ProfilePayload = isObject(value) ? value : {}
+  const sourcePrivacy: Record<string, unknown> = isObject(source.privacy) ? source.privacy : {}
+  const privacy = Object.fromEntries(
+    privacyFields.map(({ key }) => [
+      key,
+      typeof sourcePrivacy[key] === 'boolean' ? sourcePrivacy[key] : fallback.privacy[key],
+    ]),
+  ) as ProfilePrivacy
+  const links = Array.isArray(source.links)
+    ? source.links.flatMap(link => isObject(link) && typeof link.label === 'string' && typeof link.value === 'string'
+      ? [{ label: link.label, value: link.value }]
+      : [])
+    : fallback.links.map(link => ({ ...link }))
+
+  return {
+    name: stringValue(source.name, fallback.name),
+    tagline: stringValue(source.tagline, fallback.tagline),
+    city: stringValue(source.city, fallback.city),
+    title: stringValue(source.title, fallback.title),
+    role: stringValue(source.role, fallback.role),
+    bio: stringValue(source.bio, fallback.bio),
+    portrait: typeof source.portrait === 'string' || source.portrait === null ? source.portrait : fallback.portrait,
+    theme: typeof source.theme === 'string' && themes.some(theme => theme.value === source.theme) ? source.theme : fallback.theme,
+    systems: stringList(source.systems, fallback.systems),
+    styles: stringList(source.styles, fallback.styles),
+    genres: stringList(source.genres, fallback.genres),
+    links,
+    visibility: visibilityValue(source.visibility, fallback.visibility),
+    messages: visibilityValue(source.messages, fallback.messages),
+    privacy,
+  }
+}

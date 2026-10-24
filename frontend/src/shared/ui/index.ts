@@ -30,6 +30,7 @@ export type {
 } from './IconButton'
 export {
   AttunementIcon,
+  BookIcon,
   DICE_TYPES,
   DiceIcon,
   EditIcon,

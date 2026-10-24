@@ -143,7 +143,6 @@
   --sheet-section-padding: var(--sheet-layout-gap);
 }
 .levelCard > div { display: flex; min-height: 0; flex: 1; flex-direction: column; }
-.levelCard[data-drop-target='true'] { border-color: var(--palette-purple-300); box-shadow: inset 0 0 0 1px var(--palette-purple-300); }
 .levelHeader {
   display: flex;
   min-height: 2.625rem;
@@ -266,7 +265,8 @@
 .source + .removeButton { margin-left: 0; }
 .removeButton:hover { color: var(--palette-purple-300); }
 .emptyLevel { margin: var(--sheet-layout-gap) 0; color: var(--color-text-disabled); font-size: 0.625rem; }
-.dropHint { display: none; margin-top: auto; padding: var(--sheet-layout-gap); color: var(--palette-purple-300); text-align: center; font-size: 0.625rem; }
+.dropHint { display: none; margin-top: auto; padding: var(--sheet-layout-gap); color: var(--selection-marker-fill); text-align: center; font-size: 0.625rem; }
+.levelCard[data-encyclopedia-drop-available='true'] .dropHint,
 .levelCard[data-drop-target='true'] .dropHint { display: block; }
 .root button:focus-visible,
 .abilitySelect:focus-visible { outline: 2px solid var(--palette-purple-300); outline-offset: 2px; }

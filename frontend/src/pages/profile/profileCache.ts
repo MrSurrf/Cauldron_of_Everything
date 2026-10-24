@@ -1,31 +1,48 @@
-// Локальный кэш профиля: нужен только чтобы страница не мигала при перезагрузке,
-// пока идёт запрос к серверу. Источником истины остаётся бэкенд.
+// Локальный кэш нужен только для мгновенного показа до ответа сервера.
+// Ключ привязан к user_id из JWT, чтобы данные разных аккаунтов не смешивались.
 
-import { AUTH_CHANGED_EVENT, getAccessToken } from '../../shared/api/auth'
+import { getAccessToken } from '../../shared/api/auth'
 import type { ProfileData } from './profileModel'
+import { normalizeProfile } from './profileModel'
 
-const CACHE_KEY = 'profile.cache'
+const CACHE_PREFIX = 'profile.cache:'
+
+function cacheKey(): string | null {
+  const token = getAccessToken()
+  if (!token) return null
+
+  try {
+    const encoded = token.split('.')[1]
+    if (!encoded) return null
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='))) as {
+      sub?: string | number
+      user_id?: string | number
+    }
+    const identity = payload.user_id ?? payload.sub
+    return identity === undefined ? null : `${CACHE_PREFIX}${encodeURIComponent(String(identity))}`
+  } catch {
+    return null
+  }
+}
 
 export function readProfileCache(): ProfileData | null {
+  const key = cacheKey()
+  if (!key) return null
   try {
-    const raw = localStorage.getItem(CACHE_KEY)
-    return raw ? (JSON.parse(raw) as ProfileData) : null
+    const raw = localStorage.getItem(key)
+    return raw ? normalizeProfile(JSON.parse(raw)) : null
   } catch {
     return null
   }
 }
 
 export function writeProfileCache(profile: ProfileData): void {
+  const key = cacheKey()
+  if (!key) return
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(profile))
+    localStorage.setItem(key, JSON.stringify(profile))
   } catch {
     // Переполнение localStorage не должно ломать профиль.
   }
-}
-
-// При выходе из аккаунта чужой кэш не должен показываться следующему пользователю.
-export function bindProfileCacheToAuth(): void {
-  window.addEventListener(AUTH_CHANGED_EVENT, () => {
-    if (!getAccessToken()) localStorage.removeItem(CACHE_KEY)
-  })
 }

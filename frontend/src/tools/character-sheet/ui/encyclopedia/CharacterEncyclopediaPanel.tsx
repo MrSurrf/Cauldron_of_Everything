@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { fetchEncyclopedia } from '../../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
-import { Button, ListCard, ScrollArea, TextInput } from '../../../../shared/ui'
+import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../../shared/ui'
+import catalogStyles from '../../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { RichContent } from '../../../../shared/ui/RichContent'
 import {
   toCharacterEncyclopediaEntry,
@@ -9,6 +10,8 @@ import {
 } from './characterEncyclopediaDrag'
 import type { CharacterEncyclopediaEntry, CharacterEncyclopediaMode } from './characterEncyclopediaDrag'
 import styles from './CharacterEncyclopediaPanel.module.css'
+import { useCharacterEncyclopediaDrag } from './useCharacterEncyclopediaDrag'
+import dragStyles from './characterEncyclopediaDragFeedback.module.css'
 
 const PAGE_SIZE = 30
 const SECTIONS: Record<CharacterEncyclopediaMode, { label: string; singular: string; search: string; placeholder: string }> = {
@@ -63,6 +66,7 @@ export function CharacterEncyclopediaPanel({
   onClose,
   className,
 }: CharacterEncyclopediaPanelProps) {
+  const { entry: draggedEntry, beginDrag } = useCharacterEncyclopediaDrag()
   const [query, setQuery] = useState('')
   const [contentQuery, setContentQuery] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -134,58 +138,56 @@ export function CharacterEncyclopediaPanel({
   }
 
   return (
-    <aside className={[styles.panel, className].filter(Boolean).join(' ')} aria-label="Энциклопедия для листа персонажа" data-preview={Boolean(selectedEntry)}>
-      <header className={styles.header}>
-        <div>
-          <span className={styles.eyebrow}>Библиотека</span>
-          <h2>Энциклопедия</h2>
-        </div>
-        <Button size="sm" variant="secondary" decoration="minimal" aria-label="Закрыть энциклопедию" onClick={onClose}>×</Button>
+    <aside className={[catalogStyles.panel, styles.panel, className].filter(Boolean).join(' ')} aria-label="Энциклопедия для листа персонажа" data-preview={Boolean(selectedEntry)}>
+      <header className={catalogStyles.header}>
+        <h2>Энциклопедия</h2>
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label="Закрыть энциклопедию" onClick={onClose}>×</Button>
       </header>
 
-      <div className={styles.tabs} role="tablist" aria-label="Раздел энциклопедии">
-        {(Object.keys(SECTIONS) as CharacterEncyclopediaMode[]).map((key) =>
-          <button key={key} type="button" role="tab" aria-selected={mode === key} aria-controls="character-encyclopedia-results"
-            className={styles.tab} onClick={() => changeMode(key)}>{SECTIONS[key].label}</button>)}
-      </div>
-
-      <div className={styles.search}>
+      <div className={catalogStyles.filters}>
+        <Select aria-label="Раздел энциклопедии" value={mode}
+          options={(Object.keys(SECTIONS) as CharacterEncyclopediaMode[]).map((value) => ({ value, label: SECTIONS[value].label }))}
+          onValueChange={(value) => { if (value !== null) changeMode(value as CharacterEncyclopediaMode) }} />
         <TextInput type="search" aria-label={section.search}
           placeholder={section.placeholder} value={query}
           onChange={(event) => { setQuery(event.target.value); setContentQuery(null); setPage(1) }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') { setContentQuery(query.trim() || null); setPage(1); event.preventDefault() }
           }} />
-        <p>{mode === 'class' || mode === 'race' || mode === 'background'
-          ? `Перетащите запись в поле «${section.singular}» или нажмите «Добавить».`
-          : 'Перетащите запись на лист или нажмите «Добавить».'}</p>
       </div>
+      <p className={catalogStyles.hint}>{mode === 'class' || mode === 'race' || mode === 'background'
+        ? `Перетащите запись в поле «${section.singular}» или нажмите «Добавить».`
+        : 'Перетащите запись на лист или нажмите «Добавить».'}</p>
 
-      <ScrollArea id="character-encyclopedia-results" rootClassName={styles.results} role="tabpanel"
+      <ScrollArea id="character-encyclopedia-results" rootClassName={catalogStyles.results}
         aria-label={`${section.label} энциклопедии`} aria-busy={loading}>
-        {!currentResult && <p className={styles.message} role="status">Загрузка…</p>}
-        {currentResult?.error && !loading && <div className={styles.message} role="alert">
+        {!currentResult && <p className={catalogStyles.message} role="status">Загрузка…</p>}
+        {currentResult?.error && !loading && <div className={catalogStyles.message} role="alert">
           <p>{currentResult.error}</p>
-          <Button size="sm" onClick={() => setAttempt((value) => value + 1)}>Повторить</Button>
+          <Button size="sm" variant="secondary" decoration="minimal" className={catalogStyles.toolButton} onClick={() => setAttempt((value) => value + 1)}>Повторить</Button>
         </div>}
         {currentResult && !loading && !currentResult.error && currentResult.entries.length === 0 &&
-          <p className={styles.message} role="status">Записи не найдены.</p>}
-        {currentResult?.entries.map((entry) => <div className={styles.row} key={`${entry.entityType}:${entry.id}`}>
-          <button type="button" className={styles.entry} draggable aria-label={`Показать карточку: ${entry.name}`}
+          <p className={catalogStyles.message} role="status">Записи не найдены.</p>}
+        {currentResult?.entries.map((entry) => <div className={catalogStyles.row} key={`${entry.entityType}:${entry.id}`}>
+          <button type="button" className={`${catalogStyles.entry} ${dragStyles.source}`} draggable aria-label={`Показать карточку: ${entry.name}`}
+            data-encyclopedia-dragging={draggedEntry?.id === entry.id && draggedEntry.entityType === entry.entityType || undefined}
             aria-pressed={selectedEntry?.id === entry.id} onClick={() => setSelected(entry)}
-            onDragStart={(event) => writeCharacterEncyclopediaDrag(event.dataTransfer, entry)}>
-            <ListCard name={entry.name} tags={entryTags(entry)} />
+            onDragStart={(event) => {
+              writeCharacterEncyclopediaDrag(event.dataTransfer, entry)
+              beginDrag(event, entry)
+            }}>
+            <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)} />
           </button>
-          <Button size="sm" variant="secondary" decoration="minimal" aria-label={`Добавить: ${entry.name}`}
+          <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить: ${entry.name}`}
             title="Добавить на лист" onClick={() => onAdd(entry)}>+</Button>
         </div>)}
       </ScrollArea>
 
-      <div className={styles.pagination}>
-        <Button size="sm" variant="secondary" disabled={page <= 1} aria-label="Предыдущая страница"
+      <div className={catalogStyles.pagination}>
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} disabled={page <= 1} aria-label="Предыдущая страница"
           onClick={() => setPage((value) => Math.max(1, value - 1))}>←</Button>
         <span>{page} · {currentResult?.count ?? '…'} записей</span>
-        <Button size="sm" variant="secondary" disabled={loading || !currentResult || page * PAGE_SIZE >= currentResult.count}
+        <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} disabled={loading || !currentResult || page * PAGE_SIZE >= currentResult.count}
           aria-label="Следующая страница" onClick={() => setPage((value) => value + 1)}>→</Button>
       </div>
 
@@ -197,8 +199,8 @@ export function CharacterEncyclopediaPanel({
         {selectedEntry.nameEn && <p className={styles.originalName}>{selectedEntry.nameEn}</p>}
         <ScrollArea rootClassName={styles.previewScroll} contentClassName={styles.previewContent}
           aria-label={`Описание: ${selectedEntry.name}`}>
-          {!currentDetail && <p className={styles.message} role="status">Загрузка карточки…</p>}
-          {currentDetail?.error && <p className={styles.message} role="alert">{currentDetail.error}</p>}
+          {!currentDetail && <p className={catalogStyles.message} role="status">Загрузка карточки…</p>}
+          {currentDetail?.error && <p className={catalogStyles.message} role="alert">{currentDetail.error}</p>}
           {currentDetail?.entry && (currentDetail.entry.content_html
             ? <RichContent html={currentDetail.entry.content_html} />
             : <p className={styles.description}>{currentDetail.entry.content_text || 'Описание отсутствует.'}</p>)}

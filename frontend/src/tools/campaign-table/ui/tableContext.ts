@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import type { PointerEvent } from 'react'
 import type { Diagram, NodeEntityType } from '../model/table'
 
 export type TableActions = {
@@ -9,6 +10,10 @@ export type TableActions = {
   diagrams: { id: string; name: string }[]
   connectionSource: string | null
   startConnection: (id: string, pointer?: { x: number; y: number }) => void
+  beginConnection: (id: string, event: PointerEvent<HTMLButtonElement>) => void
+  dropTarget: string | null
+  beginInstanceDrag: (id: string) => void
+  placeInside: (id: string, targetId?: string) => void
   placeOnDiagram: (id: string, diagramId: string) => void
   draft?: { id: string; type: NodeEntityType; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void

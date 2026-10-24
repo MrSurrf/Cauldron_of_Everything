@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react'
+import type { DragEvent } from 'react'
 import { TextInput, type TextInputProps } from '../../../../shared/ui'
 import {
   hasCharacterEncyclopediaDrag,
@@ -6,7 +6,8 @@ import {
   readCharacterEncyclopediaDrag,
   type CharacterIdentityEncyclopediaMode,
 } from './characterEncyclopediaDrag'
-import styles from './EncyclopediaIdentityField.module.css'
+import { useCharacterEncyclopediaDropTarget } from './useCharacterEncyclopediaDrag'
+import dragStyles from './characterEncyclopediaDragFeedback.module.css'
 
 type EncyclopediaIdentityFieldProps = Omit<TextInputProps, 'onChange' | 'value'> & {
   entityType: CharacterIdentityEncyclopediaMode
@@ -22,33 +23,42 @@ export function EncyclopediaIdentityField({
   value,
   ...props
 }: EncyclopediaIdentityFieldProps) {
-  const [dragOver, setDragOver] = useState(false)
+  const enabled = !props.disabled && !props.readOnly
+  const feedback = useCharacterEncyclopediaDropTarget(entityType, enabled)
 
   function handleDragOver(event: DragEvent<HTMLInputElement>) {
-    if (!hasCharacterEncyclopediaDrag(event.dataTransfer)) return
+    if (!enabled || !hasCharacterEncyclopediaDrag(event.dataTransfer)) return
     event.preventDefault()
     const matches = hasCharacterEncyclopediaTypeDrag(event.dataTransfer, entityType)
     event.dataTransfer.dropEffect = matches ? 'copy' : 'none'
-    setDragOver(matches)
+    feedback.setActive(matches)
   }
 
   return <TextInput
     {...props}
     autoComplete="off"
-    rootClassName={[rootClassName, dragOver && styles.dropTarget].filter(Boolean).join(' ')}
+    rootClassName={[rootClassName, dragStyles.target, feedback.available && dragStyles.available,
+      feedback.active && dragStyles.active, feedback.received && dragStyles.received].filter(Boolean).join(' ')}
+    data-encyclopedia-drop-zone={entityType}
+    data-encyclopedia-drop-available={feedback.available || undefined}
+    data-drop-active={feedback.active || undefined}
+    data-drop-received={feedback.received || undefined}
     value={value}
     onChange={(event) => onValueChange(event.currentTarget.value)}
     onDragEnter={handleDragOver}
     onDragOver={handleDragOver}
-    onDragLeave={() => setDragOver(false)}
+    onDragLeave={() => feedback.setActive(false)}
     onDrop={(event) => {
-      setDragOver(false)
-      if (!hasCharacterEncyclopediaDrag(event.dataTransfer)) return
+      feedback.setActive(false)
+      if (!enabled || !hasCharacterEncyclopediaDrag(event.dataTransfer)) return
       // Не даём браузеру вставить text/plain из записи другого раздела.
       event.preventDefault()
       event.stopPropagation()
       const entry = readCharacterEncyclopediaDrag(event.dataTransfer)
-      if (entry?.entityType === entityType) onValueChange(entry.name)
+      if (entry?.entityType === entityType) {
+        onValueChange(entry.name)
+        feedback.receive()
+      }
     }}
   />
 }

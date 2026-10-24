@@ -5,6 +5,22 @@
     var(--sheet-tight-gap, var(--space-1));
 }
 
+.portrait,
+.nameField,
+.detailField,
+.progressColumn {
+  transition: filter var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+:global([data-encyclopedia-drag-active='true']) :is(.portrait, .nameField, .progressColumn,
+  .detailField:not(:has([data-encyclopedia-drop-available='true']))) {
+  filter: brightness(0.38) saturate(0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait, .nameField, .detailField, .progressColumn { transition: none; }
+}
+
 .section.section {
   border-color: transparent;
   background: transparent;

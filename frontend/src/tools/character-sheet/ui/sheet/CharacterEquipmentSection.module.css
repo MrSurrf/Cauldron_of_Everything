@@ -1,5 +1,0 @@
-.section[data-item-drop-target='true'] [data-content-editor-frame] {
-  outline: 2px dashed var(--color-border-accent);
-  outline-offset: -3px;
-  background: color-mix(in srgb, var(--color-surface-accent) 30%, transparent);
-}

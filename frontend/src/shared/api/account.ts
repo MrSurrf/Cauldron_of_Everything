@@ -4,25 +4,42 @@ import { authFetch } from './auth'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
-// Поля профиля (зеркало ProfileData из pages/profile/profileModel.ts)
-// плюс свободный namespace настроек инструментов. Все поля необязательны:
-// сервер делает merge поверх уже сохранённых данных.
-export type ProfilePayload = {
-  name?: string
-  tagline?: string
-  city?: string
-  title?: string
-  role?: string
-  bio?: string
-  quote?: string
-  theme?: string
-  visibility?: string
-  messages?: string
-  systems?: string[]
-  styles?: string[]
-  genres?: string[]
-  links?: { label: string; value: string }[]
-  privacy?: Record<string, boolean>
+export type ProfileVisibility = 'all' | 'friends' | 'none'
+
+export type ProfilePrivacy = {
+  online: boolean
+  activity: boolean
+  articles: boolean
+  characters: boolean
+  followers: boolean
+  city: boolean
+}
+
+export type ProfileLink = {
+  label: string
+  value: string
+}
+
+export type ProfileData = {
+  name: string
+  tagline: string
+  city: string
+  title: string
+  role: string
+  bio: string
+  portrait: string | null
+  theme: string
+  visibility: ProfileVisibility
+  messages: ProfileVisibility
+  systems: string[]
+  styles: string[]
+  genres: string[]
+  links: ProfileLink[]
+  privacy: ProfilePrivacy
+}
+
+// Все поля необязательны: сервер делает shallow merge поверх сохранённых данных.
+export type ProfilePayload = Partial<ProfileData> & {
   settings?: Record<string, unknown>
 }
 
@@ -32,9 +49,26 @@ export type ProfileResponse = {
 }
 
 async function readError(response: Response, fallback: string): Promise<Error> {
-  const body = await response.json().catch(() => null)
-  const detail = typeof body?.detail === 'string' ? body.detail : null
-  return new Error(detail ?? `${fallback}: HTTP ${response.status}`)
+  const body: unknown = await response.json().catch(() => null)
+
+  function firstMessage(value: unknown): string | null {
+    if (typeof value === 'string') return value
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const message = firstMessage(item)
+        if (message) return message
+      }
+    }
+    if (value && typeof value === 'object') {
+      for (const item of Object.values(value)) {
+        const message = firstMessage(item)
+        if (message) return message
+      }
+    }
+    return null
+  }
+
+  return new Error(firstMessage(body) ?? `${fallback}: HTTP ${response.status}`)
 }
 
 export async function getProfile(): Promise<ProfileResponse> {
@@ -51,4 +85,17 @@ export async function patchProfile(data: ProfilePayload): Promise<ProfileRespons
   })
   if (!response.ok) throw await readError(response, 'Не удалось сохранить профиль')
   return response.json() as Promise<ProfileResponse>
+}
+
+export async function uploadAvatar(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('portrait', file)
+  const response = await authFetch(`${API_BASE_URL}/api/me/profile/avatar/`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!response.ok) throw await readError(response, 'Не удалось загрузить аватар')
+  const body = (await response.json()) as { portrait?: string }
+  if (!body.portrait) throw new Error('Сервер не вернул URL аватара')
+  return body.portrait
 }

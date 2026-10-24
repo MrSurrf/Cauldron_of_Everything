@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CHARACTER_ENCYCLOPEDIA_DRAG_TYPE,
   hasCharacterEncyclopediaTypeDrag,
+  hasCharacterEncyclopediaSpellLevelDrag,
   readCharacterEncyclopediaDrag,
   toCharacterEncyclopediaEntry,
   writeCharacterEncyclopediaDrag,
@@ -36,5 +37,24 @@ describe('перетаскивание энциклопедии в лист пе
     JSON.stringify({ id: 42, entityType: 'race', name: ' ' }),
   ])('отклоняет некорректную запись %s', (raw) => {
     expect(readCharacterEncyclopediaDrag(transferWith({ [CHARACTER_ENCYCLOPEDIA_DRAG_TYPE]: raw }))).toBeNull()
+  })
+
+  it('распознаёт допустимый уровень заклинания без доступа к содержимому DataTransfer', () => {
+    const transfer = transferWith()
+    writeCharacterEncyclopediaDrag(transfer, {
+      id: 42, entityType: 'spell', name: 'Туманный шаг', nameEn: '', level: 2, summary: {},
+    })
+    const protectedTransfer = { types: transfer.types, getData: () => '' } as unknown as DataTransfer
+    expect(hasCharacterEncyclopediaSpellLevelDrag(protectedTransfer, 2)).toBe(true)
+    expect(hasCharacterEncyclopediaSpellLevelDrag(protectedTransfer, 1)).toBe(false)
+  })
+
+  it('оставляет выбор уровня для заклинания без известного уровня', () => {
+    const transfer = transferWith()
+    writeCharacterEncyclopediaDrag(transfer, {
+      id: 42, entityType: 'spell', name: 'Особое заклинание', nameEn: '', level: null, summary: {},
+    })
+    expect(hasCharacterEncyclopediaSpellLevelDrag(transfer, 0)).toBe(true)
+    expect(hasCharacterEncyclopediaSpellLevelDrag(transfer, 9)).toBe(true)
   })
 })

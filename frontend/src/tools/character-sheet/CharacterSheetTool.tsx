@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { fetchEncyclopedia, type EncyclopediaEntry } from '../../entities/encyclopedia'
 import { EncyclopediaSectionIcon } from '../../pages/encyclopedia/EncyclopediaSectionIcon'
-import { PlaceholderIcon } from '../../shared/ui'
+import { BookIcon, Button } from '../../shared/ui'
 import {
   CharacterSheetProvider,
   FORMULA_FIELD_KEYS,
@@ -34,9 +34,13 @@ import {
   equipmentItemSource,
   spellDetailPatch,
 } from './ui/encyclopedia/characterEntryImport'
+import { CharacterEncyclopediaDragProvider } from './ui/encyclopedia/CharacterEncyclopediaDragProvider'
+import { useCharacterEncyclopediaDrag } from './ui/encyclopedia/useCharacterEncyclopediaDrag'
+import dragStyles from './ui/encyclopedia/characterEncyclopediaDragFeedback.module.css'
 import { CharacterSheetContent } from './ui/sheet/CharacterSheetContent'
 import { toComputedResult } from './ui/sheet/sheetViewModel'
 import { SpellSheet } from './ui/spell-sheet/SpellSheet'
+import { useSheetLayoutMotion } from './useSheetLayoutMotion'
 import styles from './CharacterSheetWorkspace.module.css'
 
 const ABILITY_NAMES = {
@@ -55,24 +59,39 @@ const LIBRARY_DOCK_WIDTH = {
 const SHEET_SPACE_GUTTER = 16
 
 type CharacterSheetWorkspaceProps = Pick<CharacterSheetToolProps,
-  'className' | 'onPortraitFileSelect' | 'onPortraitRemove'
+  'className' | 'fitWidth' | 'onPortraitFileSelect' | 'onPortraitRemove'
 >
 
 function CharacterSheetWorkspace({
   className,
+  fitWidth = false,
   onPortraitFileSelect,
   onPortraitRemove,
 }: CharacterSheetWorkspaceProps) {
   const { document, dispatch, formulas } = useCharacterSheet()
+  const { entry: draggedEntry } = useCharacterEncyclopediaDrag()
   const [spellsOpen, setSpellsOpen] = useState(false)
   const [spellTabExpanded, setSpellTabExpanded] = useState(false)
   const [spellSheetMounted, setSpellSheetMounted] = useState(false)
   const [workspaceWidth, setWorkspaceWidth] = useState(0)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [libraryMounted, setLibraryMounted] = useState(false)
   const [libraryMode, setLibraryMode] = useState<CharacterEncyclopediaMode>('item')
   const [importError, setImportError] = useState('')
   const detailRequests = useRef(new Set<AbortController>())
   const workspace = useRef<HTMLDivElement>(null)
+  const libraryTrigger = useRef<HTMLButtonElement>(null)
+  const { book, captureLayout } = useSheetLayoutMotion(`${libraryOpen}:${spellsOpen}:${fitWidth}`, workspaceWidth)
+
+  function changeSpellsOpen(open: boolean) {
+    if (open !== spellsOpen) captureLayout()
+    setSpellsOpen(open)
+  }
+
+  function changeLibraryOpen(open: boolean) {
+    if (open !== libraryOpen) captureLayout()
+    setLibraryOpen(open)
+  }
 
   function expandSpellTab(button: HTMLButtonElement) {
     const moving = button.parentElement?.getAnimations()
@@ -89,6 +108,15 @@ function CharacterSheetWorkspace({
     const fallback = window.setTimeout(() => setSpellSheetMounted(false), 750)
     return () => window.clearTimeout(fallback)
   }, [spellSheetMounted, spellsOpen])
+
+  useEffect(() => {
+    if (libraryOpen || !libraryMounted) return
+    const focus = window.requestAnimationFrame(() => libraryTrigger.current?.focus({ preventScroll: true }))
+    // transitionend не придёт при reduced motion или прерванной CSS-анимации.
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750
+    const fallback = window.setTimeout(() => setLibraryMounted(false), delay)
+    return () => { window.cancelAnimationFrame(focus); window.clearTimeout(fallback) }
+  }, [libraryMounted, libraryOpen])
 
   useEffect(() => {
     const root = workspace.current
@@ -163,7 +191,7 @@ function CharacterSheetWorkspace({
     dispatch(characterSheetActions.addSpell(spell))
     hydrateEntry(entry, existing?.id ?? spell.id)
     setSpellSheetMounted(true)
-    setSpellsOpen(true)
+    changeSpellsOpen(true)
   }
 
   const emptySpellcasting = createEmptySpellcasting()
@@ -188,126 +216,143 @@ function CharacterSheetWorkspace({
 
   return <div ref={workspace} className={[styles.workspace, className].filter(Boolean).join(' ')}
     style={{ '--book-min-width': `${spreadWidth}px` } as CSSProperties}
+    data-fit-width={fitWidth || undefined} data-library-mounted={libraryMounted || undefined}
     data-library-open={libraryOpen} data-spells-open={spellsOpen}>
-    <div className={styles.sheetSpace} aria-label="Листы персонажа">
-      <div
-        className={styles.book}
-        data-spells-open={spellsOpen}
-        style={{ '--book-scale': pageScale } as CSSProperties}
-      >
-        <div className={styles.characterPanel}>
-          <CharacterSheetContent
-            className={styles.characterContent}
-            onPortraitFileSelect={onPortraitFileSelect}
-            onPortraitRemove={onPortraitRemove}
-            onEncyclopediaItemDrop={(transfer) => {
-              const entry = readCharacterEncyclopediaDrag(transfer)
-              if (entry?.entityType === 'item') addEntry(entry)
-            }}
-          />
-        </div>
-        <div className={styles.spellReveal}>
-          <div
-            className={styles.spellDrawer}
-            data-spell-sheet-drawer
-            onTransitionRun={(event) => {
-              if (event.target === event.currentTarget && event.propertyName === 'transform') {
-                setSpellTabExpanded(false)
-              }
-            }}
-            onTransitionEnd={(event) => {
-              if (
-                event.target === event.currentTarget &&
-                event.propertyName === 'transform' &&
-                !spellsOpen
-              ) {
-                setSpellSheetMounted(false)
-              }
-            }}
-          >
-            {spellSheetMounted && <div
-              className={styles.spellPanel}
-              data-spell-sheet-panel
-              data-state={spellsOpen ? 'open' : 'closing'}
-              inert={!spellsOpen}
-            >
-              <SpellSheet
-                spellcasting={{
-                  className: spellcasting.className || document.identity.className,
-                  abilityKey: castingAbility,
-                  ability: ABILITY_NAMES[castingAbility],
-                  saveDc: spellcasting.saveDc,
-                  saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
-                  attackBonus: spellcasting.attackBonus,
-                  attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
-                }}
-                slots={getEffectiveSpellSlots(document)}
-                spells={spellcasting.spells}
-                formulaVariables={formulaVariables}
-                onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
-                onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
-                onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
-                onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
-                onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
-                onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
-                onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
-                onSpellDrop={(transfer, level: SpellLevel) => {
-                  const entry = readCharacterEncyclopediaDrag(transfer)
-                  if (entry?.entityType !== 'spell') return
-                  if (entry.level !== null && entry.level !== level) {
-                    setImportError(`«${entry.name}» — заклинание ${entry.level}-го уровня. Перенесите его в соответствующий раздел.`)
-                    return
-                  }
-                  addEntry({ ...entry, level })
-                }}
-                onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
-              />
-            </div>}
-            <button type="button" className={styles.pageTab}
-              data-spell-sheet-toggle
-              data-expanded={spellTabExpanded}
-              aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
-              aria-expanded={spellsOpen}
-              onMouseEnter={(event) => expandSpellTab(event.currentTarget)}
-              onMouseLeave={() => setSpellTabExpanded(false)}
-              onFocus={(event) => {
-                if (event.currentTarget.matches(':focus-visible')) expandSpellTab(event.currentTarget)
+    <div className={styles.layoutViewport}>
+      <div className={styles.sheetSpace} aria-label="Листы персонажа">
+        <div
+          ref={book}
+          className={`${styles.book} ${dragStyles.scene}`}
+          data-encyclopedia-drag-active={Boolean(draggedEntry) || undefined}
+          data-spells-open={spellsOpen}
+          style={{ '--book-scale': pageScale } as CSSProperties}
+        >
+          <div className={styles.characterPanel}>
+            <CharacterSheetContent
+              className={styles.characterContent}
+              onPortraitFileSelect={onPortraitFileSelect}
+              onPortraitRemove={onPortraitRemove}
+              onEncyclopediaItemDrop={(transfer) => {
+                const entry = readCharacterEncyclopediaDrag(transfer)
+                if (entry?.entityType === 'item') addEntry(entry)
               }}
-              onBlur={() => setSpellTabExpanded(false)}
-              onClick={() => {
-                setSpellTabExpanded(false)
-                const nextOpen = !spellsOpen
-                if (nextOpen) setSpellSheetMounted(true)
-                setSpellsOpen(nextOpen)
-                if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
-              }}><span className={styles.pageTabContent} aria-hidden="true">
-                <span className={styles.pageTabLabel}>Лист<br />заклинаний</span>
-                <span className={styles.pageTabIcon} data-spell-sheet-icon>
-                  <EncyclopediaSectionIcon sectionId="spells" />
-                </span>
-                <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
-              </span></button>
+            />
+          </div>
+          <div className={styles.spellReveal}>
+            <div
+              className={styles.spellDrawer}
+              data-spell-sheet-drawer
+              onTransitionRun={(event) => {
+                if (event.target === event.currentTarget && event.propertyName === 'transform') {
+                  setSpellTabExpanded(false)
+                }
+              }}
+              onTransitionEnd={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  event.propertyName === 'transform' &&
+                  !spellsOpen
+                ) {
+                  setSpellSheetMounted(false)
+                }
+              }}
+            >
+              {spellSheetMounted && <div
+                className={styles.spellPanel}
+                data-spell-sheet-panel
+                data-state={spellsOpen ? 'open' : 'closing'}
+                inert={!spellsOpen}
+              >
+                <SpellSheet
+                  spellcasting={{
+                    className: spellcasting.className || document.identity.className,
+                    abilityKey: castingAbility,
+                    ability: ABILITY_NAMES[castingAbility],
+                    saveDc: spellcasting.saveDc,
+                    saveDcResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellSaveDc)),
+                    attackBonus: spellcasting.attackBonus,
+                    attackBonusResult: toComputedResult(selectFormulaResult(formulas, FORMULA_FIELD_KEYS.spellAttackBonus)),
+                  }}
+                  slots={getEffectiveSpellSlots(document)}
+                  spells={spellcasting.spells}
+                  formulaVariables={formulaVariables}
+                  onSlotUsedChange={(level, used) => dispatch(characterSheetActions.setSpellSlotUsed(level, used))}
+                  onSlotMaximumChange={(level, maximum) => dispatch(characterSheetActions.setSpellSlotMaximum(level, maximum))}
+                  onClassNameChange={(className) => dispatch(characterSheetActions.setSpellcastingClassName(className))}
+                  onAbilityChange={(ability) => dispatch(characterSheetActions.setSpellcastingAbility(ability))}
+                  onSaveDcChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'saveDc' }, value))}
+                  onAttackBonusChange={(value) => dispatch(characterSheetActions.setNumericField({ kind: 'spellcasting', field: 'attackBonus' }, value))}
+                  onSpellPreparedChange={(id, prepared) => dispatch(characterSheetActions.setSpellPrepared(id, prepared))}
+                  onSpellDrop={(transfer, level: SpellLevel) => {
+                    const entry = readCharacterEncyclopediaDrag(transfer)
+                    if (entry?.entityType !== 'spell') return
+                    if (entry.level !== null && entry.level !== level) {
+                      setImportError(`«${entry.name}» — заклинание ${entry.level}-го уровня. Перенесите его в соответствующий раздел.`)
+                      return
+                    }
+                    addEntry({ ...entry, level })
+                  }}
+                  onRemoveSpell={(id) => dispatch(characterSheetActions.removeSpell(id))}
+                />
+              </div>}
+              <button type="button" className={styles.pageTab}
+                data-spell-sheet-toggle
+                data-expanded={spellTabExpanded}
+                aria-label={spellsOpen ? 'Скрыть лист заклинаний' : 'Лист заклинаний'}
+                aria-expanded={spellsOpen}
+                onMouseEnter={(event) => expandSpellTab(event.currentTarget)}
+                onMouseLeave={() => setSpellTabExpanded(false)}
+                onFocus={(event) => {
+                  if (event.currentTarget.matches(':focus-visible')) expandSpellTab(event.currentTarget)
+                }}
+                onBlur={() => setSpellTabExpanded(false)}
+                onClick={() => {
+                  setSpellTabExpanded(false)
+                  const nextOpen = !spellsOpen
+                  if (nextOpen) setSpellSheetMounted(true)
+                  changeSpellsOpen(nextOpen)
+                  if (libraryOpen) setLibraryMode(spellsOpen ? 'item' : 'spell')
+                }}><span className={styles.pageTabContent} aria-hidden="true">
+                  <span className={styles.pageTabLabel}>Лист<br />заклинаний</span>
+                  <span className={styles.pageTabIcon} data-spell-sheet-icon>
+                    <EncyclopediaSectionIcon sectionId="spells" />
+                  </span>
+                  <span className={styles.pageTabArrow} data-spell-sheet-arrow>{spellsOpen ? '‹' : '›'}</span>
+                </span></button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div className={styles.libraryDock} data-open={libraryOpen}>
-      {!libraryOpen && <button type="button" className={styles.libraryTrigger}
-        data-encyclopedia-trigger
-        title="Открыть энциклопедию"
-        aria-expanded={false}
-        aria-label="Открыть энциклопедию для листа персонажа"
-        onClick={() => setLibraryOpen(true)}>
-        <span className={styles.libraryTriggerIcon} aria-hidden="true"><PlaceholderIcon /></span>
-        <span>Энциклопедия</span>
-      </button>}
-      {libraryOpen && <CharacterEncyclopediaPanel
-        className={styles.library}
-        mode={libraryMode}
-        onModeChange={setLibraryMode}
-        onAdd={addEntry}
-        onClose={() => setLibraryOpen(false)}
-      />}
+      <div className={styles.libraryDock} data-encyclopedia-dock data-open={libraryOpen}>
+        {!libraryOpen && <Button size="sm" variant="secondary" decoration="bare" className={styles.libraryTrigger}
+          ref={libraryTrigger}
+          data-encyclopedia-trigger
+          title="Открыть энциклопедию"
+          aria-expanded={false}
+          aria-label="Открыть энциклопедию для листа персонажа"
+          onClick={() => { setLibraryMounted(true); changeLibraryOpen(true) }}>
+          <span className={styles.libraryTriggerContent}>
+            <span className={styles.libraryTriggerIcon} aria-hidden="true"><BookIcon /></span>
+            <span>Энциклопедия</span>
+          </span>
+        </Button>}
+        <div className={styles.libraryReveal}>
+          <div className={styles.libraryDrawer} data-encyclopedia-drawer
+            data-state={libraryOpen ? 'open' : libraryMounted ? 'closing' : 'closed'}
+            aria-hidden={!libraryOpen} inert={!libraryOpen}
+            onTransitionEnd={event => {
+              if (event.target === event.currentTarget && event.propertyName === 'transform' && !libraryOpen) setLibraryMounted(false)
+            }}>
+            {libraryMounted && <CharacterEncyclopediaPanel
+              className={styles.library}
+              mode={libraryMode}
+              onModeChange={setLibraryMode}
+              onAdd={addEntry}
+              onClose={() => changeLibraryOpen(false)}
+            />}
+          </div>
+        </div>
+      </div>
     </div>
     {importError && <div className={styles.importError} role="alert">
       <span>{importError}</span>
@@ -334,6 +379,7 @@ export type CharacterSheetToolProps = {
 
 export function CharacterSheetTool({
   className,
+  fitWidth,
   document,
   initialDocument,
   onDocumentChange,
@@ -346,11 +392,14 @@ export function CharacterSheetTool({
       initialDocument={initialDocument}
       onDocumentChange={onDocumentChange}
     >
-      <CharacterSheetWorkspace
-        className={className}
-        onPortraitFileSelect={onPortraitFileSelect}
-        onPortraitRemove={onPortraitRemove}
-      />
+      <CharacterEncyclopediaDragProvider>
+        <CharacterSheetWorkspace
+          className={className}
+          fitWidth={fitWidth}
+          onPortraitFileSelect={onPortraitFileSelect}
+          onPortraitRemove={onPortraitRemove}
+        />
+      </CharacterEncyclopediaDragProvider>
     </CharacterSheetProvider>
   )
 }

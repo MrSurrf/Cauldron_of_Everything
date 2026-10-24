@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../shared/ui'
+import catalogStyles from '../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS, searchLibrary } from '../model/library'
 import type { LibraryReference, LibrarySection } from '../model/library'
 import { ENTITY_DRAG_TYPE } from './tableContext'
@@ -53,9 +54,9 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
     return () => { window.clearTimeout(timer); controller.abort() }
   }, [key, section, query, currentPage])
   const current = result?.key === key ? result : null
-  return <aside ref={paneRef} className={styles.bestiary} aria-label="Библиотека">
+  return <aside ref={paneRef} className={`${catalogStyles.panel} ${styles.bestiary}`} aria-label="Библиотека">
     <ResizeGrip label="Ширина библиотеки" width={measuredWidth} onResize={onResize} max={650} />
-    <div className={styles.sectionHeading}><h2>Библиотека</h2><Button size="sm" variant="secondary" decoration="bare" className={styles.iconAction} aria-label="Свернуть библиотеку" onClick={onCollapse}>×</Button></div>
+    <div className={catalogStyles.header}><h2>Библиотека</h2><Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label="Свернуть библиотеку" onClick={onCollapse}>×</Button></div>
     <div className={styles.librarySources} role="tablist" aria-label="Источник библиотеки">
       <button id="library-source-encyclopedia" type="button" role="tab" aria-selected={source === 'encyclopedia'} aria-controls="library-results"
         tabIndex={source === 'encyclopedia' ? 0 : -1} onClick={() => selectSection(lastSection.encyclopedia)}
@@ -64,32 +65,32 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
         tabIndex={source === 'mine' ? 0 : -1} onClick={() => selectSection(lastSection.mine)}
         onKeyDown={event => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); selectSection(lastSection.encyclopedia); document.getElementById('library-source-encyclopedia')?.focus() } }}>Моё</button>
     </div>
-    <div className={styles.libraryFilters}>
-      <Select aria-label="Раздел библиотеки" rootClassName={styles.librarySelect} value={section}
+    <div className={catalogStyles.filters}>
+      <Select aria-label="Раздел библиотеки" value={section}
         options={sections.map(([value, label]) => ({ value, label }))}
         onValueChange={value => { if (value !== null) selectSection(value as LibrarySection) }} />
-      <TextInput type="search" aria-label="Поиск в библиотеке" placeholder="Поиск…" rootClassName={styles.search} value={query} onChange={event => onQuery(event.target.value)} />
+      <TextInput type="search" aria-label="Поиск в библиотеке" placeholder="Поиск…" value={query} onChange={event => onQuery(event.target.value)} />
     </div>
-    <ScrollArea rootClassName={styles.catalog} id="library-results" role="tabpanel" aria-labelledby={`library-source-${source}`} aria-busy={!current}>
-      {!current && <p role="status">Загрузка…</p>}
-      {current?.error && <div role="alert"><p>{current.error}</p><Button size="sm" variant="secondary" decoration="minimal" className={styles.toolButton} onClick={() => setAttempt(value => value + 1)}>Повторить</Button></div>}
-      {current && !current.error && !current.entries.length && <p role="status">{section === 'reference' ? 'Справочные материалы в энциклопедии пока не опубликованы.' : 'Записи не найдены.'}</p>}
-      {current?.entries.map(reference => <div key={`${reference.source}:${reference.entityId}`} className={styles.catalogRow} data-dragging={draggedId === `${reference.source}:${reference.entityId}`}>
-        <button type="button" className={styles.creature} draggable={canPlaceReference(reference)} aria-label={`Открыть: ${reference.name}`} onClick={() => onOpen(reference)} onDragStart={event => {
+    <ScrollArea rootClassName={catalogStyles.results} id="library-results" role="tabpanel" aria-labelledby={`library-source-${source}`} aria-busy={!current}>
+      {!current && <p className={catalogStyles.message} role="status">Загрузка…</p>}
+      {current?.error && <div className={catalogStyles.message} role="alert"><p>{current.error}</p><Button size="sm" variant="secondary" decoration="minimal" className={catalogStyles.toolButton} onClick={() => setAttempt(value => value + 1)}>Повторить</Button></div>}
+      {current && !current.error && !current.entries.length && <p className={catalogStyles.message} role="status">{section === 'reference' ? 'Справочные материалы в энциклопедии пока не опубликованы.' : 'Записи не найдены.'}</p>}
+      {current?.entries.map(reference => <div key={`${reference.source}:${reference.entityId}`} className={catalogStyles.row} data-dragging={draggedId === `${reference.source}:${reference.entityId}`}>
+        <button type="button" className={catalogStyles.entry} draggable={canPlaceReference(reference)} aria-label={`Открыть: ${reference.name}`} onClick={() => onOpen(reference)} onDragStart={event => {
           if (!canPlaceReference(reference)) { event.preventDefault(); return }
           event.dataTransfer.setData(ENTITY_DRAG_TYPE, JSON.stringify(reference)); event.dataTransfer.effectAllowed = 'copy'
           const transparentImage = document.createElement('canvas'); transparentImage.width = 1; transparentImage.height = 1
           event.dataTransfer.setDragImage(transparentImage, 0, 0)
           setDraggedId(`${reference.source}:${reference.entityId}`)
           onLibraryDragStart(reference, { x: event.clientX, y: event.clientY })
-        }} onDragEnd={() => { setDraggedId(null); onLibraryDragEnd() }}><ListCard className={styles.catalogCard} name={reference.name} tags={reference.facts} /></button>
-        {canPlaceReference(reference) && <Button size="sm" variant="secondary" decoration="bare" className={styles.iconAction} aria-label={`Добавить на холст: ${reference.name}`} title="Добавить на холст" onClick={() => onAdd(reference)}>+</Button>}
+        }} onDragEnd={() => { setDraggedId(null); onLibraryDragEnd() }}><ListCard className={catalogStyles.card} name={reference.name} tags={reference.facts} /></button>
+        {canPlaceReference(reference) && <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить на холст: ${reference.name}`} title="Добавить на холст" onClick={() => onAdd(reference)}>+</Button>}
       </div>)}
     </ScrollArea>
-    <div className={styles.pagination}>
-      <Button size="sm" variant="secondary" decoration="bare" className={styles.iconAction} aria-label="Предыдущая страница библиотеки" disabled={currentPage === 1} onClick={() => setPage({ section, query, value: currentPage - 1 })}>←</Button>
+    <div className={catalogStyles.pagination}>
+      <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label="Предыдущая страница библиотеки" disabled={currentPage === 1} onClick={() => setPage({ section, query, value: currentPage - 1 })}>←</Button>
       <span>{currentPage} · {current?.count ?? '…'} записей</span>
-      <Button size="sm" variant="secondary" decoration="bare" className={styles.iconAction} aria-label="Следующая страница библиотеки" disabled={!current || currentPage * 30 >= current.count} onClick={() => setPage({ section, query, value: currentPage + 1 })}>→</Button>
+      <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label="Следующая страница библиотеки" disabled={!current || currentPage * 30 >= current.count} onClick={() => setPage({ section, query, value: currentPage + 1 })}>→</Button>
     </div>
   </aside>
 }

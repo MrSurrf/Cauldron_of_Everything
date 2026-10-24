@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react'
+import { useState, type DragEvent, type ReactNode } from 'react'
 
 import { Checkbox } from '../../../../shared/ui'
 import { PlaceholderIcon } from '../../../../shared/ui/icons/PlaceholderIcon'
@@ -11,7 +11,9 @@ import {
   type SpellSlotState,
 } from '../../model'
 import { EncyclopediaIdentityField } from '../encyclopedia/EncyclopediaIdentityField'
-import { hasCharacterEncyclopediaSpellDrag, readCharacterEncyclopediaDrag } from '../encyclopedia'
+import { hasCharacterEncyclopediaSpellDrag, hasCharacterEncyclopediaSpellLevelDrag, readCharacterEncyclopediaDrag } from '../encyclopedia/characterEncyclopediaDrag'
+import { useCharacterEncyclopediaDropTarget } from '../encyclopedia/useCharacterEncyclopediaDrag'
+import dragStyles from '../encyclopedia/characterEncyclopediaDragFeedback.module.css'
 import {
   FormulaField,
   type ComputedValueResult,
@@ -76,6 +78,51 @@ const LEVEL_NAMES: Record<SpellLevel, string> = {
   7: '7-й уровень',
   8: '8-й уровень',
   9: '9-й уровень',
+}
+
+function SpellDropSection({ level, onSpellDrop, children }: {
+  level: SpellLevel
+  onSpellDrop: SpellSheetProps['onSpellDrop']
+  children: ReactNode
+}) {
+  const feedback = useCharacterEncyclopediaDropTarget('spell', Boolean(onSpellDrop), level)
+
+  function handleDragOver(event: DragEvent<HTMLElement>) {
+    if (!onSpellDrop || !hasCharacterEncyclopediaSpellDrag(event.dataTransfer)) return
+    event.preventDefault()
+    const matches = hasCharacterEncyclopediaSpellLevelDrag(event.dataTransfer, level)
+    event.dataTransfer.dropEffect = matches ? 'copy' : 'none'
+    feedback.setActive(matches)
+  }
+
+  return <SheetSection
+    className={[styles.levelCard, dragStyles.target, feedback.available && dragStyles.available,
+      feedback.active && dragStyles.active, feedback.received && dragStyles.received].filter(Boolean).join(' ')}
+    data-encyclopedia-drop-zone="spell"
+    data-spell-drop-level={level}
+    data-encyclopedia-drop-available={feedback.available || undefined}
+    data-drop-target={feedback.active}
+    data-drop-active={feedback.active || undefined}
+    data-drop-received={feedback.received || undefined}
+    aria-label={LEVEL_NAMES[level]}
+    onDragEnter={handleDragOver}
+    onDragOver={handleDragOver}
+    onDragLeave={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) feedback.setActive(false)
+    }}
+    onDrop={(event) => {
+      feedback.setActive(false)
+      if (!onSpellDrop || !hasCharacterEncyclopediaSpellDrag(event.dataTransfer)) return
+      event.preventDefault()
+      const entry = readCharacterEncyclopediaDrag(event.dataTransfer)
+      if (entry?.entityType !== 'spell') return
+      onSpellDrop(event.dataTransfer, level)
+      if (entry.level === null || entry.level === level) feedback.receive()
+    }}
+  >
+    {children}
+    {onSpellDrop && <div className={styles.dropHint} aria-hidden="true">Перетащите заклинание сюда</div>}
+  </SheetSection>
 }
 
 function initialExpandedSpells(spells: readonly SpellSheetSpell[]) {
@@ -164,7 +211,6 @@ export function SpellSheet({
   onBack,
 }: SpellSheetProps) {
   const [expandedIds, setExpandedIds] = useState(() => initialExpandedSpells(spells))
-  const [dragLevel, setDragLevel] = useState<SpellLevel | null>(null)
 
   function toggleExpanded(id: string) {
     setExpandedIds((current) => {
@@ -175,21 +221,6 @@ export function SpellSheet({
     })
   }
 
-  function handleDragOver(event: DragEvent<HTMLElement>, level: SpellLevel) {
-    if (!onSpellDrop || !hasCharacterEncyclopediaSpellDrag(event.dataTransfer)) return
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'copy'
-    if (dragLevel !== level) setDragLevel(level)
-  }
-
-  function handleDrop(event: DragEvent<HTMLElement>, level: SpellLevel) {
-    if (!onSpellDrop || !hasCharacterEncyclopediaSpellDrag(event.dataTransfer)) return
-    event.preventDefault()
-    setDragLevel(null)
-    if (readCharacterEncyclopediaDrag(event.dataTransfer)?.entityType !== 'spell') return
-    onSpellDrop(event.dataTransfer, level)
-  }
-
   return <div className={[styles.root, className].filter(Boolean).join(' ')}>
     <div className={styles.scroller}>
     {onBack && <div className={styles.toolbar}>
@@ -197,7 +228,7 @@ export function SpellSheet({
     </div>}
 
     <div className={styles.content}>
-      <div className={styles.summary} aria-label="Характеристики заклинателя">
+      <div className={styles.summary} data-spellcasting-summary aria-label="Характеристики заклинателя">
         <SheetSection className={styles.summaryCard}>
           <span className={styles.summaryIcon} aria-hidden="true"><PlaceholderIcon /></span>
           <div className={styles.summaryValue}>
@@ -259,23 +290,17 @@ export function SpellSheet({
         </SheetSection>
       </div>
 
-      <div className={styles.levelGrid}>
+      <div className={styles.levelGrid} data-spell-level-grid>
         {LEVELS.map((level) => {
           const levelSpells = spells.filter((spell) => spell.level === level)
           const pool = level === 0 ? null : slots[level]
           const maximum = Math.min(20, Math.max(0, Math.floor(pool?.maximum ?? 0)))
           const used = Math.min(maximum, Math.max(0, Math.floor(pool?.used ?? 0)))
           const available = maximum - used
-          return <SheetSection
-            className={styles.levelCard}
-            data-drop-target={dragLevel === level}
+          return <SpellDropSection
+            level={level}
             key={level}
-            aria-label={LEVEL_NAMES[level]}
-            onDragOver={(event) => handleDragOver(event, level)}
-            onDragLeave={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragLevel(null)
-            }}
-            onDrop={(event) => handleDrop(event, level)}
+            onSpellDrop={onSpellDrop}
           >
             <header className={styles.levelHeader}>
               <span className={styles.levelBadge} aria-hidden="true"><span>{level}</span></span>
@@ -325,8 +350,7 @@ export function SpellSheet({
               />)}
               {levelSpells.length === 0 && <p className={styles.emptyLevel}>Заклинаний пока нет</p>}
             </div>
-            {onSpellDrop && <div className={styles.dropHint} aria-hidden="true">Перетащите заклинание сюда</div>}
-          </SheetSection>
+          </SpellDropSection>
         })}
       </div>
     </div>

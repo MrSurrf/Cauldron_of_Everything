@@ -28,19 +28,16 @@
   0% {
     grid-template-rows: 0fr;
     opacity: 0;
-    filter: blur(0.2rem) brightness(0.76);
     transform: translateY(-0.4rem) scaleY(0.97);
   }
 
   68% {
     opacity: 1;
-    filter: blur(0) brightness(1.06);
   }
 
   100% {
     grid-template-rows: 1fr;
     opacity: 1;
-    filter: none;
     transform: none;
   }
 }
@@ -49,14 +46,12 @@
   0% {
     grid-template-rows: 1fr;
     opacity: 1;
-    filter: none;
     transform: none;
   }
 
   100% {
     grid-template-rows: 0fr;
     opacity: 0;
-    filter: blur(0.16rem) brightness(0.72);
     transform: translateY(-0.3rem) scaleY(0.98);
   }
 }

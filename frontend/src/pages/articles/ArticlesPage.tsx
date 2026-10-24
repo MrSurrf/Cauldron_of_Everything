@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button, Combobox, ListCard, Panel, SegmentedControl, TextInput } from '../../shared/ui'
 import { ArticleCard } from './ArticleCard'
@@ -31,6 +32,7 @@ function ArticlesSidebar({ category, onCategoryChange }: {
   category: CategoryFilter
   onCategoryChange: (value: CategoryFilter) => void
 }) {
+  const navigate = useNavigate()
   const categories = [{ id: 'all', label: 'Все статьи' }, ...articleCategories] as const
 
   return (
@@ -39,7 +41,7 @@ function ArticlesSidebar({ category, onCategoryChange }: {
         <section aria-labelledby="articles-write-title">
           <h2 id="articles-write-title">Напиши статью</h2>
           <p>Поделитесь опытом, идеями и вдохновением с сообществом.</p>
-          <Button size="md" fullWidth icon={null} disabled title="Публикация статей скоро станет доступна">
+          <Button size="md" fullWidth icon={null} onClick={() => navigate('/articles/create')}>
             Создать статью
           </Button>
         </section>

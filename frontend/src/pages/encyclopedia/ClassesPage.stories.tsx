@@ -65,7 +65,7 @@ export const Interactions: Story = {
     await expect(canvas.getByRole('link', { name: /Чародей/ })).toBeVisible()
     await expect(canvas.getByRole('link', { name: /Классы Классы персонажей/ })).toHaveAttribute('aria-current', 'page')
 
-    const cards = [...canvasElement.querySelectorAll<HTMLAnchorElement>('a[href^="/encyclopedia/entry/"]')]
+    const cards = [...canvasElement.querySelectorAll<HTMLAnchorElement>('a[href^="/encyclopedia/class/"]')]
     const heights = cards.map(card => Math.round(card.getBoundingClientRect().height))
     await expect(new Set(heights).size).toBe(1)
 

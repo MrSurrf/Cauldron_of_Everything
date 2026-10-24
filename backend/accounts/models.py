@@ -17,6 +17,12 @@ class Profile(models.Model):
         related_name="profile",
     )
     data = models.JSONField(default=dict)
+    portrait = models.ImageField(
+        upload_to="accounts/portraits/",
+        blank=True,
+        null=True,
+        verbose_name="аватар",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

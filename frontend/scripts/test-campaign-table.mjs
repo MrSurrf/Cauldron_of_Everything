@@ -295,7 +295,7 @@ try {
   await location.getByRole('heading', { name: 'Крипта', exact: true }).click()
   await page.getByRole('complementary', { name: 'Инспектор объекта' }).waitFor()
   const boardWithInspector = (await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width
-  assert.ok(boardWithInspector < boardBeforeInspector)
+  assert.equal(boardWithInspector, boardBeforeInspector, 'Инспектор не должен менять размеры холста')
   await page.screenshot({ path: join(tmpdir(), 'campaign-local-inspector.png') })
   await page.getByRole('separator', { name: 'Ширина Inspector', exact: true }).press('ArrowLeft')
   await page.getByRole('textbox', { name: 'Название Entity', exact: true }).fill('Старая крипта')
@@ -314,7 +314,7 @@ try {
   await page.screenshot({ path: join(tmpdir(), 'campaign-local-editor.png') })
   await page.getByRole('tab', { name: 'Основная схема', exact: true }).click()
   await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
-  assert.ok((await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width > boardWithInspector)
+  assert.equal((await page.getByRole('region', { name: 'Схема кампании' }).boundingBox()).width, boardWithInspector)
   const before = await saved()
   await page.screenshot({ path: join(tmpdir(), 'campaign-table-desktop.png') })
   await page.reload()
@@ -387,7 +387,8 @@ try {
   await page.getByRole('button', { name: 'Открыть полностью' }).click()
   await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
   await page.getByRole('tab', { name: 'Подземелье', exact: true }).click()
-  await canvas.click({ position: { x: 300, y: 350 } })
+  // На мобильном инспектор, как и карточки других типов, раскрывается поверх холста.
+  await page.getByRole('button', { name: 'Закрыть Inspector', exact: true }).click()
   assert.equal(await page.getByRole('complementary', { name: 'Инспектор объекта' }).count(), 0)
   for (const [name, key] of [['Удалить Delete', 'Delete'], ['Удалить Backspace', 'Backspace']]) {
     await createOnCanvas(canvas, 'Заметка', name, { x: 30, y: 300 })

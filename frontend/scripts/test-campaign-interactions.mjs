@@ -205,6 +205,8 @@ try {
   assert.equal((await saved()).diagrams[0].edges.length, 1)
   assert.equal(await node('tower').getByRole('button', { name: /^Соединить / }).count(), 4)
 
+  // Снимок предыдущей обычной анимации не должен попадать в проверку нового reduced-motion сценария.
+  await page.waitForFunction(() => !document.querySelector('[data-departing-connections]'))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await startConnection()
   await node('tower').hover()

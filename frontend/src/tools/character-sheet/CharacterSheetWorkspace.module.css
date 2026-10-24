@@ -1,4 +1,7 @@
 .workspace {
+  --sheet-slide-duration: 620ms;
+  --sheet-slide-easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --library-dock-width: 8rem;
   position: relative;
   display: flex;
   width: 100%;
@@ -9,6 +12,20 @@
   overflow-y: hidden;
   color: var(--color-text-primary);
   background: transparent;
+}
+
+.workspace[data-library-open='true'] { --library-dock-width: 24rem; }
+
+.layoutViewport {
+  display: flex;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: calc(var(--book-min-width, 0px) + var(--library-dock-width));
+  height: 100%;
+  min-height: 0;
+  /* Скрытые окна выезда не расширяют scrollport. При zoom прокручивается
+     реальная ширина разворота и дока, а не пустая область за ними. */
+  overflow: clip;
 }
 
 .sheetSpace {
@@ -27,8 +44,6 @@
   --book-page-width: 61.875rem;
   --book-page-inset: 0.8125rem;
   --book-scale: 1;
-  --sheet-slide-duration: 620ms;
-  --sheet-slide-easing: cubic-bezier(0.25, 0.1, 0.25, 1);
 
   position: relative;
   display: flex;
@@ -43,8 +58,11 @@
   backface-visibility: hidden;
   transform: scale(var(--book-scale)) translate3d(0, 0, 0);
   transform-origin: top center;
-  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing);
+  /* FLIP-переход в useSheetLayoutMotion: размеры не интерполируются по кадрам. */
+  transition-property: transform;
 }
+
+.book[data-layout-moving='true'] { will-change: transform; }
 
 .book[data-spells-open='true'] {
   transform: scale(var(--book-scale))
@@ -53,6 +71,11 @@
       0,
       0
     );
+}
+
+/* В узкой host-панели transform должен уменьшать и занимаемое книгой место. */
+.workspace[data-fit-width='true'] .book {
+  margin-inline: calc((var(--book-scale) - 1) * var(--book-page-width) / 2);
 }
 
 .characterPanel,
@@ -111,12 +134,13 @@
 .libraryTrigger {
   position: absolute;
   z-index: 3;
-  border: var(--border-width-default) solid var(--color-border-accent);
-  color: var(--color-brand-bright);
-  background: linear-gradient(90deg, var(--color-surface-muted), var(--color-surface-accent));
-  box-shadow: var(--shadow-panel);
+  border: var(--border-width-default) solid var(--color-content-border);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-default);
+  box-shadow: none;
   cursor: pointer;
-  transition: transform var(--motion-duration-fast), background var(--motion-duration-fast);
+  transition: transform var(--motion-duration-fast), background-color var(--motion-duration-fast),
+    border-color var(--motion-duration-fast), color var(--motion-duration-fast);
 }
 
 .pageTab {
@@ -131,22 +155,27 @@
   padding: 0 0.2rem 0 0.5rem;
   align-items: center;
   justify-content: center;
-  clip-path: polygon(0 0, calc(100% - 0.35rem) 0, 100% 0.35rem, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0 100%);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  clip-path: none;
   pointer-events: auto;
   transition:
     transform var(--motion-duration-fast),
-    background var(--motion-duration-fast);
+    background-color var(--motion-duration-fast),
+    border-color var(--motion-duration-fast),
+    color var(--motion-duration-fast);
 }
 
 .pageTab[data-expanded='true'] {
   transform: translate3d(calc(var(--page-tab-label-space) + 0.45rem), 0, 0);
-  background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent));
+  border-color: var(--color-brand-muted);
+  background: var(--color-surface-muted);
+  color: var(--color-brand-bright);
 }
 
 .pageTabContent {
   display: inline-flex;
   align-items: center;
-  gap: 0.12rem;
+  gap: var(--space-1);
 }
 
 .pageTabLabel {
@@ -165,47 +194,76 @@
 
 .pageTabIcon {
   display: grid;
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-brand-bright);
   place-items: center;
 }
 
 .pageTabArrow {
-  font: 0.8rem/1 var(--font-family-heading);
+  font: 0.875rem/1 var(--font-family-body);
 }
 
 .libraryDock {
   position: relative;
   z-index: 4;
-  flex: 0 0 8rem;
-  width: 8rem;
+  flex: 0 0 var(--library-dock-width);
+  width: var(--library-dock-width);
   height: 100%;
   min-width: 0;
   pointer-events: none;
 }
-.libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
 
-.libraryTrigger {
+.libraryReveal {
+  position: absolute;
+  /* Окно не сжимается при закрытии: панель целиком уходит за правый край. */
+  inset: 0 0 0 auto;
+  width: 24rem;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.libraryDrawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 24rem;
+  height: 100%;
+  transform: translate3d(100%, 0, 0);
+  transition: transform var(--sheet-slide-duration) var(--sheet-slide-easing);
+}
+
+.libraryDock[data-open='true'] .libraryDrawer { transform: translate3d(0, 0, 0); }
+
+.libraryTrigger.libraryTrigger {
   top: 0.375rem;
   right: 0;
   display: inline-flex;
   width: 8.75rem;
-  height: 2rem;
-  padding: 0 var(--space-3);
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0 var(--space-2);
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  font: var(--font-size-2xs)/1 var(--font-family-body);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  border: var(--border-width-default) solid var(--color-content-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  color: var(--color-text-secondary);
+  clip-path: none;
+  font: 400 var(--font-size-xs)/1 var(--font-family-body);
+  letter-spacing: normal;
+  text-transform: none;
   pointer-events: auto;
 }
+
+.libraryTriggerContent { display: inline-flex; align-items: center; gap: var(--space-2); }
 
 .libraryTriggerIcon {
   display: grid;
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
   place-items: center;
+  color: var(--color-brand-bright);
 }
 
 .libraryTriggerIcon svg {
@@ -213,8 +271,8 @@
   height: 100%;
 }
 
-.libraryTrigger:hover,
-.libraryTrigger:focus-visible { transform: translateX(-0.45rem); background: linear-gradient(90deg, var(--color-surface-accent), var(--color-border-accent)); }
+.libraryTrigger.libraryTrigger:hover,
+.libraryTrigger.libraryTrigger:focus-visible { border-color: var(--color-brand-muted); background: var(--color-surface-muted); color: var(--color-text-primary); filter: none; }
 .pageTab:focus-visible,
 .libraryTrigger:focus-visible { outline: 2px solid var(--color-brand-bright); outline-offset: 2px; }
 
@@ -240,7 +298,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .book,
-  .spellDrawer { transition: none; }
+  .spellDrawer,
+  .libraryDock,
+  .libraryDrawer { transition: none; }
   .pageTab,
   .pageTabLabel,
   .libraryTrigger { transition: none; }
