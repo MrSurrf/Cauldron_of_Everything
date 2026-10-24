@@ -130,6 +130,7 @@ export function CharacterSheetContent({
                   <div
                     className={styles.vitalsPanel}
                     data-character-sheet-vitals={true}
+                    data-cursor-reveal="border"
                   >
                     <div
                       className={styles.hitPointsSlot}

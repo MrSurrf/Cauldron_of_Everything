@@ -3,11 +3,13 @@ import {
   Tooltip,
 } from '../../../shared/ui'
 import { CollapsibleSection } from './CollapsibleSection'
+import type { CollapsibleSectionProps } from './CollapsibleSection'
 import styles from './stats.module.css'
 
 export type DeathSavesBlockProps = {
   defaultOpen?: boolean
   failures: number
+  frame?: CollapsibleSectionProps['frame']
   onChange?: (value: {
     failures: number
     successes: number
@@ -25,6 +27,7 @@ function clampMarks(value: number) {
 export function DeathSavesBlock({
   defaultOpen = true,
   failures,
+  frame = 'default',
   onChange,
   onOpenChange,
   open,
@@ -88,6 +91,7 @@ export function DeathSavesBlock({
     <CollapsibleSection
       collapsible={false}
       defaultOpen={defaultOpen}
+      frame={frame}
       onOpenChange={onOpenChange}
       open={open}
       title={title}

@@ -9,6 +9,7 @@ import {
 } from '../../../shared/ui'
 import type { ReactNode } from 'react'
 import { CollapsibleSection } from './CollapsibleSection'
+import type { CollapsibleSectionProps } from './CollapsibleSection'
 import {
   PlusIcon,
 } from './icons'
@@ -29,6 +30,7 @@ export type HitDiceBlockProps = {
   compact?: boolean
   defaultOpen?: boolean
   fill?: boolean
+  frame?: CollapsibleSectionProps['frame']
   onAdd?: () => void
   onOpenChange?: (open: boolean) => void
   onPoolChange?: (
@@ -60,6 +62,7 @@ export function HitDiceBlock({
   compact = false,
   defaultOpen = true,
   fill = false,
+  frame = 'default',
   onAdd,
   onOpenChange,
   onPoolChange,
@@ -90,6 +93,7 @@ export function HitDiceBlock({
       data-compact={compact || undefined}
       data-fill={fill || undefined}
       defaultOpen={defaultOpen}
+      frame={frame}
       onOpenChange={onOpenChange}
       open={open}
       title={title}

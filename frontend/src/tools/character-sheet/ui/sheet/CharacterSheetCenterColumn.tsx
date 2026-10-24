@@ -65,6 +65,7 @@ export function CharacterHitPointsSection({
   return (
     <HitPointsBlock
       compact={true}
+      frame="none"
       current={valueFor(FORMULA_FIELD_KEYS.currentHitPoints)}
       maximum={valueFor(FORMULA_FIELD_KEYS.maximumHitPoints)}
       temporary={valueFor(FORMULA_FIELD_KEYS.temporaryHitPoints)}
@@ -118,6 +119,7 @@ export function CharacterHitDiceSection({
     <HitDiceBlock
       compact={true}
       fill={true}
+      frame="none"
       open={isSectionOpen('hit-dice')}
       pools={document.hitDice.map((pool) => ({
         die: pool.die,
@@ -242,6 +244,7 @@ export function CharacterDeathSavesSection({
   return (
     <DeathSavesBlock
       failures={document.deathSaves.failures}
+      frame="none"
       open={isSectionOpen('death-saves')}
       successes={document.deathSaves.successes}
       onChange={(value) => {

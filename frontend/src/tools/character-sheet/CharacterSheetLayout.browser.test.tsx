@@ -1224,11 +1224,19 @@ describe('Character Sheet fixed desktop composition', () => {
       .find((heading) => heading.textContent === 'Зрение и чувства')!.closest('section')!
     const proficiencies = container.querySelector('[role="region"][aria-label="Языки и владения"]')!.closest('section')!
     const levelPanel = container.querySelector('[data-character-sheet-progress]')!
-    ;[saves, skills, combatGroup, attacks, equipment, features, vision, proficiencies, levelPanel].forEach((section) => {
+    ;[saves, skills, combatGroup, attacks, equipment, features, vision, proficiencies, levelPanel, hitDiceSlot.firstElementChild!].forEach((section) => {
       expect(getComputedStyle(section).borderWidth).toBe('0px')
     })
-    ;[checksGroup, hitDiceSlot.firstElementChild!, wealth].forEach((section) => {
+    const vitals = hitPointsSlot.parentElement!
+    ;[checksGroup, vitals, wealth].forEach((section) => {
       expect(getComputedStyle(section).borderWidth).toBe('1px')
+    })
+    expect(getComputedStyle(vitals).borderTopColor).toBe(getComputedStyle(checksGroup).borderTopColor)
+    expect(getComputedStyle(vitals).boxShadow).toBe('none')
+    ;[hitPointsSlot.firstElementChild!, deathSavesSlot.firstElementChild!, hitDiceSlot.firstElementChild!].forEach((section) => {
+      expect(getComputedStyle(section).borderWidth).toBe('0px')
+      expect(getComputedStyle(section).borderImageSource).toBe('none')
+      expect(section.hasAttribute('data-cursor-reveal')).toBe(false)
     })
     const abilityValues = Array.from(
       strength.querySelectorAll<HTMLElement>('[data-mode]'),
