@@ -1,4 +1,5 @@
 import styles from '../../CharacterSheetTool.module.css'
+import { SheetSection } from '../SheetSection'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
   CharacterSavingThrowsSection,
@@ -160,13 +161,19 @@ export function CharacterSheetContent({
                     />
                   </div>
 
-                  <div className={styles.savesSlot}>
-                    <CharacterSavingThrowsSection sheet={sheet} />
-                  </div>
+                  <SheetSection
+                    aria-label="Спасброски и навыки"
+                    className={styles.checksGroup}
+                    contentLayout="group"
+                  >
+                    <div className={styles.savesSlot}>
+                      <CharacterSavingThrowsSection sheet={sheet} />
+                    </div>
 
-                  <div className={styles.skillsSlot}>
-                    <CharacterSkillsSection sheet={sheet} />
-                  </div>
+                    <div className={styles.skillsSlot}>
+                      <CharacterSkillsSection sheet={sheet} />
+                    </div>
+                  </SheetSection>
 
                   <div className={styles.proficienciesSlot}>
                     <ProficienciesEditor />
@@ -188,19 +195,25 @@ export function CharacterSheetContent({
                     <CharacterHitDiceSection sheet={sheet} />
                   </div>
 
-                  <div
-                    className={styles.attacksSlot}
-                    data-character-sheet-slot="attacks"
+                  <SheetSection
+                    aria-label="Атаки, заклинания и снаряжение"
+                    className={styles.combatGroup}
+                    contentLayout="group"
                   >
-                    <CharacterAttacksSection sheet={sheet} />
-                  </div>
+                    <div
+                      className={styles.attacksSlot}
+                      data-character-sheet-slot="attacks"
+                    >
+                      <CharacterAttacksSection sheet={sheet} />
+                    </div>
 
-                  <div
-                    className={styles.equipmentSlot}
-                    data-character-sheet-slot="equipment"
-                  >
-                    <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
-                  </div>
+                    <div
+                      className={styles.equipmentSlot}
+                      data-character-sheet-slot="equipment"
+                    >
+                      <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
+                    </div>
+                  </SheetSection>
 
                   <div
                     className={styles.currencySlot}

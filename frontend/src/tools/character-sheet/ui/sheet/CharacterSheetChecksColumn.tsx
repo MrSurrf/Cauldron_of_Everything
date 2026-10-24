@@ -29,6 +29,7 @@ export function CharacterSavingThrowsSection({
   return (
     <SavingThrowsList
       fill={true}
+      frame="none"
       items={ABILITY_KEYS.map((ability) => {
         const key = savingThrowVariable(ability)
         const state = document.savingThrows[ability]
@@ -77,6 +78,7 @@ export function CharacterSkillsSection({
   return (
     <SkillsList
       fill={true}
+      frame="none"
       items={Object.values(document.skills).map((skill) => ({
         ability: abilityLabels[skill.ability].shortLabel,
         defaultFormula:

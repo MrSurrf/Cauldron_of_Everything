@@ -23,7 +23,7 @@ export function CharacterEquipmentSection({
   } = sheet
 
   return (
-    <SheetSection className={styles.section} contentLayout="editor" title="Снаряжение"
+    <SheetSection className={styles.section} contentLayout="editor" frame="none" title="Снаряжение"
       data-item-drop-target={itemDragOver}
       onDragOver={(event: DragEvent<HTMLElement>) => {
         if (!onEncyclopediaItemDrop || !hasCharacterEncyclopediaTypeDrag(event.dataTransfer, 'item')

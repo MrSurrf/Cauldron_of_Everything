@@ -91,11 +91,12 @@ function expectTextEditorSpacing(container: HTMLElement, count: number) {
     const frame = section.querySelector<HTMLElement>('[data-content-editor-frame]')!
     const sectionRect = section.getBoundingClientRect()
     const frameRect = frame.getBoundingClientRect()
+    const sectionStyle = getComputedStyle(section)
     expect(section.querySelectorAll('[data-content-editor-frame]')).toHaveLength(1)
     expect(frameRect.top - header.getBoundingClientRect().bottom).toBeCloseTo(6, 1)
-    expect(frameRect.left - sectionRect.left).toBeCloseTo(7, 1)
-    expect(sectionRect.right - frameRect.right).toBeCloseTo(7, 1)
-    expect(sectionRect.bottom - frameRect.bottom).toBeCloseTo(7, 1)
+    expect(frameRect.left - sectionRect.left).toBeCloseTo(6 + parseFloat(sectionStyle.borderLeftWidth), 1)
+    expect(sectionRect.right - frameRect.right).toBeCloseTo(6 + parseFloat(sectionStyle.borderRightWidth), 1)
+    expect(sectionRect.bottom - frameRect.bottom).toBeCloseTo(6 + parseFloat(sectionStyle.borderBottomWidth), 1)
     expect(frameRect.height).toBeGreaterThan(0)
   })
 }
@@ -849,10 +850,10 @@ describe('Character Sheet fixed desktop composition', () => {
 
     expect(statCards).toHaveLength(2)
     const movement = container.querySelector<HTMLElement>('[data-stat="initiative"]')!.parentElement!
-    const saves = container.querySelector<HTMLElement>('[data-saving-throw-row]')!.closest('section')!
+    const checksGroup = container.querySelector<HTMLElement>('[aria-label="Спасброски и навыки"]')!
     expect(roundedWidth(statStack)).toBe(168)
     expect(roundedWidth(movement)).toBe(117)
-    expect(movement.getBoundingClientRect().right).toBe(saves.getBoundingClientRect().right)
+    expect(movement.getBoundingClientRect().right).toBe(checksGroup.getBoundingClientRect().right)
     ;['proficiency', 'initiative', 'speed'].forEach(stat => {
       const label = container.querySelector<HTMLElement>(`[data-stat="${stat}"] [data-formula-label] > span`)!
       expect(label.scrollWidth, stat).toBeLessThanOrEqual(label.clientWidth)
@@ -964,7 +965,18 @@ describe('Character Sheet fixed desktop composition', () => {
       expect(markRect.right).toBeLessThan(deathSavesRect.right)
       expect(markRect.bottom).toBeLessThan(deathSavesRect.bottom)
     })
-    expect(roundedWidth(hitDiceSlot)).toBe(roundedWidth(attacks))
+    const combatGroup = container.querySelector<HTMLElement>('[aria-label="Атаки, заклинания и снаряжение"]')!
+    expect(roundedWidth(hitDiceSlot)).toBe(roundedWidth(combatGroup))
+    const saves = container.querySelector('[data-saving-throw-row]')!.closest('section')!
+    const skills = container.querySelector('[data-skill-row]')!.closest('section')!
+    const equipment = equipmentEditor.closest('section')!
+    const features = container.querySelector('[role="region"][aria-label="Особенности, умения и заметки"]')!.closest('section')!
+    ;[saves, skills, attacks, equipment, features].forEach((section) => {
+      expect(getComputedStyle(section).borderWidth).toBe('0px')
+    })
+    ;[checksGroup, combatGroup, hitDiceSlot.firstElementChild!].forEach((section) => {
+      expect(getComputedStyle(section).borderWidth).toBe('1px')
+    })
     const abilityValues = Array.from(
       strength.querySelectorAll<HTMLElement>('[data-mode]'),
     )
@@ -1018,8 +1030,10 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(getComputedStyle(attacksContentHeading).fontSize).toBe(
       '14px',
     )
+    // Верхняя граница общего контура входит в высоту строки атак.
     expect(
-      attacks.getBoundingClientRect().height,
+      attacks.getBoundingClientRect().height
+        + parseFloat(getComputedStyle(combatGroup).borderTopWidth),
     ).toBe(304)
     expect(
       attacksEditor.getBoundingClientRect().bottom

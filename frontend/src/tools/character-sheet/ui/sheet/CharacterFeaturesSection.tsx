@@ -336,6 +336,7 @@ export function CharacterFeaturesSection({
   return (
     <SheetSection
       contentLayout="editor"
+      frame="none"
       title="Особенности, умения и заметки"
     >
       <ContentEditor

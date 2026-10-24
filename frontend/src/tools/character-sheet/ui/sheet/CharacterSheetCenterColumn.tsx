@@ -264,7 +264,7 @@ export function CharacterAttacksSection({
   } = sheet
 
   return (
-    <SheetSection contentLayout="editor" title="Атаки и заклинания">
+    <SheetSection contentLayout="editor" frame="none" title="Атаки и заклинания">
       <ContentEditor
         evaluateResourceMaximum={createResourceMaximumEvaluator(sheet)}
         accessibleLabel="Атаки и заклинания"

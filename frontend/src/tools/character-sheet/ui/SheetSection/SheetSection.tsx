@@ -11,7 +11,8 @@ export type SheetSectionProps = Omit<
 > & {
   actions?: ReactNode
   children: ReactNode
-  contentLayout?: 'default' | 'editor'
+  contentLayout?: 'default' | 'editor' | 'group'
+  frame?: 'default' | 'none'
   reveal?: boolean
   title?: ReactNode
 }
@@ -21,6 +22,7 @@ export function SheetSection({
   children,
   className,
   contentLayout = 'default',
+  frame = 'default',
   reveal = true,
   title,
   ...sectionProps
@@ -38,7 +40,8 @@ export function SheetSection({
       {...sectionProps}
       className={rootClassName}
       data-content-layout={contentLayout}
-      data-cursor-reveal={reveal ? 'border' : undefined}
+      data-frame={frame}
+      data-cursor-reveal={reveal && frame !== 'none' ? 'border' : undefined}
     >
       {(title || actions) && (
         <header className={styles.header}>

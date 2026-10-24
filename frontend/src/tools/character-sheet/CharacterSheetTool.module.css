@@ -537,6 +537,8 @@
 .centerLowerGrid,
 .notesLowerGrid,
 .abilityRail,
+.checksGroup,
+.combatGroup,
 .savesSlot,
 .skillsSlot,
 .proficienciesSlot,
@@ -690,13 +692,13 @@
   height: 100%;
   grid-area: left-lower;
   grid-template-areas:
-    'abilities saves'
-    'abilities saves'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
     'vision vision'
     'proficiencies proficiencies';
   grid-template-columns:
@@ -761,13 +763,18 @@
   padding: var(--sheet-compact-stat-padding);
 }
 
+.checksGroup {
+  grid-area: checks;
+  align-self: stretch;
+}
+
 .savesSlot {
-  grid-area: saves;
+  grid-row: 1 / span 2;
   align-self: stretch;
 }
 
 .skillsSlot {
-  grid-area: skills;
+  grid-row: 3 / -1;
   align-self: stretch;
 }
 
@@ -797,6 +804,11 @@
 
 .attacksSlot {
   height: 100%;
+  align-self: stretch;
+}
+
+.combatGroup {
+  grid-row: 2 / span 2;
   align-self: stretch;
 }
 

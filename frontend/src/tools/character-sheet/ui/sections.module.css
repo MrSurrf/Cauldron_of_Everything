@@ -1,34 +1,6 @@
 .section {
-  --cursor-reveal-border-color: var(--section-border);
-  --section-cut: var(--space-2);
-  --section-border: color-mix(
-      in srgb,
-      var(--color-content-border) 78%,
-      var(--color-border-accent)
-    );
+  composes: section from './SheetSection/SheetSection.module.css';
 
-  position: relative;
-  isolation: isolate;
-  min-width: 0;
-  overflow: hidden;
-  border: var(--border-width-default) solid var(--section-border);
-  background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-default) 94%, var(--color-surface-accent)),
-      color-mix(in srgb, var(--color-surface-muted) 96%, var(--palette-black))
-    );
-  clip-path:
-    polygon(
-      var(--section-cut) 0,
-      calc(100% - var(--section-cut)) 0,
-      100% var(--section-cut),
-      100% calc(100% - var(--section-cut)),
-      calc(100% - var(--section-cut)) 100%,
-      var(--section-cut) 100%,
-      0 calc(100% - var(--section-cut)),
-      0 var(--section-cut)
-    );
-  color: var(--color-text-primary);
   font-family: var(--sheet-body-font, var(--font-family-body));
 }
 

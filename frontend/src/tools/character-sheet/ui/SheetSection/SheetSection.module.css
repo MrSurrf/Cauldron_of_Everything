@@ -31,6 +31,25 @@
   color: var(--color-text-primary);
 }
 
+.section[data-frame='none'] {
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
+/* Общий контур группы сохраняет строки сетки листа без внутренних рамок. */
+.section[data-content-layout='group'],
+.section[data-content-layout='group'] > .content {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: subgrid;
+}
+
+.section[data-content-layout='group'] > .content {
+  grid-row: 1 / -1;
+  padding: 0;
+}
+
 .header,
 .content {
   position: relative;
