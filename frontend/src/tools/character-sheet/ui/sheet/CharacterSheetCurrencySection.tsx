@@ -21,6 +21,7 @@ export function CharacterCurrencySection({
 
   return (
     <CurrencyBlock
+      frame="none"
       fields={(Object.keys(currencyLabels) as CurrencyKey[])
         .map((currency) => ({
           id: currency,

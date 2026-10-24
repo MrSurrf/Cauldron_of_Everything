@@ -189,12 +189,6 @@
 }
 
 .progressColumn {
-  --progress-border: color-mix(
-      in srgb,
-      var(--color-content-border) 68%,
-      var(--color-border-accent)
-    );
-
   position: relative;
   isolation: isolate;
   display: grid;
@@ -204,29 +198,8 @@
     var(--sheet-row-height, var(--control-height-sm));
   align-self: center;
   gap: 0;
-  border: var(--border-width-default) solid var(--progress-border);
-  background:
-    radial-gradient(
-      circle at 50% 35%,
-      color-mix(in srgb, var(--color-surface-accent) 74%, transparent),
-      transparent 68%
-    ),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface-default) 90%, transparent),
-      color-mix(in srgb, var(--color-surface-muted) 94%, transparent)
-    );
-  clip-path:
-    polygon(
-      var(--space-2) 0,
-      calc(100% - var(--space-2)) 0,
-      100% var(--space-2),
-      100% calc(100% - var(--space-2)),
-      calc(100% - var(--space-2)) 100%,
-      var(--space-2) 100%,
-      0 calc(100% - var(--space-2)),
-      0 var(--space-2)
-    );
+  border: 0;
+  background: transparent;
 }
 
 .levelCard,
@@ -234,14 +207,6 @@
   position: relative;
   isolation: isolate;
   min-width: 0;
-  border: var(--border-width-default) solid
-    color-mix(in srgb, var(--color-content-border) 68%, var(--color-border-accent));
-  background:
-    radial-gradient(
-      circle at 50% 35%,
-      color-mix(in srgb, var(--color-surface-accent) 74%, transparent),
-      transparent 68%
-    );
 }
 
 .levelCard {
@@ -251,8 +216,6 @@
   padding: var(--sheet-compact-stat-padding, 0.125rem) var(--space-1);
   place-content: center;
   border: 0;
-  border-bottom: var(--border-width-default) solid
-    color-mix(in srgb, var(--progress-border) 64%, transparent);
   background: transparent;
   clip-path: none;
 }

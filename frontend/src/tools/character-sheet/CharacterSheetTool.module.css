@@ -203,6 +203,12 @@
     );
 }
 
+.statCard:is([data-stat='proficiency'], [data-stat='initiative'], [data-stat='speed']) {
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
 .armorClassStat {
   display: grid;
   min-width: 0;
@@ -549,6 +555,7 @@
 .equipmentSlot,
 .currencySlot,
 .carryingSlot,
+.wealthSlot,
 .personalitySections,
 .featuresSlot {
   min-width: 0;
@@ -627,8 +634,7 @@
 .hitDiceSlot > *,
 .deathSavesSlot > *,
 .attacksSlot > *,
-.equipmentSlot > *,
-.currencySlot > * {
+.equipmentSlot > * {
   display: grid;
   width: 100%;
   height: auto;
@@ -665,13 +671,11 @@
 .savesSlot > * > :last-child,
 .skillsSlot > * > :last-child,
 .hitDiceSlot > * > :last-child,
-.deathSavesSlot > * > :last-child,
-.currencySlot > * > :last-child {
+.deathSavesSlot > * > :last-child {
   min-height: 0;
 }
 
-.hitPointsSlot > * > :last-child,
-.currencySlot > * > :last-child {
+.hitPointsSlot > * > :last-child {
   display: grid;
   overflow: hidden;
 }
@@ -794,7 +798,6 @@
     auto
     var(--sheet-attacks-section-height)
     minmax(0, 1fr)
-    auto
     auto;
   align-self: stretch;
   align-content: start;
@@ -814,6 +817,15 @@
 
 .equipmentSlot {
   max-height: 25rem;
+}
+
+.wealthPanel {
+  --sheet-section-padding: var(--sheet-layout-gap);
+}
+
+.wealthPanel > div {
+  display: grid;
+  gap: var(--sheet-layout-gap);
 }
 
 .notesLowerGrid {

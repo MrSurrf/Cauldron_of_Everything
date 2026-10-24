@@ -522,47 +522,6 @@
   border-bottom: 0;
 }
 
-.currencyBlock {
-  --sheet-section-padding: var(--border-width-default);
-}
-
-.currencyGrid {
-  --sheet-control-height: var(--icon-size-sm);
-  --sheet-value-size: var(
-    --sheet-ordinary-value-size,
-    var(--sheet-body-size, var(--font-size-sm))
-  );
-
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  gap: var(--border-width-default);
-}
-
-.currencyField {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0;
-}
-
-.currencyLabel {
-  color: var(--color-text-secondary);
-  font-size: var(--sheet-secondary-size, var(--font-size-xs));
-  line-height: 1;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.currencyField :global(input) {
-  min-height: var(--icon-size-sm);
-  padding-inline: var(--border-width-default);
-  line-height: 1;
-}
-
 @container (max-width: 19rem) {
   .hitDiceRoot:not([data-compact='true']) .diceRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));

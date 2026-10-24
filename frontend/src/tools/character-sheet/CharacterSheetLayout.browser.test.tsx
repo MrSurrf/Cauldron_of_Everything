@@ -13,7 +13,11 @@ import {
 import '../../app/styles/global.css'
 import '../../shared/styles/tokens.css'
 import { CharacterSheetTool } from './CharacterSheetTool'
-import { createMockCharacterSheet, createMockSpellcasterSheet } from './model'
+import {
+  createMockCharacterSheet,
+  createMockSpellcasterSheet,
+  manualNumericField,
+} from './model'
 import {
   CHARACTER_ENCYCLOPEDIA_DRAG_TYPE,
   writeCharacterEncyclopediaDrag,
@@ -246,7 +250,13 @@ describe('Character Sheet fixed desktop composition', () => {
     vi.spyOn(window, 'outerWidth', 'get').mockReturnValue(1200)
     vi.spyOn(window, 'innerWidth', 'get').mockImplementation(() => cssWindowWidth)
     const container = await mountCharacterSheet(createMockSpellcasterSheet())
-    await act(async () => { await clickSpellSheetTab(container.querySelector<HTMLElement>('[data-spell-sheet-toggle]')!) })
+    const spellToggle = container.querySelector<HTMLButtonElement>('[data-spell-sheet-toggle]')!
+    // Проверка zoom не зависит от hover-перехода язычка под указателем прошлого теста.
+    await act(async () => {
+      spellToggle.focus()
+      await userEvent.keyboard('{Enter}')
+    })
+    expect(spellToggle).toHaveAttribute('aria-expanded', 'true')
     await settleSheetLayout(container)
     const book = container.querySelector<HTMLElement>('[style*="--book-scale"]')!
     const workspace = container.querySelector<HTMLElement>('[data-library-open][data-spells-open]')!
@@ -1074,6 +1084,12 @@ describe('Character Sheet fixed desktop composition', () => {
     const currencySlot = container.querySelector<HTMLElement>(
       '[data-character-sheet-slot="currency"]',
     )!
+    const carryingSlot = container.querySelector<HTMLElement>(
+      '[data-character-sheet-slot="carrying"]',
+    )!
+    const wealth = container.querySelector<HTMLElement>(
+      '[aria-label="Деньги и вес"]',
+    )!
     const hitDiceValue = container.querySelector<HTMLElement>(
       '[data-character-sheet-column="center"] [data-mode] input, '
         + '[data-character-sheet-column="center"] [data-mode] output',
@@ -1092,6 +1108,7 @@ describe('Character Sheet fixed desktop composition', () => {
       const card = label.closest('[data-stat]')!
       const frame = card.querySelector('[data-numeric-frame]')!
       const value = frame.querySelector('input, output')!
+      expect(getComputedStyle(card).borderWidth, stat).toBe('0px')
       expect(roundedWidth(frame), stat).toBe(40)
       expect(label.getBoundingClientRect().left - frame.getBoundingClientRect().right, stat).toBe(3)
       expect(getComputedStyle(value).paddingInlineStart, stat).toBe('2px')
@@ -1203,10 +1220,14 @@ describe('Character Sheet fixed desktop composition', () => {
     const skills = container.querySelector('[data-skill-row]')!.closest('section')!
     const equipment = equipmentEditor.closest('section')!
     const features = container.querySelector('[role="region"][aria-label="Особенности, умения и заметки"]')!.closest('section')!
-    ;[saves, skills, attacks, equipment, features].forEach((section) => {
+    const vision = Array.from(container.querySelectorAll('h2'))
+      .find((heading) => heading.textContent === 'Зрение и чувства')!.closest('section')!
+    const proficiencies = container.querySelector('[role="region"][aria-label="Языки и владения"]')!.closest('section')!
+    const levelPanel = container.querySelector('[data-character-sheet-progress]')!
+    ;[saves, skills, combatGroup, attacks, equipment, features, vision, proficiencies, levelPanel].forEach((section) => {
       expect(getComputedStyle(section).borderWidth).toBe('0px')
     })
-    ;[checksGroup, combatGroup, hitDiceSlot.firstElementChild!].forEach((section) => {
+    ;[checksGroup, hitDiceSlot.firstElementChild!, wealth].forEach((section) => {
       expect(getComputedStyle(section).borderWidth).toBe('1px')
     })
     const abilityValues = Array.from(
@@ -1262,11 +1283,7 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(getComputedStyle(attacksContentHeading).fontSize).toBe(
       '14px',
     )
-    // Верхняя граница общего контура входит в высоту строки атак.
-    expect(
-      attacks.getBoundingClientRect().height
-        + parseFloat(getComputedStyle(combatGroup).borderTopWidth),
-    ).toBe(304)
+    expect(attacks.getBoundingClientRect().height).toBe(304)
     expect(
       attacksEditor.getBoundingClientRect().bottom
         - attacksScaleControls.getBoundingClientRect().bottom,
@@ -1293,6 +1310,63 @@ describe('Character Sheet fixed desktop composition', () => {
     expect(currencySlot.scrollWidth).toBeLessThanOrEqual(
       currencySlot.clientWidth,
     )
+    const currencyRow = currencySlot.querySelector<HTMLElement>('[data-currency-row]')!
+    const carryingRow = carryingSlot.querySelector<HTMLElement>('[data-carrying-row]')!
+    expect(currencyRow.closest('[aria-label="Деньги и вес"]')).toBe(wealth)
+    expect(carryingRow.closest('[aria-label="Деньги и вес"]')).toBe(wealth)
+    expect(currencySlot.querySelector('section')).toBeNull()
+    expect(carryingSlot.querySelector('section')).toBeNull()
+    expect(carryingRow.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      currencyRow.getBoundingClientRect().bottom,
+    )
+    const currencyInputs = Array.from(currencySlot.querySelectorAll<HTMLInputElement>('input'))
+    expect(currencyInputs).toHaveLength(5)
+    currencyInputs.forEach((input) => {
+      const label = input.closest('label')!.querySelector('span')!
+      expect(roundedWidth(input)).toBeGreaterThan(0)
+      expect(roundedWidth(input)).toBeLessThanOrEqual(52)
+      expect(roundedWidth(input)).toBe(roundedWidth(currencyInputs[0]))
+      expect(input.getBoundingClientRect().top).toBe(currencyInputs[0].getBoundingClientRect().top)
+      expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(input.getBoundingClientRect().top)
+    })
+    const carriedValue = carryingSlot.querySelector<HTMLElement>('[aria-label="Несомый, фн."]')!
+    const capacityValue = carryingSlot.querySelector<HTMLElement>('[aria-label="Предел, фн."]')!
+    const weightProgress = carryingSlot.querySelector<HTMLElement>('[data-weight-progress]')!
+    ;[carriedValue, capacityValue].forEach((value) => {
+      expect(roundedWidth(value)).toBeGreaterThan(0)
+    })
+    expect(roundedWidth(carriedValue)).toBeLessThanOrEqual(52)
+    expect(roundedWidth(capacityValue)).toBeLessThanOrEqual(72)
+    expect(weightProgress.getBoundingClientRect().left).toBeGreaterThanOrEqual(carriedValue.getBoundingClientRect().right)
+    expect(weightProgress.getBoundingClientRect().right).toBeLessThanOrEqual(capacityValue.getBoundingClientRect().left)
+    expect(roundedWidth(weightProgress)).toBeGreaterThan(roundedWidth(carriedValue))
+    expect(carryingSlot.scrollWidth).toBeLessThanOrEqual(carryingSlot.clientWidth)
+  })
+
+  it('обновляет индикатор нагрузки при изменении веса и корректно показывает нулевой предел', async () => {
+    const document = createMockCharacterSheet()
+    document.derivedStats.carriedWeight = manualNumericField(0)
+    document.derivedStats.carryingCapacity = manualNumericField(180)
+    const container = await mountCharacterSheet(document)
+    const carriedInput = container.querySelector<HTMLInputElement>('[aria-label="Несомый, фн."]')!
+    const capacityInput = container.querySelector<HTMLInputElement>('[aria-label="Предел, фн."]')!
+    const progress = container.querySelector<HTMLProgressElement>('[data-weight-progress]')!
+
+    expect(progress.value).toBe(0)
+    await act(async () => { await userEvent.fill(carriedInput, '90') })
+    expect(progress.position).toBe(0.5)
+    expect(progress).toHaveAttribute('aria-valuetext', '90 из 180 фн.')
+
+    await act(async () => { await userEvent.fill(carriedInput, '270') })
+    expect(progress.position).toBe(1)
+    expect(progress).toHaveAttribute('aria-valuetext', '270 из 180 фн.')
+
+    await act(async () => { await userEvent.fill(capacityInput, '0') })
+    expect(progress.position).toBe(1)
+    expect(progress).toHaveAttribute('aria-valuetext', '270 из 0 фн.')
+    await act(async () => { await userEvent.fill(carriedInput, '0') })
+    expect(progress.position).toBe(0)
+    expect(progress).toHaveAttribute('aria-valuetext', '0 из 0 фн.')
   })
 
   it('раскладывает пулы костей хитов по два в строке', async () => {

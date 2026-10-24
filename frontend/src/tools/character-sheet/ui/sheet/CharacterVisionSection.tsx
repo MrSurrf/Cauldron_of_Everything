@@ -55,6 +55,7 @@ export function CharacterVisionSection({ sheet }: CharacterVisionSectionProps) {
 
   return (
     <SheetSection
+      frame="none"
       title="Зрение и чувства"
       actions={(
         <Tooltip content={nextType ? 'Добавить вид зрения' : 'Все виды уже добавлены'}>

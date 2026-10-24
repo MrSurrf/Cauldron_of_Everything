@@ -186,7 +186,7 @@ export function CharacterIdentity({
           </div>
         </div>
 
-        <div className={styles.progressColumn}>
+        <div className={styles.progressColumn} data-character-sheet-progress={true}>
           <div className={styles.levelCard}>
             {renderNumericField ? (
               renderNumericField('level', 'Уровень')

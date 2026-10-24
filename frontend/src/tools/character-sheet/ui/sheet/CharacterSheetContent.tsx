@@ -199,6 +199,7 @@ export function CharacterSheetContent({
                     aria-label="Атаки, заклинания и снаряжение"
                     className={styles.combatGroup}
                     contentLayout="group"
+                    frame="none"
                   >
                     <div
                       className={styles.attacksSlot}
@@ -216,14 +217,21 @@ export function CharacterSheetContent({
                   </SheetSection>
 
                   <div
-                    className={styles.currencySlot}
-                    data-character-sheet-slot="currency"
+                    className={styles.wealthSlot}
+                    data-character-sheet-slot="wealth"
                   >
-                    <CharacterCurrencySection sheet={sheet} />
-                  </div>
+                    <SheetSection aria-label="Деньги и вес" className={styles.wealthPanel}>
+                      <div
+                        className={styles.currencySlot}
+                        data-character-sheet-slot="currency"
+                      >
+                        <CharacterCurrencySection sheet={sheet} />
+                      </div>
 
-                  <div className={styles.carryingSlot}>
-                    <CharacterCarryingSection sheet={sheet} />
+                      <div className={styles.carryingSlot} data-character-sheet-slot="carrying">
+                        <CharacterCarryingSection sheet={sheet} />
+                      </div>
+                    </SheetSection>
                   </div>
                 </div>
 
