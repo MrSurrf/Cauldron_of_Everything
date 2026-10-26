@@ -209,6 +209,12 @@
   white-space: nowrap;
 }
 
+.error {
+  margin: var(--space-2) 0 0;
+  color: var(--color-status-danger);
+  font: 400 var(--font-size-xs)/1.4 var(--font-family-body);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pentagram,
   .hint {

@@ -126,6 +126,7 @@ export function CharacterIdentity({
             characterName={value.name}
             portraitUrl={value.portraitUrl}
             onFileSelect={onPortraitFileSelect}
+            onImageChange={(portraitUrl) => onValueChange({ ...value, portraitUrl })}
             onRemove={() => {
               onValueChange({
                 ...value,

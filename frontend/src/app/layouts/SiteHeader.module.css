@@ -561,6 +561,7 @@ a.dropdownItem:focus-visible {
   display: block;
   width: calc(100% - var(--space-2));
   height: calc(100% - var(--space-2));
+  overflow: hidden;
   border: var(--border-width-default) solid var(--color-content-border);
   border-radius: var(--radius-round);
   background:
@@ -569,6 +570,13 @@ a.dropdownItem:focus-visible {
       var(--color-surface-accent),
       var(--color-surface-muted) 68%
     );
+}
+
+.profileImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .mobileMenuButton {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import { getProfile, patchProfile, uploadAvatar } from '../../shared/api/account'
+import { getAccountProfileCacheKey } from '../../shared/api/accountProfileCache'
 import { Button, Checkbox, Combobox, EditIcon, IconFrame, Panel, PlaceholderIcon, TextArea, TextInput } from '../../shared/ui'
 import { CharacterPortrait } from '../../tools/character-sheet'
 import { ProfileAchievements, ProfileAvatar, ProfileFacts, ProfileMemberships, ProfileSection, ProfileStats, RecentActivity, TagList } from './ProfileParts'
@@ -35,11 +36,12 @@ export default function ProfilePage() {
   const [loadRevision, setLoadRevision] = useState(0)
   const [saving, setSaving] = useState(false)
   const [updatedAt, setUpdatedAt] = useState('')
-  const [portraitRevision, setPortraitRevision] = useState(0)
   const pendingPortraitFile = useRef<File | null>(null)
   const portraitPreviewUrl = useRef<string | null>(null)
   const editingRef = useRef(false)
   const draftTouchedRef = useRef(false)
+  const mountedRef = useRef(true)
+  const mutationRevisionRef = useRef(0)
   const profile = editing ? draft : saved
   const visibleLinks = profile.links.filter(link => link.label.trim() && link.value.trim())
   const theme = themes.find(item => item.value === profile.theme) ?? themes[0]
@@ -48,31 +50,38 @@ export default function ProfilePage() {
     [draft, saved],
   )
 
-  useEffect(() => () => {
-    if (portraitPreviewUrl.current) URL.revokeObjectURL(portraitPreviewUrl.current)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (portraitPreviewUrl.current) URL.revokeObjectURL(portraitPreviewUrl.current)
+    }
   }, [])
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
+    const scope = getAccountProfileCacheKey()
+    const mutationRevision = mutationRevisionRef.current
 
     async function load() {
       try {
-        const remote = await getProfile()
-        if (cancelled) return
+        const remote = await getProfile(controller.signal)
+        if (cancelled || scope !== getAccountProfileCacheKey() || mutationRevision !== mutationRevisionRef.current) return
         const normalized = normalizeProfile(remote.data)
         setSaved(normalized)
         setUpdatedAt(remote.updated_at)
         writeProfileCache(normalized)
         if (!editingRef.current || !draftTouchedRef.current) setDraft(cloneProfile(normalized))
       } catch (error) {
-        if (!cancelled) setLoadError(errorMessage(error, 'Не удалось загрузить профиль с сервера.'))
+        if (!cancelled && scope === getAccountProfileCacheKey() && mutationRevision === mutationRevisionRef.current) setLoadError(errorMessage(error, 'Не удалось загрузить профиль с сервера.'))
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
     void load()
-    return () => { cancelled = true }
+    return () => { cancelled = true; controller.abort() }
   }, [loadRevision])
 
   useEffect(() => {
@@ -120,11 +129,15 @@ export default function ProfilePage() {
     }
 
     let next = { ...draft, name, links }
+    const scope = getAccountProfileCacheKey()
+    const isCurrent = () => mountedRef.current && scope === getAccountProfileCacheKey()
     setSaving(true)
     setNotice(null)
     try {
       if (pendingPortraitFile.current) {
         const portrait = await uploadAvatar(pendingPortraitFile.current)
+        if (!isCurrent()) return
+        mutationRevisionRef.current += 1
         pendingPortraitFile.current = null
         next = { ...next, portrait }
         const savedWithUploadedPortrait = { ...saved, portrait }
@@ -135,6 +148,8 @@ export default function ProfilePage() {
       }
 
       const response = await patchProfile(next)
+      if (!isCurrent()) return
+      mutationRevisionRef.current += 1
       const confirmed = normalizeProfile(response.data, next)
       writeProfileCache(confirmed)
       setSaved(confirmed)
@@ -146,16 +161,15 @@ export default function ProfilePage() {
       editingRef.current = false
       setNotice({ kind: 'status', text: 'Изменения сохранены.' })
     } catch (error) {
-      setNotice({ kind: 'error', text: errorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.') })
+      if (isCurrent()) setNotice({ kind: 'error', text: errorMessage(error, 'Не удалось сохранить изменения. Попробуйте ещё раз.') })
     } finally {
-      setSaving(false)
+      if (isCurrent()) setSaving(false)
     }
   }
 
   function cancelEditing() {
     pendingPortraitFile.current = null
     releasePortraitPreview()
-    setPortraitRevision(value => value + 1)
     setDraft(cloneProfile(saved))
     draftTouchedRef.current = false
     setEditing(false)
@@ -164,7 +178,6 @@ export default function ProfilePage() {
   }
 
   function selectPhoto(file: File) {
-    setPortraitRevision(value => value + 1)
     if (!file.type.startsWith('image/')) {
       setNotice({ kind: 'error', text: 'Выберите файл изображения.' })
       return
@@ -185,7 +198,6 @@ export default function ProfilePage() {
   function removePortrait() {
     pendingPortraitFile.current = null
     releasePortraitPreview()
-    setPortraitRevision(value => value + 1)
     update('portrait', null)
   }
 
@@ -234,7 +246,7 @@ export default function ProfilePage() {
             <div className={styles.heroContent}>
               <div className={styles.heroPortrait}>
                 {editing
-                  ? <CharacterPortrait key={`${portraitRevision}-${profile.portrait ?? 'empty'}`} characterName={profile.name} imageLabel={{ alt: 'Аватар профиля', action: 'изображение профиля' }} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} />
+                  ? <CharacterPortrait characterName={profile.name} disabled={saving} cropAspectRatio={1} imageLabel={{ alt: 'Аватар профиля', action: 'изображение профиля', cropTitle: 'Кадрирование аватара' }} portraitUrl={profile.portrait} onFileSelect={selectPhoto} onRemove={removePortrait} />
                   : <ProfileAvatar profile={profile} />}
               </div>
               <div className={styles.identityText}>

@@ -21,6 +21,8 @@ export type {
 export { ContentEditor } from './ContentEditor'
 export type { ContentEditorProps } from './ContentEditor'
 export { IconFrame } from './IconFrame'
+export { ImageCropDialog, ImageCropFrame } from './ImageCropper'
+export type { ImageCropDialogProps, CropRect, CropHandle } from './ImageCropper'
 export type { IconFrameProps } from './IconFrame'
 export { IconButton } from './IconButton'
 export type {

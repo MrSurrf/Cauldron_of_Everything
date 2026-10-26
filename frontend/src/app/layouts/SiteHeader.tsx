@@ -11,6 +11,15 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
+import { getProfile } from '../../shared/api/account'
+import {
+  getAccountProfileCacheKey,
+  PROFILE_CACHE_CHANGED_EVENT,
+  readAccountProfileCache,
+  writeAccountProfileCache,
+} from '../../shared/api/accountProfileCache'
+import type { AccountProfileCacheChange } from '../../shared/api/accountProfileCache'
+import { AUTH_CHANGED_EVENT } from '../../shared/api/auth'
 import { TextInput } from '../../shared/ui/TextInput'
 import {
   NotificationIcon,
@@ -31,6 +40,95 @@ type HeaderMenu = {
   items: readonly HeaderMenuItem[]
   label: string
   pathPrefixes: readonly string[]
+}
+
+function portraitSource(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  try {
+    const api = new URL(import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000', window.location.origin)
+    const url = new URL(value.trim(), `${api.origin}/`)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
+function HeaderPortraitImage({ source }: { source: string }) {
+  const [failed, setFailed] = useState(false)
+  return failed ? null : <img className={styles.profileImage} src={source} alt="" onError={() => setFailed(true)} />
+}
+
+function HeaderProfilePortrait() {
+  const [profile, setProfile] = useState(() => ({
+    key: getAccountProfileCacheKey(),
+    portrait: portraitSource(readAccountProfileCache()?.portrait),
+  }))
+
+  useEffect(() => {
+    let revision = 0
+    let controller: AbortController | undefined
+
+    function invalidateRequest() {
+      revision += 1
+      controller?.abort()
+    }
+
+    function showCache() {
+      setProfile({ key: getAccountProfileCacheKey(), portrait: portraitSource(readAccountProfileCache()?.portrait) })
+    }
+
+    async function load() {
+      invalidateRequest()
+      const key = getAccountProfileCacheKey()
+      if (!key) return
+      const sequence = revision
+      controller = new AbortController()
+      const signal = controller.signal
+      try {
+        const response = await getProfile(signal)
+        // Сохранение профиля и смена аккаунта важнее старого GET-запроса.
+        if (!signal.aborted && sequence === revision && key === getAccountProfileCacheKey()) writeAccountProfileCache(response.data)
+      } catch {
+        // Сбой загрузки не мешает навигации: остаётся кэш или пустой аватар.
+      }
+    }
+
+    function authChanged() {
+      showCache()
+      void load()
+    }
+
+    function cacheChanged(event: Event) {
+      const change = (event as CustomEvent<AccountProfileCacheChange>).detail
+      if (!change || change.key !== getAccountProfileCacheKey()) return
+      invalidateRequest()
+      setProfile({ key: change.key, portrait: portraitSource(change.profile.portrait) })
+    }
+
+    function storageChanged(event: StorageEvent) {
+      if (!event.key || event.key === 'surveyAuth.access' || event.key === 'surveyAuth.refresh') authChanged()
+      else if (event.key === getAccountProfileCacheKey()) {
+        invalidateRequest()
+        showCache()
+      }
+    }
+
+    window.addEventListener(AUTH_CHANGED_EVENT, authChanged)
+    window.addEventListener(PROFILE_CACHE_CHANGED_EVENT, cacheChanged)
+    window.addEventListener('storage', storageChanged)
+    void load()
+    return () => {
+      invalidateRequest()
+      window.removeEventListener(AUTH_CHANGED_EVENT, authChanged)
+      window.removeEventListener(PROFILE_CACHE_CHANGED_EVENT, cacheChanged)
+      window.removeEventListener('storage', storageChanged)
+    }
+  }, [])
+
+  const source = profile.key === getAccountProfileCacheKey() ? profile.portrait : null
+  return <span className={styles.profileCircle} aria-hidden={true}>
+    {source && <HeaderPortraitImage key={source} source={source} />}
+  </span>
 }
 
 const HEADER_MENUS: readonly HeaderMenu[] = [
@@ -332,7 +430,7 @@ export function SiteHeader() {
             aria-label="Открыть профиль"
             onClick={closeNavigation}
           >
-            <span className={styles.profileCircle} aria-hidden={true} />
+            <HeaderProfilePortrait />
           </NavLink>
         </div>
       </div>

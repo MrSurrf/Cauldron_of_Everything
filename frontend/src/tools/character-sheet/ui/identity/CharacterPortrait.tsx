@@ -1,21 +1,26 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
 } from 'react'
 
-import { TrashIcon } from '../../../../shared/ui'
+import { ImageCropDialog, TrashIcon } from '../../../../shared/ui'
 import styles from './CharacterPortrait.module.css'
 
 export type CharacterPortraitProps = {
   characterName?: string
   disabled?: boolean
+  cropAspectRatio?: number
   imageLabel?: {
     alt: string
     action: string
+    cropTitle?: string
   }
   onFileSelect?: (file: File) => void
+  /** Готовое изображение для сохранения в документе, без временного blob URL. */
+  onImageChange?: (dataUrl: string) => void
   onRemove?: () => void
   portraitUrl: string | null
 }
@@ -44,22 +49,32 @@ function PentagramPlaceholder() {
 export function CharacterPortrait({
   characterName = '',
   disabled = false,
+  cropAspectRatio = 1,
   imageLabel = { alt: 'Портрет персонажа', action: 'изображение персонажа' },
   onFileSelect,
+  onImageChange,
   onRemove,
   portraitUrl,
 }: CharacterPortraitProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
   const previousPortraitUrlRef = useRef(portraitUrl)
+  const imageChangeRef = useRef(onImageChange)
+  const readerRef = useRef<FileReader | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [error, setError] = useState('')
   const displayedUrl = previewUrl ?? portraitUrl
   const portraitAlt = characterName.trim()
     ? `${imageLabel.alt} ${characterName.trim()}`
     : imageLabel.alt
 
+  useLayoutEffect(() => { imageChangeRef.current = onImageChange }, [onImageChange])
+
   useEffect(
     () => () => {
+      if (readerRef.current?.readyState === FileReader.LOADING) readerRef.current.abort()
+      readerRef.current = null
       if (previewUrlRef.current) {
         URL.revokeObjectURL(previewUrlRef.current)
       }
@@ -91,24 +106,52 @@ export function CharacterPortrait({
     const file = event.currentTarget.files?.[0]
     event.currentTarget.value = ''
 
-    if (!file || !file.type.startsWith('image/')) return
+    if (!file || disabled) return
+    setError('')
+    setPendingFile(file)
+  }
 
+  const confirmCrop = (file: File) => {
+    setPendingFile(null)
+    if (disabled) return
+    if (readerRef.current?.readyState === FileReader.LOADING) readerRef.current.abort()
+    readerRef.current = null
     releasePreview()
     if (typeof URL.createObjectURL === 'function') {
       const nextPreviewUrl = URL.createObjectURL(file)
       previewUrlRef.current = nextPreviewUrl
       setPreviewUrl(nextPreviewUrl)
     }
+
+    if (imageChangeRef.current) {
+      const reader = new FileReader()
+      readerRef.current = reader
+      reader.onload = () => {
+        if (readerRef.current !== reader) return
+        readerRef.current = null
+        if (typeof reader.result === 'string') imageChangeRef.current?.(reader.result)
+      }
+      reader.onerror = () => {
+        if (readerRef.current !== reader) return
+        readerRef.current = null
+        setError('Не удалось сохранить портрет. Выберите изображение ещё раз.')
+      }
+      reader.readAsDataURL(file)
+    }
     onFileSelect?.(file)
   }
 
   const handleRemove = () => {
+    if (readerRef.current?.readyState === FileReader.LOADING) readerRef.current.abort()
+    readerRef.current = null
+    setPendingFile(null)
+    setError('')
     releasePreview()
     setPreviewUrl(null)
     onRemove?.()
   }
 
-  return (
+  return <>
     <div
       className={styles.root}
       data-has-image={Boolean(displayedUrl) || undefined}
@@ -117,7 +160,7 @@ export function CharacterPortrait({
         ref={inputRef}
         className={styles.fileInput}
         aria-label={`Выбрать ${imageLabel.action}`}
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         disabled={disabled}
         tabIndex={-1}
         type="file"
@@ -164,5 +207,13 @@ export function CharacterPortrait({
         )}
 
     </div>
-  )
+    {error && <p className={styles.error} role="alert">{error}</p>}
+    {pendingFile && !disabled && <ImageCropDialog
+      file={pendingFile}
+      title={imageLabel.cropTitle ?? 'Кадрирование портрета'}
+      initialAspectRatio={cropAspectRatio}
+      onConfirm={confirmCrop}
+      onCancel={() => setPendingFile(null)}
+    />}
+  </>
 }

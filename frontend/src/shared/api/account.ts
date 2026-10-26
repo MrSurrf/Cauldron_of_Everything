@@ -71,8 +71,8 @@ async function readError(response: Response, fallback: string): Promise<Error> {
   return new Error(firstMessage(body) ?? `${fallback}: HTTP ${response.status}`)
 }
 
-export async function getProfile(): Promise<ProfileResponse> {
-  const response = await authFetch(`${API_BASE_URL}/api/me/profile/`)
+export async function getProfile(signal?: AbortSignal): Promise<ProfileResponse> {
+  const response = await authFetch(`${API_BASE_URL}/api/me/profile/`, { signal })
   if (!response.ok) throw await readError(response, 'Не удалось загрузить профиль')
   return response.json() as Promise<ProfileResponse>
 }
