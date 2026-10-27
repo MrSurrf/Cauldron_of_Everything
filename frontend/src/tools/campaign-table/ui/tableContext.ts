@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { PointerEvent } from 'react'
 import type { Diagram, NodeEntityType } from '../model/table'
+import type { ContainerMembers } from './nodeMetadata'
 
 export type TableActions = {
   diagram: Diagram
@@ -27,6 +28,19 @@ export type TableActions = {
 export const TableContext = createContext<TableActions | null>(null)
 export function useTableActions() {
   const actions = useContext(TableContext)
+  if (!actions) throw new Error('Узел должен находиться внутри пространства кампании')
+  return actions
+}
+export type NodeActions = Pick<TableActions,
+  'readOnly' | 'beginGesture' | 'endGesture' | 'diagrams' | 'connectionSource' | 'startConnection'
+  | 'beginConnection' | 'dropTarget' | 'beginInstanceDrag' | 'placeOnDiagram' | 'draft'
+  | 'open' | 'edit' | 'remove' | 'release' | 'toggleCreature'> & {
+  diagramId: string
+  membersByContainer: ContainerMembers
+}
+export const NodeActionsContext = createContext<NodeActions | null>(null)
+export function useNodeActions() {
+  const actions = useContext(NodeActionsContext)
   if (!actions) throw new Error('Узел должен находиться внутри пространства кампании')
   return actions
 }

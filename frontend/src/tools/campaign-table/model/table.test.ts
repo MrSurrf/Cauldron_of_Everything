@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createEmptyCharacterSheet } from '../../character-sheet'
-import { changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, serializeTable, updateCanvasEntity } from './table'
+import { applyDiagramNodeChanges, changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
 import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS } from './library'
 
@@ -14,6 +14,74 @@ function fixture() {
   return { table, a, b, creature }
 }
 describe('нормализованный документ кампании', () => {
+  it('повторно использует проекции и данные нод при изменении только геометрии', () => {
+    const { table, creature } = fixture()
+    const second = createDiagram('Неактивная схема')
+    const original = { ...table, diagrams: [...table.diagrams, second] }
+    const before = resolveDiagram(original, original.diagrams[0])
+    const snapshot = structuredClone(original)
+    expect(resolveDiagram(original, original.diagrams[0])).toBe(before)
+    expect(resolveNode(original.diagrams[0].nodes[2], original.entities[2])).toBe(before.nodes[2])
+
+    const moved = applyDiagramNodeChanges(original, original.activeId, [
+      { type: 'position', id: creature.node.id, position: { x: 110, y: 220 }, dragging: true },
+      { type: 'dimensions', id: creature.node.id, dimensions: { width: 280, height: 180 }, setAttributes: true },
+      { type: 'select', id: creature.node.id, selected: true },
+    ])
+    const after = resolveDiagram(moved, moved.diagrams[0])
+    expect(moved.entities).toBe(original.entities)
+    expect(moved.diagrams[1]).toBe(second)
+    expect(moved.diagrams[0].edges).toBe(original.diagrams[0].edges)
+    expect(moved.diagrams[0].nodes[0]).toBe(original.diagrams[0].nodes[0])
+    expect(after.nodes[0]).toBe(before.nodes[0])
+    expect(after.nodes[1]).toBe(before.nodes[1])
+    expect(after.nodes[2]).not.toBe(before.nodes[2])
+    expect(after.nodes[2].data).toBe(before.nodes[2].data)
+    expect(after.nodes[2]).toMatchObject({ position: { x: 110, y: 220 }, width: 280, height: 180, selected: true, dragging: true })
+    expect(original).toEqual(snapshot)
+  })
+  it('сохраняет ссылки Entity и размещений в общем редакторе геометрии', () => {
+    const { table, creature } = fixture()
+    const before = resolveDiagram(table, table.diagrams[0])
+    const moved = changeDiagram(table, table.activeId, diagram => ({ ...diagram,
+      nodes: diagram.nodes.map(node => node.id === creature.node.id ? { ...node, position: { x: 250, y: 420 } } : node),
+    }))
+    expect(moved.entities).toBe(table.entities)
+    expect(moved.diagrams[0].nodes[0]).toBe(table.diagrams[0].nodes[0])
+    expect(moved.diagrams[0].nodes[2].data).toBe(table.diagrams[0].nodes[2].data)
+    expect(resolveDiagram(moved, moved.diagrams[0]).nodes[2].data).toBe(before.nodes[2].data)
+    expect(changeDiagram(moved, moved.activeId, diagram => ({ ...diagram, nodes: [...diagram.nodes] }))).toBe(moved)
+  })
+  it('обновляет общую Entity на всех схемах, сохраняя проекции остальных объектов', () => {
+    const { table, creature } = fixture()
+    const second = createDiagram('Другая схема')
+    const shared = placeExistingEntity({ ...table, diagrams: [...table.diagrams, second] }, second.id, creature.entity.id, { x: -90, y: 40 })
+    const before = resolveDiagram(shared, shared.diagrams[0])
+    const otherBefore = resolveDiagram(shared, shared.diagrams[1])
+    const renamed = changeDiagram(shared, shared.activeId, diagram => ({ ...diagram,
+      nodes: diagram.nodes.map(node => node.id === creature.node.id ? { ...node, data: { ...node.data, title: 'Хранитель' } } : node),
+    }))
+    const after = resolveDiagram(renamed, renamed.diagrams[0])
+    const otherAfter = resolveDiagram(renamed, renamed.diagrams[1])
+    expect(renamed.diagrams).toBe(shared.diagrams)
+    expect(renamed.entities[0]).toBe(shared.entities[0])
+    expect(after.nodes[0]).toBe(before.nodes[0])
+    expect(after.nodes[2].data.title).toBe('Хранитель')
+    expect(otherAfter.nodes[0].data.title).toBe('Хранитель')
+    expect(otherAfter.nodes[0]).not.toBe(otherBefore.nodes[0])
+    expect(before.nodes[2].data.title).toBe('Призрак')
+    expect(otherBefore.nodes[0].data.title).toBe('Призрак')
+  })
+  it('не создаёт документ на пустых и повторных изменениях React Flow', () => {
+    const { table, creature } = fixture()
+    expect(applyDiagramNodeChanges(table, table.activeId, [])).toBe(table)
+    expect(applyDiagramNodeChanges(table, table.activeId, [{ type: 'position', id: creature.node.id, position: { ...creature.node.position } }])).toBe(table)
+    const changes = [{ type: 'select' as const, id: creature.node.id, selected: true },
+      { type: 'dimensions' as const, id: creature.node.id, dimensions: { width: 280, height: 180 }, setAttributes: true }]
+    const measured = applyDiagramNodeChanges(table, table.activeId, changes)
+    expect(applyDiagramNodeChanges(measured, measured.activeId, changes)).toBe(measured)
+    expect(applyDiagramNodeChanges(table, 'missing', changes)).toBe(table)
+  })
   it('создаёт широкую wiki-панель и синхронизирует имя страницы с кампанийным листом', () => {
     const table = createTable()
     expect(table.layout.inspectorWidth).toBe(520)

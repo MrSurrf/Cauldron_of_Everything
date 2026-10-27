@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Handle, NodeResizer, Position, useViewport } from '@xyflow/react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { Handle, NodeResizer, Position, useStore } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import type { CSSProperties } from 'react'
 import { entityLabel } from '../model/library'
 import type { TableNode } from '../model/table'
 import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
-import { containerOf } from '../model/nodeContainment'
 import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
-import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
+import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
+import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
 import { useCreatureMorph } from './useCreatureMorph'
 
@@ -19,9 +19,11 @@ function plainText(value: string) {
   return typeof DOMParser === 'undefined' ? separated.trim() : new DOMParser().parseFromString(separated, 'text/html').body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-export function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
-  const actions = useTableActions()
-  const { zoom } = useViewport()
+const emptyMembers: readonly NodeMember[] = []
+
+export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
+  const actions = useNodeActions()
+  const zoom = useStore(state => state.transform[2])
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -75,7 +77,7 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
       }} onBlur={event => { if (draftFinished.current) return; draftFinished.current = true; if (event.currentTarget.value.trim()) draft.commit(event.currentTarget.value); else draft.cancel() }} />
   </article>
 
-  const members = actions.diagram.nodes.filter(node => containerOf(node) === id)
+  const members = actions.membersByContainer.get(id) ?? emptyMembers
   const box = contourBox(data.entityType, { x: 0, y: 0 }, width ?? visual.width, height ?? minimum.height, creatureExpanded)
   const origin = center(box)
   const localEntity = !data.reference
@@ -101,9 +103,9 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
             event.stopPropagation(); event.dataTransfer.setData(INSTANCE_DRAG_TYPE, member.id); event.dataTransfer.effectAllowed = 'move'
             actions.beginInstanceDrag(member.id)
           }}>
-            <button type="button" onClick={event => { event.stopPropagation(); actions.open(member.id) }}>{member.data.title}</button>
-            {!actions.readOnly && <><button type="button" title="Редактировать экземпляр" aria-label={`Редактировать: ${member.data.title}`} onClick={event => { event.stopPropagation(); actions.edit(member.id) }}>✎</button>
-              <button type="button" title="Вернуть на холст" aria-label={`Извлечь: ${member.data.title}`} onClick={event => { event.stopPropagation(); actions.release(member.id) }}>↗</button></>}
+            <button type="button" onClick={event => { event.stopPropagation(); actions.open(member.id) }}>{member.title}</button>
+            {!actions.readOnly && <><button type="button" title="Редактировать экземпляр" aria-label={`Редактировать: ${member.title}`} onClick={event => { event.stopPropagation(); actions.edit(member.id) }}>✎</button>
+              <button type="button" title="Вернуть на холст" aria-label={`Извлечь: ${member.title}`} onClick={event => { event.stopPropagation(); actions.release(member.id) }}>↗</button></>}
           </div>)}
         </div>}
       </div>}
@@ -131,7 +133,7 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.startConnection(id) }}>Связать с…</button>
           {!actions.readOnly && actions.diagrams.length > 1 && <div className={styles.nodePlaceIn}>На другую схему
             <Combobox className="nodrag" aria-label="Разместить Entity на схеме" placeholder="Выберите схему" value={null}
-              options={actions.diagrams.filter(item => item.id !== actions.diagram.id).map(item => ({ value: item.id, label: item.name }))}
+              options={actions.diagrams.filter(item => item.id !== actions.diagramId).map(item => ({ value: item.id, label: item.name }))}
               onClick={event => event.stopPropagation()} onValueChange={value => { if (value !== null) { actions.placeOnDiagram(id, value); setMenuOpen(false) } }} />
           </div>}
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.remove(id) }}>Удалить со схемы</button>
@@ -158,4 +160,4 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
     })}
     <Handle id="out" type="source" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
   </article>
-}
+})

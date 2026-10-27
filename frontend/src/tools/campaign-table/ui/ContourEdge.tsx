@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { memo, useId } from 'react'
 import type { CSSProperties } from 'react'
 import { BaseEdge, useInternalNode, ViewportPortal } from '@xyflow/react'
 import type { EdgeProps, InternalNode, XYPosition } from '@xyflow/react'
@@ -12,7 +12,7 @@ function box(node: InternalNode<TableNode>) {
   return contourBox(node.data.entityType, node.internals.positionAbsolute,
     node.measured.width ?? nodeVisual(node.data.entityType).width, node.measured.height ?? 80, node.data.display?.creatureExpanded)
 }
-export function ContourEdge({ source, target, ...props }: EdgeProps<TableEdge>) {
+export const ContourEdge = memo(function ContourEdge({ source, target, ...props }: EdgeProps<TableEdge>) {
   const from = useInternalNode<TableNode>(source)
   const to = useInternalNode<TableNode>(target)
   const markerId = `campaign-arrow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
@@ -40,7 +40,7 @@ export function ContourEdge({ source, target, ...props }: EdgeProps<TableEdge>) 
     {!arrowStart && <circle className={styles.endpoint} cx={points.source.x} cy={points.source.y} r={3} aria-hidden="true" />}
     {!arrowEnd && <circle className={styles.endpoint} cx={points.target.x} cy={points.target.y} r={3} aria-hidden="true" />}
   </g>
-}
+})
 export function ConnectionPreview({ source, target, pointer, appearance: data }: {
   source: string; target: string | null; pointer: XYPosition | null; appearance?: EdgeAppearance
 }) {

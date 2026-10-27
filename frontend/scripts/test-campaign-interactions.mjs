@@ -130,7 +130,7 @@ try {
   await page.getByRole('button', { name: 'Открыть: Призрак', exact: true }).waitFor()
 
   await node('note').getByRole('heading').click()
-  const entityPanel = page.getByRole('complementary', { name: 'Инспектор объекта', exact: true })
+  const entityPanel = page.getByRole('complementary', { name: 'Wiki-карточка объекта', exact: true })
   assert.ok(await entityPanel.getAttribute('data-campaign-panel'))
   await settle(entityPanel)
   assert.ok((await entityPanel.boundingBox()).width >= 300)

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyCharacterSheet } from '../../character-sheet'
 import { parseContentSource } from '../../../shared/ui/ContentEditor'
 import { canPlaceInside, containerOf, moveInside } from './nodeContainment'
-import { changeDiagram, createCanvasObject, createTable, duplicatePlacement, parseTable, placeCanvasObject, removeInstances, resolveDiagram, serializeTable } from './table'
+import { applyDiagramNodeChanges, changeDiagram, createCanvasObject, createTable, duplicatePlacement, parseTable, placeCanvasObject, removeInstances, resolveDiagram, serializeTable } from './table'
 import { TableHistory } from './tableHistory'
 
 function fixture() {
@@ -25,6 +25,36 @@ function fixture() {
 }
 
 describe('перенос со схемы в контейнеры', () => {
+  it('не меняет документ при повторном помещении в тот же контейнер и сохраняет данные при движении внутри него', () => {
+    const { table, character, item, put } = fixture()
+    expect(changeDiagram(table, table.activeId, diagram => moveInside(diagram, item.node.id))).toBe(table)
+    const contained = put(table, character.node.id)
+    const before = resolveDiagram(contained, contained.diagrams[0])
+    expect(moveInside(before, item.node.id, character.node.id, { ...before.nodes[1].position })).toBe(before)
+    expect(put(contained, character.node.id)).toBe(contained)
+    const moved = changeDiagram(contained, contained.activeId, diagram => moveInside(diagram, item.node.id, character.node.id, { x: 70, y: 80 }))
+    expect(moved.entities).toBe(contained.entities)
+    expect(moved.diagrams[0].nodes[1].data).toBe(contained.diagrams[0].nodes[1].data)
+  })
+  it('удаляет контейнер через React Flow вместе с извлечением снаряжения и связей', () => {
+    const { table, character, item, put, equipment } = fixture()
+    const contained = put(table, character.node.id)
+    const linked = changeDiagram(contained, contained.activeId, diagram => ({ ...diagram,
+      edges: [{ id: 'equipment', source: character.node.id, target: item.node.id }],
+    }))
+    const history = new TableHistory()
+    const removed = applyDiagramNodeChanges(linked, linked.activeId, [
+      { type: 'remove', id: character.node.id },
+      { type: 'select', id: item.node.id, selected: true },
+    ])
+    history.record(linked, removed)
+    expect(removed.diagrams[0].nodes.find(node => node.id === item.node.id)?.data.containerId).toBeUndefined()
+    expect(removed.diagrams[0].nodes.find(node => node.id === item.node.id)?.selected).toBe(true)
+    expect(removed.diagrams[0].edges).toHaveLength(0)
+    expect(equipment(removed)).not.toContain(':::item[Щит]')
+    expect(equipment(history.undo(removed))).toContain(':::item[Щит]')
+    expect(parseTable(serializeTable(removed)).diagrams[0].nodes).toHaveLength(2)
+  })
   it('принимает предмет в локацию и чарлист, запрещает неподходящие типы', () => {
     const { table, character, item, location, put } = fixture()
     const diagram = resolveDiagram(table, table.diagrams[0])

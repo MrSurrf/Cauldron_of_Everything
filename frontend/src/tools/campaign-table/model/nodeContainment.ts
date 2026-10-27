@@ -16,10 +16,16 @@ export function moveInside(diagram: Diagram, id: string, targetId?: string, posi
   if (!node || (targetId && (!target || !canPlaceInside(node, target)))) return diagram
   if (target?.data.entityType === 'playerCharacter' && !target.data.campaignCharacter) return diagram
   const previous = diagram.nodes.find(item => item.id === containerOf(node))
+  const nextPosition = position ?? (previous && !targetId
+    ? { x: previous.position.x + (previous.width ?? 240) + 40, y: previous.position.y } : node.position)
+  const locationId = target?.type === 'location' ? target.id : undefined
+  const containerId = target?.data.entityType === 'playerCharacter' ? target.id : undefined
+  if (node.data.locationId === locationId && node.data.containerId === containerId
+    && node.position.x === nextPosition.x && node.position.y === nextPosition.y) return diagram
+  const data = node.data.locationId === locationId && node.data.containerId === containerId
+    ? node.data : { ...node.data, locationId, containerId }
   return { ...diagram, nodes: diagram.nodes.map(item => item.id === id ? { ...item,
-    position: position ?? (previous && !targetId ? { x: previous.position.x + (previous.width ?? 240) + 40, y: previous.position.y } : item.position),
-    data: { ...item.data, locationId: target?.type === 'location' ? target.id : undefined,
-      containerId: target?.data.entityType === 'playerCharacter' ? target.id : undefined },
+    position: nextPosition, data,
   } : item) }
 }
 

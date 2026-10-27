@@ -35,6 +35,7 @@ export class TableHistory {
     for (const diagram of after.diagrams) {
       const previous = before.diagrams.find(item => item.id === diagram.id)
       if (!previous) continue
+      if (previous.nodes === diagram.nodes && previous.edges === diagram.edges) continue
       const change = { before: graph(before, previous), after: graph(after, diagram) }
       if (signature(change.before) === signature(change.after)) continue
       this.past.set(diagram.id, [...(this.past.get(diagram.id) ?? []), change].slice(-100))

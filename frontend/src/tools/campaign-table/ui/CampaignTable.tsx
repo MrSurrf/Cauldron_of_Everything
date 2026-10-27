@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { applyEdgeChanges, applyNodeChanges, Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react'
-import type { XYPosition } from '@xyflow/react'
+import { applyEdgeChanges, Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react'
+import type { NodeChange, XYPosition } from '@xyflow/react'
 import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
@@ -21,7 +21,7 @@ import { canPlaceReference, entityLabel, entryReference } from '../model/library
 import { loadCampaignCharacter } from '../model/campaignCharacter'
 import { loadInstanceStatBlock } from '../model/instanceStatBlock'
 import { canPlaceInside, containerOf, moveInside } from '../model/nodeContainment'
-import { canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
+import { applyDiagramNodeChanges, canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
 import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
 import { NodeRenderer } from './NodeRenderer'
@@ -31,13 +31,16 @@ import { useDepartingConnections } from './useDepartingConnections'
 import { LibraryDragPreview } from './LibraryDragPreview'
 import { useLibraryDrag } from './useLibraryDrag'
 import { useNodeConnections } from './useNodeConnections'
-import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
+import { nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import { TableHistory } from '../model/tableHistory'
 import { LocalEntityInspector } from './LocalEntityPanel'
 import type { EntityChanges } from './LocalEntityPanel'
 import { CampaignCharacterWorkspace } from './CampaignCharacterWorkspace'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE, TableContext } from './tableContext'
+import type { TableActions } from './tableContext'
+import { NodeActionsProvider } from './NodeActionsProvider'
+import { projectFlowEdge, projectFlowNode } from './flowProjection'
 import { TableInspector } from './TableInspector'
 import type { Selection } from './TableInspector'
 import '@xyflow/react/dist/style.css'
@@ -50,7 +53,9 @@ const wikiEntityTypes = new Set<NodeEntityType>(creatableTypes)
 const supportsWiki = (type: string): type is NodeEntityType => wikiEntityTypes.has(type as NodeEntityType)
 type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
 type HistoryControls = { beginGesture: () => void; endGesture: () => void; undo: () => void; redo: () => void }
+type Commit = (update: (table: TableState) => TableState, options?: { transient: boolean }) => void
 const noHistory: HistoryControls = { beginGesture: () => {}, endGesture: () => {}, undo: () => {}, redo: () => {} }
+const noDiagrams: Diagram[] = []
 function eventPointer(event: MouseEvent | TouchEvent): XYPosition | undefined {
   const pointer = 'clientX' in event ? event : event.touches[0] ?? event.changedTouches[0]
   return pointer ? { x: pointer.clientX, y: pointer.clientY } : undefined
@@ -64,16 +69,6 @@ function loadTable() {
   }
 }
 
-function compactNode(node: TableNode, expanded = false): TableNode {
-  if (node.data.entityType === 'creature' && expanded) return {
-    ...node, width: EXPANDED_CREATURE_WIDTH, height: undefined, data: { ...node.data, display: { creatureExpanded: true } },
-  }
-  return canResizeNode(node.data.entityType)
-    ? { ...node, width: Math.max(nodeMinimumSize(node.data.entityType).width, node.width ?? nodeVisual(node.data.entityType).width),
-      height: node.height === undefined ? undefined : Math.max(nodeMinimumSize(node.data.entityType).height, node.height) }
-    : { ...node, width: nodeVisual(node.data.entityType).width, height: undefined }
-}
-
 function focusIsEditing() {
   const focused = document.activeElement
   return focused instanceof Element && Boolean(focused.closest('input, textarea, select, [contenteditable], [role="textbox"], [role="menu"], button'))
@@ -81,7 +76,7 @@ function focusIsEditing() {
 
 function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled, onOpenEntity, setSelection,
   canGoBack, canGoForward, onBack, onForward,
-  onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram,
+  onChange, onNodeChanges, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram,
   onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly, history }: {
   table: TableState; diagram: Diagram; readOnly: boolean
   selection: Selection | null
@@ -94,7 +89,8 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
   onBack: () => void
   onForward: () => void
   history: HistoryControls
-  onChange: (update: (diagram: Diagram) => Diagram) => void
+  onChange: (update: (diagram: Diagram) => Diagram, options?: { transient: boolean }) => void
+  onNodeChanges: (changes: NodeChange<TableNode>[]) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
   onPlaceObject: (object: { entity: CanvasEntity; node: EntityNode }, name: string) => void
   onDuplicate: (id: string, placementId: string) => void
@@ -168,16 +164,20 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     const rect = canvasRef.current?.getBoundingClientRect()
     return rect ? flow.screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 100, y: 100 }
   }
-  const findContainer = (current: Diagram, source: TableNode, position: XYPosition) => [...current.nodes].reverse()
-    .filter(target => !containerOf(target) && canPlaceInside(source, target))
-    .sort((a, b) => Number(b.data.entityType === 'playerCharacter') - Number(a.data.entityType === 'playerCharacter'))
-    .find(target => {
+  const findContainer = (current: Diagram, source: TableNode, position: XYPosition) => {
+    if (!canContain(source)) return undefined
+    // Персонаж имеет приоритет перед локацией; не создаём и не сортируем массив на каждом движении.
+    for (const character of [true, false]) for (let index = current.nodes.length - 1; index >= 0; index--) {
+      const target = current.nodes[index]
+      if ((target.data.entityType === 'playerCharacter') !== character || containerOf(target) || !canPlaceInside(source, target)) continue
       const size = flow.getNode(target.id)?.measured
-      return position.x >= target.position.x && position.y >= target.position.y
+      if (position.x >= target.position.x && position.y >= target.position.y
         && position.x <= target.position.x + (size?.width ?? nodeVisual(target.data.entityType).width)
-        && position.y <= target.position.y + (size?.height ?? nodeMinimumSize(target.data.entityType).height)
-    })
+        && position.y <= target.position.y + (size?.height ?? nodeMinimumSize(target.data.entityType).height)) return target
+    }
+  }
   const findPointerContainer = (source: TableNode, pointer: XYPosition) => {
+    if (!canContain(source)) return undefined
     const element = document.elementFromPoint(pointer.x, pointer.y)
     // Чарлист в инспекторе — такая же цель, как нода персонажа, но только его снаряжение.
     if (element?.closest('[data-campaign-panel]')) {
@@ -371,22 +371,30 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     onDuplicate(id, placementId)
     if (diagram.nodes.find(node => node.id === id)?.data.reference) setSelection({ kind: 'node', id: placementId, editing: true })
   }
-  const hidden = new Set(diagram.nodes.filter(node => containerOf(node)).map(node => node.id))
-  const localEntities = new Map(table.entities?.map(entity => [entity.id, entity]) ?? [])
-  const resolvedDiagrams = table.diagrams.map(item => resolveDiagram(table, item))
+  const hidden = useMemo(() => new Set(diagram.nodes.filter(node => containerOf(node)).map(node => node.id)), [diagram.nodes])
+  const localEntities = useMemo(() => new Map(table.entities.map(entity => [entity.id, entity])), [table.entities])
   const displayDiagram = diagram
-  const visibleNodes = draft ? [...diagram.nodes, resolveNode(draft.node, draft.entity)] : diagram.nodes
+  const visibleNodes = useMemo(() => draft ? [...diagram.nodes, resolveNode(draft.node, draft.entity)] : diagram.nodes, [diagram.nodes, draft])
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
   const selectedEntity = selectedNode && supportsWiki(selectedNode.data.entityType) ? localEntities.get(selectedNode.data.entityId) : undefined
+  const resolvedDiagrams = useMemo(() => selectedEntity ? table.diagrams.map(item => resolveDiagram(table, item)) : noDiagrams,
+    [selectedEntity, table])
+  const flowNodes = useMemo(() => visibleNodes.map(node => projectFlowNode(node, {
+    expanded: expandedCreatures.has(node.id), hidden: hidden.has(node.id), linking, draft: node.id === draft?.node.id,
+    arrivalKey: arrivals.get(node.id), measured: node.data.entityType === 'creature' ? creatureMeasurements.get(node.id) : undefined,
+  })), [visibleNodes, expandedCreatures, hidden, linking, draft, arrivals, creatureMeasurements])
+  const flowEdges = useMemo(() => diagram.edges.map(edge => projectFlowEdge(edge,
+    selection?.kind === 'edge' && selection.id === edge.id, hidden.has(edge.source) || hidden.has(edge.target))),
+  [diagram.edges, selection, hidden])
   const editedEntity = localEntities.get(editorEntityId ?? '')
   const editedCharacter = editedEntity?.entityType === 'playerCharacter' && editedEntity.campaignCharacter
     ? editedEntity : undefined
   const closeSelection = () => {
     const id = selectedNode?.id
     setSelection(null)
-    if (id) onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === id ? { ...node, selected: false } : node) }))
+    if (id) onNodeChanges([{ id, type: 'select', selected: false }])
   }
-  return <TableContext.Provider value={{ diagram: displayDiagram, readOnly, open, edit, remove, removeEdge, release, duplicate,
+  const tableActions: TableActions = { diagram: displayDiagram, readOnly, open, edit, remove, removeEdge, release, duplicate,
     toggleCreature: id => setExpandedCreatures(current => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id); else next.add(id)
@@ -401,7 +409,8 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     placeOnDiagram: (id, diagramId) => { const node = diagram.nodes.find(item => item.id === id); if (node && !readOnly) onPlaceExisting(node.data.entityId, diagramId) },
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
-      cancel: () => setDraft(null) } : undefined }}>
+      cancel: () => setDraft(null) } : undefined }
+  return <TableContext.Provider value={tableActions}><NodeActionsProvider value={tableActions}>
     {editedCharacter && <CampaignCharacterWorkspace key={editedCharacter.id} document={editedCharacter.campaignCharacter!.document} diagramName={diagram.name}
       onBack={() => setEditorEntityId(null)} onChange={document => onUpdateEntity(editedCharacter.id, {
         campaignCharacter: { ...editedCharacter.campaignCharacter!, document },
@@ -442,17 +451,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
           setDropTarget(source ? findContainer(diagram, source, flow.screenToFlowPosition({ x: event.clientX, y: event.clientY }))?.id ?? null : null)
         }
       }}>
-        <ReactFlow<TableNode, TableEdge> nodes={visibleNodes.map(node => {
-          const displayNode = compactNode(node, expandedCreatures.has(node.id))
-          const arrivalKey = arrivals.get(node.id)
-          return { ...displayNode, hidden: hidden.has(node.id),
-            data: arrivalKey === undefined ? displayNode.data : { ...displayNode.data, display: { ...displayNode.data.display, arrivalKey } },
-            measured: node.data.entityType === 'creature' ? creatureMeasurements.get(node.id) ?? node.measured : node.measured,
-            className: [node.className, linking ? 'nopan' : undefined].filter(Boolean).join(' '), draggable: node.id === draft?.node.id ? false : node.draggable }
-        })}
-          edges={diagram.edges.map(edge => ({ ...edge, type: 'contour', sourceHandle: 'out', targetHandle: 'in',
-            selected: selection?.kind === 'edge' && selection.id === edge.id,
-            hidden: hidden.has(edge.source) || hidden.has(edge.target) }))} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+        <ReactFlow<TableNode, TableEdge> nodes={flowNodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly && !linking && !transferPending} nodesConnectable={false} edgesReconnectable={false}
           onNodesChange={changes => {
@@ -470,11 +469,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
             const persistedChanges = changes.filter(change => (!('id' in change) || change.id !== draft?.node.id)
               && !(change.type === 'dimensions' && diagram.nodes.find(node => node.id === change.id)?.data.entityType === 'creature'))
             if (!persistedChanges.length) return
-            onChange(current => {
-              const removed = new Set(persistedChanges.filter(change => change.type === 'remove').map(change => change.id))
-              const next = removed.size ? removeInstances(current, removed) : current
-              return { ...next, nodes: applyNodeChanges(persistedChanges.filter(change => change.type !== 'remove'), next.nodes) }
-            })
+            onNodeChanges(persistedChanges)
           }}
           onNodeDragStart={readOnly ? undefined : (_, node) => { history.beginGesture(); setDraggedNodeId(node.id); setNotice(null) }}
           onNodeDrag={readOnly ? undefined : (event, node) => {
@@ -494,7 +489,8 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
           }}
           onEdgesChange={readOnly ? undefined : changes => {
             captureDepartingConnections(new Set(changes.filter(change => change.type === 'remove').map(change => change.id)))
-            onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }))
+            onChange(current => ({ ...current, edges: applyEdgeChanges(changes, current.edges) }),
+              { transient: changes.every(change => change.type === 'select') })
           }}
           onNodeClick={(_, node) => {
             if (connections.ignoreClick()) return
@@ -559,18 +555,26 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     {selection && !selectedEntity && !editedCharacter && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
       selection={selection} width={table.layout.inspectorWidth} onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={() => setSelection(null)} onChange={onChange} onOpen={openReference} onAdd={add} />}
     <LibraryDragPreview drag={libraryDrag.drag} />
-  </TableContext.Provider>
+  </NodeActionsProvider></TableContext.Provider>
 }
 
-function Workspace({ table, commit, readOnly = false, history = noHistory }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean; history?: HistoryControls }) {
+function Workspace({ table, commit, readOnly = false, history = noHistory }: { table: TableState; commit: Commit; readOnly?: boolean; history?: HistoryControls }) {
   const [libraryCollapsed, setLibraryCollapsed] = useState(false)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null)
   const [wikiNavigation, setWikiNavigation] = useState<{ entries: Array<{ diagramId: string; nodeId: string }>; index: number }>({ entries: [], index: -1 })
   const active = resolveDiagram(table, table.diagrams.find(diagram => diagram.id === table.activeId)!)
-  const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram) => {
-    if (!readOnly) commit(current => updateDiagram(current, active.id, update))
+  const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram, options?: { transient: boolean }) => {
+    if (!readOnly) commit(current => updateDiagram(current, active.id, update), options)
   }, [commit, active.id, readOnly])
+  const changeNodes = useCallback((changes: NodeChange<TableNode>[]) => {
+    if (readOnly) return
+    // После blur/pointercancel браузер может продолжить прежний drag без нового onNodeDragStart.
+    if (changes.some(change => (change.type === 'position' && change.dragging)
+      || (change.type === 'dimensions' && change.resizing))) history.beginGesture()
+    const transient = changes.every(change => change.type === 'select' || (change.type === 'dimensions' && !change.setAttributes))
+    commit(current => applyDiagramNodeChanges(current, active.id, changes), { transient })
+  }, [commit, active.id, readOnly, history])
   const select = useCallback((next: Selection | null) => {
     setSelection(next)
     if (next?.kind !== 'node') return
@@ -610,7 +614,7 @@ function Workspace({ table, commit, readOnly = false, history = noHistory }: { t
       focusNodeId={focusNodeId} onFocusHandled={focusHandled} onOpenEntity={openEntity}
       canGoBack={wikiNavigation.index > 0} canGoForward={wikiNavigation.index >= 0 && wikiNavigation.index < wikiNavigation.entries.length - 1}
       onBack={() => navigateWiki(-1)} onForward={() => navigateWiki(1)}
-      onChange={changeDiagram} readOnly={readOnly} history={history}
+      onChange={changeDiagram} onNodeChanges={changeNodes} readOnly={readOnly} history={history}
       libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
       onCreateDiagram={name => { const diagram = createDiagram(name); setSelection(null); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
@@ -645,21 +649,53 @@ function PrivateTable({ onPrivate, onPublic }: { onPrivate: () => void; onPublic
   const currentRef = useRef(table)
   const [history] = useState(() => new TableHistory())
   const [saveError, setSaveError] = useState(initial.error)
-  const persist = useCallback((next: TableState) => {
-    currentRef.current = next; setTable(next)
-    if (initial.error) return
-    try { localStorage.setItem(TABLE_STORAGE_KEY, serializeTable(next)); setSaveError('') }
+  const gesture = useRef(false)
+  const pendingSave = useRef(false)
+  const flushSave = useCallback(() => {
+    if (!pendingSave.current || initial.error) return
+    pendingSave.current = false
+    try { localStorage.setItem(TABLE_STORAGE_KEY, serializeTable(currentRef.current)); setSaveError('') }
     catch { setSaveError('Изменения не сохранены: хранилище браузера недоступно или заполнено.') }
   }, [initial.error])
-  const commit = useCallback((update: (table: TableState) => TableState) => {
+  const persist = useCallback((next: TableState, transient = false) => {
+    if (next === currentRef.current) return
+    currentRef.current = next; setTable(next)
+    if (transient) return
+    pendingSave.current = true
+    if (!gesture.current) flushSave()
+  }, [flushSave])
+  const commit: Commit = useCallback((update, options) => {
     const next = update(currentRef.current)
-    history.record(currentRef.current, next)
-    persist(next)
+    if (next === currentRef.current) return
+    if (!options?.transient) history.record(currentRef.current, next)
+    persist(next, options?.transient)
   }, [history, persist])
-  const historyControls: HistoryControls = {
-    beginGesture: () => history.begin(currentRef.current), endGesture: () => history.end(currentRef.current),
+  const endGesture = useCallback(() => {
+    if (gesture.current) {
+      gesture.current = false
+      history.end(currentRef.current)
+    }
+    flushSave()
+  }, [history, flushSave])
+  const historyControls: HistoryControls = useMemo(() => ({
+    beginGesture: () => { gesture.current = true; history.begin(currentRef.current) }, endGesture,
     undo: () => persist(history.undo(currentRef.current)), redo: () => persist(history.redo(currentRef.current)),
-  }
+  }), [history, persist, endGesture])
+  useEffect(() => {
+    // Незавершённый жест тоже сохраняется при уходе со страницы или потере окна.
+    const hidden = () => { if (document.visibilityState === 'hidden') endGesture() }
+    window.addEventListener('pagehide', endGesture)
+    window.addEventListener('blur', endGesture)
+    document.addEventListener('visibilitychange', hidden)
+    document.addEventListener('pointercancel', endGesture)
+    return () => {
+      window.removeEventListener('pagehide', endGesture)
+      window.removeEventListener('blur', endGesture)
+      document.removeEventListener('visibilitychange', hidden)
+      document.removeEventListener('pointercancel', endGesture)
+      endGesture()
+    }
+  }, [endGesture])
   return <><TableToolbar publicMode={false} status={saveError ? 'Не сохранено' : 'Сохранено в этом браузере'} onPrivate={onPrivate} onPublic={onPublic} />
     {saveError && <p role="alert" className={styles.error}>{saveError}</p>}<Workspace table={table} commit={commit} history={historyControls} /></>
 }

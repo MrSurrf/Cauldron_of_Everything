@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   Button,
@@ -15,14 +15,15 @@ import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { entityLabel } from '../model/library'
 import type { LibraryReference } from '../model/library'
 import { loadCampaignCharacter } from '../model/campaignCharacter'
-import { containerOf } from '../model/nodeContainment'
 import { validReference } from '../model/table'
-import type { CanvasEntity, Diagram, NodeEntityType, TableNode } from '../model/table'
+import type { CanvasEntity, Diagram, InstanceData, NodeEntityType, TableNode } from '../model/table'
 import type { EntityWiki, WikiSection, WikiVisibility } from '../model/wiki'
 import { CampaignCharacterWiki } from './CampaignCharacterWiki'
 import { WikiLinkPicker } from './WikiLinkPicker'
 import { ResizeGrip } from './ResizeGrip'
 import { ENTITY_DRAG_TYPE, useTableActions } from './tableContext'
+import { prepareInspectorRelations } from './inspectorRelations'
+import type { InspectorMember } from './inspectorRelations'
 import tableStyles from './CampaignTable.module.css'
 import styles from './CampaignWikiPanel.module.css'
 
@@ -185,9 +186,9 @@ function WikiEntityLinks({ title, items, editing, onOpenEntity }: {
   </WikiBlock>
 }
 
-function CampaignCharacterContent({ entity, node, onUpdate, onOpenFull }: {
+function CampaignCharacterContent({ entity, data, onUpdate, onOpenFull }: {
   entity: CanvasEntity
-  node: TableNode
+  data: InstanceData
   onUpdate: (changes: EntityChanges) => void
   onOpenFull: () => void
 }) {
@@ -198,11 +199,11 @@ function CampaignCharacterContent({ entity, node, onUpdate, onOpenFull }: {
   useEffect(() => {
     if (entity.campaignCharacter) return
     const controller = new AbortController()
-    void loadCampaignCharacter(node.data, controller.signal)
+    void loadCampaignCharacter(data, controller.signal)
       .then(campaignCharacter => { if (!controller.signal.aborted) updateRef.current({ campaignCharacter }) })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Не удалось открыть персонажа.') })
     return () => controller.abort()
-  }, [entity.campaignCharacter, node.data])
+  }, [entity.campaignCharacter, data])
 
   if (error) return <p className={styles.error} role="alert">{error}</p>
   if (!entity.campaignCharacter) return <p className={styles.loading} role="status">Готовим версию персонажа для этой кампании…</p>
@@ -226,9 +227,7 @@ function relatedGroups(type: string, related: CanvasEntity[]) {
   return [{ title: type === 'npc' || type === 'playerCharacter' ? 'Связи' : 'Связанные страницы', items: related }]
 }
 
-export function LocalEntityInspector({ entity, node, diagram, diagrams, entities, width, readOnly,
-  canGoBack = false, canGoForward = false, onResize, onClose, onBack, onForward, onOpenFull,
-  onOpenEntity, onOpenLink, onDropReference, onUpdate }: {
+type InspectorProps = {
   entity: CanvasEntity
   node: TableNode
   diagram: Diagram
@@ -247,25 +246,53 @@ export function LocalEntityInspector({ entity, node, diagram, diagrams, entities
   onOpenLink: (target: string) => void
   onDropReference?: (reference: LibraryReference) => void
   onUpdate: (changes: EntityChanges) => void
-}) {
+}
+
+/** Контекст холста меняется при движении; содержимое панели получает только смысловые изменения. */
+export function LocalEntityInspector(props: InspectorProps) {
   const actions = useTableActions()
+  const latest = useRef({ props, actions })
+  useLayoutEffect(() => { latest.current = { props, actions } }, [props, actions])
+  const [commands] = useState(() => ({
+    onResize: (width: number) => latest.current.props.onResize(width),
+    onClose: () => latest.current.props.onClose(),
+    onBack: () => latest.current.props.onBack?.(),
+    onForward: () => latest.current.props.onForward?.(),
+    onOpenFull: () => latest.current.props.onOpenFull(),
+    onOpenEntity: (id: string) => latest.current.props.onOpenEntity(id),
+    onOpenLink: (target: string) => latest.current.props.onOpenLink(target),
+    onDropReference: (reference: LibraryReference) => latest.current.props.onDropReference?.(reference),
+    onUpdate: (changes: EntityChanges) => latest.current.props.onUpdate(changes),
+    release: (id: string) => latest.current.actions.release(id),
+    duplicate: (id: string) => latest.current.actions.duplicate(id),
+    remove: (id: string) => latest.current.actions.remove(id),
+  }))
+  const { entity, node, diagram, diagrams, entities, width, readOnly, canGoBack, canGoForward } = props
+  const [relations, setRelations] = useState(() => prepareInspectorRelations(node.id, entity.id, diagram, diagrams, entities))
+  if (relations.nodeId !== node.id || relations.entityId !== entity.id || relations.diagram !== diagram
+    || relations.diagrams !== diagrams || relations.entities !== entities) {
+    setRelations(prepareInspectorRelations(node.id, entity.id, diagram, diagrams, entities, relations))
+  }
+  return <InspectorContent entity={entity} nodeId={node.id} nodeData={node.data} entities={entities}
+    members={relations.members} related={relations.related} placements={relations.placements}
+    width={width} readOnly={readOnly} canGoBack={canGoBack} canGoForward={canGoForward} {...commands} />
+}
+
+type InspectorContentProps = Omit<InspectorProps, 'node' | 'diagram' | 'diagrams'> & {
+  nodeId: string
+  nodeData: InstanceData
+  members: InspectorMember[]
+  related: CanvasEntity[]
+  placements: number
+  release: (id: string) => void
+  duplicate: (id: string) => void
+  remove: (id: string) => void
+}
+const InspectorContent = memo(function InspectorContent({ entity, nodeId, nodeData, entities, members, related, placements, width, readOnly,
+  canGoBack = false, canGoForward = false, onResize, onClose, onBack, onForward, onOpenFull,
+  onOpenEntity, onOpenLink, onDropReference, onUpdate, release, duplicate, remove }: InspectorContentProps) {
   const [editing, setEditing] = useState(false)
   const [characterDropActive, setCharacterDropActive] = useState(false)
-  const members = diagram.nodes.filter(item => containerOf(item) === node.id)
-  const memberEntityIds = useMemo(() => new Set(members.map(item => item.data.entityId)), [members])
-  const placements = diagrams.reduce((total, item) => total + item.nodes.filter(placement => placement.data.entityId === entity.id).length, 0)
-  const related = useMemo(() => {
-    const ids = new Set<string>()
-    for (const item of diagrams) {
-      for (const edge of item.edges) {
-        const source = item.nodes.find(candidate => candidate.id === edge.source)
-        const target = item.nodes.find(candidate => candidate.id === edge.target)
-        if (source?.data.entityId === entity.id && target) ids.add(target.data.entityId)
-        if (target?.data.entityId === entity.id && source) ids.add(source.data.entityId)
-      }
-    }
-    return entities.filter(candidate => ids.has(candidate.id) && !memberEntityIds.has(candidate.id))
-  }, [diagrams, entities, entity.id, memberEntityIds])
   const wiki = entity.wiki
   const cover = useCampaignWikiImage(wiki.media.coverAssetId)
   const avatar = useCampaignWikiImage(wiki.media.avatarAssetId)
@@ -284,10 +311,10 @@ export function LocalEntityInspector({ entity, node, diagram, diagrams, entities
 
   const memberLinks: EntityLink[] = members.map(member => ({
     id: member.id,
-    entityId: member.data.entityId,
-    name: member.data.title,
-    type: entityLabel(member.data.entityType),
-    onRelease: () => actions.release(member.id),
+    entityId: member.entityId,
+    name: member.title,
+    type: entityLabel(member.entityType),
+    onRelease: () => release(member.id),
   }))
 
   return <aside className={`${tableStyles.inspectorWindow} ${styles.panel}`} aria-label="Wiki-карточка объекта"
@@ -362,7 +389,7 @@ export function LocalEntityInspector({ entity, node, diagram, diagrams, entities
               onValueChange={description => onUpdate({ description })} />
           </WikiBlock>}
 
-          {entity.entityType === 'playerCharacter' && <CampaignCharacterContent entity={entity} node={node}
+          {entity.entityType === 'playerCharacter' && <CampaignCharacterContent entity={entity} data={nodeData}
             onUpdate={onUpdate} onOpenFull={onOpenFull} />}
 
           <WikiSections sections={wiki.sections} editing={editing} publicView={readOnly}
@@ -380,11 +407,11 @@ export function LocalEntityInspector({ entity, node, diagram, diagrams, entities
             items={group.items.map(item => ({ id: item.id, entityId: item.id, name: item.name, type: entityLabel(item.entityType) }))}
             editing={editing} onOpenEntity={onOpenEntity} />)}
           {editing && <details className={styles.additional}><summary>Дополнительные действия</summary>
-            <Button size="sm" variant="secondary" decoration="bare" onClick={() => actions.duplicate(node.id)}>Дублировать размещение</Button>
-            <Button size="sm" variant="secondary" decoration="bare" onClick={() => { actions.remove(node.id); onClose() }}>Убрать со схемы</Button>
+            <Button size="sm" variant="secondary" decoration="bare" onClick={() => duplicate(nodeId)}>Дублировать размещение</Button>
+            <Button size="sm" variant="secondary" decoration="bare" onClick={() => { remove(nodeId); onClose() }}>Убрать со схемы</Button>
           </details>}
         </aside>}
       </div>
     </ScrollArea>
   </aside>
-}
+})
