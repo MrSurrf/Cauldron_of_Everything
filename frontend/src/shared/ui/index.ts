@@ -10,6 +10,11 @@ export type {
 } from './Button'
 export { Checkbox } from './Checkbox'
 export type { CheckboxProps } from './Checkbox'
+export { CampaignWikiImageField, useCampaignWikiImage } from './CampaignWikiImage'
+export type {
+  CampaignWikiImageFieldProps,
+  CampaignWikiImageResult,
+} from './CampaignWikiImage'
 export { Combobox } from './Combobox'
 export { Select } from './Select'
 export type { SelectOption, SelectProps } from './Select'

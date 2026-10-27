@@ -1,0 +1,74 @@
+.page { display: grid; gap: var(--space-4); color: var(--color-text-primary); }
+.hero { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+.hero > button { grid-column: 1 / -1; justify-self: start; }
+.portrait, .portraitPlaceholder { width: 72px; height: 88px; border-radius: var(--radius-md); object-fit: cover; background: var(--color-surface-muted); border: 1px solid var(--color-content-border); }
+.portraitPlaceholder { display: grid; place-items: center; color: var(--color-text-subtle); font-size: var(--font-size-xl); }
+.identity { min-width: 0; }
+.identity h2 { margin: 0; color: var(--color-heading-primary); font: 500 var(--font-size-xl)/1.1 var(--font-family-heading); overflow-wrap: anywhere; }
+.identity p { margin: var(--space-2) 0 0; color: var(--color-text-subtle); font-size: var(--font-size-xs); line-height: var(--line-height-normal); }
+.inspiration { margin-top: var(--space-2); }
+.summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.summary > div { display: grid; gap: 2px; padding: var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-muted); border: 1px solid var(--color-content-border); }
+.summary span, .resource > span { color: var(--color-text-subtle); font-size: var(--font-size-2xs); }
+.summary strong { font-size: var(--font-size-md); }
+.section { min-width: 0; margin: 0; padding: 0 0 var(--space-3); border: 0; border-bottom: 1px solid var(--color-content-border); }
+.section > summary, .sectionHeading h3 { margin: 0; padding: var(--space-2) 0; color: var(--color-heading-primary); font: 500 var(--font-size-md)/1.25 var(--font-family-heading); cursor: pointer; }
+.sectionHeading h3 { cursor: default; }
+.section[open] > summary { margin-bottom: var(--space-2); }
+.healthRow { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.healthRow > div:first-child { display: grid; gap: 2px; }
+.healthRow span, .healthRow small { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.healthRow strong { font-size: var(--font-size-lg); }
+.healthActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); }
+.healthActions button, .itemFlags button { padding: var(--space-1) var(--space-2); border: 0; border-radius: var(--radius-sm); background: var(--color-surface-accent); color: var(--color-text-secondary); cursor: pointer; font: inherit; font-size: var(--font-size-2xs); }
+.resourceGrid { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+.resource { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.stepper { display: inline-grid; grid-template-columns: 26px minmax(52px, auto) 26px; align-items: center; border: 1px solid var(--color-content-border); border-radius: var(--radius-sm); overflow: hidden; }
+.stepper button { height: 26px; padding: 0; border: 0; background: var(--color-surface-accent); color: var(--color-text-primary); cursor: pointer; }
+.stepper button:disabled { opacity: .35; cursor: default; }
+.stepper output { padding-inline: var(--space-1); text-align: center; font-size: var(--font-size-xs); }
+.stepper small { color: var(--color-text-subtle); }
+.subtleLine { margin-top: var(--space-2); color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.abilityGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.abilityGrid > div { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 1px var(--space-1); padding: var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-muted); }
+.abilityGrid span { color: var(--color-text-subtle); font-size: var(--font-size-2xs); }
+.abilityGrid strong { grid-row: span 2; font-size: var(--font-size-lg); }
+.abilityGrid small, .abilityGrid em { color: var(--color-text-secondary); font-size: var(--font-size-2xs); font-style: normal; }
+.skillList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px var(--space-3); margin-top: var(--space-3); }
+.skillList > div { display: flex; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-1); border-bottom: 1px solid var(--color-content-border); font-size: var(--font-size-xs); }
+.skillList span { color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.table, .inventory, .spells, .features, .personality, .proficiencies { display: grid; gap: var(--space-2); }
+.table > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--space-2); padding: var(--space-2); border-bottom: 1px solid var(--color-content-border); font-size: var(--font-size-xs); }
+.table small { grid-column: 1 / -1; color: var(--color-text-subtle); }
+.currency, .spellSlots { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.currency span, .badge { padding: var(--space-1) var(--space-2); border-radius: var(--radius-round); background: var(--color-surface-muted); }
+.spellSlots > div { align-items: center; display: flex; gap: var(--space-2); }
+.spellSlots > div > span { color: var(--color-text-subtle); }
+.inventory, .spells { min-height: 3rem; padding: var(--space-2); border: 1px dashed var(--color-content-border); border-radius: var(--radius-md); }
+.inventoryItem, .spells article { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-muted); }
+.inventoryItem > div:first-child, .spells article > div:first-child { display: grid; min-width: 0; }
+.inventoryItem small, .spells small { color: var(--color-text-subtle); font-size: var(--font-size-2xs); overflow-wrap: anywhere; }
+.itemFlags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-2xs); }
+.itemFlags button { margin-left: auto; }
+.spellActions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
+.spellActions button { background: transparent; border: 0; color: var(--color-text-subtle); cursor: pointer; font: inherit; font-size: var(--font-size-2xs); }
+.spellActions button:hover { color: var(--color-status-danger); }
+.dropEmpty, .empty { margin: 0; color: var(--color-text-subtle); font-size: var(--font-size-xs); font-style: italic; }
+.spells article p { grid-column: 1 / -1; margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-xs); white-space: pre-wrap; }
+.badge { color: var(--color-text-subtle); font-size: var(--font-size-2xs); }
+.features article, .personality section { padding: var(--space-2) 0; }
+.featureUses { align-items: center; display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
+.featureUses small { color: var(--color-text-subtle); font-size: var(--font-size-2xs); }
+.features h4, .personality h4 { margin: 0 0 var(--space-1); color: var(--color-heading-primary); font: 500 var(--font-size-sm)/1.25 var(--font-family-heading); }
+.personality section + section, .features article + article { border-top: 1px solid var(--color-content-border); }
+.personality section > div { margin-top: var(--space-2); }
+.personality section strong { font-size: var(--font-size-xs); }
+.customField, .proficiencies > div { display: grid; grid-template-columns: minmax(6rem, .4fr) minmax(0, 1fr); gap: var(--space-2); padding-block: var(--space-1); font-size: var(--font-size-xs); }
+.customField span, .proficiencies span { color: var(--color-text-subtle); }
+.customField strong, .proficiencies strong { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 480px) {
+  .summary, .skillList { grid-template-columns: 1fr; }
+  .healthRow { align-items: stretch; flex-direction: column; }
+  .healthActions { justify-content: flex-start; }
+}

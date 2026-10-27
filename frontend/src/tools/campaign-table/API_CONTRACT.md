@@ -61,10 +61,10 @@
   "visibility": "public",
   "revision": 1,
   "document": {
-    "version": 3,
+    "version": 4,
     "activeId": "diagram-public",
-    "entities": [{ "id": "location-public", "slug": "location-public", "entityType": "location", "name": "Таверна", "description": "Общее описание", "facts": "", "state": "" }],
-    "layout": { "libraryWidth": 336, "inspectorWidth": 380, "section": "creature", "query": "" },
+    "entities": [{ "id": "location-public", "slug": "location-public", "entityType": "location", "name": "Таверна", "description": "Общее описание", "facts": "", "state": "", "wiki": { "aliases": [], "status": "", "tags": [], "world": "", "customProperties": [], "sections": [], "media": {} } }],
+    "layout": { "libraryWidth": 336, "inspectorWidth": 520, "section": "creature", "query": "" },
     "diagrams": [{
       "id": "diagram-public",
       "name": "Доступная игрокам схема",
@@ -111,18 +111,25 @@ Frontend не может заменить серверную авторизац�
 Он доступен тому, у кого есть доступ к этому браузерному профилю. Не утверждать,
 что требования серверных прав реализованы до появления и проверки API.
 
-## Формат документа v3 и последующая серверная запись
+## Формат документа v4 и последующая серверная запись
 
 Точный TypeScript-контракт и валидатор: `model/table.ts`. Все содержательные данные
 находятся в `document.entities[]`: `{ id, entityType, slug, name, description, facts,
-state, reference?, statBlock? }`. Поддерживаются `playerCharacter`, `npc`, `creature`, `location`,
+state, wiki, reference?, statBlock?, campaignCharacter? }`. Поддерживаются `playerCharacter`, `npc`, `creature`, `location`,
 `quest`, `faction`, `item`, `spell`, `note` и прежние разделы библиотеки.
 Входной API-тип `character` преобразуется в `playerCharacter`; NPC остаётся отдельным типом.
 
 Поле `state` теперь только совместимое наследие старых документов, в UI не используется.
+`wiki` хранит метаданные wiki-карточки: `aliases`, `status`, `tags`, `world`,
+`customProperties`, разделы с `visibility: master|players|public` и ссылки
+`media.coverAssetId`/`avatarAssetId`. Бинарные файлы и object URL в документ не входят.
 Содержательная копия экземпляра хранится в необязательном `Entity.statBlock`:
 `{kind: "creature", entity: CreatureEntity}`, `{kind: "spell"|"item", entry: EncyclopediaEntry}`
-или `{kind: "playerCharacter", document: CharacterSheetDocument}`. Node не содержит статблок.
+для энциклопедии. Node не содержит статблок.
+У `playerCharacter` независимый от исходного персонажа лист находится в
+`campaignCharacter: { sourceCharacterId?, document: CharacterSheetDocument }`.
+`sourceCharacterId` — только ссылка для перехода; предметы, заклинания, HP и ресурсы
+изменяют кампанийную копию, не исходный лист.
 Редактирование и дублирование этих копий не отправляют запись в API энциклопедии/персонажей.
 `GET /api/characters/{id}/` может передавать существующий лист в `document`; без него
 используется пустой лист текущего редактора с доступным названием и описанием материала.
@@ -140,8 +147,8 @@ state, reference?, statBlock? }`. Поддерживаются `playerCharacter`
 - `data.locationId` — существующая группировка размещений в той же схеме, только для creature/playerCharacter/npc/item.
   Дети хранятся плоско, визуально показаны списком. Вложенные локации запрещены.
 - `data.containerId` — принадлежность предмета ноде playerCharacter в той же схеме;
-  одновременно с `locationId` не допускается. Получатель должен иметь локальный статблок
-  playerCharacter. Предмет представлен штатным виджетом в `equipmentContentText` с
+  одновременно с `locationId` не допускается. Получатель должен иметь кампанийную копию
+  `playerCharacter.campaignCharacter`. Предмет представлен штатным виджетом в `equipmentContentText` с
   `campaign-placement`, однозначно кодирующим ID схемы и размещения. Извлечение удаляет
   именно этот виджет, не одноимённые предметы. Необязательный `equipmentSource` у предмета
   сохраняет правки виджета при извлечении; это контент ContentEditor, не доверенный HTML.
@@ -152,15 +159,19 @@ state, reference?, statBlock? }`. Поддерживаются `playerCharacter`
 - Удаление контейнера извлекает детей на холст; удаление экземпляра удаляет его
   рёбра, но никогда не Entity. Дублирование контейнера создаёт пустой контейнер.
 
-Формат v1/v2 читается через изолированный legacy-валидатор и миграцию. ID узлов,
+Форматы v1/v2 читаются через изолированный legacy-валидатор, v3 — через миграцию,
+переносящую старый `statBlock.playerCharacter` в `campaignCharacter` без изменения
+`CharacterSheetDocument`. ID узлов,
 координаты, изменённые размеры, подписи и локальные правки сохраняются. Ключ
-localStorage не меняется: `cauldron.campaign-table.v2`. Новая запись имеет `version: 3`.
+localStorage не меняется: `cauldron.campaign-table.v2`. Новая запись имеет `version: 4`.
 Точки контура и технические якоря React Flow вычисляются только в UI, в документ не входят.
 
 Предлагаемые **будущие**, пока не вызываемые frontend запросы:
 
 - `GET /api/campaigns/{id}/table/private/` → `{ visibility: private, revision, document }`;
 - `PUT /api/campaigns/{id}/table/private/` с `If-Match: revision` → новая revision;
+- `POST /api/campaigns/{id}/media/` и удаление по ID — серверное хранение обложек и
+  портретов после проверки прав редактора; локальный прототип использует IndexedDB;
 - отдельный явный endpoint публикации выбранной проекции (не синхронизация private → public).
 
 Владелец/уполномоченный редактор может читать и записывать private, игрок — нет.

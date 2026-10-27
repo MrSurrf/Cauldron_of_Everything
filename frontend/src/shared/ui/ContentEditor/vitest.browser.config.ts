@@ -21,6 +21,7 @@ export default defineConfig({
     include: [
       'src/shared/ui/Checkbox/**/*.browser.test.tsx',
       'src/shared/ui/ScrollArea/**/*.browser.test.tsx',
+      'src/shared/ui/ContentEditor/**/*.test.ts',
       'src/shared/ui/ContentEditor/**/*.browser.test.tsx',
     ],
   },

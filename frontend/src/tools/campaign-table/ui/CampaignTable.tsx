@@ -3,11 +3,23 @@ import type { CSSProperties, DragEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { applyEdgeChanges, applyNodeChanges, Background, Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react'
 import type { XYPosition } from '@xyflow/react'
+import { fetchEncyclopedia } from '../../../entities/encyclopedia'
+import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
+import {
+  characterSheetActions,
+  characterSheetReducer,
+  createSpellFromEncyclopedia,
+  equipmentDetailPatch,
+  equipmentItemSource,
+  spellDetailPatch,
+  toCharacterEncyclopediaEntry,
+} from '../../character-sheet'
 import { loadPublicTable } from '../model/campaignApi'
 import type { LibraryReference } from '../model/library'
-import { canPlaceReference, entityLabel } from '../model/library'
-import { hasInstanceEditor, loadInstanceStatBlock } from '../model/instanceStatBlock'
+import { canPlaceReference, entityLabel, entryReference } from '../model/library'
+import { loadCampaignCharacter } from '../model/campaignCharacter'
+import { loadInstanceStatBlock } from '../model/instanceStatBlock'
 import { canPlaceInside, containerOf, moveInside } from '../model/nodeContainment'
 import { canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
 import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
@@ -22,6 +34,8 @@ import { useNodeConnections } from './useNodeConnections'
 import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import { TableHistory } from '../model/tableHistory'
 import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
+import type { EntityChanges } from './LocalEntityPanel'
+import { CampaignCharacterWorkspace } from './CampaignCharacterWorkspace'
 import { LibrarySidebar } from './LibrarySidebar'
 import { ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE, TableContext } from './tableContext'
 import { TableInspector } from './TableInspector'
@@ -32,6 +46,8 @@ import styles from './CampaignTable.module.css'
 const nodeTypes = { entity: NodeRenderer, location: NodeRenderer, note: NodeRenderer }
 const edgeTypes = { contour: ContourEdge }
 const creatableTypes = ['location', 'note', 'playerCharacter', 'npc', 'quest', 'faction'] as const
+const wikiEntityTypes = new Set<NodeEntityType>(creatableTypes)
+const supportsWiki = (type: string): type is NodeEntityType => wikiEntityTypes.has(type as NodeEntityType)
 type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
 type HistoryControls = { beginGesture: () => void; endGesture: () => void; undo: () => void; redo: () => void }
 const noHistory: HistoryControls = { beginGesture: () => {}, endGesture: () => {}, undo: () => {}, redo: () => {} }
@@ -63,15 +79,27 @@ function focusIsEditing() {
   return focused instanceof Element && Boolean(focused.closest('input, textarea, select, [contenteditable], [role="textbox"], [role="menu"], button'))
 }
 
-function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram, onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly, history }: {
+function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled, onOpenEntity, setSelection,
+  canGoBack, canGoForward, onBack, onForward,
+  onChange, onLayout, onPlaceObject, onUpdateEntity, onDuplicate, onPlaceExisting, onSelectDiagram,
+  onCreateDiagram, libraryCollapsed, onToggleLibrary, readOnly, history }: {
   table: TableState; diagram: Diagram; readOnly: boolean
+  selection: Selection | null
+  focusNodeId: string | null
+  onFocusHandled: () => void
+  onOpenEntity: (entityId: string) => void
+  setSelection: (selection: Selection | null) => void
+  canGoBack: boolean
+  canGoForward: boolean
+  onBack: () => void
+  onForward: () => void
   history: HistoryControls
   onChange: (update: (diagram: Diagram) => Diagram) => void
   onLayout: (layout: Partial<TableState['layout']>) => void
   onPlaceObject: (object: { entity: CanvasEntity; node: EntityNode }, name: string) => void
   onDuplicate: (id: string, placementId: string) => void
   onPlaceExisting: (entityId: string, diagramId: string) => void
-  onUpdateEntity: (id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description'>>) => void
+  onUpdateEntity: (id: string, changes: EntityChanges) => void
   onSelectDiagram: (id: string) => void; onCreateDiagram: (name: string) => void
   libraryCollapsed: boolean; onToggleLibrary: () => void
 }) {
@@ -81,7 +109,6 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const [arrivals, setArrivals] = useState<ReadonlyMap<string, number>>(() => new Map())
   const { connections: departingConnections, capture: captureDepartingConnections } = useDepartingConnections(canvasRef)
   const creationRef = useRef<HTMLDivElement>(null)
-  const [selection, setSelection] = useState<Selection | null>(null)
   const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
   const [draft, setDraft] = useState<{ entity: CanvasEntity; node: EntityNode } | null>(null)
   const connections = useNodeConnections(diagram, readOnly, flow.screenToFlowPosition, onChange,
@@ -94,6 +121,16 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const transfer = useRef<AbortController | null>(null)
   useEffect(() => () => transfer.current?.abort(), [])
   useEffect(() => {
+    if (!focusNodeId) return
+    const node = diagram.nodes.find(item => item.id === focusNodeId)
+    if (!node) return
+    const frame = requestAnimationFrame(() => {
+      void flow.fitView({ nodes: [node], duration: 280, padding: 0.35, maxZoom: 1 })
+      onFocusHandled()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [diagram.nodes, flow, focusNodeId, onFocusHandled])
+  useEffect(() => {
     const finish = () => { setDropTarget(null); setDraggedNodeId(null) }
     document.addEventListener('dragend', finish)
     window.addEventListener('blur', finish)
@@ -105,6 +142,15 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   const [expandedCreatures, setExpandedCreatures] = useState<ReadonlySet<string>>(() => new Set())
   const [creatureMeasurements, setCreatureMeasurements] = useState<ReadonlyMap<string, NonNullable<TableNode['measured']>>>(() => new Map())
   useEffect(() => {
+    if (!selection || editorEntityId) return
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || focusIsEditing()) return
+      setSelection(null)
+    }
+    document.addEventListener('keydown', close)
+    return () => document.removeEventListener('keydown', close)
+  }, [editorEntityId, selection, setSelection])
+  useEffect(() => {
     if (readOnly || editorEntityId || draft || transferPending) return
     const handleHistory = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || event.code !== 'KeyZ') return
@@ -115,7 +161,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     }
     document.addEventListener('keydown', handleHistory)
     return () => document.removeEventListener('keydown', handleHistory)
-  }, [readOnly, editorEntityId, draft, transferPending, history, connections])
+  }, [readOnly, editorEntityId, draft, transferPending, history, connections, setSelection])
   const linking = connectionSource !== null && diagram.nodes.some(node => node.id === connectionSource && !containerOf(node))
   const cancelConnection = connections.cancel
   const center = () => {
@@ -136,7 +182,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     // Чарлист в инспекторе — такая же цель, как нода персонажа, но только его снаряжение.
     if (element?.closest('[data-campaign-panel]')) {
       const character = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
-      return element.closest('[data-character-sheet-slot="equipment"]') && character?.data.entityType === 'playerCharacter'
+      return element.closest('[data-campaign-character-drop="item"], [data-character-sheet-slot="equipment"]') && character?.data.entityType === 'playerCharacter'
         && canPlaceInside(source, character) ? character : undefined
     }
     return findContainer(diagram, source, flow.screenToFlowPosition(pointer))
@@ -148,7 +194,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     setTransferPending(true)
     try {
       const [character, item] = await Promise.all([
-        loadInstanceStatBlock(target.data, controller.signal), loadInstanceStatBlock(source.data, controller.signal),
+        loadCampaignCharacter(target.data, controller.signal), loadInstanceStatBlock(source.data, controller.signal),
       ])
       if (controller.signal.aborted) throw new DOMException('Перенос отменён.', 'AbortError')
       return { character, item }
@@ -165,7 +211,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
         // За время загрузки нельзя восстановить удалённую ноду или затереть уже сохранённые правки.
         if (!current.nodes.some(node => node.id === id) || (target && !current.nodes.some(node => node.id === target.id))) return current
         const ready = prepared ? { ...current, nodes: current.nodes.map(node => node.id === target?.id
-          ? { ...node, data: { ...node.data, statBlock: node.data.statBlock ?? prepared.character } }
+          ? { ...node, data: { ...node.data, campaignCharacter: node.data.campaignCharacter ?? prepared.character } }
           : node.id === id ? { ...node, data: { ...node.data, statBlock: node.data.statBlock ?? prepared.item } } : node) } : current
         return moveInside(ready, id, target?.id, position)
       })
@@ -212,7 +258,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
         if (prepared) {
           object.entity.statBlock = prepared.item
           onChange(current => ({ ...current, nodes: current.nodes.map(node => node.id === target.id
-            ? { ...node, data: { ...node.data, statBlock: node.data.statBlock ?? prepared.character } } : node) }))
+            ? { ...node, data: { ...node.data, campaignCharacter: node.data.campaignCharacter ?? prepared.character } } : node) }))
         }
       }
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Не удалось загрузить снаряжение.'); return }
@@ -240,15 +286,73 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   }
   const open = (id: string) => {
     const data = diagram.nodes.find(node => node.id === id)?.data
-    if (data && !data.reference && !hasInstanceEditor(data.entityType)) setEditorEntityId(data.entityId)
-    else setSelection({ kind: 'node', id, editing: false })
+    if (data) setSelection({ kind: 'node', id, editing: false })
   }
   const edit = (id: string) => {
     const data = diagram.nodes.find(node => node.id === id)?.data
-    if (data && !data.reference && !hasInstanceEditor(data.entityType)) setEditorEntityId(data.entityId)
-    else setSelection({ kind: 'node', id, editing: true })
+    if (data) setSelection({ kind: 'node', id, editing: true })
   }
   const openReference = (reference: LibraryReference) => setSelection({ kind: 'library', reference })
+  async function openWikiLink(target: string) {
+    const entryMatch = target.match(/^\/encyclopedia\/entry\/([^/?#]+)\/?/)
+    const match = target.match(/^\/encyclopedia\/(bestiary|creature|item|spell|class|race|background|feat|sidekick|reference)\/([^/?#]+)\/?/)
+    if (!entryMatch && !match) {
+      if (target.startsWith('/')) window.location.assign(target)
+      return
+    }
+    const controller = new AbortController()
+    try {
+      let entry: EncyclopediaEntry | undefined
+      if (entryMatch) {
+        entry = await fetchEncyclopedia<EncyclopediaEntry>(`${encodeURIComponent(decodeURIComponent(entryMatch[1]))}/`, controller.signal)
+      } else if (match) {
+        const type = match[1] === 'bestiary' ? 'creature' : match[1]
+        const slug = decodeURIComponent(match[2])
+        const params = new URLSearchParams({ type, slug, page_size: '1' })
+        const page = await fetchEncyclopedia<{ results: EncyclopediaEntry[] }>(`?${params}`, controller.signal)
+        entry = page.results[0]
+      }
+      if (!entry) throw new Error('Запись энциклопедии не найдена.')
+      openReference(entryReference(entry))
+    } catch (cause: unknown) {
+      setNotice(cause instanceof Error ? cause.message : 'Не удалось открыть ссылку энциклопедии.')
+    }
+  }
+  async function copyReferenceToCharacter(reference: LibraryReference, entityId: string) {
+    if (transfer.current || reference.source !== 'encyclopedia' || !['item', 'spell'].includes(reference.entityType)) return
+    const entity = table.entities.find(item => item.id === entityId)
+    const targetNode = table.diagrams.flatMap(item => resolveDiagram(table, item).nodes).find(item => item.data.entityId === entityId)
+    if (!entity || !targetNode || entity.entityType !== 'playerCharacter') return
+    const controller = new AbortController()
+    transfer.current = controller
+    setTransferPending(true)
+    try {
+      const [campaignCharacter, detail] = await Promise.all([
+        entity.campaignCharacter ? Promise.resolve(structuredClone(entity.campaignCharacter)) : loadCampaignCharacter(targetNode.data, controller.signal),
+        fetchEncyclopedia<EncyclopediaEntry>(`${encodeURIComponent(reference.entityId)}/`, controller.signal),
+      ])
+      const entry = toCharacterEncyclopediaEntry(detail)
+      if (!entry || (entry.entityType !== 'item' && entry.entityType !== 'spell')) throw new Error('Эту запись нельзя добавить персонажу.')
+      let document = campaignCharacter.document
+      if (entry.entityType === 'item') {
+        document = characterSheetReducer(document, characterSheetActions.importEquipmentItem(entry.id, equipmentItemSource(entry)))
+        document = characterSheetReducer(document, characterSheetActions.enrichEquipmentItem(entry.id, equipmentDetailPatch(detail)))
+      } else {
+        const spell = createSpellFromEncyclopedia(entry)
+        if (!spell) throw new Error(`Для «${entry.name}» не указан уровень заклинания.`)
+        const existing = document.spellcasting?.spells.find(candidate => candidate.entityId === entry.id)
+        document = characterSheetReducer(document, characterSheetActions.addSpell(spell))
+        document = characterSheetReducer(document, characterSheetActions.updateSpell(existing?.id ?? spell.id, spellDetailPatch(detail)))
+      }
+      if (controller.signal.aborted) return
+      onUpdateEntity(entityId, { campaignCharacter: { ...campaignCharacter, document } })
+      setNotice(`${entry.name} добавлен${entry.entityType === 'item' ? '' : 'о'} в кампанийную версию персонажа.`)
+    } catch (cause: unknown) {
+      if (!(cause instanceof DOMException && cause.name === 'AbortError')) setNotice(cause instanceof Error ? cause.message : 'Не удалось добавить запись персонажу.')
+    } finally {
+      if (transfer.current === controller) { transfer.current = null; setTransferPending(false) }
+    }
+  }
   const remove = (id: string) => {
     if (readOnly) return
     captureDepartingConnections(new Set(diagram.edges.filter(edge => edge.source === id || edge.target === id).map(edge => edge.id)))
@@ -269,10 +373,11 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
   }
   const hidden = new Set(diagram.nodes.filter(node => containerOf(node)).map(node => node.id))
   const localEntities = new Map(table.entities?.map(entity => [entity.id, entity]) ?? [])
+  const resolvedDiagrams = table.diagrams.map(item => resolveDiagram(table, item))
   const displayDiagram = diagram
   const visibleNodes = draft ? [...diagram.nodes, resolveNode(draft.node, draft.entity)] : diagram.nodes
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
-  const selectedEntity = selectedNode && !selectedNode.data.reference && !hasInstanceEditor(selectedNode.data.entityType) ? localEntities.get(selectedNode.data.entityId) : undefined
+  const selectedEntity = selectedNode && supportsWiki(selectedNode.data.entityType) ? localEntities.get(selectedNode.data.entityId) : undefined
   const editedEntity = localEntities.get(editorEntityId ?? '')
   const closeSelection = () => {
     const id = selectedNode?.id
@@ -295,12 +400,19 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
       cancel: () => setDraft(null) } : undefined }}>
-    {editedEntity ? <LocalEntityEditor key={editedEntity.id} entity={editedEntity} diagramName={diagram.name} readOnly={readOnly}
-      onBack={() => setEditorEntityId(null)} onUpdate={changes => onUpdateEntity(editedEntity.id, changes)} /> : <section className={styles.board} aria-label="Схема кампании">
+    {editedEntity && (editedEntity.entityType === 'playerCharacter' && editedEntity.campaignCharacter
+      ? <CampaignCharacterWorkspace key={editedEntity.id} document={editedEntity.campaignCharacter.document} diagramName={diagram.name}
+        onBack={() => setEditorEntityId(null)} onChange={document => onUpdateEntity(editedEntity.id, {
+          campaignCharacter: { ...editedEntity.campaignCharacter!, document },
+        })} />
+      : <LocalEntityEditor key={editedEntity.id} entity={editedEntity} diagramName={diagram.name} readOnly={readOnly}
+        onBack={() => setEditorEntityId(null)} onUpdate={changes => onUpdateEntity(editedEntity.id, changes)} />)}
+    <section className={styles.board} aria-label="Схема кампании" aria-hidden={Boolean(editedEntity)}
+      inert={editedEntity ? true : undefined}>
       <header className={styles.boardHeader}><div className={styles.schemeHeading}>
         <Popover aria-label="Схемы кампании" className={styles.schemePopover} open={schemesOpen} onOpenChange={setSchemesOpen} content={<div className={styles.schemeMenu}>
           <nav aria-label="Выбор схемы">{table.diagrams.map(item => <button type="button" key={item.id} aria-current={item.id === diagram.id ? 'page' : undefined}
-            onClick={() => { onSelectDiagram(item.id); setSchemesOpen(false) }}><span>{item.name}</span><small>{item.nodes.length}</small></button>)}</nav>
+            onClick={() => { setSelection(null); onSelectDiagram(item.id); setSchemesOpen(false) }}><span>{item.name}</span><small>{item.nodes.length}</small></button>)}</nav>
           {!readOnly && <><label>Название схемы<TextInput rootClassName={styles.search} aria-label="Название схемы" value={diagram.name}
             onChange={event => onChange(current => ({ ...current, name: event.target.value }))} /></label>
             <form onSubmit={event => { event.preventDefault(); if (!newName.trim()) return; onCreateDiagram(newName.trim()); setNewName(''); setSchemesOpen(false) }}>
@@ -400,7 +512,7 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
           onNodeMouseLeave={() => connections.setTarget(null)}
           onNodeDoubleClick={(_, node) => { if (!linking && node.id !== draft?.node.id) open(node.id) }}
           onEdgeClick={(_, edge) => { setAnchor(null); setSelection({ kind: 'edge', id: edge.id }) }}
-          onPaneClick={() => { if (!connections.ignoreClick()) { setSelection(null); setAnchor(null); cancelConnection() } }}
+          onPaneClick={() => { if (!connections.ignoreClick()) { setAnchor(null); cancelConnection() } }}
           onPaneContextMenu={event => { if (readOnly) return; event.preventDefault(); showCreationAt(event.clientX, event.clientY) }}
           onMoveStart={() => setAnchor(null)}
           onMoveEnd={readOnly ? undefined : (_, viewport) => onChange(current => ({ ...current, viewport }))}
@@ -431,11 +543,16 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
         </div>}
         {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите правой кнопкой на холст или перетащите материал из библиотеки.'}</p></div>}
       </div>
-    </section>}
+    </section>
     {selectedNode && selectedEntity && !editedEntity && <LocalEntityInspector key={selectedEntity.id} entity={selectedEntity}
-      node={selectedNode} diagram={displayDiagram} width={table.layout.inspectorWidth} readOnly={readOnly}
+      node={selectedNode} diagram={displayDiagram} diagrams={resolvedDiagrams} entities={table.entities}
+      width={table.layout.inspectorWidth} readOnly={readOnly}
       onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={closeSelection}
-      onOpenFull={() => setEditorEntityId(selectedEntity.id)} onUpdate={changes => onUpdateEntity(selectedEntity.id, changes)} />}
+      canGoBack={canGoBack} canGoForward={canGoForward} onBack={onBack} onForward={onForward}
+      onOpenFull={() => setEditorEntityId(selectedEntity.id)} onOpenEntity={onOpenEntity}
+      onOpenLink={target => { void openWikiLink(target) }}
+      onDropReference={reference => { void copyReferenceToCharacter(reference, selectedEntity.id) }}
+      onUpdate={changes => onUpdateEntity(selectedEntity.id, changes)} />}
     {!readOnly && !libraryCollapsed && <LibrarySidebar section={table.layout.section} query={table.layout.query} width={table.layout.libraryWidth}
       onCollapse={onToggleLibrary} onSection={section => onLayout({ section, query: '' })}
       onQuery={query => onLayout({ query })} onResize={libraryWidth => onLayout({ libraryWidth })} onOpen={openReference} onAdd={add}
@@ -448,16 +565,56 @@ function DiagramCanvas({ table, diagram, onChange, onLayout, onPlaceObject, onUp
 
 function Workspace({ table, commit, readOnly = false, history = noHistory }: { table: TableState; commit: (update: (table: TableState) => TableState) => void; readOnly?: boolean; history?: HistoryControls }) {
   const [libraryCollapsed, setLibraryCollapsed] = useState(false)
+  const [selection, setSelection] = useState<Selection | null>(null)
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null)
+  const [wikiNavigation, setWikiNavigation] = useState<{ entries: Array<{ diagramId: string; nodeId: string }>; index: number }>({ entries: [], index: -1 })
   const active = resolveDiagram(table, table.diagrams.find(diagram => diagram.id === table.activeId)!)
   const changeDiagram = useCallback((update: (diagram: Diagram) => Diagram) => {
     if (!readOnly) commit(current => updateDiagram(current, active.id, update))
   }, [commit, active.id, readOnly])
+  const select = useCallback((next: Selection | null) => {
+    setSelection(next)
+    if (next?.kind !== 'node') return
+    const placement = table.diagrams.flatMap(diagram => diagram.nodes.map(node => ({ diagramId: diagram.id, node })))
+      .find(item => item.node.id === next.id)
+    const entity = table.entities.find(item => item.id === placement?.node.data.entityId)
+    if (!placement || !entity || !supportsWiki(entity.entityType)) return
+    setWikiNavigation(current => {
+      if (current.entries[current.index]?.nodeId === placement.node.id) return current
+      const entries = [...current.entries.slice(0, current.index + 1), { diagramId: placement.diagramId, nodeId: placement.node.id }]
+      return { entries, index: entries.length - 1 }
+    })
+  }, [table.diagrams, table.entities])
+  const openEntity = useCallback((entityId: string) => {
+    const current = table.diagrams.find(diagram => diagram.id === table.activeId)?.nodes.find(node => node.data.entityId === entityId)
+    const elsewhere = table.diagrams.flatMap(diagram => diagram.nodes.map(node => ({ diagramId: diagram.id, node })))
+      .find(placement => placement.node.data.entityId === entityId)
+    const target = current ? { diagramId: table.activeId, node: current } : elsewhere
+    if (!target) return
+    select({ kind: 'node', id: target.node.id, editing: false })
+    setFocusNodeId(target.node.id)
+    if (target.diagramId !== table.activeId) commit(value => ({ ...value, activeId: target.diagramId }))
+  }, [commit, select, table])
+  const navigateWiki = useCallback((direction: -1 | 1) => {
+    const index = wikiNavigation.index + direction
+    const target = wikiNavigation.entries[index]
+    if (!target) return
+    setWikiNavigation(current => ({ ...current, index }))
+    setSelection({ kind: 'node', id: target.nodeId, editing: false })
+    setFocusNodeId(target.nodeId)
+    if (target.diagramId !== table.activeId) commit(value => ({ ...value, activeId: target.diagramId }))
+  }, [commit, table.activeId, wikiNavigation])
+  const focusHandled = useCallback(() => setFocusNodeId(null), [])
   return <div className={styles.workspace} data-public={readOnly} data-collapsed={libraryCollapsed}
     style={{ '--library-width': table.layout.libraryWidth === 336 ? '30%' : `${table.layout.libraryWidth}px`, '--inspector-width': `${table.layout.inspectorWidth}px` } as CSSProperties}>
-    <ReactFlowProvider key={active.id}><DiagramCanvas table={table} diagram={active} onChange={changeDiagram} readOnly={readOnly} history={history}
+    <ReactFlowProvider key={active.id}><DiagramCanvas table={table} diagram={active} selection={selection} setSelection={select}
+      focusNodeId={focusNodeId} onFocusHandled={focusHandled} onOpenEntity={openEntity}
+      canGoBack={wikiNavigation.index > 0} canGoForward={wikiNavigation.index >= 0 && wikiNavigation.index < wikiNavigation.entries.length - 1}
+      onBack={() => navigateWiki(-1)} onForward={() => navigateWiki(1)}
+      onChange={changeDiagram} readOnly={readOnly} history={history}
       libraryCollapsed={libraryCollapsed} onToggleLibrary={() => setLibraryCollapsed(value => !value)}
       onSelectDiagram={id => commit(current => ({ ...current, activeId: id }))}
-      onCreateDiagram={name => { const diagram = createDiagram(name); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
+      onCreateDiagram={name => { const diagram = createDiagram(name); setSelection(null); commit(current => ({ ...current, activeId: diagram.id, diagrams: [...current.diagrams, diagram] })) }}
       onPlaceObject={(object, name) => { if (!readOnly) commit(current => placeCanvasObject(current, active.id, object, name)) }}
       onUpdateEntity={(id, changes) => { if (!readOnly) commit(current => updateCanvasEntity(current, id, changes)) }}
       onDuplicate={(id, placementId) => { if (!readOnly) commit(current => duplicatePlacement(current, active.id, id, placementId)) }}

@@ -14,7 +14,7 @@ export function moveInside(diagram: Diagram, id: string, targetId?: string, posi
   const node = diagram.nodes.find(item => item.id === id)
   const target = diagram.nodes.find(item => item.id === targetId)
   if (!node || (targetId && (!target || !canPlaceInside(node, target)))) return diagram
-  if (target?.data.entityType === 'playerCharacter' && target.data.statBlock?.kind !== 'playerCharacter') return diagram
+  if (target?.data.entityType === 'playerCharacter' && !target.data.campaignCharacter) return diagram
   const previous = diagram.nodes.find(item => item.id === containerOf(node))
   return { ...diagram, nodes: diagram.nodes.map(item => item.id === id ? { ...item,
     position: position ?? (previous && !targetId ? { x: previous.position.x + (previous.width ?? 240) + 40, y: previous.position.y } : item.position),
@@ -37,8 +37,8 @@ export function syncContainedEquipment(before: Diagram, after: Diagram, entities
     const newOwner = newNodes.get(current?.data.containerId ?? '')
     if (oldOwner) {
       const owner = entities.get(oldOwner.data.entityId)
-      if (owner?.statBlock?.kind === 'playerCharacter') {
-        const document = owner.statBlock.document
+      if (owner?.campaignCharacter) {
+        const document = owner.campaignCharacter.document
         const source = document.equipmentContentText ?? ''
         const block = parseContentSource(source).find(block => block.kind === 'item' && block.attributes['campaign-placement'] === key)
         if (block) {
@@ -46,7 +46,7 @@ export function syncContainedEquipment(before: Diagram, after: Diagram, entities
           // При извлечении сохраняем количество, настройку и правки виджета у размещения предмета.
           result = { ...result, nodes: result.nodes.map(node => node.id === id
             ? { ...node, data: { ...node.data, equipmentSource: itemSource } } : node) }
-          entities.set(owner.id, { ...owner, statBlock: { kind: 'playerCharacter', document: { ...document,
+          entities.set(owner.id, { ...owner, campaignCharacter: { ...owner.campaignCharacter, document: { ...document,
             equipmentContentText: source.slice(0, block.sourceRange.start) + source.slice(block.sourceRange.end),
           } } })
         }
@@ -54,7 +54,7 @@ export function syncContainedEquipment(before: Diagram, after: Diagram, entities
     }
     if (!newOwner || !current) continue
     const owner = entities.get(newOwner.data.entityId)
-    if (owner?.statBlock?.kind !== 'playerCharacter') continue
+    if (!owner?.campaignCharacter) continue
     const entry = current.data.statBlock?.kind === 'item' ? current.data.statBlock.entry : undefined
     const data = entry?.data ?? {}
     const field = (...keys: string[]) => {
@@ -69,9 +69,9 @@ export function syncContainedEquipment(before: Diagram, after: Diagram, entities
     })
     const savedItem = parseContentSource(itemSource).find(block => block.kind === 'item')
     if (savedItem?.kind === 'item') itemSource = itemToSource(itemFromBlock(savedItem), { ...savedItem.attributes, 'campaign-placement': key })
-    const document = owner.statBlock.document
+    const document = owner.campaignCharacter.document
     const source = document.equipmentContentText ?? ''
-    entities.set(owner.id, { ...owner, statBlock: { kind: 'playerCharacter', document: { ...document,
+    entities.set(owner.id, { ...owner, campaignCharacter: { ...owner.campaignCharacter, document: { ...document,
       equipmentContentText: `${source}${source ? '\n\n' : ''}${itemSource}`,
     } } })
   }

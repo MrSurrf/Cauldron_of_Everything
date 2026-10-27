@@ -8,6 +8,10 @@ import type { InstanceStatBlock } from './instanceStatBlock'
 import { persistedEdgeAppearance, validEdgeAppearance } from './edgeAppearance'
 import type { EdgeAppearance, EdgeMotion } from './edgeAppearance'
 import { canPlaceInside, containerOf, moveInside, syncContainedEquipment } from './nodeContainment'
+import { createWikiDefaults, validWiki } from './wiki'
+import type { EntityWiki } from './wiki'
+import { validCampaignCharacter } from './campaignCharacter'
+import type { CampaignCharacter } from './campaignCharacter'
 
 export const NODE_ENTITY_TYPES = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note'] as const
 export type NodeEntityType = typeof NODE_ENTITY_TYPES[number]
@@ -17,22 +21,26 @@ export type CanvasEntity = BaseEntity & {
   description: string
   facts: string
   state: string
+  wiki: EntityWiki
   reference?: LibraryReference
   statBlock?: InstanceStatBlock
+  campaignCharacter?: CampaignCharacter
 }
 export type PlacementData = { entityId: string; locationId?: string; containerId?: string; equipmentSource?: string }
 export type EntityNode = Node<PlacementData, 'entity' | 'location' | 'note'>
 export type TableEdge = Edge<{ description?: string } & EdgeAppearance & EdgeMotion> & { label?: string }
 export type StoredDiagram = { id: string; name: string; nodes: EntityNode[]; edges: TableEdge[]; viewport: Viewport }
 export type CampaignTable = {
-  version: 3; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
+  version: 4; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
   layout: { libraryWidth: number; inspectorWidth: number; section: LibrarySection; query: string }
 }
 // Только проекция для прежних редакторов и React Flow, никогда не хранится в документе.
 export type InstanceData = PlacementData & {
   entityType: EntityType; reference?: LibraryReference
   title: string; description: string; facts: string; state: string
+  wiki: EntityWiki
   statBlock?: InstanceStatBlock
+  campaignCharacter?: CampaignCharacter
   /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
   display?: { creatureExpanded?: boolean; arrivalKey?: number }
 }
@@ -49,15 +57,15 @@ export function createDiagram(name = 'Основная схема'): StoredDiagr
 }
 export function createTable(): CampaignTable {
   const diagram = createDiagram()
-  return { version: 3, activeId: diagram.id, diagrams: [diagram], entities: [],
-    layout: { libraryWidth: 336, inspectorWidth: 380, section: 'creature', query: '' } }
+  return { version: 4, activeId: diagram.id, diagrams: [diagram], entities: [],
+    layout: { libraryWidth: 336, inspectorWidth: 520, section: 'creature', query: '' } }
 }
 export function createPlacement(entity: CanvasEntity, position: XYPosition): EntityNode {
   return { id: crypto.randomUUID(), type: placementType(entity.entityType), position, data: { entityId: entity.id } }
 }
 export function createCanvasObject(type: NodeEntityType, position: XYPosition) {
   const id = crypto.randomUUID()
-  const entity: CanvasEntity = { id, slug: id, entityType: type, name: '', description: '', facts: '', state: '' }
+  const entity: CanvasEntity = { id, slug: id, entityType: type, name: '', description: '', facts: '', state: '', wiki: createWikiDefaults() }
   return { entity, node: createPlacement(entity, position) }
 }
 export function createInstance(reference: LibraryReference, position: XYPosition) {
@@ -77,7 +85,7 @@ export function placeCanvasObject(table: CampaignTable, diagramId: string, objec
     const targetId = containerOf(node)
     const target = diagram.nodes.find(item => item.id === targetId)
     if (targetId && (!target || !canPlaceInside(node, target)
-      || (target.data.entityType === 'playerCharacter' && target.data.statBlock?.kind !== 'playerCharacter'))) {
+      || (target.data.entityType === 'playerCharacter' && !target.data.campaignCharacter))) {
       node = { ...node, data: { ...node.data, locationId: undefined, containerId: undefined } }
     }
     return { ...diagram, nodes: [...diagram.nodes, node] }
@@ -89,14 +97,26 @@ export function placeExistingEntity(table: CampaignTable, diagramId: string, ent
   return { ...table, diagrams: table.diagrams.map(diagram => diagram.id === diagramId
     ? { ...diagram, nodes: [...diagram.nodes, createPlacement(entity, position)] } : diagram) }
 }
-export function updateCanvasEntity(table: CampaignTable, id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description' | 'facts' | 'state'>>): CampaignTable {
+export function updateCanvasEntity(table: CampaignTable, id: string, changes: Partial<Pick<CanvasEntity,
+  'name' | 'description' | 'facts' | 'state' | 'wiki' | 'statBlock' | 'campaignCharacter'>>): CampaignTable {
   if (changes.name !== undefined && !changes.name.trim()) return table
-  return { ...table, entities: table.entities.map(entity => entity.id === id
-    ? { ...entity, ...changes, name: changes.name?.trim() ?? entity.name } : entity) }
+  return { ...table, entities: table.entities.map(entity => {
+    if (entity.id !== id) return entity
+    let name = changes.name?.trim() ?? entity.name
+    let campaignCharacter = changes.campaignCharacter ?? entity.campaignCharacter
+    if (changes.name !== undefined && campaignCharacter) {
+      campaignCharacter = { ...campaignCharacter, document: { ...campaignCharacter.document,
+        identity: { ...campaignCharacter.document.identity, name } } }
+    } else if (changes.campaignCharacter?.document.identity.name.trim()) {
+      name = changes.campaignCharacter.document.identity.name.trim()
+    }
+    return { ...entity, ...changes, name, campaignCharacter }
+  }) }
 }
 export function resolveNode(node: EntityNode, entity: CanvasEntity): TableNode {
   return { ...node, data: { ...node.data, entityType: entity.entityType, title: entity.name,
-    description: entity.description, facts: entity.facts, state: entity.state, reference: entity.reference, statBlock: entity.statBlock } }
+    description: entity.description, facts: entity.facts, state: entity.state, wiki: entity.wiki,
+    reference: entity.reference, statBlock: entity.statBlock, campaignCharacter: entity.campaignCharacter } }
 }
 export function resolveDiagram(table: CampaignTable, diagram: StoredDiagram): Diagram {
   const entities = new Map(table.entities.map(entity => [entity.id, entity]))
@@ -121,8 +141,12 @@ export function changeDiagram(table: CampaignTable, id: string, update: (diagram
     const data = node.data
     const entity = entities.get(data.entityId)
     if (!entity) throw new Error('Размещение ссылается на отсутствующую Entity')
-    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts || previous.state !== data.state || previous.statBlock !== data.statBlock)) {
-      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description, facts: data.facts, state: data.state, statBlock: data.statBlock })
+    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts
+      || previous.state !== data.state || previous.wiki !== data.wiki || previous.statBlock !== data.statBlock
+      || previous.campaignCharacter !== data.campaignCharacter)) {
+      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description,
+        facts: data.facts, state: data.state, wiki: data.wiki, statBlock: data.statBlock,
+        campaignCharacter: data.campaignCharacter })
     }
   }
   after = syncContainedEquipment(before, after, entities)
@@ -141,7 +165,7 @@ export function duplicatePlacement(table: CampaignTable, diagramId: string, node
     position: { x: node.position.x + 40, y: node.position.y + 40 }, data: { ...node.data, entityId: id } }
   const entityCopy = { ...structuredClone(entity), id, slug: id }
   if (entityCopy.statBlock?.kind === 'creature') entityCopy.statBlock.entity.id = id
-  if (entityCopy.statBlock?.kind === 'playerCharacter') entityCopy.statBlock.document.id = id
+  if (entityCopy.campaignCharacter) entityCopy.campaignCharacter.document.id = id
   const extended = { ...table, entities: id === entity.id ? table.entities : [...table.entities, entityCopy] }
   return changeDiagram(extended, diagramId, current => ({ ...current, nodes: [...current.nodes, resolveNode(copy, entityCopy)] }))
 }
@@ -180,9 +204,10 @@ export function validReference(ref: unknown): ref is LibraryReference {
     && [...entityTypes, 'character'].includes(ref.entityType as EntityType) && Array.isArray(ref.facts) && ref.facts.every(text)
 }
 
-function migrateLegacy(raw: string): CampaignTable {
+function migrateLegacy(raw: string) {
   const old = parseLegacyTable(raw)
-  const entities = new Map<string, CanvasEntity>((old.entities ?? []).map(entity => [entity.id, { ...entity, facts: '', state: '' }]))
+  type V3Entity = BaseEntity & { description: string; facts: string; state: string; reference?: LibraryReference }
+  const entities = new Map<string, V3Entity>((old.entities ?? []).map(entity => [entity.id, { ...entity, facts: '', state: '' }]))
   const diagrams = old.diagrams.map(diagram => ({ ...diagram, nodes: diagram.nodes.map(node => {
     let id = node.data.localEntityId
     if (!id) {
@@ -199,17 +224,48 @@ function migrateLegacy(raw: string): CampaignTable {
   }), edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label, data })) }))
   return { ...old, version: 3, entities: [...entities.values()], diagrams }
 }
+
+/** v3 хранил лист игрока в statBlock; v4 отделяет кампанийный лист от статблоков энциклопедии. */
+function migrateV3(value: Record<string, unknown>) {
+  const entities = Array.isArray(value.entities) ? value.entities.map(candidate => {
+    if (!record(candidate)) return candidate
+    const entity = { ...candidate }
+    const statBlock = entity.statBlock
+    delete entity.wiki
+    delete entity.campaignCharacter
+    delete entity.statBlock
+    if (candidate.entityType === 'playerCharacter' && record(statBlock) && statBlock.kind === 'playerCharacter') {
+      const reference = record(candidate.reference) ? candidate.reference : undefined
+      return {
+        ...entity,
+        wiki: createWikiDefaults(),
+        campaignCharacter: {
+          ...(reference?.source === 'character' && text(reference.entityId) && reference.entityId
+            ? { sourceCharacterId: reference.entityId } : {}),
+          document: statBlock.document,
+        },
+      }
+    }
+    return { ...entity, wiki: createWikiDefaults(), ...(statBlock === undefined ? {} : { statBlock }) }
+  }) : value.entities
+  return { ...value, version: 4, entities }
+}
+
 export function parseTable(raw: string): CampaignTable {
   const value: unknown = JSON.parse(raw)
   const invalid = (): never => { throw new Error('Сохранённые схемы имеют неподдерживаемый или повреждённый формат.') }
-  if (record(value) && (value.version === 1 || value.version === 2)) return parseTable(serializeTable(migrateLegacy(raw)))
-  if (!record(value) || value.version !== 3 || !Array.isArray(value.entities) || !Array.isArray(value.diagrams) || !value.diagrams.length) return invalid()
+  if (record(value) && (value.version === 1 || value.version === 2)) return parseTable(JSON.stringify(migrateLegacy(raw)))
+  if (record(value) && value.version === 3) return parseTable(JSON.stringify(migrateV3(value)))
+  if (!record(value) || value.version !== 4 || !Array.isArray(value.entities) || !Array.isArray(value.diagrams) || !value.diagrams.length) return invalid()
   const entities = new Map<string, CanvasEntity>()
   for (const entity of value.entities) {
     if (!record(entity) || !text(entity.id) || !entity.id || entities.has(entity.id) || !entityTypes.includes(entity.entityType as EntityType)
       || !text(entity.slug) || !text(entity.name) || !entity.name.trim() || !text(entity.description) || !text(entity.facts) || !text(entity.state)
+      || !validWiki(entity.wiki)
       || (entity.reference !== undefined && !validReference(entity.reference))
-      || (entity.statBlock !== undefined && !validStatBlock(entity.statBlock, String(entity.entityType)))) return invalid()
+      || (entity.statBlock !== undefined && !validStatBlock(entity.statBlock, String(entity.entityType)))
+      || (entity.campaignCharacter !== undefined
+        && (entity.entityType !== 'playerCharacter' || !validCampaignCharacter(entity.campaignCharacter)))) return invalid()
     entities.set(entity.id, entity as CanvasEntity)
   }
   const diagramIds = new Set<string>()
@@ -236,7 +292,7 @@ export function parseTable(raw: string): CampaignTable {
       if (node.data.containerId) {
         const target = nodes.get(node.data.containerId)
         if (!target || !canPlaceInside(resolveNode(node, entities.get(node.data.entityId)!), resolveNode(target, entities.get(target.data.entityId)!))
-          || entities.get(target.data.entityId)?.statBlock?.kind !== 'playerCharacter') return invalid()
+          || !entities.get(target.data.entityId)?.campaignCharacter) return invalid()
       }
     }
     const edgeIds = new Set<string>()

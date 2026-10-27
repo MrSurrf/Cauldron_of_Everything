@@ -1,0 +1,115 @@
+.panel {
+  --wiki-gutter: 22px;
+  background: var(--color-surface-default);
+  border-left: 1px solid var(--color-border-default);
+  min-width: 380px;
+}
+.panel[data-character-drop-active='true'] { box-shadow: 0 0 0 2px var(--color-border-accent), var(--shadow-panel); }
+
+.navigation {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-default) 94%, transparent);
+  border-bottom: 1px solid var(--color-border-default);
+  display: flex;
+  gap: 5px;
+  min-height: 45px;
+  padding: 6px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.navigation button,
+.sectionTools button,
+.customProperty > button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  min-height: 30px;
+  min-width: 30px;
+}
+
+.navigation button:hover:not(:disabled),
+.sectionTools button:hover,
+.customProperty > button:hover { background: var(--color-surface-accent); color: var(--color-text-primary); }
+.navigation button:disabled { cursor: default; opacity: .3; }
+.navigation > span { color: var(--color-text-subtle); font-size: 12px; margin-left: 5px; }
+.navigation > small { color: var(--color-text-disabled); font-size: 11px; }
+.navigation .close { font-size: 21px; margin-left: auto; }
+
+.body { padding: 0 0 36px; }
+.cover { border: 0; border-radius: 0; margin: 0; }
+.titleRow, .properties, .readProperties, .lead, .sections, .related, .meta, .additional { margin-inline: var(--wiki-gutter); }
+.titleRow { align-items: start; display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); margin-bottom: 18px; margin-top: 22px; }
+.titleRow[data-has-avatar='true'] { grid-template-columns: minmax(0, 1fr) 112px; }
+.header { min-width: 0; }
+.avatar { width: 112px; }
+.avatar > span:last-child { display: none; }
+.eyebrow { color: var(--color-text-subtle); display: block; font-size: 11px; letter-spacing: .08em; margin-bottom: 6px; text-transform: uppercase; }
+.title { font-size: clamp(24px, 3vw, 34px); line-height: 1.08; margin: 0; }
+.titleInput input { font-size: clamp(24px, 3vw, 34px); font-weight: 700; height: auto; line-height: 1.08; padding: 5px 2px; }
+.titleInput > div { background: transparent; border-color: transparent; }
+.titleInput > div:focus-within { border-color: var(--color-border-accent); }
+
+.properties { border-bottom: 1px solid var(--color-border-default); display: grid; gap: 6px; padding-bottom: 18px; }
+.properties label { align-items: center; display: grid; gap: 12px; grid-template-columns: minmax(88px, 32%) 1fr; }
+.properties label > span { color: var(--color-text-subtle); font-size: 12px; }
+.properties input { min-height: 34px; }
+.customProperty { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(90px, .7fr) 1fr 30px; }
+.addProperty, .addSection { background: transparent; border: 0; color: var(--color-text-subtle); cursor: pointer; font: inherit; padding: 7px 0; text-align: left; }
+.addProperty:hover, .addSection:hover { color: var(--color-text-primary); }
+.readProperties { border-bottom: 1px solid var(--color-border-default); display: grid; gap: 8px; padding-bottom: 18px; }
+.readProperties > div { display: grid; gap: 12px; grid-template-columns: minmax(88px, 32%) 1fr; }
+.readProperties dt { color: var(--color-text-subtle); font-size: 12px; }
+.readProperties dd { margin: 0; }
+
+.lead { margin-top: 25px; }
+.sectionHeading { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
+.sectionHeading h3, .related h3 { font-size: 15px; margin: 0 0 9px; }
+.sectionHeading > div { max-width: 240px; }
+.editor { background: transparent; border: 0; }
+
+.sections { display: grid; gap: 12px; margin-top: 22px; }
+.section { border-top: 1px solid var(--color-border-default); padding-top: 5px; }
+.section > summary { align-items: center; cursor: pointer; display: flex; gap: 8px; min-height: 44px; }
+.section > summary::marker { color: var(--color-text-subtle); }
+.section > summary > strong { font-size: 16px; }
+.section > summary > small { color: var(--color-text-subtle); font-size: var(--font-size-2xs); margin-left: auto; }
+.sectionTools { align-items: center; display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr) 142px auto 30px; margin-bottom: var(--space-2); }
+.sectionTools label { align-items: center; color: var(--color-text-subtle); display: flex; font-size: 11px; gap: 4px; white-space: nowrap; }
+
+.related { border-top: 1px solid var(--color-border-default); margin-top: 24px; padding-top: 18px; }
+.related ul { display: grid; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.related li { align-items: center; display: flex; gap: 6px; }
+.related li > button { background: transparent; border: 0; border-radius: 7px; color: var(--color-text-primary); cursor: pointer; padding: 7px 8px; text-align: left; }
+.related li > button:first-child { flex: 1; }
+.related li > button:hover { background: var(--color-surface-accent); }
+.related li small { color: var(--color-text-subtle); display: block; font-size: 10px; }
+.meta { color: var(--color-text-disabled); font-size: 11px; margin-top: 18px; }
+.additional { border-top: 1px solid var(--color-border-default); margin-top: 22px; padding-top: 10px; }
+.additional summary { color: var(--color-text-subtle); cursor: pointer; font-size: 12px; margin-bottom: 8px; }
+.loading, .error { margin: 20px var(--wiki-gutter); }
+.error { color: var(--color-status-danger); }
+
+.fullEditor { position: absolute; inset: 0; z-index: 30; background: var(--color-canvas-background); display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-width: 0; }
+.tabs { align-items: center; border-bottom: 1px solid var(--color-border-default); display: flex; gap: 4px; min-height: 45px; padding: 5px 12px; }
+.tabs button { background: transparent; border: 0; border-radius: 7px; color: var(--color-text-subtle); cursor: pointer; padding: 7px 11px; }
+.tabs button[aria-current='page'] { background: var(--color-surface-accent); color: var(--color-text-primary); }
+.fullEditorBody { margin: 0 auto; max-width: 920px; padding: 40px; width: 100%; }
+
+@media (max-width: 760px) {
+  .panel { --wiki-gutter: 15px; min-width: min(380px, 100vw); width: 100vw !important; }
+  .sectionTools { grid-template-columns: minmax(0, 1fr) 120px 30px; }
+  .sectionTools label { display: none; }
+}
+
+@media (max-width: 480px) {
+  .titleRow { grid-template-columns: 1fr; }
+  .avatar { width: 96px; }
+}

@@ -3,7 +3,6 @@ import { CREATURE_ABILITY_KEYS, CreatureFullView } from '../../../entities/creat
 import type { CreatureEntity } from '../../../entities/creature'
 import { Button, TextInput } from '../../../shared/ui'
 import { RichContent } from '../../../shared/ui/RichContent'
-import { CharacterSheetTool } from '../../character-sheet'
 import { loadInstanceStatBlock, statBlockIdentity } from '../model/instanceStatBlock'
 import type { InstanceStatBlock } from '../model/instanceStatBlock'
 import type { InstanceData } from '../model/table'
@@ -57,7 +56,6 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
     : <p role="status">{readOnly ? 'Статблок не опубликован.' : 'Загрузка статблока…'}</p>}</div>
   if (!editing) {
     if (snapshot.kind === 'creature') return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><CreatureFullView entity={{ ...snapshot.entity, id: data.entityId, name: data.title }} className={styles.fullCard} /></EntityReferenceLinks>
-    if (snapshot.kind === 'playerCharacter') return <div className={styles.instanceCharacterSheet}><CharacterSheetTool fitWidth className={styles.instanceCharacterDocument} document={snapshot.document} /></div>
     return <EntityReferenceLinks readOnly={readOnly} onOpen={onOpen}><section><h3 className={styles.inspectorTitle}>{data.title}</h3>
       <dl className={styles.instanceEntryMeta}>{Object.entries(snapshot.entry.data ?? {}).filter(([key, value]) => !key.endsWith('_html') && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')).map(([key, value]) =>
         <div key={key}><dt>{({ level: 'Уровень', school: 'Школа', casting_time: 'Время накладывания', range: 'Дальность', duration: 'Длительность', components: 'Компоненты', rarity: 'Редкость', cost: 'Стоимость', price: 'Стоимость', weight: 'Вес', concentration: 'Концентрация', ritual: 'Ритуал', attunement: 'Настройка', item_type: 'Тип предмета' } as Record<string, string>)[key] ?? key}</dt><dd>{typeof value === 'boolean' ? value ? 'Да' : 'Нет' : String(value)}</dd></div>)}</dl>
@@ -66,9 +64,6 @@ export function InstanceStatBlockPanel({ data, editing, readOnly, onChange, onOp
         <section key={key}><h4>{({ higher_levels_html: 'На более высоких уровнях', properties_html: 'Свойства', actions_html: 'Действия' } as Record<string, string>)[key] ?? key.replace(/_html$/, '').replace(/_/g, ' ')}</h4><RichContent html={String(value)} /></section>)}
       <details><summary>Все параметры</summary><StatBlockField field="Параметры" value={snapshot.entry.data ?? {}} readOnly onChange={() => {}} /></details></section></EntityReferenceLinks>
   }
-  if (snapshot.kind === 'playerCharacter') return <div className={styles.instanceCharacterSheet}>
-    <CharacterSheetTool fitWidth className={styles.instanceCharacterDocument} document={snapshot.document} onDocumentChange={document => update({ ...snapshot, document })} />
-  </div>
   if (snapshot.kind === 'creature') return <div className={styles.statEditor} aria-label="Полный статблок существа">
     <label className={styles.statField}>Название<TextInput rootClassName={panelStyles.fieldControl} aria-label="Название экземпляра" value={data.title} onChange={event => update({ ...snapshot, entity: { ...snapshot.entity, name: event.target.value } })} /></label>
     {creatureGroups.map(([title, keys], index) => <details key={title} className={`${styles.statEditorGroup} ${panelStyles.disclosure}`} open={index < 2}><summary>{title}</summary>

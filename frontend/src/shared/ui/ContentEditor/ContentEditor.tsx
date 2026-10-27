@@ -170,8 +170,10 @@ export function ContentEditor({
   disabled = false,
   evaluateResourceMaximum,
   fill = false,
+  inheritedVisibility,
   maxTextScale = DEFAULT_MAX_TEXT_SCALE,
   minTextScale = DEFAULT_MIN_TEXT_SCALE,
+  onLinkActivate,
   onTextScaleChange,
   onStructuredResourceChange,
   onValueChange,
@@ -186,10 +188,21 @@ export function ContentEditor({
   textScale,
   textScaleStep = DEFAULT_TEXT_SCALE_STEP,
   value,
+  viewerAudience,
 }: ContentEditorProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const inheritedContext = useContentWidgetContext()
   const ownEditorId = useId()
+  const resolvedInheritedVisibility =
+    inheritedVisibility ??
+    inheritedContext.inheritedVisibility ??
+    'public'
+  const resolvedLinkActivate =
+    onLinkActivate ?? inheritedContext.onLinkActivate
+  const resolvedViewerAudience =
+    viewerAudience ??
+    inheritedContext.viewerAudience ??
+    'master'
   const editorOwners = [inheritedContext.editorId, ownEditorId]
     .filter(Boolean)
     .join(' ')
@@ -306,7 +319,17 @@ export function ContentEditor({
       onBlurCapture={finishEditing}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <ContentWidgetContext value={{ disabled, readOnly, evaluateResourceMaximum, onStructuredResourceChange, editorId: editorOwners, dndEditorId: ownEditorId }}>
+        <ContentWidgetContext value={{
+          disabled,
+          dndEditorId: ownEditorId,
+          editorId: editorOwners,
+          evaluateResourceMaximum,
+          inheritedVisibility: resolvedInheritedVisibility,
+          onLinkActivate: resolvedLinkActivate,
+          onStructuredResourceChange,
+          readOnly,
+          viewerAudience: resolvedViewerAudience,
+        }}>
         <div
           className={styles.frame}
           data-content-editor-frame
@@ -351,11 +374,14 @@ export function ContentEditor({
                   dndEditorId={ownEditorId}
                   editorId={editorOwners}
                   evaluateResourceMaximum={evaluateResourceMaximum}
+                  inheritedVisibility={resolvedInheritedVisibility}
+                  onLinkActivate={resolvedLinkActivate}
                   readOnly={readOnly}
                   placeholder={placeholder}
                   value={value}
                   onStructuredResourceChange={onStructuredResourceChange}
                   onValueChange={onValueChange}
+                  viewerAudience={resolvedViewerAudience}
                 />
               </div>
             ) : (

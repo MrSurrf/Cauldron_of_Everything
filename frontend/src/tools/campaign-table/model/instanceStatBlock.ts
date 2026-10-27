@@ -2,17 +2,12 @@ import { getCreatureById } from '../../../entities/creature'
 import type { CreatureEntity } from '../../../entities/creature'
 import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
-import { createEmptyCharacterSheet } from '../../character-sheet'
-import type { CharacterSheetDocument } from '../../character-sheet'
-import { campaignRequest } from './campaignApi'
-import type { OwnedMaterial } from './campaignApi'
 import type { InstanceData } from './table'
 
 export type InstanceStatBlock =
   | { kind: 'creature'; entity: CreatureEntity }
   | { kind: 'spell' | 'item'; entry: EncyclopediaEntry }
-  | { kind: 'playerCharacter'; document: CharacterSheetDocument }
-export const hasInstanceEditor = (type: string) => ['creature', 'spell', 'item', 'playerCharacter'].includes(type)
+export const hasInstanceEditor = (type: string) => ['creature', 'spell', 'item'].includes(type)
 
 function entryBody(entry: EncyclopediaEntry) {
   if (typeof entry.data?.description_html === 'string') return entry.data.description_html
@@ -49,18 +44,6 @@ export async function loadInstanceStatBlock(data: InstanceData, signal: AbortSig
     if (entry.entity_type !== data.entityType) throw new Error('Тип исходной карточки не соответствует экземпляру.')
     return { kind: data.entityType, entry: { ...structuredClone(entry), name: data.title, content_html: entryBody(entry) } }
   }
-  if (data.entityType === 'playerCharacter') {
-    const material = ref?.source === 'character'
-      ? await campaignRequest<OwnedMaterial>(`characters/${encodeURIComponent(ref.entityId)}/`, signal) : undefined
-    if (material?.document && !validStatBlock({ kind: 'playerCharacter', document: material.document }, 'playerCharacter')) throw new Error('Исходный лист персонажа имеет неподдерживаемый формат.')
-    const document = material?.document ? structuredClone(material.document) : createEmptyCharacterSheet()
-    document.id = data.entityId
-    document.identity.name = data.title
-    if (!material?.document && material?.description) document.customSections.push({
-      id: crypto.randomUUID(), kind: 'text', title: 'Описание', expanded: true, removable: true, fieldIds: [], text: material.description,
-    })
-    return { kind: 'playerCharacter', document }
-  }
   throw new Error('Для этого типа редактор статблока пока не предусмотрен.')
 }
 
@@ -68,10 +51,6 @@ export function statBlockIdentity(snapshot: InstanceStatBlock) {
   if (snapshot.kind === 'creature') {
     const entity = snapshot.entity
     return { title: entity.name, facts: [entity.challengeRating && `ПО ${entity.challengeRating}`, entity.creatureType, entity.size].filter(Boolean).join(' · ') }
-  }
-  if (snapshot.kind === 'playerCharacter') {
-    const identity = snapshot.document.identity
-    return { title: identity.name, facts: [identity.className, identity.level.manualValue != null && `Ур. ${identity.level.manualValue}`].filter(Boolean).join(' · ') }
   }
   const data = snapshot.entry.data ?? {}
   return { title: snapshot.entry.name, facts: (snapshot.kind === 'spell' ? [data.level != null && `Уровень ${data.level}`, data.school]
@@ -95,13 +74,6 @@ export function validStatBlock(value: unknown, entityType: string): value is Ins
     return Boolean(entry && entry.entity_type === block.kind && typeof entry.name === 'string'
       && (entry.content_html === undefined || typeof entry.content_html === 'string')
       && (!entry.data || (typeof entry.data === 'object' && !Array.isArray(entry.data))))
-  }
-  if (block.kind === 'playerCharacter' && 'document' in block) {
-    const doc = block.document
-    return Boolean(doc && doc.schemaVersion === 1 && doc.identity && typeof doc.identity.name === 'string'
-      && doc.abilities && doc.hitPoints && doc.derivedStats && doc.savingThrows && doc.skills && doc.proficiencies && doc.currency && doc.appearance && doc.view
-      && Array.isArray(doc.resources) && Array.isArray(doc.attacks) && Array.isArray(doc.vision) && Array.isArray(doc.hitDice)
-      && Array.isArray(doc.features) && Array.isArray(doc.customSections))
   }
   return false
 }

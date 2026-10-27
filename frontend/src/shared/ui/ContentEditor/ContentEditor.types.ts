@@ -1,5 +1,16 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { ContentResourceValue, ResourceFormulaResult } from './ResourceWidget'
+
+export type ContentViewerAudience = 'master' | 'players' | 'public'
+
+export type ContentSectionVisibility =
+  | ContentViewerAudience
+  | 'inherit'
+
+export type ContentLinkActivateHandler = (
+  target: string,
+  event: MouseEvent<HTMLAnchorElement>,
+) => void
 
 export type ContentEditorProps = {
   accessibleLabel: string
@@ -10,8 +21,10 @@ export type ContentEditorProps = {
   defaultTextScale?: number
   disabled?: boolean
   fill?: boolean
+  inheritedVisibility?: ContentViewerAudience
   maxTextScale?: number
   minTextScale?: number
+  onLinkActivate?: ContentLinkActivateHandler
   onTextScaleChange?: (textScale: number) => void
   onValueChange: (value: string) => void
   evaluateResourceMaximum?: (expression: string) => ResourceFormulaResult
@@ -32,4 +45,5 @@ export type ContentEditorProps = {
   textScale?: number
   textScaleStep?: number
   value: string
+  viewerAudience?: ContentViewerAudience
 }
