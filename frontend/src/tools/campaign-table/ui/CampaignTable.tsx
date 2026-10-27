@@ -33,7 +33,7 @@ import { useLibraryDrag } from './useLibraryDrag'
 import { useNodeConnections } from './useNodeConnections'
 import { canResizeNode, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
 import { TableHistory } from '../model/tableHistory'
-import { LocalEntityEditor, LocalEntityInspector } from './LocalEntityPanel'
+import { LocalEntityInspector } from './LocalEntityPanel'
 import type { EntityChanges } from './LocalEntityPanel'
 import { CampaignCharacterWorkspace } from './CampaignCharacterWorkspace'
 import { LibrarySidebar } from './LibrarySidebar'
@@ -379,6 +379,8 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
   const selectedNode = selection?.kind === 'node' ? diagram.nodes.find(node => node.id === selection.id) : undefined
   const selectedEntity = selectedNode && supportsWiki(selectedNode.data.entityType) ? localEntities.get(selectedNode.data.entityId) : undefined
   const editedEntity = localEntities.get(editorEntityId ?? '')
+  const editedCharacter = editedEntity?.entityType === 'playerCharacter' && editedEntity.campaignCharacter
+    ? editedEntity : undefined
   const closeSelection = () => {
     const id = selectedNode?.id
     setSelection(null)
@@ -400,15 +402,12 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
       commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
       cancel: () => setDraft(null) } : undefined }}>
-    {editedEntity && (editedEntity.entityType === 'playerCharacter' && editedEntity.campaignCharacter
-      ? <CampaignCharacterWorkspace key={editedEntity.id} document={editedEntity.campaignCharacter.document} diagramName={diagram.name}
-        onBack={() => setEditorEntityId(null)} onChange={document => onUpdateEntity(editedEntity.id, {
-          campaignCharacter: { ...editedEntity.campaignCharacter!, document },
-        })} />
-      : <LocalEntityEditor key={editedEntity.id} entity={editedEntity} diagramName={diagram.name} readOnly={readOnly}
-        onBack={() => setEditorEntityId(null)} onUpdate={changes => onUpdateEntity(editedEntity.id, changes)} />)}
-    <section className={styles.board} aria-label="Схема кампании" aria-hidden={Boolean(editedEntity)}
-      inert={editedEntity ? true : undefined}>
+    {editedCharacter && <CampaignCharacterWorkspace key={editedCharacter.id} document={editedCharacter.campaignCharacter!.document} diagramName={diagram.name}
+      onBack={() => setEditorEntityId(null)} onChange={document => onUpdateEntity(editedCharacter.id, {
+        campaignCharacter: { ...editedCharacter.campaignCharacter!, document },
+      })} />}
+    <section className={styles.board} aria-label="Схема кампании" aria-hidden={Boolean(editedCharacter)}
+      inert={editedCharacter ? true : undefined}>
       <header className={styles.boardHeader}><div className={styles.schemeHeading}>
         <Popover aria-label="Схемы кампании" className={styles.schemePopover} open={schemesOpen} onOpenChange={setSchemesOpen} content={<div className={styles.schemeMenu}>
           <nav aria-label="Выбор схемы">{table.diagrams.map(item => <button type="button" key={item.id} aria-current={item.id === diagram.id ? 'page' : undefined}
@@ -544,7 +543,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
         {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите правой кнопкой на холст или перетащите материал из библиотеки.'}</p></div>}
       </div>
     </section>
-    {selectedNode && selectedEntity && !editedEntity && <LocalEntityInspector key={selectedEntity.id} entity={selectedEntity}
+    {selectedNode && selectedEntity && !editedCharacter && <LocalEntityInspector key={selectedEntity.id} entity={selectedEntity}
       node={selectedNode} diagram={displayDiagram} diagrams={resolvedDiagrams} entities={table.entities}
       width={table.layout.inspectorWidth} readOnly={readOnly}
       onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={closeSelection}
@@ -557,7 +556,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
       onCollapse={onToggleLibrary} onSection={section => onLayout({ section, query: '' })}
       onQuery={query => onLayout({ query })} onResize={libraryWidth => onLayout({ libraryWidth })} onOpen={openReference} onAdd={add}
       onLibraryDragStart={(reference, pointer) => { cancelConnection(); setAnchor(null); libraryDrag.begin(reference, pointer) }} onLibraryDragEnd={libraryDrag.finish} />}
-    {selection && !selectedEntity && !editedEntity && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
+    {selection && !selectedEntity && !editedCharacter && <TableInspector key={selection.kind === 'library' ? `library:${selection.reference.entityId}` : `${selection.kind}:${selection.id}`}
       selection={selection} width={table.layout.inspectorWidth} onResize={inspectorWidth => onLayout({ inspectorWidth })} onClose={() => setSelection(null)} onChange={onChange} onOpen={openReference} onAdd={add} />}
     <LibraryDragPreview drag={libraryDrag.drag} />
   </TableContext.Provider>
