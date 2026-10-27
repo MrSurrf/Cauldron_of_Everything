@@ -1,0 +1,86 @@
+.placeholder {
+  color: var(--color-text-disabled);
+}
+
+.checkList {
+  display: grid;
+  margin-block: 0 0.55em;
+  padding: 0;
+  list-style: none;
+  gap: 0.2em;
+}
+
+.checkList:last-child {
+  margin-bottom: 0;
+}
+
+.checkList li + li {
+  margin-top: 0.2em;
+}
+
+.checkList li {
+  display: grid;
+  grid-template-columns: 1em minmax(0, 1fr);
+  align-items: start;
+  gap: 0.45em;
+}
+
+.checkMarker {
+  display: grid;
+  min-width: 1em;
+  min-height: 1em;
+  margin-top: 0.2em;
+  place-items: center;
+}
+
+.invalidLink {
+  color: var(--palette-purple-300);
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-width-default);
+  text-underline-offset: 0.18em;
+  text-decoration-style: wavy;
+  cursor: help;
+}
+
+.rollToken {
+  cursor: pointer;
+  font: inherit;
+}
+
+.rollToken:hover,
+.rollToken:focus-visible {
+  border-color: var(--color-border-accent);
+  background:
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 24%,
+      var(--color-surface-accent)
+    );
+  outline: 0;
+  box-shadow:
+    0 0 0.65em
+    color-mix(
+      in srgb,
+      var(--color-action-primary) 32%,
+      transparent
+    );
+}
+
+.rollResult {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.rollResult[data-error='true'] {
+  color: var(--color-status-danger);
+}
+
+
+@media (forced-colors: active) {
+  .rollToken {
+    border: var(--border-width-default) solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    clip-path: none;
+  }
+}

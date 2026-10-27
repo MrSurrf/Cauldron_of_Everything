@@ -1,0 +1,104 @@
+.row {
+  --sheet-control-height: var(--icon-size-md);
+  --sheet-value-size: var(--sheet-body-size, var(--font-size-sm));
+
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto 3.125rem minmax(0, 1fr) 4.5rem;
+  align-items: center;
+  gap: var(--sheet-layout-gap, var(--space-2));
+}
+
+.title {
+  margin: 0;
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  font-weight: 400;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.carriedField,
+.capacityField {
+  min-width: 0;
+}
+
+.capacityField[data-mode][data-presentation='stat'] {
+  --sheet-value-size: var(--sheet-body-size, var(--font-size-sm));
+
+  min-height: 0;
+  padding: 0;
+}
+
+.capacityField[data-presentation='stat'] [data-formula-label] {
+  grid-row: 2;
+  padding-inline: 0;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+}
+
+.capacityField [data-formula-control] {
+  grid-row: 1;
+}
+
+.carriedField[data-mode] :global(button[data-size='sm']),
+.capacityField[data-mode] :global(button[data-size='sm']) {
+  top: 0;
+  right: 0;
+}
+
+.progress {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: var(--space-2);
+  overflow: hidden;
+  appearance: none;
+  border: var(--border-width-default) solid var(--color-content-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  accent-color: var(--color-action-primary);
+}
+
+.progress::-webkit-progress-bar {
+  background: var(--color-surface-muted);
+}
+
+.progress::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--color-action-primary),
+    var(--palette-purple-300)
+  );
+}
+
+.progress::-moz-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--color-action-primary),
+    var(--palette-purple-300)
+  );
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .carriedField[data-mode] :global(button[data-size='sm']),
+  .capacityField[data-mode] :global(button[data-size='sm']) {
+    opacity: 0;
+  }
+
+  .carriedField[data-mode]:is(:hover, :focus-within) :global(button[data-size='sm']),
+  .capacityField[data-mode]:is(:hover, :focus-within) :global(button[data-size='sm']) {
+    opacity: 1;
+  }
+}
+
+@media (forced-colors: active) {
+  .progress {
+    border-color: CanvasText;
+  }
+}

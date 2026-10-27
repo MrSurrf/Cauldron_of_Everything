@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import { isAriaInvalid } from '../internal/aria'
+import { SearchIcon } from '../icons/SearchIcon'
 import { hasRenderableContent } from '../internal/react'
 import fieldFrameStyles from '../internal/field/FieldFrame.module.css'
 import { FieldFrame } from '../internal/field/FieldFrame'
@@ -36,7 +37,8 @@ export const TextInput = forwardRef<
     fieldClassName,
     form,
     hint,
-    icon,
+    type = 'text',
+    icon = type === 'search' ? <SearchIcon /> : undefined,
     id,
     invalid = false,
     label,
@@ -47,7 +49,6 @@ export const TextInput = forwardRef<
     required = false,
     rootClassName,
     showCharacterCount = false,
-    type = 'text',
     value,
     ...inputProps
   },
@@ -119,6 +120,7 @@ export const TextInput = forwardRef<
           rootClassName={joinClassNames(
             frameClassName,
             rootClassName,
+            type === 'search' ? fieldFrameStyles.search : undefined,
           )}
         >
           <input

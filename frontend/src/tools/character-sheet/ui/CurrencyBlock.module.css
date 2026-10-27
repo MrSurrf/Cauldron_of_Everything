@@ -1,0 +1,58 @@
+.currencyBlock {
+  --sheet-section-padding: var(--sheet-layout-gap, var(--space-2));
+}
+
+.currencyRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sheet-layout-gap, var(--space-2));
+}
+
+.title {
+  margin: 0;
+  color: var(--palette-purple-300);
+  font-family: var(--sheet-heading-font, var(--font-family-heading));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  font-weight: 400;
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.currencyGrid {
+  --sheet-control-height: var(--icon-size-sm);
+  --sheet-value-size: var(
+    --sheet-ordinary-value-size,
+    var(--sheet-body-size, var(--font-size-sm))
+  );
+
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(0, 3.125rem));
+  align-items: center;
+  justify-content: end;
+  gap: var(--sheet-tight-gap, var(--space-1));
+}
+
+.currencyField {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: var(--border-width-default);
+}
+
+.currencyLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.currencyField :global(input) {
+  min-height: var(--icon-size-sm);
+  padding-inline: var(--border-width-default);
+  line-height: 1;
+}

@@ -14,6 +14,8 @@ export type TextInputType =
   | 'password'
   | 'url'
   | 'tel'
+  | 'date'
+  | 'time'
 
 export type TextInputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,

@@ -1,0 +1,131 @@
+.filters {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.filtersPanel {
+  z-index: 1;
+}
+
+.filterGrid {
+  grid-template-columns: minmax(15rem, 1.5fr) repeat(4, minmax(9rem, 1fr));
+}
+
+.searchField {
+  grid-column: auto;
+}
+
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.itemCard :global(svg) {
+  width: 1.75rem;
+  height: 1.75rem;
+  filter: drop-shadow(0 0 var(--space-2) color-mix(in srgb, var(--color-brand-bright) 34%, transparent));
+}
+
+.preview {
+  min-width: 0;
+}
+
+.previewIcon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: var(--space-3);
+  place-items: center;
+  border: var(--border-width-default) solid var(--color-border-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-accent);
+  color: var(--color-brand-bright);
+}
+
+.previewIcon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.preview h3 {
+  margin: 0;
+  color: var(--color-heading-primary);
+  font: 400 var(--font-size-xl)/1.2 var(--font-family-heading);
+  overflow-wrap: anywhere;
+}
+
+.nameEn {
+  margin: var(--space-1) 0 var(--space-4);
+  color: var(--color-text-subtle);
+}
+
+.preview dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.preview dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width-default) solid var(--color-content-border);
+}
+
+.preview dt {
+  color: var(--color-text-subtle);
+}
+
+.preview dd {
+  margin: 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.detailFacts {
+  margin-top: var(--space-4) !important;
+  padding-top: var(--space-3);
+  border-top: var(--border-width-default) solid var(--color-content-border);
+}
+
+@media (max-width: 1100px) {
+  .filterGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .searchField {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .filterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchField {
+    grid-column: 1 / -1;
+  }
+
+  .previewPanel {
+    position: relative;
+    grid-row: 1;
+  }
+
+  .listPanel {
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterActions > * {
+    flex: 1 1 auto;
+  }
+}
