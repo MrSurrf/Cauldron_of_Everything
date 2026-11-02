@@ -15,7 +15,7 @@ export type ContentSectionValue = {
 }
 
 export const sectionColors = [
-  { id: 'default', label: 'По умолчанию', value: 'var(--palette-purple-300)' },
+  { id: 'default', label: 'По умолчанию', value: 'var(--color-interactive)' },
   { id: 'gray', label: 'Серый', value: 'var(--palette-gray-300)' },
   { id: 'purple', label: 'Фиолетовый', value: 'var(--palette-purple-500)' },
   { id: 'gold', label: 'Золотой', value: 'var(--palette-yellow-500)' },

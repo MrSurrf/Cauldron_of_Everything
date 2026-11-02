@@ -29,7 +29,7 @@
 }
 
 .notFound p {
-  color: var(--palette-purple-300);
+  color: var(--color-interactive);
 }
 
 .notFound h1 {
@@ -41,5 +41,5 @@
 }
 
 .notFound a {
-  color: var(--palette-purple-300);
+  color: var(--color-interactive);
 }

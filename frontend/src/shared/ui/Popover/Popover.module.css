@@ -76,7 +76,7 @@
 }
 
 .popover::backdrop {
-  background: color-mix(in srgb, var(--palette-black) 68%, transparent);
+  background: var(--color-overlay);
 }
 
 @keyframes popover-appear {

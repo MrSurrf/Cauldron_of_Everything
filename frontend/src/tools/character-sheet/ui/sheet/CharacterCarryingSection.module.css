@@ -11,7 +11,7 @@
 
 .title {
   margin: 0;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(--sheet-body-size, var(--font-size-sm));
   font-weight: 400;
@@ -73,7 +73,7 @@
   background: linear-gradient(
     90deg,
     var(--color-action-primary),
-    var(--palette-purple-300)
+    var(--color-brand-bright)
   );
 }
 
@@ -81,7 +81,7 @@
   background: linear-gradient(
     90deg,
     var(--color-action-primary),
-    var(--palette-purple-300)
+    var(--color-brand-bright)
   );
 }
 

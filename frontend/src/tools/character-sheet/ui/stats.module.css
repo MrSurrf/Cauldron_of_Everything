@@ -54,7 +54,7 @@
 
 .label {
   overflow: hidden;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(--sheet-label-size, var(--font-size-xs));
   letter-spacing: 0.06em;
@@ -238,7 +238,7 @@
   width: var(--icon-size-md);
   height: var(--icon-size-md);
   place-items: center;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   filter:
     drop-shadow(
       0 0 var(--space-1)
@@ -358,7 +358,7 @@
   background: linear-gradient(
       105deg,
       var(--color-temporary-hit-points) 4%,
-      var(--palette-purple-300) 54%,
+      var(--color-brand-bright) 54%,
       var(--color-border-accent) 100%
     );
   filter:

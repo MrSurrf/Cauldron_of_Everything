@@ -6,7 +6,7 @@ export const gameSystems = ['Dungeons & Dragons 5e', 'Pathfinder 2e', 'Call of C
 export const playStyles = ['Ролевая игра и отыгрыш', 'Политика и интриги', 'Глубокий лор и мир', 'Тактические сражения', 'Исследование и загадки', 'Юмор и лёгкий тон']
 export const genres = ['Тёмное фэнтези', 'Готика', 'Ужасы', 'Мистика', 'Исследования', 'Древние цивилизации']
 export const themes = [
-  { value: 'purple', label: 'Аметист', color: 'var(--palette-purple-400)' },
+  { value: 'purple', label: 'Аметист', color: 'var(--color-brand)' },
   { value: 'blue', label: 'Сапфир', color: 'var(--palette-blue-400)' },
   { value: 'green', label: 'Изумруд', color: 'var(--palette-green-500)' },
   { value: 'gold', label: 'Янтарь', color: 'var(--palette-yellow-500)' },

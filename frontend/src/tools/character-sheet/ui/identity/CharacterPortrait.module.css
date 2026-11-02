@@ -61,7 +61,7 @@
 }
 
 .picker:hover:not(:disabled) {
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
 }
 
 .picker:focus-visible {

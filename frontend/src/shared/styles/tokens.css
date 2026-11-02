@@ -1,4 +1,6 @@
 :root {
+  color-scheme: dark;
+
   /* Базовая палитра */
   --palette-black: #020108;
   --palette-black-900: #08060d;
@@ -26,6 +28,18 @@
   --palette-green-500: #42b883;
   --palette-yellow-500: #d7a83d;
 
+  /* Тёплая палитра светлой темы. */
+  --palette-cream: #faf0e7;
+  --palette-cream-light: #fcf5ec;
+  --palette-cream-card: #f8eee4;
+  --palette-taupe-light: #e1d5cc;
+  --palette-plum-900: #332932;
+  --palette-plum-600: #75666c;
+  --palette-taupe: #b5a19a;
+  --palette-plum: #5b3d56;
+  --palette-plum-950: #342a33;
+  --palette-gold: #c88b54;
+
   /* Семантические цвета */
   --color-background: var(--palette-black);
   --color-canvas-background: var(--palette-navy-950);
@@ -43,6 +57,7 @@
   --color-heading-primary: var(--palette-white);
   --color-brand-bright: var(--palette-purple-300);
   --color-brand: var(--palette-purple-400);
+  --color-brand-deep: var(--palette-purple-700);
   --color-brand-muted: var(--palette-purple-muted);
   --color-text-subtle: var(--palette-gray-500);
   --color-icon-muted: var(--palette-purple-400);
@@ -52,6 +67,13 @@
   --color-status-danger: var(--palette-red-500);
   --color-status-success: var(--palette-green-500);
   --color-status-warning: var(--palette-yellow-500);
+  --color-accent-warm: var(--palette-yellow-500);
+  --color-button-background:
+    color-mix(in srgb, var(--palette-purple-700) 46%, var(--palette-gray-900));
+  --color-button-text: var(--palette-white);
+  --color-shadow: var(--palette-black);
+  --color-overlay:
+    color-mix(in srgb, var(--palette-black) 68%, transparent);
 
   /* Бумажная заметка на карте кампании — отдельный материал из референса. */
   --palette-parchment: #ead2af;
@@ -143,7 +165,7 @@
     0 0 0 3px
     color-mix(
       in srgb,
-      var(--palette-purple-500) 35%,
+      var(--color-action-primary) 35%,
       transparent
     );
   --disabled-opacity: 0.48;
@@ -167,15 +189,15 @@
   /* Эффекты и движение */
   --shadow-panel:
     0 1rem 3rem
-    color-mix(in srgb, var(--palette-black) 45%, transparent);
+    color-mix(in srgb, var(--color-shadow) 45%, transparent);
   --shadow-overlay:
     0 1.5rem 5rem
-    color-mix(in srgb, var(--palette-black) 65%, transparent);
+    color-mix(in srgb, var(--color-shadow) 65%, transparent);
   --glow-accent:
     0 0 1.75rem
     color-mix(
       in srgb,
-      var(--palette-purple-500) 35%,
+      var(--color-action-primary) 35%,
       transparent
     );
   --motion-duration-fast: 160ms;
@@ -211,6 +233,93 @@
   --tile-shadow-dragging: var(--shadow-overlay);
   --tile-resize-handle-size: 1rem;
   --tile-dragging-opacity: 0.92;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-background: var(--palette-cream);
+  --color-canvas-background: var(--palette-cream-light);
+  --color-content-border: var(--palette-taupe);
+  --color-surface-default: var(--palette-cream-card);
+  --color-surface-muted: var(--palette-cream-light);
+  --color-surface-accent: var(--palette-taupe-light);
+  --color-text-primary: var(--palette-plum-900);
+  --color-text-secondary: var(--palette-plum-600);
+  --color-text-disabled:
+    color-mix(in srgb, var(--palette-plum-600) 75%, var(--palette-taupe));
+  --color-border-default: var(--palette-taupe);
+  --color-border-accent: var(--palette-plum);
+  --color-action-primary: var(--palette-plum);
+  --color-heading-primary: var(--palette-plum-900);
+  --color-brand-bright: var(--palette-plum);
+  --color-brand: var(--palette-plum);
+  --color-brand-deep: var(--palette-plum);
+  --color-brand-muted: var(--palette-plum-600);
+  --color-text-subtle: var(--palette-plum-600);
+  --color-icon-muted: var(--palette-plum-600);
+  --color-interactive: var(--palette-plum);
+  --color-interactive-hover: var(--palette-plum-900);
+  --color-temporary-hit-points:
+    color-mix(in srgb, var(--palette-blue-400) 72%, var(--palette-plum-900));
+  --color-status-danger:
+    color-mix(in srgb, var(--palette-red-500) 75%, var(--palette-plum-900));
+  --color-status-success:
+    color-mix(in srgb, var(--palette-green-500) 50%, var(--palette-plum-900));
+  --color-status-warning:
+    color-mix(in srgb, var(--palette-yellow-500) 50%, var(--palette-plum-900));
+  --color-accent-warm: var(--palette-gold);
+  --color-button-background: var(--palette-plum-950);
+  --color-button-text: var(--palette-cream-light);
+  --color-shadow: var(--palette-plum-900);
+  --color-overlay:
+    color-mix(in srgb, var(--color-text-primary) 32%, transparent);
+
+  --border-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 36px 36px at 100% 100%,
+      var(--color-accent-warm) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 28% 18% at 100% 100%,
+      color-mix(in srgb, var(--color-accent-warm) 65%, var(--color-content-border)) 0%,
+      var(--color-content-border) 100%
+    );
+  --border-gradient-panel-corner-detail:
+    radial-gradient(
+      ellipse 28px 28px at 100% 100%,
+      var(--color-accent-warm) 0%,
+      color-mix(in srgb, var(--color-accent-warm) 45%, transparent) 45%,
+      transparent 100%
+    );
+  --surface-gradient-panel-decorative:
+    radial-gradient(
+      ellipse 64px 64px at 100% 100%,
+      color-mix(in srgb, var(--color-accent-warm) 10%, transparent) 0%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, var(--color-surface-muted), var(--color-surface-default));
+
+  --focus-ring:
+    0 0 0 3px
+    color-mix(in srgb, var(--color-action-primary) 26%, transparent);
+  --selection-marker-fill: var(--color-action-primary);
+  --selection-marker-glow:
+    0 0 0.25rem
+    color-mix(in srgb, var(--color-action-primary) 28%, transparent);
+  --shadow-panel:
+    0 0.75rem 2rem
+    color-mix(in srgb, var(--color-shadow) 12%, transparent);
+  --shadow-overlay:
+    0 1.5rem 4rem
+    color-mix(in srgb, var(--color-shadow) 22%, transparent);
+  --glow-accent:
+    0 0 1.25rem
+    color-mix(in srgb, var(--color-accent-warm) 18%, transparent);
+  --color-cursor-light: var(--color-accent-warm);
+  --cursor-light-opacity: 0.035;
+  --cursor-reveal-opacity: 0.45;
 }
 
 @media (max-width: 50rem) {

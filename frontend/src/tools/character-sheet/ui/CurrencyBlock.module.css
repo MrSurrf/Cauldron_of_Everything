@@ -12,7 +12,7 @@
 
 .title {
   margin: 0;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(--sheet-body-size, var(--font-size-sm));
   font-weight: 400;

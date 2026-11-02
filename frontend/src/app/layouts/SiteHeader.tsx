@@ -20,10 +20,13 @@ import {
 } from '../../shared/api/accountProfileCache'
 import type { AccountProfileCacheChange } from '../../shared/api/accountProfileCache'
 import { AUTH_CHANGED_EVENT } from '../../shared/api/auth'
+import { setTheme, useTheme } from '../../shared/lib/theme'
 import { TextInput } from '../../shared/ui/TextInput'
 import {
   NotificationIcon,
   PlaceholderIcon,
+  MoonIcon,
+  SunIcon,
 } from '../../shared/ui/icons'
 import styles from './SiteHeader.module.css'
 
@@ -224,6 +227,8 @@ function DropdownItem({
 }
 
 export function SiteHeader() {
+  const theme = useTheme()
+  const themeLabel = theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'
   const location = useLocation()
   const navigate = useNavigate()
   const headerRef = useRef<HTMLElement>(null)
@@ -421,6 +426,16 @@ export function SiteHeader() {
           >
             <NotificationIcon />
             <span className={styles.notificationDot} aria-hidden={true} />
+          </button>
+
+          <button
+            className={`${styles.iconButton} ${styles.themeButton}`}
+            type="button"
+            aria-label={themeLabel}
+            title={themeLabel}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
 
           <NavLink

@@ -1030,6 +1030,88 @@
   cursor: default;
 }
 
+:root[data-theme='light'] .survey-page {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-background) 94%, transparent),
+      color-mix(in srgb, var(--color-background) 94%, transparent)
+    ),
+    url('/tools/survey/illustrations/common/background.png') center / cover no-repeat;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-page__overlay {
+  background: none;
+}
+
+:root[data-theme='light'] .survey-meta,
+:root[data-theme='light'] .survey-heading__subtitle {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='light'] .survey-heading__title {
+  color: var(--color-heading-primary);
+  text-shadow: none;
+}
+
+:root[data-theme='light'] .survey-illustration-panel {
+  border-color: var(--color-accent-warm);
+  background:
+    radial-gradient(
+      circle at var(--active-position) 50%,
+      rgba(var(--tone-rgb), 0.16),
+      transparent 30%
+    ),
+    var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .survey-description {
+  border-color: var(--color-border-default);
+  background:
+    radial-gradient(circle at 16% 50%, rgba(var(--tone-rgb), 0.08), transparent 42%),
+    var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .survey-description::before {
+  color: var(--color-brand);
+  text-shadow: none;
+}
+
+:root[data-theme='light'] .survey-description p {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-scale__button::after {
+  background: var(--color-background);
+}
+
+:root[data-theme='light'] .survey-scale__button--selected {
+  filter: drop-shadow(0 0 3px var(--color-brand));
+}
+
+:root[data-theme='light'] .survey-scale__button:focus-visible {
+  outline-color: var(--color-action-primary);
+}
+
+:root[data-theme='light'] .survey-navigation__button {
+  border-color: var(--color-border-default);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-navigation__button:hover:not(:disabled) {
+  border-color: var(--color-action-primary);
+  box-shadow: var(--focus-ring);
+}
+
+:root[data-theme='light'] .survey-navigation__button--primary {
+  border-color: var(--color-border-accent);
+  background: var(--color-button-background);
+  color: var(--color-button-text);
+}
+
 /* Адаптив */
 
 @media (max-width: 900px) {

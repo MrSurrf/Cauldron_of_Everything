@@ -16,7 +16,7 @@
     inset 0 0 0 var(--border-width-default)
     color-mix(
       in srgb,
-      var(--palette-black) 35%,
+      var(--color-shadow) 35%,
       transparent
     );
 }
@@ -76,7 +76,7 @@
       180deg,
       color-mix(
         in srgb,
-        var(--palette-purple-500) 62%,
+        var(--color-action-primary) 62%,
         var(--color-surface-default)
       ),
       color-mix(
@@ -92,7 +92,7 @@
       0 0 0.35rem
       color-mix(
         in srgb,
-        var(--palette-purple-500) 35%,
+        var(--color-action-primary) 35%,
         transparent
       )
     );
@@ -117,6 +117,12 @@
 
 .root[data-disabled='true'] .option {
   opacity: 1;
+}
+
+:global(:where(:root[data-theme='light'])) .option[data-selected='true'] {
+  background: var(--color-button-background);
+  color: var(--color-button-text);
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

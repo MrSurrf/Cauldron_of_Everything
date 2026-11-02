@@ -52,12 +52,12 @@
       90deg,
       color-mix(
         in srgb,
-        var(--palette-purple-700) 16%,
+        var(--color-brand-deep) 16%,
         var(--color-surface-default)
       ),
       color-mix(
         in srgb,
-        var(--palette-purple-700) 8%,
+        var(--color-brand-deep) 8%,
         var(--color-surface-muted)
       )
     );

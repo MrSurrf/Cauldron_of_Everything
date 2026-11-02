@@ -99,7 +99,7 @@
       0 0 var(--space-3)
       color-mix(
         in srgb,
-        var(--palette-purple-500) 30%,
+        var(--color-action-primary) 30%,
         transparent
       )
     );

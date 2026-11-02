@@ -316,7 +316,7 @@
   background: linear-gradient(
       90deg,
       var(--color-border-accent),
-      var(--palette-purple-300)
+      var(--color-brand-bright)
     );
   box-shadow:
     0 0 var(--space-2)

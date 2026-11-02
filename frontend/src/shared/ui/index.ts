@@ -46,6 +46,8 @@ export {
   SearchIcon,
   SavingThrowIcon,
   HeartIcon,
+  MoonIcon,
+  SunIcon,
   TrashIcon,
   VisionIcon,
   getDiceTypeFromExpression,

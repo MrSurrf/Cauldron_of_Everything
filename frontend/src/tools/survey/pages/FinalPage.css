@@ -91,6 +91,25 @@
     rgba(127, 71, 179, 0.22);
 }
 
+:root[data-theme='light'] .survey-final-page {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-background) 94%, transparent),
+      color-mix(in srgb, var(--color-background) 94%, transparent)
+    ),
+    url('/tools/survey/illustrations/common/background.png') center / cover no-repeat;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-final-page__overlay {
+  background: none;
+}
+
+:root[data-theme='light'] .survey-final-page__title {
+  color: var(--color-heading-primary);
+  text-shadow: none;
+}
+
 @media (max-width: 520px) {
   .survey-final-page__title {
     font-size:

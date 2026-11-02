@@ -92,7 +92,7 @@
       0 var(--space-2) var(--space-5)
       color-mix(
         in srgb,
-        var(--palette-black) 68%,
+        var(--color-shadow) 68%,
         transparent
       )
     );

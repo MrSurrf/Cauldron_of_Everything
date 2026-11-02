@@ -21,7 +21,7 @@
     );
   filter:
     drop-shadow(0 1px 0 var(--color-content-border))
-    drop-shadow(0 0.65rem 1.4rem color-mix(in srgb, var(--palette-black) 72%, transparent));
+    drop-shadow(0 0.65rem 1.4rem color-mix(in srgb, var(--color-shadow) 72%, transparent));
   mask-image:
     radial-gradient(circle at 0 100%, transparent 0 1rem, black 1.0625rem),
     radial-gradient(circle at 100% 100%, transparent 0 1rem, black 1.0625rem);
@@ -320,7 +320,7 @@
       0 var(--dropdown-corner)
     );
   opacity: 0;
-  filter: drop-shadow(0 1.25rem 2rem color-mix(in srgb, var(--palette-black) 74%, transparent));
+  filter: drop-shadow(0 1.25rem 2rem color-mix(in srgb, var(--color-shadow) 74%, transparent));
   transform: translate(-50%, -0.35rem);
   pointer-events: none;
   transition:
@@ -537,6 +537,22 @@ a.dropdownItem:focus-visible {
   box-shadow:
     0 0 0.45rem
     color-mix(in srgb, var(--color-brand-bright) 64%, transparent);
+}
+
+.themeButton {
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  padding: 0;
+  border-radius: var(--radius-round);
+}
+
+.themeButton::before {
+  inset: 0;
+}
+
+.themeButton > [data-shared-icon='true'] {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
 }
 
 .profileLink {

@@ -36,12 +36,12 @@
   --panel-surface-material:
     radial-gradient(
       ellipse 33% 59% at 25% 38%,
-      color-mix(in srgb, var(--palette-purple-700) 23%, transparent),
+      color-mix(in srgb, var(--color-brand-deep) 23%, transparent),
       transparent 83%
     ),
-    linear-gradient(180deg, var(--palette-purple-950), var(--palette-black) 88%)
+    linear-gradient(180deg, var(--color-surface-accent), var(--color-background) 88%)
       left / 50% 100% no-repeat,
-    var(--palette-black);
+    var(--color-background);
 
   width: min(100%, 86rem);
   min-height: min(49rem, calc(var(--app-viewport-height) - var(--space-7)));
@@ -88,8 +88,8 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, var(--palette-purple-400) 27%, transparent),
-    color-mix(in srgb, var(--palette-purple-700) 12%, transparent) 52%,
+    color-mix(in srgb, var(--color-brand) 27%, transparent),
+    color-mix(in srgb, var(--color-brand-deep) 12%, transparent) 52%,
     transparent 76%
   );
   content: '';
@@ -106,7 +106,7 @@
   height: 25%;
   background: radial-gradient(
     ellipse 60% 42% at 50% 83%,
-    color-mix(in srgb, var(--palette-black) 78%, transparent),
+    color-mix(in srgb, var(--color-shadow) 78%, transparent),
     transparent 100%
   );
   content: '';
@@ -119,14 +119,14 @@
   position: absolute;
   inset: 6% 7% 0;
   border: var(--border-width-default) solid
-    color-mix(in srgb, var(--palette-purple-500) 48%, transparent);
+    color-mix(in srgb, var(--color-action-primary) 48%, transparent);
   border-bottom: 0;
   border-radius: 50% 50% 0 0 / 78% 78% 0 0;
 }
 
 .orbitInner {
   inset: 9% 9% 0;
-  border-color: color-mix(in srgb, var(--palette-purple-400) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-brand) 22%, transparent);
 }
 
 .celestialCrest {
@@ -137,12 +137,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--palette-purple-500);
+  color: var(--color-action-primary);
   font-family: var(--font-family-heading);
   font-size: 2.5rem;
   line-height: 1;
   text-shadow: 0 0 var(--space-3)
-    color-mix(in srgb, var(--palette-purple-500) 38%, transparent);
+    color-mix(in srgb, var(--color-action-primary) 38%, transparent);
   transform: translateX(-50%);
 }
 
@@ -150,7 +150,7 @@
 .celestialCrest::after {
   width: var(--space-7);
   height: var(--border-width-default);
-  background: linear-gradient(90deg, transparent, var(--palette-purple-500));
+  background: linear-gradient(90deg, transparent, var(--color-action-primary));
   content: '';
 }
 
@@ -163,9 +163,9 @@
   z-index: 2;
   width: var(--space-5);
   aspect-ratio: 1;
-  background: var(--palette-purple-500);
+  background: var(--color-action-primary);
   clip-path: polygon(50% 0, 55% 44%, 100% 50%, 55% 56%, 50% 100%, 45% 56%, 0 50%, 45% 44%);
-  filter: drop-shadow(0 0 var(--space-2) var(--palette-purple-500));
+  filter: drop-shadow(0 0 var(--space-2) var(--color-action-primary));
 }
 
 .starLeftTop { top: 31%; left: 7%; }
@@ -204,7 +204,7 @@
 
 .showcaseCopy h2 span {
   display: block;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
 }
 
 .showcaseCopy p {
@@ -247,7 +247,7 @@
   bottom: 0;
   left: 0;
   width: var(--border-width-default);
-  background: linear-gradient(transparent, var(--palette-purple-muted), transparent);
+  background: linear-gradient(transparent, var(--color-brand-muted), transparent);
   content: '';
 }
 
@@ -256,7 +256,7 @@
   width: var(--space-6);
   height: var(--space-6);
   place-items: center;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
 }
 
 .featureIcon svg {
@@ -424,10 +424,10 @@
     --panel-surface-material:
       radial-gradient(
         ellipse 72% 40% at 50% 24%,
-        color-mix(in srgb, var(--palette-purple-700) 23%, transparent),
+        color-mix(in srgb, var(--color-brand-deep) 23%, transparent),
         transparent 82%
       ),
-      linear-gradient(180deg, var(--palette-purple-950), var(--palette-black) 52%);
+      linear-gradient(180deg, var(--color-surface-accent), var(--color-background) 52%);
 
     min-height: calc(100svh - var(--space-6));
   }
