@@ -48,13 +48,13 @@
     linear-gradient(90deg, var(--color-background), color-mix(in srgb, var(--color-background) 95%, transparent) 22%, color-mix(in srgb, var(--color-background) 85%, transparent) 32%, color-mix(in srgb, var(--color-background) 50%, transparent) 44%, transparent 65%);
 }
 
-.heroContent { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; padding-block: var(--space-5); }
-.heroIntro { max-width: 41rem; padding-block: var(--space-4); }
+.heroContent { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; }
+.heroIntro { max-width: 41rem; }
 .eyebrow { margin: 0 0 var(--space-3); color: var(--color-brand-bright); font-size: var(--font-size-xs); letter-spacing: 0.15em; text-transform: uppercase; }
 .hero h1, .workspace h2, .start h2, .friends h2 { margin: 0; color: var(--color-heading-primary); font-family: var(--font-family-heading); font-weight: 400; }
-.hero h1 { font-size: clamp(3.2rem, 5.3vw, 6.25rem); line-height: 0.94; text-wrap: balance; }
+.hero h1 { font-size: clamp(2.75rem, 4.1vw, 4rem); line-height: 0.98; text-wrap: balance; }
 .hero h1 span { color: var(--color-brand-bright); }
-.titleDivider { display: block; width: min(24rem, 70%); height: var(--border-width-strong); margin-block: var(--space-5) var(--space-3); background: linear-gradient(90deg, var(--color-interactive), color-mix(in srgb, var(--color-interactive) 35%, transparent), transparent); }
+.titleDivider { display: block; width: min(24rem, 70%); height: var(--border-width-strong); margin-block: var(--space-3); background: linear-gradient(90deg, var(--color-interactive), color-mix(in srgb, var(--color-interactive) 35%, transparent), transparent); }
 .heroDescription { max-width: 34rem; margin: 0; font-size: var(--font-size-md); line-height: var(--line-height-normal); }
 .heroActions { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5); }
 .heroActions button { min-width: 12rem; }
@@ -162,7 +162,6 @@
 @media (max-width: 40rem) {
   .hero { height: 28rem; max-height: none; }
   .heroImage { object-position: 62% 48%; }
-  .heroContent { padding-block: var(--space-6); }
   .hero h1 { font-size: clamp(2.8rem, 12vw, 4rem); }
   .heroActions button { width: 100%; }
   .workspace { padding: var(--space-4); }
