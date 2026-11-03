@@ -1,4 +1,5 @@
 export { ContentEditor } from './ContentEditor'
+export { ContentPreview } from './ContentPreview'
 export type {
   ContentEditorProps,
   ContentLinkActivateHandler,

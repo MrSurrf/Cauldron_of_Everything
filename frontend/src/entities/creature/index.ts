@@ -15,6 +15,7 @@ export type {
   DamageType,
 } from './model/creature'
 export { getCreatureBySlug, getCreatureById, searchCreatures } from './model/creatureRepository'
+export { parseCreatureFeatureDetails } from './model/creatureDataParsers'
 export { mockTarrasque } from './model/mockTarrasque'
 export { CreatureCompactCard } from './ui/CreatureCompactCard'
 export type { CreatureCompactCardProps } from './ui/CreatureCompactCard'

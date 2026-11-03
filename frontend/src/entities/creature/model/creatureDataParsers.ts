@@ -303,39 +303,74 @@ export function parseSizeTypeAlignment(text: string): {
 }
 
 const ATTACK_SUBTITLE_PATTERN = /^(?:(?:рукопашная|дальнобойная)(?:\s+или\s+(?:рукопашная|дальнобойная))?\s+)?атака\s+(?:оружием|заклинанием)\s*:?$/i
-const USAGE_PATTERN = /\((перезарядка[^)]*|\d+\s*\/\s*день|стоит[^)]*)\)/i
+const USAGE_PATTERN = /\((перезаряд(?:ка|[а-яё]*)[^)]*|перезаряж[а-яё]*[^)]*|восстанавливается[^)]*|\d+\s*\/\s*день[^)]*|стоит[^)]*)\)/i
 
-const damageNominativePattern = /(дробящий|колющий|рубящий)\s+урон\s+(\d+)\s*\(\s*([^()]+?)\s*\)/gi
-const damageInstrumentalPattern = new RegExp(
-  `урон\\s+(${damageTypeInstrumentalAliases.map(([name]) => name).join('|')})\\s+(\\d+)\\s*\\(\\s*([^()]+?)\\s*\\)`,
-  'gi',
-)
+// Датасет использует разные порядки слов и падежи: «дробящий урон 4»,
+// «4 дробящего урона», «4 (1к6 + 1) урона огнём». Типы других блоков не меняем.
+const damageGenitiveAliases: readonly (readonly [string, DamageType])[] = [
+  ['дробящего', 'bludgeoning'],
+  ['колющего', 'piercing'],
+  ['рубящего', 'slashing'],
+  ['кислотного', 'acid'],
+  ['огненного', 'fire'],
+  ['некротического', 'necrotic'],
+  ['психического', 'psychic'],
+  ['электрического', 'lightning'],
+  ['звукового', 'thunder'],
+]
+
+const featureDamageAliases = [
+  ...damageTypeAliases,
+  ...damageTypeInstrumentalAliases,
+  ...damageGenitiveAliases,
+]
+const damageTypePattern = featureDamageAliases
+  .map(([name]) => name)
+  .sort((a, b) => b.length - a.length)
+  .join('|')
+const damageAmountPattern = '(?<average>\\d+)(?:\\s*\\(\\s*(?<formula>\\d+\\s*[dк]\\s*\\d+(?:\\s*[+−-]\\s*(?:\\d+\\s*[dк]\\s*)?\\d+)*)\\s*\\))?'
+const featureDamagePatterns = [
+  new RegExp(`(?<type>${damageTypePattern})\\s+урон(?:а)?\\s*:?\\s*${damageAmountPattern}`, 'gi'),
+  new RegExp(`урон(?:а)?\\s+(?<type>${damageTypePattern})\\s*:?\\s*${damageAmountPattern}`, 'gi'),
+  new RegExp(`${damageAmountPattern}\\s+(?<type>${damageTypePattern})\\s+урон(?:а)?`, 'gi'),
+  new RegExp(`${damageAmountPattern}\\s+урон(?:а)?\\s+(?<type>${damageTypePattern})(?![а-яё])`, 'gi'),
+]
 
 function normalizeFormula(formula: string): string {
-  return formula.replace(/\s+/g, ' ').trim()
+  return formula.replace(/−/g, '-').replace(/\s+/g, ' ').trim()
 }
 
 function findDamageType(name: string): DamageType | undefined {
   const lowered = name.toLocaleLowerCase('ru-RU')
-  return (
-    damageTypeAliases.find(([alias]) => alias === lowered)?.[1] ??
-    damageTypeInstrumentalAliases.find(([alias]) => alias === lowered)?.[1]
-  )
+  return featureDamageAliases.find(([alias]) => alias === lowered)?.[1]
 }
 
 function extractDamage(text: string): CreatureFeature['damage'] {
-  const found: { index: number; type: DamageType; average: number; formula: string }[] = []
+  const found: {
+    index: number
+    end: number
+    type: DamageType
+    average: number
+    formula?: string
+  }[] = []
 
-  for (const match of text.matchAll(damageNominativePattern)) {
-    const type = findDamageType(match[1])
-    if (type) {
-      found.push({ index: match.index ?? 0, type, average: Number(match[2]), formula: normalizeFormula(match[3]) })
-    }
-  }
-  for (const match of text.matchAll(damageInstrumentalPattern)) {
-    const type = findDamageType(match[1])
-    if (type) {
-      found.push({ index: match.index ?? 0, type, average: Number(match[2]), formula: normalizeFormula(match[3]) })
+  for (const pattern of featureDamagePatterns) {
+    for (const match of text.matchAll(pattern)) {
+      const type = match.groups?.type && findDamageType(match.groups.type)
+      if (!type || !match.groups) continue
+
+      const index = match.index ?? 0
+      const end = index + match[0].length
+      // Разные порядки слов могут совпасть в одной фразе; не дублируем урон.
+      if (found.some((entry) => index < entry.end && end > entry.index)) continue
+
+      found.push({
+        index,
+        end,
+        type,
+        average: Number(match.groups.average),
+        formula: match.groups.formula ? normalizeFormula(match.groups.formula) : undefined,
+      })
     }
   }
 
@@ -345,19 +380,85 @@ function extractDamage(text: string): CreatureFeature['damage'] {
     : undefined
 }
 
-const paragraphText = (element: Element): string =>
-  (element.textContent ?? '').replace(/\s+/g, ' ').trim()
+const paragraphText = (element: Element): string => {
+  const copy = element.cloneNode(true) as Element
+  copy.querySelectorAll('br').forEach((node) => node.replaceWith(' '))
+  copy.querySelectorAll('p, li, td, th, div').forEach((node) => node.append(' '))
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
 
 type ParsedFeatureBlock = {
   entries: CreatureFeature[]
   introduction?: string
+  introductionHtml?: string
+}
+
+// Выделенные жирным/курсивом частоты заклинаний и подписи внутри действия —
+// продолжение способности, а не названия новых особенностей.
+const CONTINUATION_HEADING_PATTERN = /^(?:неограниченно|по желанию|постоянно|заговоры|(?:по\s+)?\d+\s*(?:раз[а-яё]*\s*)?(?:\/\s*|в\s+)(?:день|сутки|неделю)|\d+(?:\s*[-–—]\s*\d+)?\s*[-–—]?\s*(?:й|го)?\s*уров(?:ень|ня)|попадание|промах|при попадании|при успехе|при провале)(?:[\s:(.：]|$)/i
+const FEATURE_HEADING_TAGS = new Set(['EM', 'STRONG', 'B', 'I'])
+const FEATURE_BLOCK_TAGS = new Set(['P', 'UL', 'OL', 'TABLE', 'BLOCKQUOTE'])
+
+function featureHeading(paragraph: Element): Element | undefined {
+  if (paragraph.tagName !== 'P') return undefined
+  const candidate = paragraph.firstElementChild
+  if (!candidate || !FEATURE_HEADING_TAGS.has(candidate.tagName)) return undefined
+
+  const precededOnlyByWhitespace = Array.from(paragraph.childNodes)
+    .slice(0, Array.prototype.indexOf.call(paragraph.childNodes, candidate))
+    .every((node) => node.nodeType === 3 && !(node.textContent ?? '').trim())
+  if (!precededOnlyByWhitespace || candidate.querySelector('a, img, table')) return undefined
+
+  const text = paragraphText(candidate)
+  if (!text || CONTINUATION_HEADING_PATTERN.test(text) || ATTACK_SUBTITLE_PATTERN.test(text)) {
+    return undefined
+  }
+
+  // Длинное ограничение использования не должно превращать «Лидерство»
+  // в продолжение предыдущей атаки. Обычный длинный курсив остаётся текстом.
+  const titleWithoutUsage = text.replace(USAGE_PATTERN, '').trim()
+  return titleWithoutUsage.length <= 90 ? candidate : undefined
+}
+
+function removeTitleDelimiter(paragraph: Element): void {
+  const walker = paragraph.ownerDocument.createTreeWalker(paragraph, 4)
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    const text = node.textContent ?? ''
+    node.textContent = text.replace(/^[\s.:]+/, '')
+    if ((node.textContent ?? '').trim()) break
+  }
+}
+
+/** Вычисляет показатели действия из полного текста правил. */
+export function parseCreatureFeatureDetails(text: string): Pick<CreatureFeature,
+  'attackBonus' | 'range' | 'target' | 'save' | 'damage'
+> {
+  const attackMatch = text.match(/([+-]\d+)\s*к попаданию/i)
+  const ranges = Array.from(text.matchAll(
+    /(?:досягаемость|дистанция)\s*(\d+(?:\s*[/–-]\s*\d+)?)\s*(?:футов|фт)/gi,
+  )).map((match) => `${match[1].replace(/\s+/g, '')} фт.`)
+  const targetMatch = text.match(/одн[аоу]\s+цел[ьи]|одн[оау]\s+существ[оа]/i)
+  const saveMatch = text.match(
+    /спасброс[а-яё]*\s+(силы|ловкости|телосложения|интеллекта|мудрости|харизмы)\s+сл\s+(\d+)/i,
+  )
+
+  return {
+    attackBonus: attackMatch ? Number(attackMatch[1]) : undefined,
+    range: ranges.length ? ranges.join(' / ') : undefined,
+    target: targetMatch ? /цел/i.test(targetMatch[0]) ? '1 цель' : '1 существо' : undefined,
+    save: saveMatch
+      ? { ability: resolveAbilityKey(saveMatch[1]) ?? 'strength', dc: Number(saveMatch[2]) }
+      : undefined,
+    damage: extractDamage(text),
+  }
 }
 
 /**
- * Разбирает блок *_html датасета (div с абзацами <p>) в структурированные feature.
- * Возвращает undefined, если DOMParser недоступен (node-окружение тестов)
- * или блок содержит неабзацную разметку (списки, таблицы) — тогда секция
- * целиком рендерится исходным HTML без потери контента.
+ * Разбирает именованные абзацы *_html, присоединяя последующие списки/таблицы
+ * к той же особенности. Исходная разметка и полный текст правил сохраняются:
+ * извлечение показателей никогда не удаляет нераспознанное условие или эффект.
+ * Неизвестная структура возвращает undefined — секция выводится исходным HTML.
  */
 export function parseFeatureHtml(
   html: string,
@@ -366,71 +467,60 @@ export function parseFeatureHtml(
   if (typeof DOMParser === 'undefined') return undefined
 
   const doc = new DOMParser().parseFromString(html, 'text/html')
+  if (Array.from(doc.body.childNodes).some(
+    (node) => node.nodeType === 3 && (node.textContent ?? '').trim(),
+  )) return undefined
   // Типичная обёртка датасета — единственный <div> с абзацами внутри.
   const wrapper =
     doc.body.children.length === 1 && doc.body.children[0].tagName === 'DIV'
       ? doc.body.children[0]
       : doc.body
-  const blocks = Array.from(wrapper.children).filter(
-    (child) => child.tagName !== 'BR' && paragraphText(child) !== '',
-  )
+  // Не игнорируем отдельные текстовые узлы: иначе импорт может молча терять текст.
+  if (Array.from(wrapper.childNodes).some(
+    (node) => node.nodeType === 3 && (node.textContent ?? '').trim(),
+  )) return undefined
+
+  const blocks = Array.from(wrapper.children).filter((child) => child.tagName !== 'BR')
   if (blocks.length === 0) return undefined
-  if (blocks.some((child) => child.tagName !== 'P')) return undefined
+  if (blocks.some((child) => !FEATURE_BLOCK_TAGS.has(child.tagName))) return undefined
 
   const entries: CreatureFeature[] = []
   const introductionParts: string[] = []
+  const introductionHtml: string[] = []
 
   for (const block of blocks) {
     const paragraph = block.cloneNode(true) as Element
-    paragraph.querySelectorAll('sup').forEach((node) => node.remove())
-
-    // Имя feature — это <em>/<strong> в самом начале абзаца (вложенность бывает любой).
-    // Страховка по длине отсекает абзацы, начинающиеся с длинного курсива, — это не имя.
-    let headerText = ''
-    const candidate = paragraph.firstElementChild
-    const precededOnlyByWhitespace = candidate
-      ? Array.from(paragraph.childNodes)
-          .slice(0, Array.prototype.indexOf.call(paragraph.childNodes, candidate))
-          .every((node) => node.nodeType === 3 && !(node.textContent ?? '').trim())
-      : false
-    if (
-      candidate &&
-      (candidate.tagName === 'EM' || candidate.tagName === 'STRONG') &&
-      precededOnlyByWhitespace
-    ) {
-      const text = paragraphText(candidate)
-      if (text && text.length <= 90) {
-        headerText = text
-        candidate.remove()
-      }
-    }
-    const bodyText = paragraphText(paragraph)
+    const candidate = featureHeading(paragraph)
+    const headerText = candidate ? paragraphText(candidate) : ''
 
     if (!headerText) {
-      // Абзац без имени: вступление секции или продолжение предыдущей feature.
+      const bodyText = paragraphText(paragraph)
+      // Блок без имени: вступление секции или продолжение предыдущей feature.
       if (entries.length === 0) {
         if (bodyText) introductionParts.push(bodyText)
-      } else if (bodyText) {
+        introductionHtml.push(paragraph.outerHTML)
+      } else {
         const previous = entries[entries.length - 1]
+        const description = [previous.description, bodyText].filter(Boolean).join('\n\n')
         entries[entries.length - 1] = {
           ...previous,
-          description: `${previous.description} ${bodyText}`.trim(),
+          ...parseCreatureFeatureDetails(description),
+          description,
+          descriptionHtml: `${previous.descriptionHtml ?? ''}${paragraph.outerHTML}`,
         }
       }
       continue
     }
 
-    const nameMatch = headerText.match(/^(.*?\.)\s+(.*)$/s)
-    let name = (nameMatch ? nameMatch[1] : headerText).trim()
+    candidate?.remove()
+    removeTitleDelimiter(paragraph)
+    // Ограничение использования отделяем до разбора подзаголовка атаки.
+    const usageMatch = headerText.match(USAGE_PATTERN)
+    const usage = usageMatch?.[1]?.trim()
+    const title = headerText.replace(USAGE_PATTERN, '').replace(/\s+\./g, '.').trim()
+    const nameMatch = title.match(/^(.*?\.)\s+(.*)$/s)
+    const name = (nameMatch ? nameMatch[1] : title).trim()
     let rest = (nameMatch ? nameMatch[2] : '').trim()
-
-    // «Легендарное сопротивление (3/день).» → usage.
-    const usageMatch = name.match(USAGE_PATTERN)
-    let usage: string | undefined
-    if (usageMatch?.[1]) {
-      usage = usageMatch[1].trim()
-      name = name.replace(USAGE_PATTERN, '').replace(/\s+\./, '.').trim()
-    }
 
     let subtitle: string | undefined
     if (rest && ATTACK_SUBTITLE_PATTERN.test(rest)) {
@@ -438,48 +528,35 @@ export function parseFeatureHtml(
       rest = ''
     }
 
-    const fullText = [rest, bodyText].filter(Boolean).join(' ').trim()
+    // Иногда тип атаки — отдельный курсив сразу после названия.
+    const bodySubtitle = paragraph.firstElementChild
+    if (!rest && bodySubtitle && FEATURE_HEADING_TAGS.has(bodySubtitle.tagName) &&
+      ATTACK_SUBTITLE_PATTERN.test(paragraphText(bodySubtitle)) &&
+      Array.from(paragraph.childNodes)
+        .slice(0, Array.prototype.indexOf.call(paragraph.childNodes, bodySubtitle))
+        .every((node) => node.nodeType === 3 && !(node.textContent ?? '').trim())) {
+      subtitle = paragraphText(bodySubtitle).replace(/\s*:$/, '')
+      bodySubtitle.remove()
+      removeTitleDelimiter(paragraph)
+    }
+    if (rest) paragraph.prepend(`${rest} `)
 
-    const attackMatch = fullText.match(/([+-]\d+)\s*к попаданию/i)
-    const rangeMatch = fullText.match(/(?:досягаемость|дистанция)\s*(\d+)\s*(?:футов|фт)/i)
-    const targetMatch = fullText.match(/(одна цель|одно существо)/i)
-    const saveMatch = fullText.match(
-      /спасброск[а-яё]*\s+(силы|ловкости|телосложения|интеллекта|мудрости|харизмы)\s+сл\s+(\d+)/i,
-    )
-
-    const damage = extractDamage(fullText)
-
-    // Из описания убираем уже структурированные служебные фразы атаки и попадания.
-    let description = fullText
-      .replace(/^\s*[+-]\d+\s*к попаданию[^.]*\.\s*/i, '')
-      .replace(/попадание\s*:?\s*[^.]*урон[^.]*\.\s*/i, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-    // Пустое описание допустимо, если суть абзаца ушла в структурированные поля.
-    if (!description && !attackMatch && !damage?.length) description = fullText
+    const bodyText = paragraphText(paragraph)
 
     entries.push({
       id: `${sectionId}-feature-${entries.length + 1}`,
       name,
       subtitle,
       usage,
-      attackBonus: attackMatch ? Number(attackMatch[1]) : undefined,
-      range: rangeMatch ? `${rangeMatch[1]} фт.` : undefined,
-      target: targetMatch
-        ? targetMatch[1].toLocaleLowerCase('ru-RU') === 'одна цель'
-          ? '1 цель'
-          : '1 существо'
-        : undefined,
-      save: saveMatch
-        ? { ability: resolveAbilityKey(saveMatch[1]) ?? 'strength', dc: Number(saveMatch[2]) }
-        : undefined,
-      damage,
-      description,
+      ...parseCreatureFeatureDetails(bodyText),
+      description: bodyText,
+      descriptionHtml: paragraph.innerHTML.trim() ? paragraph.outerHTML : undefined,
     })
   }
 
   return {
     entries,
-    introduction: introductionParts.join(' ').trim() || undefined,
+    introduction: introductionParts.join('\n\n').trim() || undefined,
+    introductionHtml: introductionHtml.join('') || undefined,
   }
 }

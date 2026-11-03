@@ -143,7 +143,7 @@
 .localEntityEditorBody h2 { margin: 0; font: 400 var(--font-size-xl)/1.2 var(--font-family-heading); }
 .inspectorBody p:not(.instanceCharacterSheet p) { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 .inspectorTitle { margin-block: var(--space-2); font: 400 var(--font-size-lg)/1.3 var(--font-family-heading); overflow-wrap: anywhere; }
-.fullCard.fullCard { display: flex; flex-direction: column; min-width: 0; }
+.fullCard.fullCard { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
 .fullCard h1 { font-size: var(--font-size-xl); }
 .plainContent { white-space: pre-wrap; }
 .resizeGrip { position: absolute; left: -5px; width: 10px; top: 0; bottom: 0; cursor: col-resize; z-index: 12; touch-action: none; }

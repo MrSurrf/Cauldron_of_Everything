@@ -1,24 +1,27 @@
+import { useMemo } from 'react'
 import { RichContent } from '../../../shared/ui/RichContent'
-import styles from './CreatureFullView.module.css'
+import { splitCreatureSectionContent } from './creatureSectionPresentation'
+import styles from './CreatureSectionContent.module.css'
 
+/** Общее представление текста правил; исходные ссылки и сложная разметка сохраняются. */
 export function CreatureSectionContent({ html }: { html: string }) {
-  // Разбиваем только последовательность именованных абзацев статблока.
-  // Произвольный HTML сохраняем целиком; очисткой по-прежнему занимается RichContent.
-  const paragraphs = html.match(/<p\b[^>]*>[\s\S]*?<\/p\s*>/gi)
-  const isNamedParagraphList = paragraphs?.length &&
-    paragraphs.join('').replace(/\s/g, '') === html.replace(/\s/g, '') &&
-    paragraphs.every((paragraph) => /^<p\b[^>]*>\s*<strong\b/i.test(paragraph))
-
-  if (!isNamedParagraphList) {
-    return <RichContent className={styles.sectionContent} html={html} />
-  }
+  const blocks = useMemo(() => splitCreatureSectionContent(html), [html])
 
   return (
-    <div className={styles.sectionEntries}>
-      {paragraphs.map((paragraph, index) => (
-        <div className={styles.sectionBody} key={index}>
-          <RichContent className={styles.sectionContent} html={paragraph} />
-        </div>
+    <div className={styles.root}>
+      {blocks.map((block, index) => block.type === 'content' ? (
+        <RichContent className={styles.content} html={block.html} key={index} />
+      ) : (
+        <dl className={styles.spellGroups} key={index}>
+          {block.groups.map((group, groupIndex) => (
+            <div className={styles.spellGroup} key={groupIndex}>
+              <dt><span className={styles.frequency}>{group.label}</span></dt>
+              <dd>
+                <RichContent className={`${styles.content} ${styles.spellList}`} html={group.html} />
+              </dd>
+            </div>
+          ))}
+        </dl>
       ))}
     </div>
   )

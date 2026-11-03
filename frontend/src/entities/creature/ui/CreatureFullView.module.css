@@ -12,16 +12,12 @@
     );
   display: grid;
   width: 100%;
-  max-width: 80rem;
+  max-width: 64rem;
   margin-inline: auto;
-  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 1fr);
-  grid-template-areas: 'header sidebar' 'main sidebar' 'sections sections';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'header' 'main' 'navigation' 'sections' 'description';
   column-gap: clamp(var(--space-5), 4vw, var(--space-7));
   align-items: start;
-}
-.root[data-has-sidebar='false'] {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'header' 'main' 'sections';
 }
 .header { grid-area: header; min-width: 0; padding-block-end: var(--space-5); }
 .headerContent {
@@ -293,7 +289,14 @@
   .vitals { padding-inline-end: 0; border-inline-end: 0; }
   .mobility { border-top: var(--border-width-default) solid var(--color-content-border); padding-top: var(--space-3); }
 }
-.sections { grid-area: sections; min-width: 0; margin-block-start: var(--space-5); }
+.sections { grid-area: sections; width: 100%; min-width: 0; margin-block-start: var(--space-4); }
+.sections:empty { display: none; }
+.sectionNavigation { grid-area: navigation; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding-block: var(--space-2); border-block: var(--border-width-default) solid var(--color-content-border); }
+.sectionNavigation a { color: var(--color-text-subtle); font-size: var(--font-size-xs); line-height: var(--line-height-normal); text-decoration: none; }
+.sectionNavigation a:hover { color: var(--color-interactive); text-decoration: underline; }
+.sectionNavigation a:focus-visible { outline: var(--border-width-strong) solid var(--color-border-accent); outline-offset: var(--space-1); }
+.description { grid-area: description; width: 100%; min-width: 0; margin-block-start: var(--space-5); scroll-margin-top: calc(var(--site-header-height) + var(--space-4)); }
+.sections h2 { scroll-margin-top: calc(var(--site-header-height) + var(--space-4)); }
 .sectionTitle {
   composes: sectionTitle from '../../../shared/styles/entityTypography.module.css';
   display: flex;
@@ -339,14 +342,13 @@
 }
 .sectionContent { font-size: var(--font-size-sm); }
 .sectionContent > p > strong:first-child { display: block; margin-block-end: var(--space-1); }
-.sidebar { grid-area: sidebar; min-width: 0; padding-block-start: 3.25rem; }
 .descriptionBody { display: grid; gap: var(--space-5); padding: clamp(var(--space-4), 3vw, var(--space-6)); }
+.descriptionBody > section { min-width: 0; max-width: 75ch; }
 .descriptionBody .sectionTitle { margin-block-end: var(--space-3); }
 .habitat { border-block-start: var(--border-width-default) solid var(--color-content-border); }
 .habitat > div { grid-template-columns: 1fr; border-bottom: 0; padding-block-end: 0; }
 @media (max-width: 60rem) {
-  .root { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'header' 'main' 'sections' 'sidebar'; max-width: 48rem; }
-  .sidebar { padding-block-start: var(--space-6); }
+  .root { max-width: 48rem; }
 }
 @media (max-width: 36rem) {
   .headerContent { align-items: flex-start; flex-direction: column; gap: var(--space-4); }

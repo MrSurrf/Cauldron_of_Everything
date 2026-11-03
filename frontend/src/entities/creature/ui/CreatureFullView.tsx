@@ -3,11 +3,9 @@ import typography from '../../../shared/styles/entityTypography.module.css'
 import { Panel } from '../../../shared/ui/Panel'
 import { IconButton } from '../../../shared/ui/IconButton'
 import { Popover } from '../../../shared/ui/Popover'
-import { RichContent } from '../../../shared/ui/RichContent'
 import { PlaceholderIcon } from '../../../shared/ui/icons/PlaceholderIcon'
 import type { CreatureEntity, DamageAffinityState } from '../model/creature'
 import {
-  formatCreatureSkills,
   getCreatureTaxonomy,
   hasCreatureCombatPassport,
 } from './creatureFormatting'
@@ -15,6 +13,8 @@ import { CreatureAbilitiesPanel } from './CreatureAbilitiesPanel'
 import { CreatureCombatPassport } from './CreatureCombatPassport'
 import { DamageAffinityBadge, DamageAffinityLegend } from './DamageAffinityBadge'
 import { CreatureFeatureSections } from './CreatureFeatureSections'
+import { CreatureInformation } from './CreatureInformation'
+import { CreatureSectionContent } from './CreatureSectionContent'
 import styles from './CreatureFullView.module.css'
 
 export type CreatureFullViewProps = {
@@ -75,7 +75,8 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
   const taxonomy = getCreatureTaxonomy(entity)
   const descriptions = entity.sections.filter((section) => section.type === 'description')
   const sections = entity.sections.filter((section) => section.type !== 'description')
-  const hasSidebar = descriptions.length > 0 || Boolean(entity.habitat?.length)
+  const hasDescription = descriptions.length > 0 || Boolean(entity.habitat?.length)
+  const hasInformation = Boolean(Object.keys(entity.skills ?? {}).length || entity.conditionImmunities?.length || entity.languages?.length)
   const damageGroups = [
     { key: 'resistance', title: 'Сопротивления к урону', notes: entity.damageResistances },
     { key: 'immunity', title: 'Иммунитеты к урону', notes: entity.damageImmunities },
@@ -87,27 +88,12 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
       ({ physical, magical }) => getAffinityGroup(physical, magical) === group.key,
     ) ?? [],
   })).filter((group) => group.affinities.length > 0 || group.notes?.length)
-  const details = [
-    { label: 'Навыки', value: formatCreatureSkills(entity.skills) },
-    {
-      label: 'Иммунитеты к состояниям',
-      value: entity.conditionImmunities?.length ? (
-        <span className={styles.conditionList}>
-          {entity.conditionImmunities.map((condition) => (
-            <span className={styles.condition} key={condition}>{condition}</span>
-          ))}
-        </span>
-      ) : undefined,
-    },
-    { label: 'Языки', value: entity.languages?.join(', ') },
-  ].filter((detail) => detail.value)
   const challenge = entity.challengeRating?.match(/^\s*([^()]+?)\s*(?:\((.*)\))?\s*$/)
 
   return (
     <article
       className={[styles.root, className].filter(Boolean).join(' ')}
       aria-labelledby={`${entity.id}-title`}
-      data-has-sidebar={hasSidebar}
     >
       <header className={styles.header}>
         <p className={styles.eyebrow}>
@@ -199,23 +185,23 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
           </StatBlockSection>
         )}
 
-        {details.length > 0 && (
+        {hasInformation && (
           <StatBlockSection id={`${entity.id}-information-title`} title="Основная информация">
-            <dl className={styles.details}>
-              {details.map((detail) => (
-                <div key={detail.label}>
-                  <DetailLabel>{detail.label}</DetailLabel>
-                  <dd className={typography.bodyText}>{detail.value}</dd>
-                </div>
-              ))}
-            </dl>
+            <CreatureInformation entity={entity} />
           </StatBlockSection>
         )}
 
       </div>
 
-      {hasSidebar && (
-        <aside className={styles.sidebar} aria-label="Описание существа">
+      {(sections.length > 1 || hasDescription) && <nav className={styles.sectionNavigation} aria-label="Разделы существа">
+        {sections.map(section => <a href={`#${entity.id}-${section.id}-title`} key={section.id}>{section.title}</a>)}
+        {hasDescription && <a href={`#${entity.id}-description`}>Описание</a>}
+      </nav>}
+      {sections.length > 0 && <div className={styles.sections}>
+        <CreatureFeatureSections key={entity.id} entityId={entity.id} sections={sections} />
+      </div>}
+      {hasDescription && (
+        <section id={`${entity.id}-description`} className={styles.description} aria-label="Описание существа">
           <Panel className={styles.descriptionPanel} padding="none">
             <div className={styles.descriptionBody}>
               {descriptions.map((section) => (
@@ -223,7 +209,7 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
                   <h2 id={`${entity.id}-${section.id}-title`} className={styles.sectionTitle}>
                     {section.title}
                   </h2>
-                  <RichContent html={section.html} />
+                  <CreatureSectionContent html={section.html} />
                 </section>
               ))}
               {Boolean(entity.habitat?.length) && (
@@ -236,11 +222,8 @@ export function CreatureFullView({ className, entity }: CreatureFullViewProps) {
               )}
             </div>
           </Panel>
-        </aside>
+        </section>
       )}
-      <div className={styles.sections}>
-        <CreatureFeatureSections key={entity.id} entityId={entity.id} sections={sections} />
-      </div>
     </article>
   )
 }
