@@ -23,9 +23,14 @@
   overflow: hidden;
   border-bottom: var(--border-width-default) solid var(--color-border-default);
   background:
-    radial-gradient(ellipse 30% 65% at 76% 48%, color-mix(in srgb, var(--color-brand) 32%, transparent), transparent),
-    radial-gradient(ellipse 34% 70% at 56% 90%, color-mix(in srgb, var(--color-surface-accent) 92%, transparent), transparent),
-    linear-gradient(100deg, var(--color-background) 14%, var(--color-surface-default) 58%, var(--color-background));
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-background) 88%, transparent) 0%,
+      color-mix(in srgb, var(--color-background) 62%, transparent) 42%,
+      color-mix(in srgb, var(--color-background) 14%, transparent) 72%,
+      color-mix(in srgb, var(--color-background) 24%, transparent) 100%
+    ),
+    url('../../../assets/backgrounds/Main_page.png') center 48% / cover no-repeat;
 }
 
 .hero::before {
