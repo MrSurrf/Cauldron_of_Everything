@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../shared/ui'
+import { ItemKindIcon } from '../../../entities/item'
 import catalogStyles from '../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS, searchLibrary } from '../model/library'
 import type { LibraryReference, LibrarySection } from '../model/library'
@@ -83,7 +84,8 @@ export function LibrarySidebar({ section, query, width, onCollapse, onSection, o
           event.dataTransfer.setDragImage(transparentImage, 0, 0)
           setDraggedId(`${reference.source}:${reference.entityId}`)
           onLibraryDragStart(reference, { x: event.clientX, y: event.clientY })
-        }} onDragEnd={() => { setDraggedId(null); onLibraryDragEnd() }}><ListCard className={catalogStyles.card} name={reference.name} tags={reference.facts} /></button>
+        }} onDragEnd={() => { setDraggedId(null); onLibraryDragEnd() }}><ListCard className={catalogStyles.card} name={reference.name} tags={reference.facts}
+          icon={reference.entityType === 'item' ? <ItemKindIcon classification={reference.classification} style={{ width: '100%', height: '100%' }} /> : undefined} /></button>
         {canPlaceReference(reference) && <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить на холст: ${reference.name}`} title="Добавить на холст" onClick={() => onAdd(reference)}>+</Button>}
       </div>)}
     </ScrollArea>

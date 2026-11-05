@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Panel, PlaceholderIcon } from '../../shared/ui'
+import { ItemKindIcon } from '../../entities/item'
+import { toCatalogItem } from './itemCatalog'
 import { catalogNameStartsWith } from './catalogAlphabet'
 import { encyclopediaSections, sectionPath, typeLabel } from './encyclopediaSections'
 import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
@@ -60,7 +62,12 @@ export function EncyclopediaResults({ query = '', type, fullSearch = false }: { 
       {current?.data?.count === 0 && <p className={styles.empty}>Материалы не найдены. Попробуйте другое название.</p>}
       {displayedResults && <div className={styles.resultGrid}>
           {displayedResults.map((entry) => <Link className={styles.cardLink} to={entryPath(entry)} key={entry.id}>
-            <Panel className={styles.card} padding="compact"><div className={styles.cardContent}><PlaceholderIcon /><div className={styles.cardCopy}><h3>{entry.name}</h3><p>{typeLabel(entry.entity_type)}{entry.name_en ? ` · ${entry.name_en}` : ''}</p></div></div></Panel>
+            <Panel className={styles.card} padding="compact"><div className={styles.cardContent}>
+              {entry.entity_type === 'item'
+                ? <ItemKindIcon classification={toCatalogItem(entry).itemType} className={styles.itemIcon} />
+                : <PlaceholderIcon />}
+              <div className={styles.cardCopy}><h3>{entry.name}</h3><p>{typeLabel(entry.entity_type)}{entry.name_en ? ` · ${entry.name_en}` : ''}</p></div>
+            </div></Panel>
           </Link>)}
         </div>}
       {(page > 1 || (current?.data?.count ?? 0) > 24) && <div className={styles.pagination}>

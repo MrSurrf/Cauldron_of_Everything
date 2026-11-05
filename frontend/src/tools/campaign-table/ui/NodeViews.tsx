@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import type { EntityType } from '../../../entities/base'
+import { ItemKindIcon } from '../../../entities/item'
 import type { NodeEntityType } from '../model/table'
 import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import styles from './CampaignNodes.module.css'
 
-export type NodeViewProps = { title: string; summary: string }
+export type NodeViewProps = { title: string; summary: string; classification?: string }
 export function NodeOutline({ shape }: { shape: NodeShape }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 120, height: 120 })
@@ -36,7 +37,6 @@ const glyphs = {
   npc: 'M38 40a12 14 0 1 0 24 0a12 14 0 1 0-24 0 M25 80q0-22 25-22t25 22',
   creature: 'M25 64l8-32 14 12 17-16 11 33-18 13-21-4z M42 56h2 M60 52h2',
   spell: 'M50 24v52 M24 50h52 M32 32l36 36 M68 32L32 68 M44 44h12v12H44z',
-  item: 'M41 22h18v10l-3 5v11q22 19 9 30H35q-13-11 9-30V37l-3-5z M33 63h34',
   faction: 'M28 30l22 12 22-12-6 29-16 18-16-18z M50 42v35 M28 30l22 23 22-23',
   location: 'M20 78V40h16v-9h9v9h10v-9h9v9h16v38z M43 78V61h14v17 M26 40V25h10v15 M64 40V25h10v15',
   quest: 'M28 25h40v52H28z M38 38h20 M38 49h20 M38 60h12',
@@ -48,10 +48,11 @@ function Glyph({ type }: { type: keyof typeof glyphs }) {
 function Caption({ title, summary }: NodeViewProps) {
   return <div className={styles.nodeCaption}><h3>{title}</h3>{summary && <p className={styles.nodeSummary}>{summary}</p>}</div>
 }
-function Badge({ type, ...props }: NodeViewProps & { type: keyof typeof glyphs }) {
+function Badge({ type, ...props }: NodeViewProps & { type: keyof typeof glyphs | 'item' }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
-    {type !== 'spell' && type !== 'faction' && <Glyph type={type} />}
+    {type !== 'spell' && type !== 'faction' && type !== 'item' && <Glyph type={type} />}
+    {type === 'item' && <ItemKindIcon classification={props.classification} className={styles.nodeItemIcon} />}
     {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}
     {level !== undefined && <span className={styles.spellLevel} aria-label={`Уровень заклинания: ${level}`}><span>{level}</span></span>}
   </div><Caption {...props} summary={type === 'spell' ? '' : props.summary} /></>

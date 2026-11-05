@@ -101,6 +101,7 @@
 .resultGrid .cardLink { width: auto; }
 .resultGrid .cardContent { grid-template-columns: var(--icon-size-lg) minmax(0, 1fr); min-height: 4rem; }
 .resultGrid svg { width: var(--icon-size-lg); height: var(--icon-size-lg); color: var(--color-icon-muted); }
+.resultGrid .itemIcon { width: var(--icon-size-lg); height: var(--icon-size-lg); color: var(--color-brand-bright); }
 .pagination { display: flex; gap: var(--space-4); align-items: center; justify-content: center; }
 .back { display: inline-block; margin-bottom: var(--space-4); color: var(--color-interactive); }
 .article { margin-top: var(--space-5); }

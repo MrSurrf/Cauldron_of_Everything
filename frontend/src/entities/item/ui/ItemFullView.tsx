@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Panel, Tooltip } from '../../../shared/ui'
 import { RichContent } from '../../../shared/ui/RichContent'
 import type { ItemEntity } from '../model/item'
+import { ItemKindIcon } from './ItemKindIcon'
 import styles from './ItemFullView.module.css'
 
 export type ItemFullViewProps = {
@@ -31,7 +32,7 @@ export function ItemFullView({ entity }: ItemFullViewProps) {
       <Panel className={styles.frame} padding="none">
         <article className={styles.article}>
           <header className={styles.header}>
-            <p className={styles.eyebrow}>Карточка предмета</p>
+            <p className={styles.eyebrow}><ItemKindIcon classification={entity.classification} className={styles.kindIcon} />Карточка предмета</p>
             <div className={styles.titleLine}>
               <h1>{entity.name}</h1>
               {entity.nameEn && <span className={styles.english}>[{entity.nameEn}]</span>}

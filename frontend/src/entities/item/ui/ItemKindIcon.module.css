@@ -1,0 +1,11 @@
+.fallback {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+.fallback > svg {
+  width: 100%;
+  height: 100%;
+}

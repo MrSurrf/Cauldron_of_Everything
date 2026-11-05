@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { recordVisit } from '../../entities/encyclopedia'
-import { toItemEntity, type EncyclopediaItemDetail, type ItemEntity } from '../../entities/item'
-import { Button, Checkbox, ListCard, Panel, PlaceholderIcon, Popover, TextInput } from '../../shared/ui'
+import { ItemKindIcon, toItemEntity, type EncyclopediaItemDetail, type ItemEntity } from '../../entities/item'
+import { Button, Checkbox, ListCard, Panel, Popover, TextInput } from '../../shared/ui'
 import { fetchEncyclopedia } from './encyclopediaApi'
 import { catalogFirstLetter, catalogNameStartsWith } from './catalogAlphabet'
 import { filterItems, emptyItemFilters, itemFacetOptions, ITEM_FACETS } from './itemFilters'
@@ -169,9 +169,9 @@ export default function ItemsPage() {
       onDoubleClick={() => navigate(`/encyclopedia/item/${encodeURIComponent(item.slug)}`)}
     >
       <ListCard
-        className={`${base.catalogCard} ${styles.itemCard}`}
+        className={base.catalogCard}
         name={item.name}
-        icon={<PlaceholderIcon />}
+        icon={<ItemKindIcon classification={item.itemType} className={styles.itemIcon} />}
       />
     </button>
   }
@@ -276,7 +276,7 @@ export default function ItemsPage() {
           ? 'Избранных предметов пока нет.'
           : 'Выберите предмет в списке, чтобы открыть его карточку.'}</p>}
         {selected && <div className={styles.preview}>
-          <span className={styles.previewIcon} aria-hidden="true"><PlaceholderIcon /></span>
+          <span className={styles.previewIcon} aria-hidden="true"><ItemKindIcon classification={selected.itemType} className={styles.itemIcon} /></span>
           <h3>{selected.name}</h3>
           {selected.nameEn && <p className={styles.nameEn}>{selected.nameEn}</p>}
           <dl>

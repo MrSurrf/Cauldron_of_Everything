@@ -5,6 +5,7 @@ import { recordVisit } from '../../entities/encyclopedia'
 import { entryPath, fetchEncyclopedia } from './encyclopediaApi'
 import type { EncyclopediaEntry } from './encyclopediaApi'
 import { typeLabel } from './encyclopediaSections'
+import { toCatalogItem } from './itemCatalog'
 import { ClassFullView, toClassEntity } from '../../entities/character-class'
 import classStyles from './ClassEntityPage.module.css'
 import styles from './EncyclopediaPage.module.css'
@@ -20,7 +21,14 @@ export default function EncyclopediaEntryPage() {
       .then((entry) => {
         if (controller.signal.aborted) return
         setState({ id, entry })
-        recordVisit({ path: entryPath(entry), title: entry.name, category: typeLabel(entry.entity_type) })
+        recordVisit({
+          path: entryPath(entry),
+          title: entry.name,
+          category: typeLabel(entry.entity_type),
+          ...(entry.entity_type === 'item'
+            ? { itemClassification: toCatalogItem({ ...entry, summary: entry.data ?? entry.summary }).itemType }
+            : {}),
+        })
       })
       .catch(() => { if (!controller.signal.aborted) setState({ id, error: 'Не удалось открыть материал. Он недоступен или соединение прервано.' }) })
     return () => controller.abort()

@@ -12,6 +12,7 @@ import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
 import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
 import { useCreatureMorph } from './useCreatureMorph'
+import { useItemClassification } from './useItemClassification'
 
 function plainText(value: string) {
   if (!value) return ''
@@ -23,6 +24,7 @@ const emptyMembers: readonly NodeMember[] = []
 
 export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
   const actions = useNodeActions()
+  const classification = useItemClassification(data, actions.readOnly)
   const zoom = useStore(state => state.transform[2])
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
@@ -144,7 +146,7 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
         {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
       </div>
-    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
+    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification} />}
     {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
       const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
         y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })

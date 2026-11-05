@@ -22,7 +22,7 @@
   gap: var(--space-2);
 }
 
-.itemCard :global(svg) {
+.itemIcon {
   width: 1.75rem;
   height: 1.75rem;
   filter: drop-shadow(0 0 var(--space-2) color-mix(in srgb, var(--color-brand-bright) 34%, transparent));
@@ -42,11 +42,6 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface-accent);
   color: var(--color-brand-bright);
-}
-
-.previewIcon svg {
-  width: 1.75rem;
-  height: 1.75rem;
 }
 
 .preview h3 {

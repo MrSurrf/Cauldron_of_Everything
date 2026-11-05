@@ -71,7 +71,8 @@ export function parseTable(raw: string): CampaignTable {
         const ref = data.reference
         if (!record(ref) || !text(ref.entityId) || !ref.entityId || !text(ref.entityType) || !text(ref.name) || !text(ref.slug)
           || !['creature', 'class', 'race', 'background', 'feat', 'spell', 'item', 'sidekick', 'reference', 'character', 'npc', 'campaign'].includes(ref.entityType)
-          || !['encyclopedia', 'character', 'campaign'].includes(String(ref.source)) || !Array.isArray(ref.facts) || !ref.facts.every(text)) return invalid()
+          || !['encyclopedia', 'character', 'campaign'].includes(String(ref.source)) || !Array.isArray(ref.facts) || !ref.facts.every(text)
+          || (ref.classification !== undefined && !text(ref.classification))) return invalid()
       }
       nodes.set(node.id, node)
     }

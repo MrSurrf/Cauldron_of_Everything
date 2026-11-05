@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CatalogItem } from './itemCatalog'
+import { toCatalogItem } from './itemCatalog'
 import { emptyItemFilters, filterItems, itemFacetOptions } from './itemFilters'
 
 const items: CatalogItem[] = [
@@ -24,5 +25,43 @@ describe('item filters', () => {
       { value: 'Оружие', count: 1 },
       { value: 'Чудесный предмет', count: 1 },
     ])
+  })
+
+  it('объединяет подтипы в девять категорий и фильтрует все варианты выбранного вида', () => {
+    const classifications = [
+      'Волшебная палочка, редкая',
+      'Доспех (щит)',
+      'Доспех (латы)',
+      'Свиток (заклинание)',
+      'Зелье, обычное',
+      'Кольцо, редкое',
+      'Чудесный предмет',
+      'Волшебная безделушка',
+      'Wondrous item, rare',
+      'Посох, редкий',
+      'Жезл, необычный',
+      'Оружие (длинный меч)',
+      'Оружие (кинжал)',
+    ]
+    const catalog = classifications.map((classification, index) => toCatalogItem({
+      id: index + 1,
+      entity_type: 'item',
+      name: `Предмет ${index + 1}`,
+      slug: `item-${index + 1}`,
+      summary: { classification },
+    }))
+    const filters = emptyItemFilters()
+    expect(itemFacetOptions(catalog, filters, 'itemType')).toHaveLength(9)
+    expect(itemFacetOptions(catalog, filters, 'itemType')).toEqual(expect.arrayContaining([
+      { value: 'Доспех', count: 2 },
+      { value: 'Маг. безделушка', count: 3 },
+      { value: 'Оружие', count: 2 },
+    ]))
+
+    filters.selected.itemType = ['Оружие']
+    expect(filterItems(catalog, filters).map((item) => item.id)).toEqual([12, 13])
+
+    filters.selected.itemType = ['Маг. безделушка']
+    expect(filterItems(catalog, filters).map((item) => item.id)).toEqual([7, 8, 9])
   })
 })

@@ -3,6 +3,7 @@ import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
 import { campaignRequest, ownedReference } from './campaignApi'
 import type { OwnedMaterial } from './campaignApi'
+import { entryItemClassification } from './itemClassification'
 
 export const LIBRARY_SECTIONS = [
   ['creature', 'Бестиарий'], ['class', 'Классы'], ['race', 'Расы'],
@@ -28,6 +29,7 @@ export type LibraryReference = EntityReference & {
   name: string
   slug: string
   facts: string[]
+  classification?: string
 }
 
 export function entryReference(entry: EncyclopediaEntry): LibraryReference {
@@ -40,7 +42,8 @@ export function entryReference(entry: EncyclopediaEntry): LibraryReference {
     if (typeof cost === 'string' || typeof cost === 'number') facts.push(`Стоимость ${cost}`)
   }
   return { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type as EntityType,
-    slug: entry.slug, name: entry.name, facts }
+    slug: entry.slug, name: entry.name, facts,
+    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry) } : {}) }
 }
 
 export async function searchLibrary(section: LibrarySection, query: string, page: number, signal: AbortSignal) {
