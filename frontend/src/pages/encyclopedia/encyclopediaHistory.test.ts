@@ -104,13 +104,35 @@ describe('Локальная история энциклопедии', () => {
     expect(entries[0]).not.toHaveProperty('itemClassification')
   })
 
-  it('добавляет классификацию при повторном открытии предмета из старой истории', () => {
+  it('читает историю предметов без редкости вместе с новыми данными', () => {
+    const now = Date.now()
+    const itemVisit = { ...visit, itemClassification: 'Оружие' }
+    const entries = parseVisits(JSON.stringify([
+      { ...itemVisit, path: '/encyclopedia/item/blade', title: 'Клинок', visitedAt: now - 1 },
+      { ...itemVisit, path: '/encyclopedia/item/bow', title: 'Лук', visitedAt: now, itemRarity: '  Очень редкий  ' },
+    ]), now)
+
+    expect(entries).toHaveLength(2)
+    expect(entries[0].itemRarity).toBe('Очень редкий')
+    expect(entries[1].itemClassification).toBe('Оружие')
+    expect(entries[1]).not.toHaveProperty('itemRarity')
+  })
+
+  it.each([null, 12, {}, ['Редкий'], '   '])('игнорирует повреждённую редкость %j, сохраняя запись истории', (itemRarity) => {
+    const now = Date.now()
+    const entries = parseVisits(JSON.stringify([{ ...visit, visitedAt: now, itemRarity }]), now)
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).not.toHaveProperty('itemRarity')
+  })
+
+  it('добавляет классификацию и редкость при повторном открытии предмета из старой истории', () => {
     const itemVisit = { path: '/encyclopedia/item/blade', title: 'Клинок', category: 'Магические предметы' }
     recordVisit(itemVisit)
-    recordVisit({ ...itemVisit, itemClassification: 'Оружие (длинный меч)' })
+    recordVisit({ ...itemVisit, itemClassification: 'Оружие (длинный меч)', itemRarity: 'Редкий' })
 
     expect(parseVisits(readHistorySnapshot())).toMatchObject([
-      { ...itemVisit, itemClassification: 'Оружие (длинный меч)', visitCount: 1 },
+      { ...itemVisit, itemClassification: 'Оружие (длинный меч)', itemRarity: 'Редкий', visitCount: 1 },
     ])
   })
 })

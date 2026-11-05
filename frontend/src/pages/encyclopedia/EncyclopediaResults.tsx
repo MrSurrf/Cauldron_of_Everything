@@ -64,7 +64,7 @@ export function EncyclopediaResults({ query = '', type, fullSearch = false }: { 
           {displayedResults.map((entry) => <Link className={styles.cardLink} to={entryPath(entry)} key={entry.id}>
             <Panel className={styles.card} padding="compact"><div className={styles.cardContent}>
               {entry.entity_type === 'item'
-                ? <ItemKindIcon classification={toCatalogItem(entry).itemType} className={styles.itemIcon} />
+                ? <ItemKindIcon classification={toCatalogItem(entry).itemType} rarity={toCatalogItem(entry).rarity} className={styles.itemIcon} />
                 : <PlaceholderIcon />}
               <div className={styles.cardCopy}><h3>{entry.name}</h3><p>{typeLabel(entry.entity_type)}{entry.name_en ? ` · ${entry.name_en}` : ''}</p></div>
             </div></Panel>

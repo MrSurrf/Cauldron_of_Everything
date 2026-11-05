@@ -20,7 +20,7 @@ function itemData(classification?: string) {
 }
 
 describe('вид предмета на схеме кампании', () => {
-  it('переносит классификацию из выдачи через drag-ссылку и сохранённый документ', () => {
+  it('переносит классификацию и редкость из выдачи через drag-ссылку и сохранённый документ', () => {
     const reference = entryReference({ id: 101, entity_type: 'item', slug: 'sword', name: 'Огненный меч', name_en: '',
       summary: { classification: 'Оружие (длинный меч)', rarity: 'Редкий' } })
     const table = createTable()
@@ -28,11 +28,26 @@ describe('вид предмета на схеме кампании', () => {
     const saved = parseTable(serializeTable(placeCanvasObject(table, table.activeId, object, object.entity.name)))
     const data = resolveDiagram(saved, saved.diagrams[0]).nodes[0].data
     expect(instanceItemClassification(data)).toBe('Оружие (длинный меч)')
-    expect(renderToStaticMarkup(createElement(ItemNode, { title: data.title, summary: data.facts, classification: instanceItemClassification(data) })))
-      .toContain('data-icon="item-weapon"')
-    const broken = structuredClone(saved)
-    Object.assign(broken.entities[0].reference!, { classification: {} })
-    expect(() => parseTable(JSON.stringify(broken))).toThrow()
+    expect(data.reference?.rarity).toBe('Редкий')
+    const markup = renderToStaticMarkup(createElement(ItemNode, { title: data.title, summary: data.facts, classification: instanceItemClassification(data) }))
+    expect(markup).toContain('data-icon="item-weapon"')
+    expect(markup).toContain('data-color-mode="inherit"')
+    expect(markup).not.toContain('data-item-rarity=')
+    const historical = structuredClone(saved)
+    delete historical.entities[0].reference!.rarity
+    expect(() => parseTable(JSON.stringify(historical))).not.toThrow()
+    for (const patch of [{ classification: {} }, { rarity: 3 }]) {
+      const broken = structuredClone(saved)
+      Object.assign(broken.entities[0].reference!, patch)
+      expect(() => parseTable(JSON.stringify(broken))).toThrow()
+    }
+  })
+
+  it('берёт редкость из полного статблока с резервом на summary', () => {
+    const entry = { id: 101, entity_type: 'item', slug: 'sword', name: 'Меч', name_en: '', summary: { rarity: 'Редкий' } }
+    expect(entryReference({ ...entry, data: { rarity: ' Легендарный ' } }).rarity).toBe('Легендарный')
+    expect(entryReference({ ...entry, data: { rarity: '' } }).rarity).toBe('Редкий')
+    expect(entryReference({ ...entry, data: { rarity: 7 }, summary: {} }).rarity).toBeUndefined()
   })
 
   it('выбирает иконку изменённого статблока вместо вида исходной карточки', () => {

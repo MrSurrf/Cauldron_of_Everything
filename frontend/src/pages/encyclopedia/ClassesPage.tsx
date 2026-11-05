@@ -6,6 +6,7 @@ import { Button, Combobox, Panel, PlaceholderIcon } from '../../shared/ui'
 import { type CatalogClass, type ClassCollection, filterClasses, loadClasses } from './classCatalog'
 import { entryPath } from './encyclopediaApi'
 import { EncyclopediaQuickNav } from './EncyclopediaQuickNav'
+import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import styles from './ClassesPage.module.css'
 
 type CollectionFilter = 'all' | ClassCollection
@@ -93,7 +94,7 @@ export default function ClassesPage() {
         <p className={styles.lead}>Классы персонажей и их особенности.</p>
         <p className={styles.intro}>Выберите класс, чтобы узнать о его возможностях, стиле игры, ключевых особенностях и развитии персонажа.</p>
       </div>
-      <span className={styles.heroMark} aria-hidden="true"><PlaceholderIcon /></span>
+      <span className={styles.heroMark} aria-hidden="true"><EncyclopediaSectionIcon sectionId="classes" /></span>
     </section>
 
     <Panel className={styles.filtersPanel} padding="compact">

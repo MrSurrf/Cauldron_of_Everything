@@ -25,7 +25,7 @@
 .itemIcon {
   width: 1.75rem;
   height: 1.75rem;
-  filter: drop-shadow(0 0 var(--space-2) color-mix(in srgb, var(--color-brand-bright) 34%, transparent));
+  filter: drop-shadow(0 0 var(--space-2) color-mix(in srgb, currentColor 24%, transparent));
 }
 
 .preview {

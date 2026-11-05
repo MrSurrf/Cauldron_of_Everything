@@ -179,6 +179,7 @@ export function CharacterEncyclopediaPanel({
             }}>
             <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)}
               icon={entry.entityType === 'item' ? <ItemKindIcon className={styles.itemIcon}
+                rarity={text(entry.summary.rarity)}
                 classification={text(entry.summary.classification ?? entry.summary.item_type ?? entry.summary.type)} /> : undefined} />
           </button>
           <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить: ${entry.name}`}

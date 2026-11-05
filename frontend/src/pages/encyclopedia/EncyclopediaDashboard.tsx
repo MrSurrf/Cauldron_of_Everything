@@ -57,7 +57,7 @@ function VisitLink({ visit }: { visit: EncyclopediaVisit }) {
   return <Link to={visit.path} className={styles.rowLink} title={new Date(visit.visitedAt).toLocaleString('ru')}>
     <ListCard className={styles.sidebarCard} appearance="navigation" name={visit.title} tags={[visit.category]}
       icon={visit.path.startsWith('/encyclopedia/item/')
-        ? <ItemKindIcon classification={visit.itemClassification} className={styles.itemIcon} />
+        ? <ItemKindIcon classification={visit.itemClassification} rarity={visit.itemRarity} className={styles.itemIcon} />
         : <EncyclopediaSectionIcon sectionId={section?.id ?? ''} />} />
     <span className={styles.rowArrow} aria-hidden="true" />
   </Link>

@@ -171,7 +171,7 @@ export default function ItemsPage() {
       <ListCard
         className={base.catalogCard}
         name={item.name}
-        icon={<ItemKindIcon classification={item.itemType} className={styles.itemIcon} />}
+        icon={<ItemKindIcon classification={item.itemType} rarity={item.rarity} className={styles.itemIcon} />}
       />
     </button>
   }
@@ -276,7 +276,7 @@ export default function ItemsPage() {
           ? 'Избранных предметов пока нет.'
           : 'Выберите предмет в списке, чтобы открыть его карточку.'}</p>}
         {selected && <div className={styles.preview}>
-          <span className={styles.previewIcon} aria-hidden="true"><ItemKindIcon classification={selected.itemType} className={styles.itemIcon} /></span>
+          <span className={styles.previewIcon} aria-hidden="true"><ItemKindIcon classification={selected.itemType} rarity={selected.rarity} className={styles.itemIcon} /></span>
           <h3>{selected.name}</h3>
           {selected.nameEn && <p className={styles.nameEn}>{selected.nameEn}</p>}
           <dl>

@@ -1,16 +1,20 @@
 import type { CSSProperties } from 'react'
 import { IconFrame, PlaceholderIcon } from '../../shared/ui'
 import bestiaryUrl from '../../shared/ui/icons/assets/bestiary.svg?url&no-inline'
-import classesUrl from './assets/Classes.svg?url&no-inline'
-import racesUrl from './assets/Kind.svg?url&no-inline'
+import classesUrl from '../../shared/ui/icons/assets/class.svg?url&no-inline'
+import racesUrl from '../../shared/ui/icons/assets/race.svg?url&no-inline'
+import backgroundsUrl from '../../shared/ui/icons/assets/background.svg?url&no-inline'
+import featsUrl from '../../shared/ui/icons/assets/feat.svg?url&no-inline'
 import spellsUrl from './assets/Spells.svg?url&no-inline'
 import itemsUrl from '../../shared/ui/icons/assets/magic-item.svg?url&no-inline'
 import styles from './EncyclopediaSectionIcon.module.css'
 
 const icons: Record<string, { url: string; ratio: number }> = {
   bestiary: { url: bestiaryUrl, ratio: 1453 / 1341 },
-  classes: { url: classesUrl, ratio: 1281 / 887 },
-  races: { url: racesUrl, ratio: 1212 / 900 },
+  classes: { url: classesUrl, ratio: 1069 / 659 },
+  races: { url: racesUrl, ratio: 832 / 701 },
+  backgrounds: { url: backgroundsUrl, ratio: 699 / 643 },
+  feats: { url: featsUrl, ratio: 597 / 701 },
   spells: { url: spellsUrl, ratio: 864 / 832 },
   items: { url: itemsUrl, ratio: 779 / 825 },
 }

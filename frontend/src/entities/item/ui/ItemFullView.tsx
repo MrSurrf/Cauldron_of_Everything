@@ -32,7 +32,7 @@ export function ItemFullView({ entity }: ItemFullViewProps) {
       <Panel className={styles.frame} padding="none">
         <article className={styles.article}>
           <header className={styles.header}>
-            <p className={styles.eyebrow}><ItemKindIcon classification={entity.classification} className={styles.kindIcon} />Карточка предмета</p>
+            <p className={styles.eyebrow}><ItemKindIcon classification={entity.classification} rarity={entity.rarity} className={styles.kindIcon} />Карточка предмета</p>
             <div className={styles.titleLine}>
               <h1>{entity.name}</h1>
               {entity.nameEn && <span className={styles.english}>[{entity.nameEn}]</span>}

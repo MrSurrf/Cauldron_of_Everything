@@ -74,6 +74,15 @@
   --color-status-success: var(--palette-green-500);
   --color-status-warning: var(--palette-yellow-500);
   --color-accent-warm: var(--palette-yellow-500);
+
+  /* Редкость предметов; холст кампании сохраняет собственную палитру нод. */
+  --color-item-rarity-common: var(--palette-gray-300);
+  --color-item-rarity-uncommon: var(--palette-green-500);
+  --color-item-rarity-rare: color-mix(in srgb, var(--palette-blue-400) 80%, var(--palette-gray-300));
+  --color-item-rarity-very-rare: var(--palette-purple-300);
+  --color-item-rarity-legendary: var(--palette-yellow-500);
+  --color-item-rarity-artifact: color-mix(in srgb, var(--palette-red-500) 45%, var(--palette-yellow-500));
+  --color-item-rarity-unknown: var(--palette-gray-500);
   --color-button-background:
     color-mix(in srgb, var(--palette-purple-700) 46%, var(--palette-gray-900));
   --color-button-text: var(--palette-white);
@@ -280,6 +289,13 @@
   --color-status-warning:
     color-mix(in srgb, var(--palette-yellow-500) 50%, var(--palette-plum-900));
   --color-accent-warm: var(--palette-gold);
+  --color-item-rarity-common: var(--color-text-secondary);
+  --color-item-rarity-uncommon: var(--color-status-success);
+  --color-item-rarity-rare: var(--color-temporary-hit-points);
+  --color-item-rarity-very-rare: var(--color-brand-bright);
+  --color-item-rarity-legendary: var(--color-status-warning);
+  --color-item-rarity-artifact: color-mix(in srgb, var(--color-status-danger) 45%, var(--color-status-warning));
+  --color-item-rarity-unknown: var(--color-text-subtle);
   --color-button-background: var(--palette-plum-950);
   --color-button-text: var(--palette-cream-light);
   --color-shadow: var(--palette-plum-900);

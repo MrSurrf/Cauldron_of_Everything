@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
-import { Panel, PlaceholderIcon } from '../../shared/ui'
+import { Panel } from '../../shared/ui'
+import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
 import { encyclopediaSections, sectionPath } from './encyclopediaSections'
 import styles from './EncyclopediaQuickNav.module.css'
 
@@ -41,7 +42,7 @@ export function EncyclopediaQuickNav({ currentSectionId }: { currentSectionId?: 
             to={sectionPath(section)}
             key={section.id}
           >
-            <span className={styles.icon} aria-hidden="true"><PlaceholderIcon /></span>
+            <span className={styles.icon} aria-hidden="true"><EncyclopediaSectionIcon sectionId={section.id} /></span>
             <span className={styles.copy}>
               <strong>{section.title}</strong>
               <small>{section.description}</small>

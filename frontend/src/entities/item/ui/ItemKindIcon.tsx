@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react'
 import { AssetIcon, type SharedIconProps } from '../../../shared/ui/icons/AssetIcon'
 import { PlaceholderIcon } from '../../../shared/ui/icons/PlaceholderIcon'
 import { getItemKind, type ItemKind } from '../model/itemKind'
+import { getItemRarity } from '../model/itemRarity'
 import armorUrl from './assets/armor.svg?url&no-inline'
 import potionUrl from './assets/potion.svg?url&no-inline'
 import ringUrl from './assets/ring.svg?url&no-inline'
@@ -26,12 +28,25 @@ const icons: Record<ItemKind, string> = {
 
 export type ItemKindIconProps = SharedIconProps & {
   classification?: string
+  rarity?: string
+  colorMode?: 'rarity' | 'inherit'
 }
 
-export function ItemKindIcon({ classification, className, ...props }: ItemKindIconProps) {
+export function ItemKindIcon({ classification, rarity, colorMode = 'rarity', className, style, ...props }: ItemKindIconProps) {
   const kind = getItemKind(classification)
-  if (!kind) return <span {...props} className={[styles.fallback, className].filter(Boolean).join(' ')}
+  const itemRarity = colorMode === 'rarity' ? getItemRarity(rarity) : undefined
+  const iconProps = {
+    ...props,
+    className: [itemRarity && styles.rarity, !kind && styles.fallback, className].filter(Boolean).join(' '),
+    style: {
+      ...(itemRarity ? { '--item-icon-rarity-color': `var(--color-item-rarity-${itemRarity})` } : {}),
+      ...style,
+    } as CSSProperties,
+    'data-item-rarity': itemRarity,
+    'data-color-mode': colorMode,
+  }
+  if (!kind) return <span {...iconProps}
     aria-hidden="true" data-icon="item-unknown"><PlaceholderIcon /></span>
 
-  return <AssetIcon {...props} className={className} name={`item-${kind}`} source={icons[kind]} />
+  return <AssetIcon {...iconProps} name={`item-${kind}`} source={icons[kind]} />
 }

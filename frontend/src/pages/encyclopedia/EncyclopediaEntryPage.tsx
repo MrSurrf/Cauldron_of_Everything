@@ -21,12 +21,15 @@ export default function EncyclopediaEntryPage() {
       .then((entry) => {
         if (controller.signal.aborted) return
         setState({ id, entry })
+        const item = entry.entity_type === 'item'
+          ? toCatalogItem({ ...entry, summary: entry.data ?? entry.summary })
+          : undefined
         recordVisit({
           path: entryPath(entry),
           title: entry.name,
           category: typeLabel(entry.entity_type),
-          ...(entry.entity_type === 'item'
-            ? { itemClassification: toCatalogItem({ ...entry, summary: entry.data ?? entry.summary }).itemType }
+          ...(item
+            ? { itemClassification: item.itemType, itemRarity: item.rarity }
             : {}),
         })
       })

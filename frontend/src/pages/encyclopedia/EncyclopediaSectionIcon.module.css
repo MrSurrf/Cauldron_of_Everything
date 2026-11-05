@@ -23,6 +23,7 @@
 
 .category .icon {
   width: calc(var(--section-icon-height) * var(--section-icon-ratio));
+  max-width: 100%;
   height: var(--section-icon-height);
   aspect-ratio: auto;
   -webkit-mask-position: left top;

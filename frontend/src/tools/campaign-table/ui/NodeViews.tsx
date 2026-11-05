@@ -68,7 +68,7 @@ function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
     {type === 'item'
-      ? <ItemKindIcon classification={props.classification} className={styles.nodeItemIcon} />
+      ? <ItemKindIcon classification={props.classification} colorMode="inherit" className={styles.nodeItemIcon} />
       : <BadgeIcon type={type} />}
     {type === 'faction' && <Glyph type="faction" />}
     {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}

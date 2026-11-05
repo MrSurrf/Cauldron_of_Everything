@@ -304,6 +304,7 @@ export function validReference(ref: unknown): ref is LibraryReference {
     && ['encyclopedia', 'character', 'campaign'].includes(String(ref.source))
     && [...entityTypes, 'character'].includes(ref.entityType as EntityType) && Array.isArray(ref.facts) && ref.facts.every(text)
     && (ref.classification === undefined || text(ref.classification))
+    && (ref.rarity === undefined || text(ref.rarity))
 }
 
 function migrateLegacy(raw: string) {

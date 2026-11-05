@@ -30,10 +30,13 @@ export type LibraryReference = EntityReference & {
   slug: string
   facts: string[]
   classification?: string
+  rarity?: string
 }
 
 export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   const data = entry.summary ?? entry.data ?? {}
+  const rarity = [entry.data?.rarity, entry.summary?.rarity]
+    .find((value): value is string => typeof value === 'string' && Boolean(value.trim()))?.trim()
   const facts = ['challenge_rating', 'level', 'school', 'rarity', 'creature_type', 'size', 'hit_die', 'prerequisite']
     .flatMap(key => typeof data[key] === 'string' || typeof data[key] === 'number'
       ? [`${key === 'challenge_rating' ? 'ПО ' : key === 'level' ? 'Уровень ' : ''}${data[key]}`] : [])
@@ -43,7 +46,7 @@ export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   }
   return { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type as EntityType,
     slug: entry.slug, name: entry.name, facts,
-    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry) } : {}) }
+    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry), rarity } : {}) }
 }
 
 export async function searchLibrary(section: LibrarySection, query: string, page: number, signal: AbortSignal) {

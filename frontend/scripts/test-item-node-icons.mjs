@@ -53,17 +53,26 @@ try {
     const source = page.getByRole('button', { name: `Открыть: Предмет ${kind}`, exact: true })
     const icon = source.locator(`[data-icon="item-${kind}"]`)
     await icon.waitFor()
+    assert.equal(await icon.getAttribute('data-color-mode'), 'rarity')
+    assert.equal(await icon.getAttribute('data-item-rarity'), 'rare')
+    const libraryColor = await icon.evaluate(element => getComputedStyle(element).color)
     const size = await icon.boundingBox()
     assert.ok(size.width >= 30 && size.height >= 30, `Иконка ${kind} должна заполнять место в списке`)
     await source.dispatchEvent('dragstart', { dataTransfer: await page.evaluateHandle(() => new DataTransfer()) })
     const preview = page.locator(`[data-library-drag-preview] [data-icon="item-${kind}"]`)
     await preview.waitFor()
+    assert.equal(await preview.getAttribute('data-color-mode'), 'inherit')
+    assert.equal(await preview.getAttribute('data-item-rarity'), null)
+    assert.notEqual(await preview.evaluate(element => getComputedStyle(element).color), libraryColor, 'Drag preview сохраняет цвет карты')
     const previewSize = await preview.boundingBox()
     assert.ok(previewSize.width >= 27 && previewSize.height >= 27)
     await source.dispatchEvent('dragend')
     await source.dragTo(canvas, { targetPosition: { x: 40 + (index % 5) * 190, y: 90 + Math.floor(index / 5) * 260 } })
     const nodeIcon = nodeFor(`Предмет ${kind}`).locator(`[data-icon="item-${kind}"]`)
     await nodeIcon.waitFor()
+    assert.equal(await nodeIcon.getAttribute('data-color-mode'), 'inherit')
+    assert.equal(await nodeIcon.getAttribute('data-item-rarity'), null)
+    assert.notEqual(await nodeIcon.evaluate(element => getComputedStyle(element).color), libraryColor, 'Нода сохраняет цвет карты')
     const nodeSize = await nodeIcon.boundingBox()
     assert.ok(nodeSize.width >= 80 && nodeSize.height >= 80, `Иконка ${kind} должна заполнять badge ноды`)
   }
@@ -71,6 +80,7 @@ try {
   let state = await saved()
   for (const [index, [, classification]] of kinds.entries()) {
     assert.equal(state.entities[index].reference.classification, classification)
+    assert.equal(state.entities[index].reference.rarity, 'Редкий')
   }
   publicDocument = structuredClone(state)
   await page.reload()
@@ -78,7 +88,7 @@ try {
 
   // Старая ссылка и два размещения одной Entity должны делить единственный запрос.
   state = await saved()
-  for (const entity of state.entities) delete entity.reference.classification
+  for (const entity of state.entities) { delete entity.reference.classification; delete entity.reference.rarity }
   const first = state.diagrams[0].nodes[0]
   state.diagrams[0].nodes.push({ ...structuredClone(first), id: 'old-item-second-placement', position: { x: 950, y: 350 } })
   await page.evaluate(({ key, document }) => localStorage.setItem(key, JSON.stringify(document)), { key: storageKey, document: state })
