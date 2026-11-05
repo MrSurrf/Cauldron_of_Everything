@@ -33,6 +33,9 @@ venv/
 db.sqlite3
 *.log
 
+# Сырой датасет энциклопедии (не храним в git, ~1.2 ГБ)
+backend/Encyclopedia-data/
+
 # Загруженные картинки анкеты (кроме примера)
 media/
 !media/survey/

@@ -2,12 +2,12 @@
   --scrollbar-track:
     color-mix(
       in srgb,
-      var(--palette-gray-300) 28%,
+      var(--color-text-secondary) 28%,
       transparent
     );
   --scrollbar-control-icon:
     var(--color-text-secondary);
-  --scrollbar-thumb: var(--palette-white);
+  --scrollbar-thumb: var(--color-text-primary);
   --scrollbar-thumb-size: 0.625rem;
 
   display: flex;
@@ -111,13 +111,13 @@
 }
 
 .control:hover:not(:disabled) {
-  color: var(--palette-purple-300);
+  color: var(--color-interactive);
   filter:
     drop-shadow(
       0 0 0.22rem
       color-mix(
         in srgb,
-        var(--palette-purple-500) 34%,
+        var(--color-action-primary) 34%,
         transparent
       )
     );
@@ -220,7 +220,7 @@
       0 0 0.18rem
       color-mix(
         in srgb,
-        var(--palette-white) 36%,
+        var(--color-text-primary) 36%,
         transparent
       )
     );

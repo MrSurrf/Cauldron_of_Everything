@@ -1,0 +1,147 @@
+.root {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.panel {
+  --panel-border: var(--color-content-border);
+  --panel-border-material: var(--border-gradient-panel-decorative);
+  --panel-inner-border-material: var(--border-gradient-panel-corner-detail);
+  --panel-surface-start: var(--color-surface-muted);
+  --panel-surface-end: var(--color-background);
+  --panel-surface-material: var(--surface-gradient-panel-decorative);
+}
+
+.heading {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width-default) solid var(--color-content-border);
+  background: linear-gradient(90deg, var(--color-surface-accent), transparent);
+}
+
+.sectionTitle {
+  composes: sectionTitle from '../../../shared/styles/entityTypography.module.css';
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 400;
+}
+
+.body {
+  min-width: 0;
+  padding: var(--space-1) var(--space-4);
+}
+
+.introduction {
+  padding-block: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.introduction > p { margin: 0; }
+.introduction + .entries { border-top: var(--border-width-default) solid var(--color-content-border); }
+
+/* Общий ритм для особенностей и всех типов действий, без вложенных карточек. */
+.entries { min-width: 0; }
+.entry { min-width: 0; padding-block: var(--space-3); }
+.entry + .entry { border-top: var(--border-width-default) solid var(--color-content-border); }
+
+.entryHeading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+.entryTitle {
+  composes: bodyText from '../../../shared/styles/entityTypography.module.css';
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.usage {
+  color: var(--color-brand);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.description {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+div.description { white-space: normal; }
+
+.fields {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border-inline-start: var(--border-width-strong) solid var(--color-border-default);
+  background: color-mix(in srgb, var(--color-surface-accent) 35%, transparent);
+  min-width: 0;
+}
+
+.field { min-width: 0; max-width: 100%; }
+.fieldLabel {
+  composes: subsectionLabel from '../../../shared/styles/entityTypography.module.css';
+  display: block;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  margin-bottom: var(--space-1);
+}
+
+.field dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-heading-primary);
+  overflow-wrap: anywhere;
+}
+
+.fieldValue { display: block; padding-block: var(--space-1); font-size: var(--font-size-md); }
+.note { display: block; font-size: var(--font-size-xs); line-height: var(--line-height-normal); color: var(--color-text-subtle); }
+.damageList { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); }
+.damage { min-width: 0; }
+.fixedDamage { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--control-height-sm); font-size: var(--font-size-lg); }
+
+.effect { margin-top: var(--space-3); }
+.effect p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--line-height-normal); white-space: pre-line; }
+.conditions { margin-top: var(--space-3); }
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.tag { padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-accent); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.rolls { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); margin-top: var(--space-3); }
+
+/* Эти классы также использует общий контрол бросков и спасбросков. */
+.roll, .save { min-width: 0; max-width: 100%; }
+.rollButton { color: var(--color-interactive); font-family: var(--font-family-body); font-size: var(--font-size-md); white-space: normal; text-align: start; cursor: pointer; max-width: 100%; }
+.rolls .rollButton, .saveDialog .rollButton { font-size: var(--font-size-sm); }
+.rollValue { display: inline-flex; align-items: center; gap: var(--space-1); overflow-wrap: anywhere; }
+.rollValue [data-shared-icon] { width: var(--space-5); height: var(--space-5); flex: 0 0 var(--space-5); }
+.damageIcon { display: inline-block; width: var(--icon-size-lg); height: var(--icon-size-lg); flex: 0 0 var(--icon-size-lg); background: currentColor; mask: var(--damage-icon) center / contain no-repeat; }
+.damage .rollValue [data-icon^='d'] { width: var(--icon-size-sm); height: var(--icon-size-sm); flex-basis: var(--icon-size-sm); color: var(--color-text-subtle); }
+.rollResult { display: block; color: var(--color-heading-primary); font-size: var(--font-size-xs); line-height: var(--line-height-normal); overflow-wrap: anywhere; }
+.rollResult:empty { display: none; }
+.saveDialog { display: grid; gap: var(--space-3); width: min(20rem, calc(100vw - var(--space-7))); }
+
+@container (max-width: 30rem) {
+  .body { padding-inline: var(--space-3); }
+  .fields { gap: var(--space-3) var(--space-4); padding: var(--space-2); }
+}

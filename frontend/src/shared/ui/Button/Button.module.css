@@ -1,15 +1,15 @@
 .button {
-  --button-border: var(--palette-gray-700);
+  --button-border: var(--color-border-default);
   --button-inner-border:
     color-mix(
       in srgb,
       var(--button-border) 40%,
       var(--button-surface-start)
     );
-  --button-text: var(--palette-gray-300);
-  --button-glow: var(--palette-black);
-  --button-surface-start: var(--palette-gray-900);
-  --button-surface-end: var(--palette-black);
+  --button-text: var(--color-text-secondary);
+  --button-glow: var(--color-shadow);
+  --button-surface-start: var(--color-surface-default);
+  --button-surface-end: var(--color-background);
   --button-corner-cut: var(--radius-md);
   --button-inner-frame-inset: 0.375rem;
   --button-corner-shape-offset: 0.95rem;
@@ -274,28 +274,28 @@
 
 .button[data-variant='primary'] {
   --button-border: var(--palette-purple-700);
-  --button-text: var(--palette-white);
-  --button-glow: var(--palette-white);
+  --button-text: var(--color-text-primary);
+  --button-glow: var(--color-text-primary);
   --button-surface-start:
     color-mix(
       in srgb,
       var(--palette-purple-700) 32%,
-      var(--palette-gray-900)
+      var(--color-surface-default)
     );
   --button-surface-end:
     color-mix(
       in srgb,
       var(--palette-purple-700) 46%,
-      var(--palette-gray-900)
+      var(--color-surface-default)
     );
 }
 
 .button[data-variant='secondary'] {
-  --button-border: var(--palette-gray-700);
-  --button-text: var(--palette-gray-300);
-  --button-glow: var(--palette-black);
-  --button-surface-start: var(--palette-gray-900);
-  --button-surface-end: var(--palette-black);
+  --button-border: var(--color-border-default);
+  --button-text: var(--color-text-secondary);
+  --button-glow: var(--color-shadow);
+  --button-surface-start: var(--color-surface-default);
+  --button-surface-end: var(--color-background);
 }
 
 .button:hover:not(:disabled) {
@@ -341,11 +341,11 @@
   filter:
     drop-shadow(
       0 0 0.12rem
-      var(--palette-white)
+      var(--color-text-primary)
     )
     drop-shadow(
       0 0 0.62rem
-      var(--palette-purple-500)
+      var(--color-action-primary)
     );
 }
 
@@ -364,6 +364,52 @@
   gap: var(--button-content-gap);
 
   filter: none;
+}
+
+.button[data-decoration='minimal'],
+.button[data-decoration='bare'] {
+  filter: none;
+}
+
+.button[data-decoration='minimal'] .content,
+.button[data-decoration='bare'] .content,
+.button[data-decoration='minimal']:hover:not(:disabled) .content,
+.button[data-decoration='bare']:hover:not(:disabled) .content {
+  filter: none;
+}
+
+.button[data-decoration='minimal']:hover:not(:disabled),
+.button[data-decoration='bare']:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.button[data-decoration='minimal']:active:not(:disabled),
+.button[data-decoration='bare']:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.button[data-decoration='minimal']:focus-visible,
+.button[data-decoration='bare']:focus-visible {
+  outline: var(--border-width-default) solid var(--color-border-accent);
+  outline-offset: var(--border-width-default);
+  filter: none;
+}
+
+.button[data-decoration='bare'] {
+  background: transparent;
+}
+
+.button[data-decoration='bare']::before {
+  display: none;
+}
+
+.button[data-decoration='bare']:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--color-surface-accent) 72%,
+      transparent
+    );
 }
 
 .icon {
@@ -388,6 +434,37 @@
 
 .fullWidth {
   width: 100%;
+}
+
+:global(:where(:root[data-theme='light'])) .button[data-variant='primary'] {
+  --button-border: var(--color-button-background);
+  --button-text: var(--color-button-text);
+  --button-glow: var(--color-shadow);
+  --button-surface-start: var(--color-button-background);
+  --button-surface-end: var(--color-button-background);
+  --button-inner-border:
+    color-mix(in srgb, var(--color-button-text) 28%, var(--color-button-background));
+}
+
+:global(:where(:root[data-theme='light'])) .button[data-variant='primary'][data-decoration='bare'] {
+  --button-text: var(--color-interactive);
+}
+
+:global(:where(:root[data-theme='light'])) .button,
+:global(:where(:root[data-theme='light'])) .button:hover:not(:disabled) .content {
+  filter: none;
+}
+
+:global(:where(:root[data-theme='light'])) .button:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+:global(:where(:root[data-theme='light'])) .button:focus-visible {
+  filter: drop-shadow(0 0 0.2rem var(--color-border-accent));
+}
+
+:global(:where(:root[data-theme='light'])) .icon {
+  mix-blend-mode: normal;
 }
 
 @media (max-width: 640px) {

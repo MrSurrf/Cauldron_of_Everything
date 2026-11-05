@@ -26,7 +26,7 @@ export type ScrollBarProps = Omit<
   value?: number
   defaultValue?: number
   controlStep?: number
-  onValueChange?: (value: number) => void
+  onValueChange?: (value: number, behavior: ScrollBehavior) => void
   decrementLabel?: string
   incrementLabel?: string
   className?: string

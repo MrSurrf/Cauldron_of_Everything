@@ -5,7 +5,12 @@
   min-width: 0;
 
   color: var(--color-text-primary);
-  font-family: var(--font-family-body);
+  font-family:
+    var(--field-font-family, var(--font-family-body));
+}
+
+:global(:where(:root[data-theme='light'])) .field {
+  --field-label-background: var(--color-surface-muted);
 }
 
 .controlShell {
@@ -73,7 +78,7 @@
   filter:
     drop-shadow(
       0 0 0.12rem
-      var(--palette-white)
+      var(--color-text-primary)
     )
     drop-shadow(
       0 0 0.62rem
@@ -273,7 +278,7 @@
   top: var(--space-1);
 
   background:
-    var(--color-surface-default);
+    var(--field-label-background, var(--color-surface-default));
   color: var(--color-text-primary);
 
   font-size: var(--font-size-xs);

@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
@@ -48,6 +49,7 @@ export const ScrollBar = forwardRef<
   ref,
 ) {
   const minimum = Math.min(min, max)
+  const pointerInteraction = useRef(false)
   const maximum = Math.max(min, max)
   const normalizedStep =
     Number.isFinite(step) && step > 0 ? step : 1
@@ -100,7 +102,7 @@ export const ScrollBar = forwardRef<
       ? 'Прокрутить вниз'
       : 'Прокрутить вправо')
 
-  function commitValue(nextValue: number) {
+  function commitValue(nextValue: number, behavior: ScrollBehavior = 'smooth') {
     const next = clamp(nextValue, minimum, maximum)
 
     if (next === currentValue) {
@@ -111,13 +113,13 @@ export const ScrollBar = forwardRef<
       setInternalValue(next)
     }
 
-    onValueChange?.(next)
+    onValueChange?.(next, behavior)
   }
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    commitValue(event.currentTarget.valueAsNumber)
+    commitValue(event.currentTarget.valueAsNumber, pointerInteraction.current ? 'instant' : 'smooth')
   }
 
   return (
@@ -145,7 +147,12 @@ export const ScrollBar = forwardRef<
         />
       </button>
 
-      <span className={styles.rail}>
+      <span
+        className={styles.rail}
+        onPointerDownCapture={() => { pointerInteraction.current = true }}
+        onKeyDownCapture={() => { pointerInteraction.current = false }}
+        onBlurCapture={() => { pointerInteraction.current = false }}
+      >
         <span
           className={styles.thumb}
           aria-hidden={true}

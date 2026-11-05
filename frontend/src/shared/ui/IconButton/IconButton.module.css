@@ -58,6 +58,11 @@
   height: 100%;
 }
 
+.glyph [data-shared-icon] {
+  width: 100%;
+  height: 100%;
+}
+
 .spinner {
   width: 78%;
   height: 78%;
@@ -77,6 +82,10 @@
     icon-button-spin 720ms
     linear
     infinite;
+}
+
+:global(:where(:root[data-theme='light'])) .glyph {
+  mix-blend-mode: normal;
 }
 
 @keyframes icon-button-spin {

@@ -336,15 +336,19 @@ export function ScrollSync({
     }, [scheduleMeasure])
 
   const setPosition = useCallback(
-    (axis: ScrollAxis, value: number) => {
+    (axis: ScrollAxis, value: number, requestedBehavior: ScrollBehavior) => {
       const viewport = viewportRef.current
 
       if (!viewport) {
         return
       }
 
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : requestedBehavior
+
       if (axis === 'vertical') {
-        viewport.scrollTop = clamp(
+        const top = clamp(
           value,
           0,
           Math.max(
@@ -353,6 +357,7 @@ export function ScrollSync({
               viewport.clientHeight,
           ),
         )
+        viewport.scrollTo({ top, behavior })
       } else {
         const nextValue = clamp(
           value,
@@ -368,7 +373,7 @@ export function ScrollSync({
           readScrollLayout(viewport)
 
         layoutRef.current = layout
-        viewport.scrollLeft = layout.isRtl
+        const left = layout.isRtl
           ? nextValue -
             Math.max(
               0,
@@ -376,6 +381,7 @@ export function ScrollSync({
                 viewport.clientWidth,
             )
           : nextValue
+        viewport.scrollTo({ left, behavior })
       }
 
       setMetrics((current) => {
@@ -651,8 +657,8 @@ export function ScrollSync({
           }
           max={axisMetrics.max}
           min={0}
-          onValueChange={(value) => {
-            setPosition(axis, value)
+          onValueChange={(value, behavior) => {
+            setPosition(axis, value, behavior)
           }}
           orientation={axis}
           step={1}

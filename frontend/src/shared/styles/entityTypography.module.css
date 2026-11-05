@@ -1,0 +1,47 @@
+/* Роли текста сущностей. Размеры, вес, интервалы и геометрия остаются
+   у представления: применение роли не меняет существующую вёрстку. */
+.pageTitle {
+  color: var(--color-heading-primary);
+  font-family: var(--font-family-heading);
+}
+
+.creatureMeta {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-body);
+}
+
+.sectionTitle {
+  color: var(--color-heading-primary);
+  font-family: var(--font-family-heading);
+}
+
+.subsectionLabel {
+  color: var(--color-brand);
+  font-family: var(--font-family-body);
+}
+
+.primaryValue {
+  color: var(--color-heading-primary);
+  font-family: var(--font-family-body);
+}
+
+.bodyText {
+  color: var(--color-heading-primary);
+  font-family: var(--font-family-body);
+}
+
+.secondaryLabel {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-body);
+}
+
+.interactiveValue {
+  color: var(--color-interactive);
+  font-family: var(--font-family-body);
+}
+
+/* Нейтральная граница: не задаёт цвета/эффекты внутренним SVG и маркерам.
+   Инфографика продолжает использовать собственную игровую палитру. */
+.semanticInfographic {
+  color: inherit;
+}

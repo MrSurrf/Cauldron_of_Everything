@@ -1,0 +1,7 @@
+.departures { position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.departures path { fill: none; stroke-linecap: round; stroke-dasharray: 1; animation: disconnect 200ms ease-out both; }
+@keyframes disconnect {
+  from { stroke-dashoffset: 0; opacity: 0.8; }
+  to { stroke-dashoffset: 1; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .departures { display: none; } .departures path { animation: none; } }

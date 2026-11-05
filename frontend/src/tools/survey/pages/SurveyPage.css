@@ -1,23 +1,20 @@
 .survey-page {
   --survey-font:
-    'Gilroy',
-    Arial,
-    sans-serif;
+    var(--font-family-body);
 
   --survey-title-font:
-    GothicRusWeb,
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   position: relative;
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   overflow-x: hidden;
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover
@@ -53,7 +50,7 @@
       calc(100vw - 48px)
     );
 
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   margin: 0 auto;
 
@@ -436,24 +433,6 @@
 
   line-height: 1.35;
 
-  scrollbar-width: thin;
-  scrollbar-color:
-    rgba(178, 123, 241, 0.5)
-    transparent;
-}
-
-.survey-description p::-webkit-scrollbar {
-  width: 4px;
-}
-
-.survey-description p::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.survey-description p::-webkit-scrollbar-thumb {
-  border-radius: 4px;
-  background:
-    rgba(178, 123, 241, 0.5);
 }
 
 /* Шкала */
@@ -601,7 +580,7 @@
 
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -651,7 +630,7 @@
   background: transparent;
   color: #ffffff;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-size:
     clamp(
       20px,
@@ -827,7 +806,7 @@
 
   opacity: 0.6;
 
-  font-family: 'GothicRusWeb', Georgia, serif;
+  font-family: var(--survey-title-font);
   font-weight: 400;
   line-height: 1;
 
@@ -1049,6 +1028,88 @@
 .survey-navigation__button:disabled {
   opacity: 0.25;
   cursor: default;
+}
+
+:root[data-theme='light'] .survey-page {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-background) 94%, transparent),
+      color-mix(in srgb, var(--color-background) 94%, transparent)
+    ),
+    url('/tools/survey/illustrations/common/background.png') center / cover no-repeat;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-page__overlay {
+  background: none;
+}
+
+:root[data-theme='light'] .survey-meta,
+:root[data-theme='light'] .survey-heading__subtitle {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='light'] .survey-heading__title {
+  color: var(--color-heading-primary);
+  text-shadow: none;
+}
+
+:root[data-theme='light'] .survey-illustration-panel {
+  border-color: var(--color-accent-warm);
+  background:
+    radial-gradient(
+      circle at var(--active-position) 50%,
+      rgba(var(--tone-rgb), 0.16),
+      transparent 30%
+    ),
+    var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .survey-description {
+  border-color: var(--color-border-default);
+  background:
+    radial-gradient(circle at 16% 50%, rgba(var(--tone-rgb), 0.08), transparent 42%),
+    var(--color-surface-default);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .survey-description::before {
+  color: var(--color-brand);
+  text-shadow: none;
+}
+
+:root[data-theme='light'] .survey-description p {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-scale__button::after {
+  background: var(--color-background);
+}
+
+:root[data-theme='light'] .survey-scale__button--selected {
+  filter: drop-shadow(0 0 3px var(--color-brand));
+}
+
+:root[data-theme='light'] .survey-scale__button:focus-visible {
+  outline-color: var(--color-action-primary);
+}
+
+:root[data-theme='light'] .survey-navigation__button {
+  border-color: var(--color-border-default);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-navigation__button:hover:not(:disabled) {
+  border-color: var(--color-action-primary);
+  box-shadow: var(--focus-ring);
+}
+
+:root[data-theme='light'] .survey-navigation__button--primary {
+  border-color: var(--color-border-accent);
+  background: var(--color-button-background);
+  color: var(--color-button-text);
 }
 
 /* Адаптив */
