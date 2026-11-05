@@ -1,10 +1,10 @@
 import type { CSSProperties } from 'react'
 import { IconFrame, PlaceholderIcon } from '../../shared/ui'
-import bestiaryUrl from './assets/Bestiariy.svg?url&no-inline'
+import bestiaryUrl from '../../shared/ui/icons/assets/bestiary.svg?url&no-inline'
 import classesUrl from './assets/Classes.svg?url&no-inline'
 import racesUrl from './assets/Kind.svg?url&no-inline'
 import spellsUrl from './assets/Spells.svg?url&no-inline'
-import itemsUrl from './assets/Items.svg?url&no-inline'
+import itemsUrl from '../../shared/ui/icons/assets/magic-item.svg?url&no-inline'
 import styles from './EncyclopediaSectionIcon.module.css'
 
 const icons: Record<string, { url: string; ratio: number }> = {

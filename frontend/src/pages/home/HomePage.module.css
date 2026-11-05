@@ -17,39 +17,47 @@
 
 .hero {
   position: relative;
-  display: flex;
-  align-items: center;
-  min-height: clamp(21rem, 25vw, 27rem);
+  isolation: isolate;
+  width: 100%;
+  max-width: calc(100rem + 2 * var(--home-gutter));
+  height: clamp(18rem, 18vw, 22.8rem);
+  max-height: calc((100rem + 2 * var(--home-gutter)) * 0.18);
+  margin-inline: auto;
   overflow: hidden;
-  border-bottom: var(--border-width-default) solid var(--color-border-default);
-  background:
-    radial-gradient(ellipse 30% 65% at 76% 48%, color-mix(in srgb, var(--color-brand) 32%, transparent), transparent),
-    radial-gradient(ellipse 34% 70% at 56% 90%, color-mix(in srgb, var(--color-surface-accent) 92%, transparent), transparent),
-    linear-gradient(100deg, var(--color-background) 14%, var(--color-surface-default) 58%, var(--color-background));
+  background: var(--color-background);
 }
 
-.hero::before {
+.heroImage {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: block;
+  width: min(100%, 80rem);
+  height: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+  mask-image: linear-gradient(90deg, transparent, var(--color-background) 18%, var(--color-background) 94%, transparent);
+}
+
+.hero::after {
   content: '';
   position: absolute;
-  inset: var(--space-4) var(--home-gutter);
-  border: var(--border-width-default) solid color-mix(in srgb, var(--color-brand-muted) 54%, transparent);
-  clip-path: polygon(0 var(--space-4), var(--space-4) 0, calc(100% - var(--space-4)) 0, 100% var(--space-4), 100% calc(100% - var(--space-4)), calc(100% - var(--space-4)) 100%, var(--space-4) 100%, 0 calc(100% - var(--space-4)));
+  inset: 0;
   pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 65%, color-mix(in srgb, var(--color-background) 45%, transparent) 88%, var(--color-background)),
+    linear-gradient(90deg, var(--color-background), color-mix(in srgb, var(--color-background) 95%, transparent) 22%, color-mix(in srgb, var(--color-background) 85%, transparent) 32%, color-mix(in srgb, var(--color-background) 50%, transparent) 44%, transparent 65%);
 }
 
-.heroContent { position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding-block: var(--space-7); }
-.heroIntro { max-width: 41rem; padding-block: var(--space-4); }
+.heroContent { position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; }
+.heroIntro { max-width: 41rem; }
 .eyebrow { margin: 0 0 var(--space-3); color: var(--color-brand-bright); font-size: var(--font-size-xs); letter-spacing: 0.15em; text-transform: uppercase; }
 .hero h1, .workspace h2, .start h2, .friends h2 { margin: 0; color: var(--color-heading-primary); font-family: var(--font-family-heading); font-weight: 400; }
-.hero h1 { font-size: clamp(3.2rem, 5.3vw, 6.25rem); line-height: 0.94; text-wrap: balance; }
+.hero h1 { font-size: clamp(2.75rem, 4.1vw, 4rem); line-height: 0.98; text-wrap: balance; }
 .hero h1 span { color: var(--color-brand-bright); }
-.titleDivider { display: block; width: min(24rem, 70%); height: var(--border-width-strong); margin-block: var(--space-5) var(--space-3); background: linear-gradient(90deg, var(--color-interactive), color-mix(in srgb, var(--color-interactive) 35%, transparent), transparent); }
+.titleDivider { display: block; width: min(24rem, 70%); height: var(--border-width-strong); margin-block: var(--space-3); background: linear-gradient(90deg, var(--color-interactive), color-mix(in srgb, var(--color-interactive) 35%, transparent), transparent); }
 .heroDescription { max-width: 34rem; margin: 0; font-size: var(--font-size-md); line-height: var(--line-height-normal); }
 .heroActions { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5); }
 .heroActions button { min-width: 12rem; }
-.heroNote { width: clamp(12rem, 20vw, 16rem); flex: 0 0 auto; --panel-border: var(--color-brand-muted); --panel-surface-start: var(--color-surface-default); --panel-surface-end: var(--color-background); }
-.heroNote p { margin: 0; line-height: 1.45; }
-.heroNote p span { color: var(--color-brand-bright); }
 
 .workspace {
   display: grid;
@@ -146,15 +154,14 @@
 @media (max-width: 60rem) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .workspacePreview { width: 100%; }
-  .heroNote { display: none; }
   .quickGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .friends { flex-wrap: wrap; }
   .partnerSlots { order: 3; flex-basis: 100%; }
 }
 
 @media (max-width: 40rem) {
-  .hero { min-height: 28rem; }
-  .heroContent { padding-block: var(--space-6); }
+  .hero { height: 28rem; max-height: none; }
+  .heroImage { object-position: 62% 48%; }
   .hero h1 { font-size: clamp(2.8rem, 12vw, 4rem); }
   .heroActions button { width: 100%; }
   .workspace { padding: var(--space-4); }

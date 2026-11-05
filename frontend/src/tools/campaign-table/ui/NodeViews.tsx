@@ -1,7 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { ComponentType } from 'react'
+import type { ComponentType, CSSProperties } from 'react'
 import type { EntityType } from '../../../entities/base'
 import { ItemKindIcon } from '../../../entities/item'
+import bestiaryIconUrl from '../../../shared/ui/icons/assets/bestiary.svg?url&no-inline'
+import npcCharacterIconUrl from '../../../shared/ui/icons/assets/npc-character.svg?url&no-inline'
+import playerCharacterIconUrl from '../../../shared/ui/icons/assets/player-character.svg?url&no-inline'
 import type { NodeEntityType } from '../model/table'
 import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
@@ -31,11 +34,7 @@ export function NodeOutline({ shape }: { shape: NodeShape }) {
     {shape === 'note' && <path className={styles.noteFold} d={`M${width - fold} 0 V${fold} H${width} Z`} vectorEffect="non-scaling-stroke" />}
   </svg>
 }
-// Нейтральные пиктограммы типов: не подменяют отсутствующие портреты или данные.
 const glyphs = {
-  playerCharacter: 'M38 42a12 14 0 1 0 24 0a12 14 0 1 0-24 0 M25 80q0-22 25-22t25 22 M39 23l11-9 11 9',
-  npc: 'M38 40a12 14 0 1 0 24 0a12 14 0 1 0-24 0 M25 80q0-22 25-22t25 22',
-  creature: 'M25 64l8-32 14 12 17-16 11 33-18 13-21-4z M42 56h2 M60 52h2',
   spell: 'M50 24v52 M24 50h52 M32 32l36 36 M68 32L32 68 M44 44h12v12H44z',
   faction: 'M28 30l22 12 22-12-6 29-16 18-16-18z M50 42v35 M28 30l22 23 22-23',
   location: 'M20 78V40h16v-9h9v9h10v-9h9v9h16v38z M43 78V61h14v17 M26 40V25h10v15 M64 40V25h10v15',
@@ -45,14 +44,33 @@ const glyphs = {
 function Glyph({ type }: { type: keyof typeof glyphs }) {
   return <svg className={styles.nodeGlyph} viewBox="0 0 100 100" aria-hidden="true"><path d={glyphs[type]} /></svg>
 }
+type BadgeType = 'playerCharacter' | 'npc' | 'creature' | 'spell' | 'item' | 'faction'
+const badgeIconUrls: Partial<Record<BadgeType, string>> = {
+  playerCharacter: playerCharacterIconUrl,
+  npc: npcCharacterIconUrl,
+  creature: bestiaryIconUrl,
+}
+type NodeIconStyle = CSSProperties & { '--node-icon-url': string }
+function BadgeIcon({ type }: { type: BadgeType }) {
+  const url = badgeIconUrls[type]
+  if (!url) return null
+  return <span
+    className={styles.nodeEntityIcon}
+    data-entity-icon={type}
+    style={{ '--node-icon-url': `url("${url}")` } as NodeIconStyle}
+    aria-hidden="true"
+  />
+}
 function Caption({ title, summary }: NodeViewProps) {
   return <div className={styles.nodeCaption}><h3>{title}</h3>{summary && <p className={styles.nodeSummary}>{summary}</p>}</div>
 }
-function Badge({ type, ...props }: NodeViewProps & { type: keyof typeof glyphs | 'item' }) {
+function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
-    {type !== 'spell' && type !== 'faction' && type !== 'item' && <Glyph type={type} />}
-    {type === 'item' && <ItemKindIcon classification={props.classification} className={styles.nodeItemIcon} />}
+    {type === 'item'
+      ? <ItemKindIcon classification={props.classification} className={styles.nodeItemIcon} />
+      : <BadgeIcon type={type} />}
+    {type === 'faction' && <Glyph type="faction" />}
     {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}
     {level !== undefined && <span className={styles.spellLevel} aria-label={`Уровень заклинания: ${level}`}><span>{level}</span></span>}
   </div><Caption {...props} summary={type === 'spell' ? '' : props.summary} /></>
