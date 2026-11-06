@@ -5,6 +5,7 @@ import { applyEdgeChanges, Background, Controls, ReactFlow, ReactFlowProvider, u
 import type { NodeChange, XYPosition } from '@xyflow/react'
 import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
+import { captureCampaignWikiImageRepository } from '../../../shared/local'
 import { Button, Panel, Popover, TextInput } from '../../../shared/ui'
 import {
   characterSheetActions,
@@ -21,6 +22,7 @@ import { canPlaceReference, entityLabel, entryReference } from '../model/library
 import { loadCampaignCharacter } from '../model/campaignCharacter'
 import { loadInstanceStatBlock } from '../model/instanceStatBlock'
 import { canPlaceInside, containerOf, moveInside } from '../model/nodeContainment'
+import { IMAGE_NODE_CREATION_TYPES, imageNodeTitle, nodeImageField, nodeImageKind } from '../model/nodeImage'
 import { applyDiagramNodeChanges, canContain, changeDiagram as updateDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, LEGACY_STORAGE_KEY, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, TABLE_STORAGE_KEY, updateCanvasEntity, validReference } from '../model/table'
 import type { CanvasEntity, EntityNode, NodeEntityType } from '../model/table'
 import type { CampaignTable as TableState, Diagram, TableEdge, TableNode } from '../model/table'
@@ -51,7 +53,8 @@ const edgeTypes = { contour: ContourEdge }
 const creatableTypes = ['location', 'note', 'playerCharacter', 'npc', 'quest', 'faction'] as const
 const wikiEntityTypes = new Set<NodeEntityType>(creatableTypes)
 const supportsWiki = (type: string): type is NodeEntityType => wikiEntityTypes.has(type as NodeEntityType)
-type CreationAnchor = { menuX: number; menuY: number; position: XYPosition }
+type CreationAnchor = { menuX: number; menuY: number; position: XYPosition; imageFile?: File }
+type DraftObject = { entity: CanvasEntity; node: EntityNode; imageFile?: File }
 type HistoryControls = { beginGesture: () => void; endGesture: () => void; undo: () => void; redo: () => void }
 type Commit = (update: (table: TableState) => TableState, options?: { transient: boolean }) => void
 const noHistory: HistoryControls = { beginGesture: () => {}, endGesture: () => {}, undo: () => {}, redo: () => {} }
@@ -106,7 +109,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
   const { connections: departingConnections, capture: captureDepartingConnections } = useDepartingConnections(canvasRef)
   const creationRef = useRef<HTMLDivElement>(null)
   const [anchor, setAnchor] = useState<CreationAnchor | null>(null)
-  const [draft, setDraft] = useState<{ entity: CanvasEntity; node: EntityNode } | null>(null)
+  const [draft, setDraft] = useState<DraftObject | null>(null)
   const connections = useNodeConnections(diagram, readOnly, flow.screenToFlowPosition, onChange,
     () => captureDepartingConnections(new Set(), true))
   const { source: connectionSource, target: connectionTarget, pointer: connectionPointer } = connections
@@ -114,8 +117,19 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [transferPending, setTransferPending] = useState(false)
+  const [imageDragOver, setImageDragOver] = useState(false)
+  const [imageCreationPending, setImageCreationPending] = useState(false)
   const transfer = useRef<AbortController | null>(null)
   useEffect(() => () => transfer.current?.abort(), [])
+  useEffect(() => {
+    const clear = () => setImageDragOver(false)
+    window.addEventListener('drop', clear, true)
+    window.addEventListener('dragend', clear, true)
+    return () => {
+      window.removeEventListener('drop', clear, true)
+      window.removeEventListener('dragend', clear, true)
+    }
+  }, [])
   useEffect(() => {
     if (!focusNodeId) return
     const node = diagram.nodes.find(item => item.id === focusNodeId)
@@ -230,20 +244,68 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
   }, [anchor])
-  function showCreationAt(clientX: number, clientY: number) {
+  function showCreationAt(clientX: number, clientY: number, imageFile?: File) {
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect || readOnly) return
     cancelConnection()
     const x = clientX - rect.left
     const y = clientY - rect.top
     setAnchor({ menuX: Math.max(8, Math.min(x + 8, rect.width - 212)),
-      menuY: Math.max(8, Math.min(y + 8, rect.height - 320)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }) })
+      menuY: Math.max(8, Math.min(y + 8, rect.height - 320)), position: flow.screenToFlowPosition({ x: clientX, y: clientY }), imageFile })
     setSelection(null)
   }
   function beginCreation(type: NodeEntityType) {
     if (!anchor) return
-    setDraft(createCanvasObject(type, anchor.position))
+    setDraft({ ...createCanvasObject(type, anchor.position), imageFile: anchor.imageFile })
     setAnchor(null)
+  }
+  async function saveEntityImage(entity: CanvasEntity, file: File) {
+    const kind = nodeImageKind(entity.entityType)
+    const field = nodeImageField(entity.entityType)
+    if (!kind || !field) throw new Error('Для этого типа ноды изображение не поддерживается.')
+    const repository = captureCampaignWikiImageRepository()
+    const previousId = entity.wiki.media[field]
+    const asset = await repository.save(file, { kind, assetId: previousId })
+    return {
+      entity: { ...entity, wiki: { ...entity.wiki, media: { ...entity.wiki.media, [field]: asset.id } } },
+      repository,
+      createdId: previousId ? undefined : asset.id,
+      kind,
+    }
+  }
+  async function uploadNodeImage(id: string, file: File) {
+    const node = diagram.nodes.find(candidate => candidate.id === id)
+    const entity = table.entities.find(candidate => candidate.id === node?.data.entityId)
+    if (!node || !entity || readOnly) return
+    try {
+      const saved = await saveEntityImage(entity, file)
+      onUpdateEntity(entity.id, { wiki: saved.entity.wiki })
+      setNotice(`${saved.kind === 'avatar' ? 'Портрет' : 'Обложка'} для «${entity.name}» обновлён${saved.kind === 'avatar' ? '' : 'а'}.`)
+    } catch (cause: unknown) {
+      setNotice(cause instanceof Error ? cause.message : 'Не удалось сохранить изображение.')
+    }
+  }
+  async function commitDraft(name: string) {
+    const current = draft
+    if (!current || !name.trim()) return
+    setDraft(null)
+    if (!current.imageFile) {
+      onPlaceObject(current, name)
+      return
+    }
+    setImageCreationPending(true)
+    let saved: Awaited<ReturnType<typeof saveEntityImage>> | undefined
+    try {
+      saved = await saveEntityImage(current.entity, current.imageFile)
+      setArrivals(value => new Map(value).set(current.node.id, performance.now()))
+      onPlaceObject({ entity: saved.entity, node: current.node }, name)
+      setNotice(`«${name.trim()}» создан${saved.entity.entityType === 'location' ? 'а' : ''} из изображения.`)
+    } catch (cause: unknown) {
+      if (saved?.createdId) await saved.repository.remove(saved.createdId).catch(() => undefined)
+      setNotice(cause instanceof Error ? cause.message : 'Не удалось создать ноду из изображения.')
+    } finally {
+      setImageCreationPending(false)
+    }
   }
   async function add(reference: LibraryReference, position?: XYPosition) {
     if (readOnly || !canPlaceReference(reference)) return
@@ -270,8 +332,13 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     if (readOnly) return
     event.preventDefault()
     libraryDrag.finish()
-    setDropTarget(null); setDraggedNodeId(null)
+    setDropTarget(null); setDraggedNodeId(null); setImageDragOver(false)
     setAnchor(null)
+    const imageFile = event.dataTransfer.files[0]
+    if (imageFile) {
+      showCreationAt(event.clientX, event.clientY, imageFile)
+      return
+    }
     const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })
     const instance = event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
     if (instance) {
@@ -407,8 +474,10 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
     beginConnection: connections.begin,
     startConnection: (id, pointer) => { setAnchor(null); connections.start(id, pointer) },
     placeOnDiagram: (id, diagramId) => { const node = diagram.nodes.find(item => item.id === id); if (node && !readOnly) onPlaceExisting(node.data.entityId, diagramId) },
+    uploadImage: uploadNodeImage,
     draft: draft ? { id: draft.node.id, type: draft.entity.entityType as NodeEntityType,
-      commit: name => { if (!name.trim()) return; onPlaceObject(draft, name); setDraft(null) },
+      initialName: draft.imageFile ? imageNodeTitle(draft.imageFile.name) : undefined,
+      commit: name => { void commitDraft(name) },
       cancel: () => setDraft(null) } : undefined }
   return <TableContext.Provider value={tableActions}><NodeActionsProvider value={tableActions}>
     {editedCharacter && <CampaignCharacterWorkspace key={editedCharacter.id} document={editedCharacter.campaignCharacter!.document} diagramName={diagram.name}
@@ -436,11 +505,17 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
         </div>
       </header>
       <div ref={canvasRef} className={styles.canvas} data-cursor-light-background="" data-linking={linking}
-        data-transfer-pending={transferPending || undefined}
-        data-library-drop-zone={libraryDrag.drag?.overCanvas || undefined} onDrop={drop}
+        data-transfer-pending={transferPending || imageCreationPending || undefined}
+        data-library-drop-zone={libraryDrag.drag?.overCanvas || undefined}
+        data-image-drop-zone={imageDragOver || undefined} onDrop={drop}
         onPointerMove={event => { if (linking) connections.setPointer(flow.screenToFlowPosition({ x: event.clientX, y: event.clientY })) }}
-        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as globalThis.Node | null)) setDropTarget(null) }} onDragOver={event => {
-        if (!readOnly && event.dataTransfer.types.some(type => [ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE].includes(type))) {
+        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as globalThis.Node | null)) { setDropTarget(null); setImageDragOver(false) } }} onDragOver={event => {
+        const types = Array.from(event.dataTransfer.types)
+        if (!readOnly && types.includes('Files')) {
+          event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setImageDragOver(true)
+          return
+        }
+        if (!readOnly && types.some(type => [ENTITY_DRAG_TYPE, INSTANCE_DRAG_TYPE].includes(type))) {
           event.preventDefault(); event.dataTransfer.dropEffect = event.dataTransfer.types.includes(INSTANCE_DRAG_TYPE) ? 'move' : 'copy'
           const instance = draggedNodeId ?? event.dataTransfer.getData(INSTANCE_DRAG_TYPE)
           let source = diagram.nodes.find(node => node.id === instance)
@@ -453,7 +528,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
       }}>
         <ReactFlow<TableNode, TableEdge> nodes={flowNodes} edges={flowEdges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
-          nodesDraggable={!readOnly && !linking && !transferPending} nodesConnectable={false} edgesReconnectable={false}
+          nodesDraggable={!readOnly && !linking && !transferPending && !imageCreationPending} nodesConnectable={false} edgesReconnectable={false}
           onNodesChange={changes => {
             // React Flow требует актуальных measured при следующем контролируемом рендере.
             // Эти размеры живут только в UI: раскрытие не меняет документ и историю.
@@ -521,22 +596,24 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
           {linking && <ConnectionPreview source={connectionSource!} target={connectionTarget} pointer={connectionPointer} />}
           <DepartingConnections connections={departingConnections} />
         </ReactFlow>
-        {(dropTarget || libraryDrag.drag?.overCanvas) && <div className={styles.dropHint} role="status">{dropTarget
+        {(dropTarget || libraryDrag.drag?.overCanvas || imageDragOver) && <div className={styles.dropHint} role="status">{dropTarget
           ? `Поместить внутрь: ${diagram.nodes.find(node => node.id === dropTarget)?.data.title}${diagram.nodes.find(node => node.id === dropTarget)?.data.entityType === 'playerCharacter' ? ' · Снаряжение' : ''}`
-          : 'Отпустите материал на холст'}</div>}
+          : imageDragOver ? 'Отпустите изображение и выберите тип ноды' : 'Отпустите материал на холст'}</div>}
         {transferPending && <div className={styles.dropHint} role="status">Добавляем предмет в снаряжение…</div>}
-        {notice && !dropTarget && !transferPending && <div className={styles.transferNotice} role="status">{notice}<button type="button" aria-label="Скрыть уведомление" onClick={() => setNotice(null)}>×</button></div>}
+        {imageCreationPending && <div className={styles.dropHint} role="status">Обрабатываем изображение и создаём ноду…</div>}
+        {notice && !dropTarget && !transferPending && !imageCreationPending && <div className={styles.transferNotice} role="status">{notice}<button type="button" aria-label="Скрыть уведомление" onClick={() => setNotice(null)}>×</button></div>}
         {linking && <div className={styles.connectionMode} role="status">Выберите второй узел <button type="button" onClick={() => cancelConnection()}>Отмена · Esc</button></div>}
         {anchor && !readOnly && !draft && <div ref={creationRef} className={styles.creationLayer}>
-          <div className={styles.creationMenu} role="menu" aria-label="Действия с холстом"
+          <div className={styles.creationMenu} role="menu" aria-label={anchor.imageFile ? 'Создать ноду из изображения' : 'Действия с холстом'}
             style={{ left: anchor.menuX, top: anchor.menuY }}>
-            <span>Создать</span>
-            {creatableTypes.map(type => <button key={type} type="button" role="menuitem" onClick={() => beginCreation(type)}>{entityLabel(type)}</button>)}
-            <span>Добавить существующее</span>
-            <button type="button" role="menuitem" disabled>Пока недоступно</button>
+            <span>{anchor.imageFile ? 'Создать из изображения' : 'Создать'}</span>
+            {anchor.imageFile && <small className={styles.creationFile} title={anchor.imageFile.name}>{anchor.imageFile.name}</small>}
+            {(anchor.imageFile ? IMAGE_NODE_CREATION_TYPES : creatableTypes).map(type => <button key={type} type="button" role="menuitem" onClick={() => beginCreation(type)}>{entityLabel(type)}</button>)}
+            {!anchor.imageFile && <><span>Добавить существующее</span>
+              <button type="button" role="menuitem" disabled>Пока недоступно</button></>}
           </div>
         </div>}
-        {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите правой кнопкой на холст или перетащите материал из библиотеки.'}</p></div>}
+        {!diagram.nodes.length && !draft && <div className={styles.emptyCanvas}><h3>{readOnly ? 'Схема пуста' : 'Начните свою историю'}</h3><p>{readOnly ? 'На публичном столе пока нет узлов.' : 'Нажмите правой кнопкой на холст или перетащите материал либо изображение.'}</p></div>}
       </div>
     </section>
     {selectedNode && selectedEntity && !editedCharacter && <LocalEntityInspector key={selectedEntity.id} entity={selectedEntity}

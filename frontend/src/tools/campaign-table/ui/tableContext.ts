@@ -16,7 +16,8 @@ export type TableActions = {
   beginInstanceDrag: (id: string) => void
   placeInside: (id: string, targetId?: string) => void
   placeOnDiagram: (id: string, diagramId: string) => void
-  draft?: { id: string; type: NodeEntityType; commit: (name: string) => void; cancel: () => void }
+  uploadImage: (id: string, file: File) => Promise<void>
+  draft?: { id: string; type: NodeEntityType; initialName?: string; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void
   edit: (id: string) => void
   remove: (id: string) => void
@@ -34,7 +35,7 @@ export function useTableActions() {
 export type NodeActions = Pick<TableActions,
   'readOnly' | 'beginGesture' | 'endGesture' | 'diagrams' | 'connectionSource' | 'startConnection'
   | 'beginConnection' | 'dropTarget' | 'beginInstanceDrag' | 'placeOnDiagram' | 'draft'
-  | 'open' | 'edit' | 'remove' | 'release' | 'toggleCreature'> & {
+  | 'open' | 'edit' | 'remove' | 'release' | 'toggleCreature' | 'uploadImage'> & {
   diagramId: string
   membersByContainer: ContainerMembers
 }

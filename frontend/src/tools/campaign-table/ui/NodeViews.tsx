@@ -10,7 +10,7 @@ import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import styles from './CampaignNodes.module.css'
 
-export type NodeViewProps = { title: string; summary: string; classification?: string }
+export type NodeViewProps = { title: string; summary: string; classification?: string; imageSrc?: string }
 export function NodeOutline({ shape }: { shape: NodeShape }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 120, height: 120 })
@@ -67,7 +67,9 @@ function Caption({ title, summary }: NodeViewProps) {
 function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
-    {type === 'item'
+    {props.imageSrc
+      ? <img className={styles.nodeImage} data-entity-image={type} src={props.imageSrc} alt="" draggable={false} />
+      : type === 'item'
       ? <ItemKindIcon classification={props.classification} colorMode="inherit" className={styles.nodeItemIcon} />
       : <BadgeIcon type={type} />}
     {type === 'faction' && <Glyph type="faction" />}
@@ -86,7 +88,8 @@ export const CreatureNode = (props: NodeViewProps) => {
 export const SpellNode = (props: NodeViewProps) => <Badge type="spell" {...props} />
 export const ItemNode = (props: NodeViewProps) => <Badge type="item" {...props} />
 export const FactionNode = (props: NodeViewProps) => <Badge type="faction" {...props} />
-export const LocationNode = (props: NodeViewProps) => <><div className={styles.locationScene}><img className={styles.locationImage} src="/tools/survey/start/background.png" alt="" draggable={false} /></div><Caption {...props} /></>
+export const LocationNode = (props: NodeViewProps) => <><div className={styles.locationScene}><img className={styles.locationImage}
+  data-custom-image={Boolean(props.imageSrc) || undefined} src={props.imageSrc ?? '/tools/survey/start/background.png'} alt="" draggable={false} /></div><Caption {...props} /></>
 export const QuestNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="quest" /><Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span></div>
 export const NoteNode = (props: NodeViewProps) => <><span className={styles.noteIcon} aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 10h12M4 15h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></span><Caption {...props} /></>
 const views = { playerCharacter: CharacterNode, npc: NpcNode, creature: CreatureNode, spell: SpellNode, item: ItemNode,

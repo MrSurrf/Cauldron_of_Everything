@@ -15,6 +15,7 @@ export function NodeActionsProvider({ value, children }: { value: TableActions; 
     beginConnection: (...args: Parameters<TableActions['beginConnection']>) => latest.current.beginConnection(...args),
     beginInstanceDrag: (id: string) => latest.current.beginInstanceDrag(id),
     placeOnDiagram: (id: string, diagramId: string) => latest.current.placeOnDiagram(id, diagramId),
+    uploadImage: (id: string, file: File) => latest.current.uploadImage(id, file),
     open: (id: string) => latest.current.open(id),
     edit: (id: string) => latest.current.edit(id),
     remove: (id: string) => latest.current.remove(id),
@@ -40,12 +41,14 @@ export function NodeActionsProvider({ value, children }: { value: TableActions; 
   }
   const draftId = value.draft?.id
   const draftType = value.draft?.type
+  const draftInitialName = value.draft?.initialName
   const draft = useMemo(() => draftId && draftType ? {
     id: draftId,
     type: draftType,
+    initialName: draftInitialName,
     commit: (name: string) => { if (latest.current.draft?.id === draftId) latest.current.draft.commit(name) },
     cancel: () => { if (latest.current.draft?.id === draftId) latest.current.draft.cancel() },
-  } : undefined, [draftId, draftType])
+  } : undefined, [draftId, draftInitialName, draftType])
   const { readOnly, connectionSource, dropTarget, diagram: { id: diagramId } } = value
   const { membersByContainer, diagrams } = metadata
   const actions: NodeActions = useMemo(() => ({

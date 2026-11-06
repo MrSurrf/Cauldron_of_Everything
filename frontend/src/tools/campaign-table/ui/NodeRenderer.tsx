@@ -1,11 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Handle, NodeResizer, Position, useStore } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, DragEvent as ReactDragEvent } from 'react'
 import { entityLabel } from '../model/library'
+import { nodeImageKind } from '../model/nodeImage'
 import type { TableNode } from '../model/table'
 import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
-import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
+import { Combobox, EditIcon, TrashIcon, Tooltip, useCampaignWikiImage } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
 import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
@@ -21,15 +22,20 @@ function plainText(value: string) {
 }
 
 const emptyMembers: readonly NodeMember[] = []
+const hasFilePayload = (dataTransfer: DataTransfer) => Array.from(dataTransfer.types).includes('Files')
 
 export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
   const actions = useNodeActions()
   const classification = useItemClassification(data, actions.readOnly)
+  const cover = useCampaignWikiImage(data.wiki.media.coverAssetId)
+  const avatar = useCampaignWikiImage(data.wiki.media.avatarAssetId)
   const zoom = useStore(state => state.transform[2])
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [imageDropActive, setImageDropActive] = useState(false)
+  const [imageUploadPending, setImageUploadPending] = useState(false)
   const creatureExpanded = Boolean(data.display?.creatureExpanded)
   const { nodeRef, contentRef } = useCreatureMorph(data.entityType === 'creature' && !draft, creatureExpanded)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -39,6 +45,18 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   const visual = nodeVisual(data.entityType)
   const minimum = nodeMinimumSize(data.entityType)
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
+  const imageKind = nodeImageKind(data.entityType)
+  const characterPortrait = data.entityType === 'playerCharacter' ? data.campaignCharacter?.document.identity.portraitUrl : undefined
+  const imageSrc = data.entityType === 'playerCharacter' || data.entityType === 'npc'
+    ? avatar.src ?? characterPortrait ?? cover.src
+    : cover.src
+  const acceptImageDrag = (event: ReactDragEvent<HTMLElement>) => {
+    if (actions.readOnly || !imageKind || imageUploadPending || !hasFilePayload(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+    setImageDropActive(true)
+  }
   useEffect(() => {
     const node = nodeRef.current
     if (!node || draft || arrivalKey === undefined) return
@@ -71,7 +89,7 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   }, [menuOpen, membersOpen])
   if (draft) return <article className={`${styles.mindNode} ${styles.draftNode}`} aria-label={`Создать: ${entityLabel(draft.type)}`}>
     <span>{entityLabel(draft.type)}</span>
-    <input autoFocus className="nodrag" aria-label="Название нового объекта" placeholder="Название"
+    <input autoFocus className="nodrag" aria-label="Название нового объекта" placeholder="Название" defaultValue={draft.initialName ?? ''}
       onPointerDown={event => event.stopPropagation()} onKeyDown={event => {
         event.stopPropagation()
         if (event.key === 'Enter') { event.preventDefault(); if (event.currentTarget.value.trim()) { draftFinished.current = true; draft.commit(event.currentTarget.value) } }
@@ -88,14 +106,33 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
     data-drop-target={actions.dropTarget === id || undefined}
+    data-image-drop-active={imageDropActive || undefined} data-image-upload-pending={imageUploadPending || undefined}
     data-connecting={Boolean(connectionSource && connectionSource !== id)} data-arrival-key={arrivalKey}
-    aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
+    aria-label={data.title} aria-busy={imageUploadPending || undefined}
+    onDragEnter={acceptImageDrag} onDragOver={acceptImageDrag}
+    onDragLeave={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setImageDropActive(false)
+    }}
+    onDrop={event => {
+      if (actions.readOnly || !imageKind || imageUploadPending || !hasFilePayload(event.dataTransfer)) return
+      event.preventDefault()
+      event.stopPropagation()
+      setImageDropActive(false)
+      const file = event.dataTransfer.files[0]
+      if (!file) return
+      setImageUploadPending(true)
+      void actions.uploadImage(id, file).finally(() => setImageUploadPending(false))
+    }}
+    onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
       minWidth={minimum.width} minHeight={minimum.height} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
     {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} />}
+    {(imageDropActive || imageUploadPending) && <span className={styles.nodeImageDropHint} role="status">
+      {imageUploadPending ? 'Обрабатываем изображение…' : imageKind === 'avatar' ? 'Заменить портрет' : 'Заменить обложку'}
+    </span>}
     {!connectionSource && <div className={styles.nodeTopline}>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}
@@ -144,9 +181,9 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
     </div>}
     {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
-        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
+        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc} />}
       </div>
-    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification} />}
+    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification} imageSrc={imageSrc} />}
     {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
       const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
         y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })
