@@ -1,4 +1,5 @@
 import { fetchEncyclopedia } from './encyclopediaApi'
+import { spellSchoolLabel } from '../../entities/spell'
 
 type JsonRecord = Record<string, unknown>
 
@@ -81,7 +82,7 @@ export function toCatalogSpell(item: SpellSummary): CatalogSpell {
     name: item.name,
     nameEn: item.name_en ?? '',
     level: text(data.level),
-    school: text(data.school),
+    school: spellSchoolLabel(text(data.school)),
     classes: values(data.classes ?? data.class),
     subclasses: values(data.subclasses ?? data.subclass),
     sources,

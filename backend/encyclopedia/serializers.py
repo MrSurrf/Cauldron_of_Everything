@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Entity, EntityLink
+from .spell_schools import normalize_spell_school
 
 
 class EntityListSerializer(serializers.ModelSerializer):
@@ -33,6 +34,8 @@ class EntityListSerializer(serializers.ModelSerializer):
             for key in keys_by_type.get(obj.entity_type, [])
             if obj.data.get(key) not in (None, "", [])
         }
+        if obj.entity_type == Entity.Type.SPELL and "school" in summary:
+            summary["school"] = normalize_spell_school(summary["school"])
         if obj.entity_type != Entity.Type.CREATURE:
             return summary
 

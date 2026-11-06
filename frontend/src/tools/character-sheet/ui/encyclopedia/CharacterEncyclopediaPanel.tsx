@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchEncyclopedia } from '../../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
 import { ItemKindIcon } from '../../../../entities/item'
+import { SpellSchoolIcon } from '../../../../entities/spell'
 import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../../shared/ui'
 import catalogStyles from '../../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { RichContent } from '../../../../shared/ui/RichContent'
@@ -180,7 +181,9 @@ export function CharacterEncyclopediaPanel({
             <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)}
               icon={entry.entityType === 'item' ? <ItemKindIcon className={styles.itemIcon}
                 rarity={text(entry.summary.rarity)}
-                classification={text(entry.summary.classification ?? entry.summary.item_type ?? entry.summary.type)} /> : undefined} />
+                classification={text(entry.summary.classification ?? entry.summary.item_type ?? entry.summary.type)} />
+                : entry.entityType === 'spell' ? <SpellSchoolIcon className={styles.itemIcon} school={text(entry.summary.school)} />
+                  : undefined} />
           </button>
           <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить: ${entry.name}`}
             title="Добавить на лист" onClick={() => onAdd(entry)}>+</Button>

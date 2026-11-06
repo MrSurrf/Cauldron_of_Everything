@@ -4,6 +4,7 @@ import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
 import { campaignRequest, ownedReference } from './campaignApi'
 import type { OwnedMaterial } from './campaignApi'
 import { entryItemClassification } from './itemClassification'
+import { entrySpellSchool } from './spellSchool'
 
 export const LIBRARY_SECTIONS = [
   ['creature', 'Бестиарий'], ['class', 'Классы'], ['race', 'Расы'],
@@ -31,12 +32,14 @@ export type LibraryReference = EntityReference & {
   facts: string[]
   classification?: string
   rarity?: string
+  school?: string
 }
 
 export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   const data = entry.summary ?? entry.data ?? {}
   const rarity = [entry.data?.rarity, entry.summary?.rarity]
     .find((value): value is string => typeof value === 'string' && Boolean(value.trim()))?.trim()
+  const school = entrySpellSchool(entry)
   const facts = ['challenge_rating', 'level', 'school', 'rarity', 'creature_type', 'size', 'hit_die', 'prerequisite']
     .flatMap(key => typeof data[key] === 'string' || typeof data[key] === 'number'
       ? [`${key === 'challenge_rating' ? 'ПО ' : key === 'level' ? 'Уровень ' : ''}${data[key]}`] : [])
@@ -46,7 +49,8 @@ export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   }
   return { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type as EntityType,
     slug: entry.slug, name: entry.name, facts,
-    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry), rarity } : {}) }
+    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry), rarity } : {}),
+    ...(entry.entity_type === 'spell' ? { school } : {}) }
 }
 
 export async function searchLibrary(section: LibrarySection, query: string, page: number, signal: AbortSignal) {

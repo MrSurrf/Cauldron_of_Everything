@@ -14,6 +14,7 @@ import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
 import { useCreatureMorph } from './useCreatureMorph'
 import { useItemClassification } from './useItemClassification'
+import { useSpellSchool } from './useSpellSchool'
 
 function plainText(value: string) {
   if (!value) return ''
@@ -27,6 +28,7 @@ const hasFilePayload = (dataTransfer: DataTransfer) => Array.from(dataTransfer.t
 export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
   const actions = useNodeActions()
   const classification = useItemClassification(data, actions.readOnly)
+  const school = useSpellSchool(data, actions.readOnly)
   const cover = useCampaignWikiImage(data.wiki.media.coverAssetId)
   const avatar = useCampaignWikiImage(data.wiki.media.avatarAssetId)
   const zoom = useStore(state => state.transform[2])
@@ -181,9 +183,9 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
     </div>}
     {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
-        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc} />}
+        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc} school={school} />}
       </div>
-    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification} imageSrc={imageSrc} />}
+    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification} school={school} imageSrc={imageSrc} />}
     {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
       const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
         y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })

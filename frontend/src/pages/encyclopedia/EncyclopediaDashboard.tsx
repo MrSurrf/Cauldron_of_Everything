@@ -5,6 +5,7 @@ import { ListCard, Panel, ScrollArea } from '../../shared/ui'
 import { clearHistory, fetchPopularEncyclopedia } from '../../entities/encyclopedia'
 import type { EncyclopediaVisit, PopularEncyclopediaEntry } from '../../entities/encyclopedia'
 import { ItemKindIcon } from '../../entities/item'
+import { SpellSchoolIcon } from '../../entities/spell'
 import { entryPath } from './encyclopediaApi'
 import { encyclopediaGroups, encyclopediaSections, sectionPath, typeLabel } from './encyclopediaSections'
 import { EncyclopediaSectionIcon } from './EncyclopediaSectionIcon'
@@ -58,6 +59,8 @@ function VisitLink({ visit }: { visit: EncyclopediaVisit }) {
     <ListCard className={styles.sidebarCard} appearance="navigation" name={visit.title} tags={[visit.category]}
       icon={visit.path.startsWith('/encyclopedia/item/')
         ? <ItemKindIcon classification={visit.itemClassification} rarity={visit.itemRarity} className={styles.itemIcon} />
+        : visit.spellSchool
+          ? <SpellSchoolIcon school={visit.spellSchool} className={styles.itemIcon} />
         : <EncyclopediaSectionIcon sectionId={section?.id ?? ''} />} />
     <span className={styles.rowArrow} aria-hidden="true" />
   </Link>

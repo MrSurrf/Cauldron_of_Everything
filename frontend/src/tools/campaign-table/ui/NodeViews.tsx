@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { ComponentType, CSSProperties } from 'react'
 import type { EntityType } from '../../../entities/base'
 import { ItemKindIcon } from '../../../entities/item'
+import { getSpellSchool, SpellSchoolIcon } from '../../../entities/spell'
 import bestiaryIconUrl from '../../../shared/ui/icons/assets/bestiary.svg?url&no-inline'
 import npcCharacterIconUrl from '../../../shared/ui/icons/assets/npc-character.svg?url&no-inline'
 import playerCharacterIconUrl from '../../../shared/ui/icons/assets/player-character.svg?url&no-inline'
@@ -10,7 +11,7 @@ import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import styles from './CampaignNodes.module.css'
 
-export type NodeViewProps = { title: string; summary: string; classification?: string; imageSrc?: string }
+export type NodeViewProps = { title: string; summary: string; classification?: string; school?: string; imageSrc?: string }
 export function NodeOutline({ shape }: { shape: NodeShape }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 120, height: 120 })
@@ -66,11 +67,14 @@ function Caption({ title, summary }: NodeViewProps) {
 }
 function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
   const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
+  const school = type === 'spell' ? getSpellSchool(props.school) : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
     {props.imageSrc
       ? <img className={styles.nodeImage} data-entity-image={type} src={props.imageSrc} alt="" draggable={false} />
       : type === 'item'
       ? <ItemKindIcon classification={props.classification} colorMode="inherit" className={styles.nodeItemIcon} />
+      : type === 'spell' && school
+      ? <SpellSchoolIcon school={school} className={styles.nodeSpellIcon} />
       : <BadgeIcon type={type} />}
     {type === 'faction' && <Glyph type="faction" />}
     {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}

@@ -7,6 +7,7 @@ import type { EncyclopediaEntry } from './encyclopediaApi'
 import { typeLabel } from './encyclopediaSections'
 import { toCatalogItem } from './itemCatalog'
 import { ClassFullView, toClassEntity } from '../../entities/character-class'
+import { getSpellSchool, spellSchoolLabel, SpellSchoolIcon } from '../../entities/spell'
 import classStyles from './ClassEntityPage.module.css'
 import styles from './EncyclopediaPage.module.css'
 
@@ -24,6 +25,9 @@ export default function EncyclopediaEntryPage() {
         const item = entry.entity_type === 'item'
           ? toCatalogItem({ ...entry, summary: entry.data ?? entry.summary })
           : undefined
+        const rawSchool = entry.entity_type === 'spell'
+          ? [entry.data?.school, entry.summary?.school].find((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+          : undefined
         recordVisit({
           path: entryPath(entry),
           title: entry.name,
@@ -31,6 +35,7 @@ export default function EncyclopediaEntryPage() {
           ...(item
             ? { itemClassification: item.itemType, itemRarity: item.rarity }
             : {}),
+          ...(rawSchool ? { spellSchool: spellSchoolLabel(rawSchool) } : {}),
         })
       })
       .catch(() => { if (!controller.signal.aborted) setState({ id, error: 'Не удалось открыть материал. Он недоступен или соединение прервано.' }) })
@@ -39,12 +44,20 @@ export default function EncyclopediaEntryPage() {
   if (current?.entry?.entity_type === 'class') {
     return <main className={classStyles.page}><ClassFullView key={current.entry.id} entity={toClassEntity(current.entry)} /></main>
   }
+  const rawSchool = current?.entry?.entity_type === 'spell'
+    ? [current.entry.data?.school, current.entry.summary?.school].find((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+    : undefined
+  const school = getSpellSchool(rawSchool)
   return <main className={styles.page}><div className={styles.container}>
     <Link className={styles.back} to="/encyclopedia">← Энциклопедия</Link>
     {!current && <p role="status">Загружаем материал…</p>}
     {current?.error && <div role="alert"><p>{current.error}</p><Button size="md" variant="secondary" onClick={() => { setState(null); setAttempt((value) => value + 1) }}>Повторить</Button></div>}
     {current?.entry && <>
-      <header className={styles.intro}><h1>{current.entry.name}</h1><p>{typeLabel(current.entry.entity_type)}{current.entry.name_en ? ` · ${current.entry.name_en}` : ''}</p></header>
+      <header className={`${styles.intro} ${school ? styles.entryIntro : ''}`}>
+        {school && <SpellSchoolIcon school={school} className={styles.entrySchoolIcon} />}
+        <div className={school ? styles.entryIntroCopy : undefined}><h1>{current.entry.name}</h1>
+          <p>{typeLabel(current.entry.entity_type)}{rawSchool ? ` · ${spellSchoolLabel(rawSchool)}` : ''}{current.entry.name_en ? ` · ${current.entry.name_en}` : ''}</p></div>
+      </header>
       <Panel padding="normal" className={styles.article}><div className={styles.articleText}>{current.entry.content_text || 'Описание пока не добавлено.'}</div></Panel>
     </>}
   </div></main>

@@ -20,6 +20,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.text import slugify
 
 from encyclopedia.models import Entity, EntityLink
+from encyclopedia.spell_schools import normalize_spell_school
 
 # Поля, уходящие в отдельные колонки модели.
 BASE_FIELDS = {"entity_type", "name", "name_en", "sources", "content_html", "content_text"}
@@ -97,6 +98,8 @@ class Command(BaseCommand):
                 for key, value in raw.items()
                 if key not in BASE_FIELDS and key not in TECH_FIELDS
             }
+            if raw["entity_type"] == Entity.Type.SPELL and "school" in data:
+                data["school"] = normalize_spell_school(data["school"])
             records.append({
                 "source_key": raw.get("source_key"),
                 "slug": slug,
