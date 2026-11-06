@@ -11,7 +11,16 @@ import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import styles from './CampaignNodes.module.css'
 
-export type NodeViewProps = { title: string; summary: string; classification?: string; school?: string; imageSrc?: string }
+export type NodeViewProps = {
+  title: string
+  summary: string
+  classification?: string
+  school?: string
+  level?: number
+  ritual?: boolean
+  concentration?: boolean
+  imageSrc?: string
+}
 export function NodeOutline({ shape }: { shape: NodeShape }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 120, height: 120 })
@@ -65,8 +74,19 @@ function BadgeIcon({ type }: { type: BadgeType }) {
 function Caption({ title, summary }: NodeViewProps) {
   return <div className={styles.nodeCaption}><h3>{title}</h3>{summary && <p className={styles.nodeSummary}>{summary}</p>}</div>
 }
+function SpellMarker({ kind, label, value, title, consumesSlot }: {
+  kind: 'level' | 'concentration' | 'ritual'
+  label: string
+  value: string
+  title: string
+  consumesSlot?: boolean
+}) {
+  return <span className={styles.spellMarker} data-spell-marker={kind} data-consumes-slot={consumesSlot || undefined}
+    aria-label={label} title={title}><span>{value}</span></span>
+}
 function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
-  const level = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
+  const legacyLevel = type === 'spell' ? props.summary.match(/(?:уровень|ур\.?|level)\s*(\d+)/i)?.[1] : undefined
+  const level = type === 'spell' ? props.level ?? (legacyLevel === undefined ? undefined : Number(legacyLevel)) : undefined
   const school = type === 'spell' ? getSpellSchool(props.school) : undefined
   return <><div className={styles.nodeBadge}><NodeOutline shape={nodeVisual(type).shape} />
     {props.imageSrc
@@ -78,7 +98,12 @@ function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
       : <BadgeIcon type={type} />}
     {type === 'faction' && <Glyph type="faction" />}
     {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}
-    {level !== undefined && <span className={styles.spellLevel} aria-label={`Уровень заклинания: ${level}`}><span>{level}</span></span>}
+    {level !== undefined && <SpellMarker kind="level" label={`Уровень заклинания: ${level}`} value={String(level)}
+      title={level > 0 ? `Заклинание ${level}-го уровня · требует ячейку` : 'Заговор · ячейка не требуется'} consumesSlot={level > 0} />}
+    {type === 'spell' && props.concentration && <SpellMarker kind="concentration" label="Требуется концентрация"
+      title="Требуется концентрация" value="К" />}
+    {type === 'spell' && props.ritual && <SpellMarker kind="ritual" label="Можно сотворить как ритуал"
+      title="Можно сотворить как ритуал" value="Р" />}
   </div><Caption {...props} summary={type === 'spell' ? '' : props.summary} /></>
 }
 export const CharacterNode = (props: NodeViewProps) => <Badge type="playerCharacter" {...props} />

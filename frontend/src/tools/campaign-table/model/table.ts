@@ -306,6 +306,9 @@ export function validReference(ref: unknown): ref is LibraryReference {
     && (ref.classification === undefined || text(ref.classification))
     && (ref.rarity === undefined || text(ref.rarity))
     && (ref.school === undefined || text(ref.school))
+    && (ref.level === undefined || ref.level === null || (finite(ref.level) && Number.isSafeInteger(ref.level) && ref.level >= 0))
+    && (ref.ritual === undefined || typeof ref.ritual === 'boolean')
+    && (ref.concentration === undefined || typeof ref.concentration === 'boolean')
 }
 
 function migrateLegacy(raw: string) {
