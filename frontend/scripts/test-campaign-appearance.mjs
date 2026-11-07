@@ -131,6 +131,14 @@ try {
 
   const originalFold = await foldSize()
   const originalLocationCorner = await locationCornerSize()
+  const sourceCornerRatio = await node('location').locator('svg image').evaluate(async image => {
+    const response = await fetch(image.href.baseVal)
+    const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
+    const bounds = source.viewBox.baseVal
+    return bounds.width / bounds.height
+  })
+  assert.ok(Math.abs(originalLocationCorner.width / originalLocationCorner.height - sourceCornerRatio) < 0.001,
+    'Область уголка соответствует viewBox исходного SVG без растяжения и смещения рисунка')
   const sizes = {
     note: [[520, 130], [220, 360], [190, 128]],
     quest: [[520, 110], [220, 360], [220, 96]],
