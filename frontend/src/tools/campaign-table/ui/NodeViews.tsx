@@ -9,6 +9,7 @@ import playerCharacterIconUrl from '../../../shared/ui/icons/assets/player-chara
 import type { NodeEntityType } from '../model/table'
 import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
+import { LocationNodeFrame } from './LocationNodeFrame'
 import styles from './CampaignNodes.module.css'
 
 export type NodeViewProps = {
@@ -21,7 +22,7 @@ export type NodeViewProps = {
   concentration?: boolean
   imageSrc?: string
 }
-export function NodeOutline({ shape }: { shape: NodeShape }) {
+export function NodeOutline({ shape, location = false }: { shape: NodeShape; location?: boolean }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 120, height: 120 })
   useLayoutEffect(() => {
@@ -38,6 +39,7 @@ export function NodeOutline({ shape }: { shape: NodeShape }) {
   }, [])
   const { width, height } = size
   const fold = Math.min(NOTE_FOLD_SIZE, width / 3, height / 3)
+  if (location) return <LocationNodeFrame width={width} height={height} svgRef={svgRef} />
   return <svg ref={svgRef} className={styles.nodeOutline} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
     {shape === 'circle' ? <circle cx={width / 2} cy={height / 2} r={Math.min(width, height) / 2} vectorEffect="non-scaling-stroke" />
       : <polygon points={shapePolygon(shape, width, height).map(point => point.join(',')).join(' ')} vectorEffect="non-scaling-stroke" />}
@@ -118,7 +120,14 @@ export const SpellNode = (props: NodeViewProps) => <Badge type="spell" {...props
 export const ItemNode = (props: NodeViewProps) => <Badge type="item" {...props} />
 export const FactionNode = (props: NodeViewProps) => <Badge type="faction" {...props} />
 export const LocationNode = (props: NodeViewProps) => <><div className={styles.locationScene}><img className={styles.locationImage}
-  data-custom-image={Boolean(props.imageSrc) || undefined} src={props.imageSrc ?? '/tools/survey/start/background.png'} alt="" draggable={false} /></div><Caption {...props} /></>
+  data-custom-image={Boolean(props.imageSrc) || undefined} src={props.imageSrc ?? '/tools/survey/start/background.png'} alt="" draggable={false} /></div>
+  <div className={styles.nodeCaption}>
+    <h3>{props.title}</h3>
+    <p className={`${styles.nodeSummary} ${styles.locationSummary}`}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" /></svg>
+      <span>{props.summary || 'Локация кампании'}</span>
+    </p>
+  </div></>
 export const QuestNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="quest" /><Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span></div>
 export const NoteNode = (props: NodeViewProps) => <><span className={styles.noteIcon} aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 10h12M4 15h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></span><Caption {...props} /></>
 const views = { playerCharacter: CharacterNode, npc: NpcNode, creature: CreatureNode, spell: SpellNode, item: ItemNode,

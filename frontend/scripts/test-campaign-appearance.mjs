@@ -97,6 +97,14 @@ async function foldSize() {
   assert.ok(Math.abs(fold.width - fold.height) < 0.5, `Загиб должен быть квадратным: ${JSON.stringify(fold)}`)
   return fold.width
 }
+async function locationCornerSize() {
+  const bounds = await node('location').boundingBox()
+  const corner = await node('location').locator('svg image').boundingBox()
+  assert.ok(corner && corner.width > 0 && corner.height > 0, 'Уголок локации присутствует')
+  assert.ok(corner.y < bounds.y && corner.y + corner.height > bounds.y,
+    'Башня выступает над карточкой, а её основание продолжается внутри рамки')
+  return { width: corner.width, height: corner.height, top: corner.y - bounds.y, left: corner.x - bounds.x }
+}
 async function noMotion(locator) {
   const moving = await locator.evaluate(element => element.getAnimations({ subtree: true })
     .filter(animation => animation.playState === 'running' && (Number(animation.effect?.getTiming().duration) > 1 || animation.effect?.getTiming().iterations === Infinity))
@@ -122,6 +130,7 @@ try {
   await page.getByRole('button', { name: 'Свернуть библиотеку', exact: true }).click()
 
   const originalFold = await foldSize()
+  const originalLocationCorner = await locationCornerSize()
   const sizes = {
     note: [[520, 130], [220, 360], [190, 128]],
     quest: [[520, 110], [220, 360], [220, 96]],
@@ -132,6 +141,13 @@ try {
       await resize(id, width, height, index === checks.length - 1)
       await contentFits(id)
       if (id === 'note') assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется при resize')
+      if (id === 'location') {
+        const corner = await locationCornerSize()
+        for (const key of Object.keys(originalLocationCorner)) {
+          assert.ok(Math.abs(corner[key] - originalLocationCorner[key]) < 0.5,
+            `Уголок сохраняет размер и стыковку с рамкой при resize: ${key}`)
+        }
+      }
     }
   }
   await closeInspector()
@@ -145,6 +161,7 @@ try {
   await node('note').waitFor()
   for (const id of Object.keys(sizes)) await contentFits(id)
   assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется после reload')
+  assert.deepEqual(await locationCornerSize(), originalLocationCorner, 'Уголок локации сохраняет геометрию после reload')
 
   // Оформление связи меняется через настоящий Inspector; документ и SVG проверяются независимо.
   await edge().click()

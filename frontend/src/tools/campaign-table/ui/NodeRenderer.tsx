@@ -131,7 +131,7 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
-    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} />}
+    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} location={data.entityType === 'location'} />}
     {(imageDropActive || imageUploadPending) && <span className={styles.nodeImageDropHint} role="status">
       {imageUploadPending ? 'Обрабатываем изображение…' : imageKind === 'avatar' ? 'Заменить портрет' : 'Заменить обложку'}
     </span>}

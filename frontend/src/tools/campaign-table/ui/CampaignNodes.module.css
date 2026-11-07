@@ -23,7 +23,7 @@
 .mindNode[data-entity-type='spell'] { --node-accent: var(--color-brand-bright); }
 .mindNode[data-entity-type='item'] { --node-accent: var(--color-status-warning); }
 .mindNode[data-entity-type='faction'] { --node-accent: var(--color-text-secondary); }
-.mindNode[data-entity-type='location'] { --node-accent: var(--color-status-success); }
+.mindNode[data-entity-type='location'] { --node-accent: var(--color-brand-bright); --node-stroke: color-mix(in srgb, var(--node-accent) 48%, var(--color-border-default)); }
 .mindNode[data-entity-type='quest'] { --node-accent: var(--color-status-warning); }
 .mindNode:hover {
   --node-surface: color-mix(in srgb, var(--node-accent) 5%, var(--color-surface-default));
@@ -98,13 +98,20 @@
 .nodeCardContent .nodeSummary { -webkit-line-clamp: 1; }
 .questArrow { flex: 0 0 auto; margin-left: auto; color: var(--node-accent); font: 400 26px/1 var(--font-family-body); }
 
-.mindNode[data-entity-type='location'] { display: grid; grid-template-rows: minmax(48px, 1fr) auto; min-height: 148px; padding: var(--space-2); gap: var(--space-2); }
-.locationScene { position: relative; min-width: 0; min-height: 48px; overflow: hidden; border-radius: 4px; background: var(--node-surface); }
+.mindNode[data-entity-type='location'] { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 148px; padding: 32px var(--space-2) var(--space-2); gap: var(--space-2); }
+.mindNode[data-entity-type='location'] > .nodeOutline { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--node-accent) 28%, transparent)); }
+.mindNode[data-entity-type='location'] .nodeTopline { top: 4px; left: 32px; right: var(--space-2); min-height: 24px; }
+.mindNode[data-entity-type='location'] .nodeMenuTrigger { opacity: 1; pointer-events: auto; }
+.locationScene { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--color-content-border); border-radius: 4px; background: var(--node-surface); }
 .locationScene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--color-surface-default) 58%, transparent)); pointer-events: none; }
 .locationImage { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: saturate(0.58); pointer-events: none; }
 .locationImage[data-custom-image='true'] { filter: none; }
 .mindNode[data-entity-type='location'] .nodeCaption { padding: var(--space-1) var(--space-2); }
+.mindNode[data-entity-type='location'] .nodeCaption h3 { text-transform: uppercase; letter-spacing: 0.045em; }
 .mindNode[data-entity-type='location'] .nodeSummary { -webkit-line-clamp: 1; }
+.mindNode[data-entity-type='location'] .locationSummary { display: flex; align-items: center; gap: var(--space-1); }
+.locationSummary > svg { flex: 0 0 12px; width: 12px; height: 14px; fill: var(--node-accent); }
+.locationSummary > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 .mindNode[data-shape='note'] { --node-accent: var(--color-note-fold); --node-surface: var(--color-note-paper); --node-stroke: color-mix(in srgb, var(--color-note-fold) 55%, var(--color-note-paper)); min-height: 128px; padding: var(--space-4); gap: 10px; color: var(--color-note-ink); }
 .mindNode[data-shape='note']:hover { --node-stroke: var(--color-note-fold); }
