@@ -104,6 +104,36 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
 }) {
   const flow = useReactFlow<TableNode, TableEdge>()
   const canvasRef = useRef<HTMLDivElement>(null)
+  const suspendCursorLight = useCallback(() => {
+    const canvas = canvasRef.current
+    if (canvas && !canvas.hasAttribute('data-cursor-light-suspended')) canvas.setAttribute('data-cursor-light-suspended', '')
+  }, [])
+  const resumeCursorLight = useCallback(() => {
+    canvasRef.current?.removeAttribute('data-cursor-light-suspended')
+  }, [])
+  const beginCanvasGesture = useCallback(() => {
+    suspendCursorLight()
+    history.beginGesture()
+  }, [history, suspendCursorLight])
+  const endCanvasGesture = useCallback(() => {
+    resumeCursorLight()
+    history.endGesture()
+  }, [history, resumeCursorLight])
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const hidden = () => { if (document.visibilityState === 'hidden') resumeCursorLight() }
+    window.addEventListener('blur', resumeCursorLight)
+    window.addEventListener('pagehide', resumeCursorLight)
+    document.addEventListener('pointercancel', resumeCursorLight)
+    document.addEventListener('visibilitychange', hidden)
+    return () => {
+      window.removeEventListener('blur', resumeCursorLight)
+      window.removeEventListener('pagehide', resumeCursorLight)
+      document.removeEventListener('pointercancel', resumeCursorLight)
+      document.removeEventListener('visibilitychange', hidden)
+      canvas?.removeAttribute('data-cursor-light-suspended')
+    }
+  }, [resumeCursorLight])
   const libraryDrag = useLibraryDrag(canvasRef)
   const [arrivals, setArrivals] = useState<ReadonlyMap<string, number>>(() => new Map())
   const { connections: departingConnections, capture: captureDepartingConnections } = useDepartingConnections(canvasRef)
@@ -467,7 +497,7 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
       if (next.has(id)) next.delete(id); else next.add(id)
       return next
     }),
-    beginGesture: history.beginGesture, endGesture: history.endGesture,
+    beginGesture: beginCanvasGesture, endGesture: endCanvasGesture,
     diagrams: table.diagrams, connectionSource: linking ? connectionSource : null, dropTarget,
     beginInstanceDrag: id => { setDraggedNodeId(id); setNotice(null) },
     placeInside: (id, targetId) => { if (!readOnly) void putInside(id, diagram.nodes.find(node => node.id === targetId)) },
@@ -530,6 +560,9 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
           defaultViewport={diagram.viewport} minZoom={0.2} maxZoom={2} colorMode="dark"
           nodesDraggable={!readOnly && !linking && !transferPending && !imageCreationPending} nodesConnectable={false} edgesReconnectable={false}
           onNodesChange={changes => {
+            // После blur React Flow может продолжить drag/resize без нового start-события.
+            if (!readOnly && changes.some(change => (change.type === 'position' && change.dragging)
+              || (change.type === 'dimensions' && change.resizing))) suspendCursorLight()
             // React Flow требует актуальных measured при следующем контролируемом рендере.
             // Эти размеры живут только в UI: раскрытие не меняет документ и историю.
             const measurements = changes.filter(change => change.type === 'dimensions' && change.dimensions
@@ -546,13 +579,14 @@ function DiagramCanvas({ table, diagram, selection, focusNodeId, onFocusHandled,
             if (!persistedChanges.length) return
             onNodeChanges(persistedChanges)
           }}
-          onNodeDragStart={readOnly ? undefined : (_, node) => { history.beginGesture(); setDraggedNodeId(node.id); setNotice(null) }}
+          onNodeDragStart={readOnly ? undefined : (_, node) => { beginCanvasGesture(); setDraggedNodeId(node.id); setNotice(null) }}
           onNodeDrag={readOnly ? undefined : (event, node) => {
             const pointer = eventPointer(event)
             const target = pointer ? findPointerContainer(node, pointer) : findContainer(diagram, node, node.position)
             setDropTarget(target?.id ?? null)
           }}
           onNodeDragStop={readOnly ? undefined : async (event, node) => {
+            resumeCursorLight()
             setDraggedNodeId(null); setDropTarget(null)
             try { if (canContain(node)) {
               const pointer = eventPointer(event)

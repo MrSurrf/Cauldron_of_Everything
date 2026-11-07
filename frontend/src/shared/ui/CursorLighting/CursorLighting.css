@@ -1,3 +1,46 @@
+/* Координаты и готовый градиент не должны пересчитывать стили всего дерева страницы. */
+@property --cursor-light-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -1000px;
+}
+
+@property --cursor-light-y {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -1000px;
+}
+
+@property --cursor-light-active {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --cursor-background-image {
+  syntax: '*';
+  inherits: false;
+  initial-value: none;
+}
+
+@property --cursor-reveal-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -1000px;
+}
+
+@property --cursor-reveal-y {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -1000px;
+}
+
+@property --cursor-reveal-active {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
 main,
 [data-cursor-light-background] {
   --cursor-light-x: -1000px;

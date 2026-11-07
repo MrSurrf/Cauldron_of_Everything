@@ -64,7 +64,7 @@ export const Panel = forwardRef<
         className={styles.frame}
         aria-hidden={true}
       >
-        <span className={styles.edgeLight} />
+        <span className={styles.edgeLight} data-cursor-reveal-layer="" />
         <span className={styles.innerFrame} />
       </span>
 

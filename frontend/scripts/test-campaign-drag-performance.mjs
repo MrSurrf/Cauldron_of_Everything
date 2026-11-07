@@ -30,7 +30,7 @@ const initial = {
 
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
   ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {})
-const context = await browser.newContext({ viewport: { width: 1700, height: 1100 }, reducedMotion: 'reduce' })
+const context = await browser.newContext({ viewport: { width: 1700, height: 1100 }, reducedMotion: 'no-preference' })
 const page = await context.newPage()
 page.setDefaultTimeout(15000)
 const errors = []
@@ -40,7 +40,7 @@ await context.addInitScript(({ storageKey, initial }) => {
   localStorage.setItem('surveyAuth.access', 'campaign-drag-performance-test')
   if (!localStorage.getItem(storageKey)) localStorage.setItem(storageKey, JSON.stringify(initial))
 
-  const empty = () => ({ serializations: 0, serializationMs: 0, writes: 0, writeMs: 0, nodes: {}, edges: {}, panels: {} })
+  const empty = () => ({ serializations: 0, serializationMs: 0, writes: 0, writeMs: 0, cursorWrites: 0, nodes: {}, edges: {}, panels: {} })
   const probe = globalThis.__campaignDragProbe = {
     counts: empty(),
     reset() { this.counts = empty() },
@@ -60,6 +60,13 @@ await context.addInitScript(({ storageKey, initial }) => {
     const started = performance.now()
     try { return setItem.call(this, key, value) } finally {
       if (table) { probe.counts.writes++; probe.counts.writeMs += performance.now() - started }
+    }
+  }
+  for (const method of ['setProperty', 'removeProperty']) {
+    const original = CSSStyleDeclaration.prototype[method]
+    CSSStyleDeclaration.prototype[method] = function (name, ...args) {
+      if (name.startsWith('--cursor-')) probe.counts.cursorWrites++
+      return original.call(this, name, ...args)
     }
   }
 }, { storageKey, initial })
@@ -94,6 +101,7 @@ const saved = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), 
 const savedNode = async () => (await saved()).diagrams[0].nodes.find(item => item.id === movingId)
 const counts = () => page.evaluate(() => globalThis.__campaignDragProbe.counts)
 const frames = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+const lightSuspended = () => page.locator('[data-cursor-light-suspended]').count()
 const renderedPosition = () => node(movingId).evaluate(element => {
   const transform = new DOMMatrixReadOnly(element.style.transform)
   return { x: transform.e, y: transform.f }
@@ -121,10 +129,14 @@ try {
   const rect = await node(movingId).boundingBox()
   const start = { x: rect.x + rect.width / 2, y: rect.y + 65 }
   await page.mouse.move(start.x, start.y)
+  await frames()
+  assert.ok((await counts()).cursorWrites > 0, 'Обычный режим интерфейса включает подсветку курсора')
+  assert.equal(await lightSuspended(), 0)
   await page.mouse.down()
   await page.mouse.move(start.x + 10, start.y + 5)
   await frames()
   assert.equal(await node(movingId).locator('article').getAttribute('data-dragging'), 'true')
+  assert.equal(await lightSuspended(), 1, 'Начало drag приостанавливает подсветку на холсте')
   // Выделение и начало жеста допустимо обновляют интерфейс; измеряем только движение внутри жеста.
   await page.evaluate(() => globalThis.__campaignDragProbe.reset())
   const updateMs = []
@@ -145,6 +157,7 @@ try {
   assert.notDeepEqual(finalPosition, originalPosition, 'Реальные события мыши должны переместить ноду')
   assert.equal(duringDrag.serializations, 0, 'Движение не сериализует документ кампании')
   assert.equal(duringDrag.writes, 0, 'Движение не записывает документ в localStorage')
+  assert.equal(duringDrag.cursorWrites, 0, 'Во время drag подсветка не меняет CSS-переменные')
   assert.deepEqual(Object.fromEntries(Object.entries(duringDrag.nodes).filter(([id]) => id !== movingId)), {},
     'Неподвижные ноды не перерисовываются при движении несвязанной ноды')
   assert.deepEqual(duringDrag.edges, {}, 'Связи неподвижных нод не перерисовываются')
@@ -155,8 +168,12 @@ try {
   await waitForSavedPosition(finalPosition)
   await frames()
   const afterDrag = await counts()
+  assert.equal(await lightSuspended(), 0, 'Mouseup возобновляет подсветку')
   assert.equal(afterDrag.serializations, 1, 'Mouseup ровно один раз сериализует завершённый жест')
   assert.equal(afterDrag.writes, 1, 'Mouseup ровно один раз сохраняет финальную позицию')
+  await page.mouse.move(start.x + 90, start.y + 60)
+  await frames()
+  assert.ok((await counts()).cursorWrites > afterDrag.cursorWrites, 'После mouseup подсветка снова реагирует на курсор')
   await page.keyboard.press('Control+z')
   await waitForSavedPosition(originalPosition)
   assert.deepEqual(await renderedPosition(), originalPosition, 'Undo возвращает начало всего жеста')
@@ -177,8 +194,15 @@ try {
   const corner = { x: handleRect.x + handleRect.width / 2, y: handleRect.y + handleRect.height / 2 }
   await page.mouse.move(corner.x, corner.y)
   await page.mouse.down()
-  await page.mouse.move(corner.x + 48, corner.y + 32, { steps: 8 })
+  await page.mouse.move(corner.x + 6, corner.y + 4)
+  await frames()
+  assert.equal(await lightSuspended(), 1, 'Resize приостанавливает подсветку')
+  await page.evaluate(() => globalThis.__campaignDragProbe.reset())
+  await page.mouse.move(corner.x + 48, corner.y + 32, { steps: 7 })
+  await frames()
+  assert.equal((await counts()).cursorWrites, 0, 'Во время resize подсветка не меняет CSS-переменные')
   await page.mouse.up()
+  assert.equal(await lightSuspended(), 0, 'Окончание resize возобновляет подсветку')
   await page.waitForFunction(({ key, id, width }) =>
     JSON.parse(localStorage.getItem(key)).diagrams[0].nodes.find(item => item.id === id).width > width,
   { key: storageKey, id: movingId, width: beforeResize.width })
@@ -213,6 +237,7 @@ try {
   await waitForSavedPosition(blurPosition)
   await frames()
   const afterBlur = await counts()
+  assert.equal(await lightSuspended(), 0, 'Blur сбрасывает приостановку подсветки')
   assert.equal(afterBlur.serializations, 1, 'Blur завершает и сериализует прерванный жест один раз')
   assert.equal(afterBlur.writes, 1, 'Blur сохраняет промежуточную позицию без mouseup')
 
@@ -223,9 +248,12 @@ try {
   }
   const resumedPosition = await renderedPosition()
   assert.notDeepEqual(resumedPosition, blurPosition, 'Drag продолжается после blur без нового mousedown')
+  assert.equal(await lightSuspended(), 1, 'Продолжение drag после blur снова приостанавливает подсветку')
+  assert.equal((await counts()).cursorWrites, 0, 'Продолжение drag после blur не обновляет подсветку')
   assert.equal((await counts()).serializations, 0, 'Продолжение после blur снова откладывает сериализацию')
   assert.equal((await counts()).writes, 0, 'Продолжение после blur снова откладывает сохранение')
   await page.mouse.up()
+  assert.equal(await lightSuspended(), 0)
   await waitForSavedPosition(resumedPosition)
   await frames()
   assert.equal((await counts()).serializations, 1)
@@ -254,7 +282,7 @@ try {
   assert.deepEqual(errors, [])
 
   const ordered = [...updateMs].sort((a, b) => a - b)
-  console.log('Перетаскивание 80 нод / 78 связей: 24 движения, 0 сериализаций и записей, 0 рендеров неподвижных нод, связей и открытой wiki-карточки; mouseup, Undo, Redo, reload, resize, blur/продолжение и pagehide — OK.')
+  console.log('Перетаскивание 80 нод / 78 связей: обычный режим подсветки, 24 движения, 0 обновлений подсветки, сериализаций и записей, 0 рендеров неподвижных нод, связей и открытой wiki-карточки; mouseup, Undo, Redo, reload, resize, blur/продолжение и pagehide — OK.')
   console.log(`Наблюдаемые времена с ожиданием двух кадров и протоколом Playwright: жест ${dragMs.toFixed(1)} мс, медиана движения ${ordered[Math.floor(ordered.length / 2)].toFixed(1)} мс; сериализация после mouseup ${afterDrag.serializationMs.toFixed(2)} мс, localStorage ${afterDrag.writeMs.toFixed(2)} мс. Это диагностические значения без порога FPS.`)
 } catch (error) {
   await page.screenshot({ path: join(tmpdir(), 'campaign-drag-performance-failure.png'), fullPage: true })
