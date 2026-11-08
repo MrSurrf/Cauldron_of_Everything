@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import AuthPage from '../../pages/auth/AuthPage'
+import ErrorPage from '../../pages/error/ErrorPage'
 import { AUTH_CHANGED_EVENT, checkSession } from '../../shared/api/auth'
 import { Button } from '../../shared/ui'
 import styles from './AppRouter.module.css'
@@ -51,9 +52,10 @@ export function AccessGate({ children }: { children: ReactNode }) {
 
   if (access?.request !== request) return <div className={styles.fallback} role="status">Проверяем доступ…</div>
   if (access.status === 'guest') return <AuthPage onLogin={() => setRevision(value => value + 1)} />
-  if (access.status === 'error') return <div className={styles.notFound} role="alert">
-    <p>Не удалось проверить доступ к сайту.</p>
-    <Button size="md" icon={null} onClick={() => setRevision(value => value + 1)}>Повторить</Button>
+  if (access.status === 'error') return <div className={styles.accessError} role="alert">
+    <ErrorPage code={503}>
+      <Button size="md" icon={null} onClick={() => setRevision(value => value + 1)}>Повторить</Button>
+    </ErrorPage>
   </div>
   return children
 }

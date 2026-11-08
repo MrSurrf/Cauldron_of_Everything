@@ -12,6 +12,7 @@ import {
 
 import { SiteHeader } from '../layouts/SiteHeader'
 import AuthPage from '../../pages/auth/AuthPage'
+import ErrorPage from '../../pages/error/ErrorPage'
 import { AccessGate } from './AccessGate'
 import styles from './AppRouter.module.css'
 
@@ -68,16 +69,6 @@ function RouteFallback() {
   )
 }
 
-function NotFoundPage() {
-  return (
-    <main className={styles.notFound}>
-      <p>404</p>
-      <h1>Страница не найдена</h1>
-      <a href="/">На главную</a>
-    </main>
-  )
-}
-
 function BestiaryRoute() {
   const location = useLocation()
 
@@ -110,6 +101,8 @@ function RoutedApp() {
                 element={<HomePage />}
               />
               <Route path="/dev" element={<DevHomePage />} />
+              <Route path="/404" element={<ErrorPage code={404} />} />
+              <Route path="/503" element={<ErrorPage code={503} />} />
               <Route
                 path="/survey"
                 element={<SurveyRoutePage />}
@@ -151,7 +144,7 @@ function RoutedApp() {
               />
               <Route
                 path="*"
-                element={<NotFoundPage />}
+                element={<ErrorPage code={404} />}
               />
             </Routes>
           </Suspense>

@@ -8,8 +8,7 @@
   min-height: var(--app-viewport-height);
 }
 
-.fallback,
-.notFound {
+.fallback {
   display: grid;
   min-width: 320px;
   min-height: var(--app-viewport-height);
@@ -19,27 +18,7 @@
   font-family: var(--font-family-body);
 }
 
-.notFound {
-  align-content: center;
-}
-
-.notFound p,
-.notFound h1 {
-  margin: 0;
-}
-
-.notFound p {
-  color: var(--color-interactive);
-}
-
-.notFound h1 {
-  margin-block: var(--space-2) var(--space-5);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-heading);
-  font-size: clamp(2.5rem, 8vw, 5rem);
-  font-weight: 400;
-}
-
-.notFound a {
-  color: var(--color-interactive);
+.accessError {
+  display: grid;
+  min-height: 100svh;
 }
