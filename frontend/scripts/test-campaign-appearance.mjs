@@ -105,6 +105,38 @@ async function locationCornerSize() {
     'Башня выступает над карточкой, а её основание продолжается внутри рамки')
   return { width: corner.width, height: corner.height, top: corner.y - bounds.y, left: corner.x - bounds.x }
 }
+async function questDecorationSize() {
+  const decoration = await node('quest').locator('[data-node-decoration="quest"]').boundingBox()
+  assert.ok(decoration && decoration.width > 0 && decoration.height > 0, 'SVG-декор квеста присутствует')
+  return { width: decoration.width, height: decoration.height }
+}
+function uniformFactor(width, height, baseWidth, baseHeight) {
+  return Math.min(width / baseWidth, height / baseHeight)
+}
+function assertScaledGeometry(actual, base, factor, keys, label) {
+  for (const key of keys) {
+    const expected = base[key] * factor
+    assert.ok(Math.abs(actual[key] - expected) < 1,
+      `${label}: ${key} масштабируется равномерно с factor ${factor}; ожидалось ${expected}, получилось ${actual[key]}`)
+  }
+}
+function assertAspectRatio(geometry, sourceRatio, label) {
+  const expectedWidth = geometry.height * sourceRatio
+  assert.ok(Math.abs(geometry.width - expectedWidth) < 1,
+    `${label}: aspect ratio исходного SVG сохраняется; ожидалась ширина ${expectedWidth}, получилась ${geometry.width}`)
+}
+async function maskedSvgSourceRatio(locator) {
+  return locator.evaluate(async element => {
+    const style = getComputedStyle(element)
+    const value = style.maskImage || style.webkitMaskImage
+    const href = value.match(/url\(["']?(.*?)["']?\)/)?.[1]
+    if (!href) throw new Error('Не найден URL SVG-маски декора')
+    const response = await fetch(href)
+    const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
+    const bounds = source.viewBox.baseVal
+    return bounds.width / bounds.height
+  })
+}
 async function noMotion(locator) {
   const moving = await locator.evaluate(element => element.getAnimations({ subtree: true })
     .filter(animation => animation.playState === 'running' && (Number(animation.effect?.getTiming().duration) > 1 || animation.effect?.getTiming().iterations === Infinity))
@@ -131,14 +163,16 @@ try {
 
   const originalFold = await foldSize()
   const originalLocationCorner = await locationCornerSize()
+  const originalQuestDecoration = await questDecorationSize()
   const sourceCornerRatio = await node('location').locator('svg image').evaluate(async image => {
     const response = await fetch(image.href.baseVal)
     const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
     const bounds = source.viewBox.baseVal
     return bounds.width / bounds.height
   })
-  assert.ok(Math.abs(originalLocationCorner.width / originalLocationCorner.height - sourceCornerRatio) < 0.001,
-    'Область уголка соответствует viewBox исходного SVG без растяжения и смещения рисунка')
+  const sourceQuestRatio = await maskedSvgSourceRatio(node('quest').locator('[data-node-decoration="quest"]'))
+  assertAspectRatio(originalLocationCorner, sourceCornerRatio, 'Уголок локации')
+  assertAspectRatio(originalQuestDecoration, sourceQuestRatio, 'Декор квеста')
   const sizes = {
     note: [[520, 130], [220, 360], [190, 128]],
     quest: [[520, 110], [220, 360], [220, 96]],
@@ -149,12 +183,17 @@ try {
       await resize(id, width, height, index === checks.length - 1)
       await contentFits(id)
       if (id === 'note') assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется при resize')
+      if (id === 'quest') {
+        const decoration = await questDecorationSize()
+        const factor = uniformFactor(width, height, 280, 96)
+        assertScaledGeometry(decoration, originalQuestDecoration, factor, ['width', 'height'], 'Декор квеста при resize')
+        assertAspectRatio(decoration, sourceQuestRatio, 'Декор квеста при resize')
+      }
       if (id === 'location') {
         const corner = await locationCornerSize()
-        for (const key of Object.keys(originalLocationCorner)) {
-          assert.ok(Math.abs(corner[key] - originalLocationCorner[key]) < 0.5,
-            `Уголок сохраняет размер и стыковку с рамкой при resize: ${key}`)
-        }
+        const factor = uniformFactor(width, height, 280, 148)
+        assertScaledGeometry(corner, originalLocationCorner, factor, ['width', 'height', 'top', 'left'], 'Уголок локации при resize')
+        assertAspectRatio(corner, sourceCornerRatio, 'Уголок локации при resize')
       }
     }
   }
@@ -169,7 +208,14 @@ try {
   await node('note').waitFor()
   for (const id of Object.keys(sizes)) await contentFits(id)
   assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется после reload')
-  assert.deepEqual(await locationCornerSize(), originalLocationCorner, 'Уголок локации сохраняет геометрию после reload')
+  const reloadedLocationCorner = await locationCornerSize()
+  assertScaledGeometry(reloadedLocationCorner, originalLocationCorner, uniformFactor(220, 148, 280, 148),
+    ['width', 'height', 'top', 'left'], 'Уголок локации после reload в минимальном размере')
+  assertAspectRatio(reloadedLocationCorner, sourceCornerRatio, 'Уголок локации после reload')
+  const reloadedQuestDecoration = await questDecorationSize()
+  assertScaledGeometry(reloadedQuestDecoration, originalQuestDecoration, uniformFactor(220, 96, 280, 96),
+    ['width', 'height'], 'Декор квеста после reload в минимальном размере')
+  assertAspectRatio(reloadedQuestDecoration, sourceQuestRatio, 'Декор квеста после reload')
 
   // Оформление связи меняется через настоящий Inspector; документ и SVG проверяются независимо.
   await edge().click()

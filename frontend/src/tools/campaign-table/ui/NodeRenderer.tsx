@@ -9,6 +9,7 @@ import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDT
 import { Combobox, EditIcon, TrashIcon, Tooltip, useCampaignWikiImage } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
+import { proportionalNodeScale } from './nodeDecorationGeometry'
 import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
 import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
@@ -46,6 +47,11 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   const arrivalKey = data.display?.arrivalKey
   const visual = nodeVisual(data.entityType)
   const minimum = nodeMinimumSize(data.entityType)
+  const renderedWidth = width ?? visual.width
+  const renderedHeight = height ?? minimum.height
+  const nodeStyle = data.entityType === 'location'
+    ? { '--location-corner-clearance': `${32 * Math.max(1, proportionalNodeScale(renderedWidth, renderedHeight, 280, 148))}px` } as CSSProperties
+    : undefined
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
   const imageKind = nodeImageKind(data.entityType)
   const characterPortrait = data.entityType === 'playerCharacter' ? data.campaignCharacter?.document.identity.portraitUrl : undefined
@@ -104,7 +110,7 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   const origin = center(box)
   const localEntity = !data.reference
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
-  return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
+  return <article ref={nodeRef} className={styles.mindNode} style={nodeStyle} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
     data-drop-target={actions.dropTarget === id || undefined}
@@ -183,10 +189,12 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
     </div>}
     {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
-        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc} />}
+        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc}
+          nodeWidth={renderedWidth} nodeHeight={renderedHeight} />}
       </div>
     </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification}
-      school={spell.school} level={spell.level} ritual={spell.ritual} concentration={spell.concentration} imageSrc={imageSrc} />}
+      school={spell.school} level={spell.level} ritual={spell.ritual} concentration={spell.concentration} imageSrc={imageSrc}
+      nodeWidth={renderedWidth} nodeHeight={renderedHeight} />}
     {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
       const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
         y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })

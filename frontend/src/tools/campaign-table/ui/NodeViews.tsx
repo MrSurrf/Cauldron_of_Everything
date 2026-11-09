@@ -6,11 +6,15 @@ import { getSpellSchool, SpellSchoolIcon } from '../../../entities/spell'
 import bestiaryIconUrl from '../../../shared/ui/icons/assets/bestiary.svg?url&no-inline'
 import npcCharacterIconUrl from '../../../shared/ui/icons/assets/npc-character.svg?url&no-inline'
 import playerCharacterIconUrl from '../../../shared/ui/icons/assets/player-character.svg?url&no-inline'
+import factionNodeTopUrl from '../assets/faction-node-top.svg?url&no-inline'
+import npcNodeTopUrl from '../assets/npc-node-top.svg?url&no-inline'
+import questNodeCornerUrl from '../assets/quest-node-corner.svg?url&no-inline'
 import type { NodeEntityType } from '../model/table'
 import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import { LocationNodeFrame } from './LocationNodeFrame'
 import styles from './CampaignNodes.module.css'
+import { proportionalNodeScale } from './nodeDecorationGeometry'
 
 export type NodeViewProps = {
   title: string
@@ -21,6 +25,8 @@ export type NodeViewProps = {
   ritual?: boolean
   concentration?: boolean
   imageSrc?: string
+  nodeWidth?: number
+  nodeHeight?: number
 }
 export function NodeOutline({ shape, location = false }: { shape: NodeShape; location?: boolean }) {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -28,14 +34,24 @@ export function NodeOutline({ shape, location = false }: { shape: NodeShape; loc
   useLayoutEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    const observer = new ResizeObserver(() => {
+    const target = svg.parentElement ?? svg
+    let frame = 0
+    const readSize = () => {
       // client-размеры не включают масштаб viewport; SVG bbox может быть в единицах viewBox.
       const width = svg.clientWidth, height = svg.clientHeight
       if (width <= 0 || height <= 0) return
       setSize(previous => previous.width === width && previous.height === height ? previous : { width, height })
+    }
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(readSize)
     })
-    observer.observe(svg.parentElement ?? svg)
-    return () => observer.disconnect()
+    observer.observe(target)
+    readSize()
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
   }, [])
   const { width, height } = size
   const fold = Math.min(NOTE_FOLD_SIZE, width / 3, height / 3)
@@ -63,6 +79,7 @@ const badgeIconUrls: Partial<Record<BadgeType, string>> = {
   creature: bestiaryIconUrl,
 }
 type NodeIconStyle = CSSProperties & { '--node-icon-url': string }
+type NodeDecorationStyle = CSSProperties & { '--node-decoration-url': string }
 function BadgeIcon({ type }: { type: BadgeType }) {
   const url = badgeIconUrls[type]
   if (!url) return null
@@ -70,6 +87,19 @@ function BadgeIcon({ type }: { type: BadgeType }) {
     className={styles.nodeEntityIcon}
     data-entity-icon={type}
     style={{ '--node-icon-url': `url("${url}")` } as NodeIconStyle}
+    aria-hidden="true"
+  />
+}
+function AssetDecoration({ type, url, className, style }: {
+  type: 'faction' | 'npc' | 'quest'
+  url: string
+  className: string
+  style?: CSSProperties
+}) {
+  return <span
+    className={`${styles.nodeAssetDecoration} ${className}`}
+    data-node-decoration={type}
+    style={{ '--node-decoration-url': `url("${url}")`, ...style } as NodeDecorationStyle}
     aria-hidden="true"
   />
 }
@@ -98,8 +128,12 @@ function Badge({ type, ...props }: NodeViewProps & { type: BadgeType }) {
       : type === 'spell' && school
       ? <SpellSchoolIcon school={school} className={styles.nodeSpellIcon} />
       : <BadgeIcon type={type} />}
-    {type === 'faction' && <Glyph type="faction" />}
-    {type === 'playerCharacter' && <span className={styles.characterDiamond} aria-hidden="true" />}
+    {type === 'faction' && <><Glyph type="faction" />
+      <AssetDecoration type="faction" url={factionNodeTopUrl} className={styles.factionNodeTop} /></>}
+    {type === 'npc' && <AssetDecoration type="npc" url={npcNodeTopUrl} className={styles.npcNodeTop} />}
+    {type === 'playerCharacter' && <><svg className={styles.characterBrackets} viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <path d="M17 15C8.5 25.5 4 37.5 4 50s4.5 24.5 13 35M83 15c8.5 10.5 13 22.5 13 35s-4.5 24.5-13 35" vectorEffect="non-scaling-stroke" />
+    </svg><span className={styles.characterDiamond} aria-hidden="true" /></>}
     {level !== undefined && <SpellMarker kind="level" label={`Уровень заклинания: ${level}`} value={String(level)}
       title={level > 0 ? `Заклинание ${level}-го уровня · требует ячейку` : 'Заговор · ячейка не требуется'} consumesSlot={level > 0} />}
     {type === 'spell' && props.concentration && <SpellMarker kind="concentration" label="Требуется концентрация"
@@ -128,7 +162,14 @@ export const LocationNode = (props: NodeViewProps) => <><div className={styles.l
       <span>{props.summary || 'Локация кампании'}</span>
     </p>
   </div></>
-export const QuestNode = (props: NodeViewProps) => <div className={styles.nodeCardContent}><Glyph type="quest" /><Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span></div>
+export const QuestNode = (props: NodeViewProps) => {
+  const scale = proportionalNodeScale(props.nodeWidth ?? 280, props.nodeHeight ?? 96, 280, 96)
+  return <div className={styles.nodeCardContent}>
+    <AssetDecoration type="quest" url={questNodeCornerUrl} className={styles.questNodeCorner}
+      style={{ width: 49 * scale, height: 88 * scale, marginInlineStart: -8 * scale }} />
+    <Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span>
+  </div>
+}
 export const NoteNode = (props: NodeViewProps) => <><span className={styles.noteIcon} aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 10h12M4 15h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg></span><Caption {...props} /></>
 const views = { playerCharacter: CharacterNode, npc: NpcNode, creature: CreatureNode, spell: SpellNode, item: ItemNode,
   faction: FactionNode, location: LocationNode, quest: QuestNode, note: NoteNode } satisfies Record<NodeEntityType, ComponentType<NodeViewProps>>

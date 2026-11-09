@@ -83,7 +83,11 @@ try {
   assert.ok((await node('note').boundingBox()).height < 210)
   assert.equal(await node('location').locator('img').evaluate(image => image.complete && image.naturalWidth > 0), true)
   assert.equal(await node('spell').getByLabel('Уровень заклинания: 3').textContent(), '3')
-  assert.equal(await node('faction').locator('svg path').count(), 0)
+  for (const type of ['faction', 'npc', 'quest']) {
+    assert.equal(await node(type).locator('[data-node-decoration]').count(), 1)
+  }
+  assert.equal(await node('playerCharacter').locator('[class*="characterBrackets"]').count(), 1)
+  assert.equal(await node('playerCharacter').locator('[class*="characterDiamond"]').count(), 1)
   assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
   for (const type of ['playerCharacter', 'npc', 'creature', 'spell', 'item', 'faction']) {
     await node(type).getByRole('heading').click()
