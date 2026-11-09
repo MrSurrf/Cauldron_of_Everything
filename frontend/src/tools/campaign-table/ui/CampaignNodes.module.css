@@ -70,7 +70,7 @@
   transition: background var(--motion-duration-fast);
 }
 .factionNodeTop { position: absolute; z-index: 2; top: 0; left: 50%; width: 148%; aspect-ratio: 1407 / 297; transform: translate(-50%, -50%); }
-.npcNodeTop { position: absolute; z-index: 2; top: -18%; left: 50%; width: 92%; aspect-ratio: 147 / 67; transform: translateX(-50%); }
+.npcNodeTop { position: absolute; z-index: 2; top: -12.5%; left: 50%; width: 60%; aspect-ratio: 147 / 67; transform: translateX(-50%); }
 .characterBrackets { position: absolute; z-index: 2; inset: -6%; width: 112%; height: 112%; overflow: visible; pointer-events: none; stroke: var(--node-stroke); stroke-width: 2.25; stroke-linecap: round; transition: stroke var(--motion-duration-fast); }
 .nodeGlyph, .nodeItemIcon, .nodeEntityIcon, .noteIcon { opacity: 0.7; }
 .nodeImage { position: absolute; inset: 7px; display: block; width: calc(100% - 14px); height: calc(100% - 14px); object-fit: cover; }

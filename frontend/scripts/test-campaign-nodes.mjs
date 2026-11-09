@@ -86,6 +86,26 @@ try {
   for (const type of ['faction', 'npc', 'quest']) {
     assert.equal(await node(type).locator('[data-node-decoration]').count(), 1)
   }
+  const npcDecoration = await node('npc').evaluate(element => {
+    const badge = element.querySelector('[class*="nodeBadge"]')?.getBoundingClientRect()
+    const decoration = element.querySelector('[data-node-decoration="npc"]')?.getBoundingClientRect()
+    if (!badge || !decoration) return null
+    return {
+      width: decoration.width / badge.width,
+      height: decoration.height / badge.height,
+      top: (decoration.top - badge.top) / badge.height,
+      overlap: (decoration.bottom - badge.top) / badge.height,
+      center: ((decoration.left + decoration.right) / 2 - (badge.left + badge.right) / 2) / badge.width,
+      aspectRatio: decoration.width / decoration.height,
+    }
+  })
+  assert.ok(npcDecoration, 'SVG-маска NPC и круг портрета присутствуют')
+  assert.ok(Math.abs(npcDecoration.width - 0.6) < 0.01, `Ширина маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.height - 0.2735) < 0.01, `Высота маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.top + 0.125) < 0.01, `Маска NPC поднята над портретом: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.overlap - 0.1485) < 0.01, `Маска NPC перекрывает верхнюю дугу как на референсе: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.center) < 0.005, `Маска NPC отцентрирована над портретом: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.aspectRatio - 147 / 67) < 0.02, `SVG-маска NPC не искажена: ${JSON.stringify(npcDecoration)}`)
   assert.equal(await node('playerCharacter').locator('[class*="characterBrackets"]').count(), 1)
   assert.equal(await node('playerCharacter').locator('[class*="characterDiamond"]').count(), 1)
   assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
