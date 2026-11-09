@@ -70,7 +70,7 @@
   transition: background var(--motion-duration-fast);
 }
 .factionNodeTop { position: absolute; z-index: 2; top: 0; left: 50%; width: 148%; aspect-ratio: 1407 / 297; transform: translate(-50%, -50%); }
-.npcNodeTop { position: absolute; z-index: 2; top: -12.5%; left: 50%; width: 60%; aspect-ratio: 147 / 67; transform: translateX(-50%); }
+.npcNodeTop { position: absolute; z-index: 2; top: calc(-11.15% + 1px); left: 50%; width: 60%; aspect-ratio: 147 / 67; transform: translateX(-50%); }
 .characterBrackets { position: absolute; z-index: 2; inset: -6%; width: 112%; height: 112%; overflow: visible; pointer-events: none; stroke: var(--node-stroke); stroke-width: 2.25; stroke-linecap: round; transition: stroke var(--motion-duration-fast); }
 .nodeGlyph, .nodeItemIcon, .nodeEntityIcon, .noteIcon { opacity: 0.7; }
 .nodeImage { position: absolute; inset: 7px; display: block; width: calc(100% - 14px); height: calc(100% - 14px); object-fit: cover; }
@@ -110,9 +110,9 @@
 .nodeCardContent .nodeSummary { -webkit-line-clamp: 1; }
 .questArrow { flex: 0 0 auto; margin-left: auto; color: var(--node-accent); font: 400 26px/1 var(--font-family-body); }
 
-.mindNode[data-entity-type='location'] { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 148px; padding: var(--location-corner-clearance, 32px) var(--space-2) var(--space-2); gap: var(--space-2); }
+.mindNode[data-entity-type='location'] { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 148px; padding: 32px var(--space-2) var(--space-2); gap: var(--space-2); }
 .mindNode[data-entity-type='location'] > .nodeOutline { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--node-accent) 28%, transparent)); }
-.mindNode[data-entity-type='location'] .nodeTopline { top: 4px; left: var(--location-corner-clearance, 32px); right: var(--space-2); min-height: 24px; }
+.mindNode[data-entity-type='location'] .nodeTopline { top: 4px; left: 32px; right: var(--space-2); min-height: 24px; }
 .mindNode[data-entity-type='location'] .nodeMenuTrigger { opacity: 1; pointer-events: auto; }
 .locationScene { position: relative; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--color-content-border); border-radius: 4px; background: var(--node-surface); }
 .locationScene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--color-surface-default) 58%, transparent)); pointer-events: none; }

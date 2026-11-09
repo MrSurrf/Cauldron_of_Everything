@@ -120,6 +120,12 @@ function assertScaledGeometry(actual, base, factor, keys, label) {
       `${label}: ${key} масштабируется равномерно с factor ${factor}; ожидалось ${expected}, получилось ${actual[key]}`)
   }
 }
+function assertFixedGeometry(actual, base, keys, label) {
+  for (const key of keys) {
+    assert.ok(Math.abs(actual[key] - base[key]) < 0.5,
+      `${label}: ${key} сохраняет фиксированный размер; ожидалось ${base[key]}, получилось ${actual[key]}`)
+  }
+}
 function assertAspectRatio(geometry, sourceRatio, label) {
   const expectedWidth = geometry.height * sourceRatio
   assert.ok(Math.abs(geometry.width - expectedWidth) < 1,
@@ -191,8 +197,7 @@ try {
       }
       if (id === 'location') {
         const corner = await locationCornerSize()
-        const factor = uniformFactor(width, height, 280, 148)
-        assertScaledGeometry(corner, originalLocationCorner, factor, ['width', 'height', 'top', 'left'], 'Уголок локации при resize')
+        assertFixedGeometry(corner, originalLocationCorner, ['width', 'height', 'top', 'left'], 'Уголок локации при resize')
         assertAspectRatio(corner, sourceCornerRatio, 'Уголок локации при resize')
       }
     }
@@ -209,8 +214,8 @@ try {
   for (const id of Object.keys(sizes)) await contentFits(id)
   assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется после reload')
   const reloadedLocationCorner = await locationCornerSize()
-  assertScaledGeometry(reloadedLocationCorner, originalLocationCorner, uniformFactor(220, 148, 280, 148),
-    ['width', 'height', 'top', 'left'], 'Уголок локации после reload в минимальном размере')
+  assertFixedGeometry(reloadedLocationCorner, originalLocationCorner,
+    ['width', 'height', 'top', 'left'], 'Уголок локации после reload')
   assertAspectRatio(reloadedLocationCorner, sourceCornerRatio, 'Уголок локации после reload')
   const reloadedQuestDecoration = await questDecorationSize()
   assertScaledGeometry(reloadedQuestDecoration, originalQuestDecoration, uniformFactor(220, 96, 280, 96),

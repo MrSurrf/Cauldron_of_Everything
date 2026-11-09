@@ -3,11 +3,8 @@ import type { Ref } from 'react'
 import locationCornerUrl from '../assets/location-node-corner.svg?url&no-inline'
 import locationCornerSource from '../assets/location-node-corner.svg?raw'
 import styles from './CampaignNodes.module.css'
-import { proportionalNodeScale } from './nodeDecorationGeometry'
 
-const BASE_NODE_WIDTH = 280
-const BASE_NODE_HEIGHT = 148
-const BASE_CORNER_SCALE = 0.15
+const CORNER_SCALE = 0.15
 const sourceViewBox = locationCornerSource.match(/\bviewBox=["']([^"']+)["']/)?.[1].trim().split(/[\s,]+/).map(Number)
 if (!sourceViewBox || sourceViewBox.length !== 4 || sourceViewBox.some(value => !Number.isFinite(value))
   || sourceViewBox[2] <= 0 || sourceViewBox[3] <= 0) {
@@ -20,22 +17,21 @@ const SOURCE_TOP = 228.7935
 const SOURCE_RIGHT = 572.28
 const SOURCE_BOTTOM = 324.64
 const BORDER_WIDTH = 1.25
+const CORNER_INSET = (14.6 * CORNER_SCALE - BORDER_WIDTH) / 2
 const JOIN_OVERLAP = 1
 const BEVEL = 4
+const x = (value: number) => (value - SOURCE_LEFT) * CORNER_SCALE
+const y = (value: number) => (value - SOURCE_TOP) * CORNER_SCALE
 
 export function LocationNodeFrame({ width, height, svgRef }: { width: number; height: number; svgRef: Ref<SVGSVGElement> }) {
   const id = useId().replace(/:/g, '')
   const maskId = `location-corner-${id}`
   const filterId = `location-contour-${id}`
-  const cornerScale = BASE_CORNER_SCALE * proportionalNodeScale(width, height, BASE_NODE_WIDTH, BASE_NODE_HEIGHT)
-  const cornerInset = Math.max(0, (14.6 * cornerScale - BORDER_WIDTH) / 2)
-  const x = (value: number) => (value - SOURCE_LEFT) * cornerScale
-  const y = (value: number) => (value - SOURCE_TOP) * cornerScale
   const cornerLeft = x(SOURCE_X), cornerTop = y(SOURCE_Y)
-  const cornerWidth = SOURCE_WIDTH * cornerScale, cornerHeight = SOURCE_HEIGHT * cornerScale
+  const cornerWidth = SOURCE_WIDTH * CORNER_SCALE, cornerHeight = SOURCE_HEIGHT * CORNER_SCALE
   const cornerRight = x(SOURCE_RIGHT), cornerBottom = y(SOURCE_BOTTOM)
   // Середины открытых концов SVG совпадают с верхней и левой границами карточки.
-  // Башня равномерно масштабируется вместе с нодой; прямые участки рамы доходят до её стыков.
+  // Башня сохраняет размер при resize; растягиваются только прямые участки рамки.
   // Небольшое перекрытие закрывает диагональные срезы после сужения маски.
   const frame = `M${cornerRight - JOIN_OVERLAP} 0 H${width - BEVEL} L${width} ${BEVEL} V${height - BEVEL} L${width - BEVEL} ${height} H${BEVEL} L0 ${height - BEVEL} V${cornerBottom - JOIN_OVERLAP}`
   // Подложка следует середине силуэта; сам контур целиком берётся из исходного SVG.
@@ -53,9 +49,9 @@ export function LocationNodeFrame({ width, height, svgRef }: { width: number; he
 
   return <svg ref={svgRef} className={styles.nodeOutline} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
     <defs>
-      {/* Толстый исходный силуэт сужается до толщины рамки после пропорционального масштабирования башни. */}
+      {/* Толстый исходный силуэт сужается до толщины рамки без изменения размера башни. */}
       <filter id={filterId} filterUnits="userSpaceOnUse" x={cornerLeft} y={cornerTop} width={cornerWidth} height={cornerHeight}>
-        <feMorphology in="SourceAlpha" operator="erode" radius={cornerInset} />
+        <feMorphology in="SourceAlpha" operator="erode" radius={CORNER_INSET} />
       </filter>
       <mask id={maskId} maskUnits="userSpaceOnUse" x={cornerLeft} y={cornerTop} width={cornerWidth} height={cornerHeight} style={{ maskType: 'alpha' }}>
         <image href={locationCornerUrl} x={cornerLeft} y={cornerTop} width={cornerWidth} height={cornerHeight} preserveAspectRatio="none" filter={`url(#${filterId})`} />

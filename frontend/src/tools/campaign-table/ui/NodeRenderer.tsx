@@ -9,7 +9,6 @@ import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDT
 import { Combobox, EditIcon, TrashIcon, Tooltip, useCampaignWikiImage } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
-import { proportionalNodeScale } from './nodeDecorationGeometry'
 import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
 import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
@@ -49,9 +48,6 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   const minimum = nodeMinimumSize(data.entityType)
   const renderedWidth = width ?? visual.width
   const renderedHeight = height ?? minimum.height
-  const nodeStyle = data.entityType === 'location'
-    ? { '--location-corner-clearance': `${32 * Math.max(1, proportionalNodeScale(renderedWidth, renderedHeight, 280, 148))}px` } as CSSProperties
-    : undefined
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
   const imageKind = nodeImageKind(data.entityType)
   const characterPortrait = data.entityType === 'playerCharacter' ? data.campaignCharacter?.document.identity.portraitUrl : undefined
@@ -110,7 +106,7 @@ export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height
   const origin = center(box)
   const localEntity = !data.reference
   const openEntity = () => localEntity ? actions.edit(id) : actions.open(id)
-  return <article ref={nodeRef} className={styles.mindNode} style={nodeStyle} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
+  return <article ref={nodeRef} className={styles.mindNode} data-badge={visual.badge && !creatureExpanded} data-shape={creatureExpanded ? 'rectangle' : visual.shape} data-entity-type={data.entityType}
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
     data-drop-target={actions.dropTarget === id || undefined}

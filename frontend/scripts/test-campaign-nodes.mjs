@@ -93,19 +93,33 @@ try {
     return {
       width: decoration.width / badge.width,
       height: decoration.height / badge.height,
-      top: (decoration.top - badge.top) / badge.height,
-      overlap: (decoration.bottom - badge.top) / badge.height,
       center: ((decoration.left + decoration.right) / 2 - (badge.left + badge.right) / 2) / badge.width,
       aspectRatio: decoration.width / decoration.height,
+      seams: [
+        { side: 'left', x: 0, y: 51.5824 },
+        { side: 'right', x: 146.03, y: 51.3378 },
+      ].map(point => {
+        const x = decoration.left + decoration.width * point.x / 147
+        const y = decoration.top + decoration.height * point.y / 67
+        const centerX = badge.left + badge.width / 2
+        const centerY = badge.top + badge.height / 2
+        const radius = Math.min(badge.width, badge.height) / 2
+        const circleY = centerY - Math.sqrt(radius ** 2 - (x - centerX) ** 2)
+        return { side: point.side, overlap: (y - circleY) / badge.height }
+      }),
     }
   })
   assert.ok(npcDecoration, 'SVG-маска NPC и круг портрета присутствуют')
   assert.ok(Math.abs(npcDecoration.width - 0.6) < 0.01, `Ширина маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
   assert.ok(Math.abs(npcDecoration.height - 0.2735) < 0.01, `Высота маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
-  assert.ok(Math.abs(npcDecoration.top + 0.125) < 0.01, `Маска NPC поднята над портретом: ${JSON.stringify(npcDecoration)}`)
-  assert.ok(Math.abs(npcDecoration.overlap - 0.1485) < 0.01, `Маска NPC перекрывает верхнюю дугу как на референсе: ${JSON.stringify(npcDecoration)}`)
   assert.ok(Math.abs(npcDecoration.center) < 0.005, `Маска NPC отцентрирована над портретом: ${JSON.stringify(npcDecoration)}`)
   assert.ok(Math.abs(npcDecoration.aspectRatio - 147 / 67) < 0.02, `SVG-маска NPC не искажена: ${JSON.stringify(npcDecoration)}`)
+  for (const seam of npcDecoration.seams) {
+    assert.ok(seam.overlap >= 0.004 && seam.overlap <= 0.02,
+      `Стык ${seam.side} SVG NPC должен перекрывать рамку без зазора: ${JSON.stringify(npcDecoration.seams)}`)
+  }
+  assert.ok(Math.abs(npcDecoration.seams[0].overlap - npcDecoration.seams[1].overlap) < 0.005,
+    `Стыки SVG NPC должны быть визуально симметричны: ${JSON.stringify(npcDecoration.seams)}`)
   assert.equal(await node('playerCharacter').locator('[class*="characterBrackets"]').count(), 1)
   assert.equal(await node('playerCharacter').locator('[class*="characterDiamond"]').count(), 1)
   assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
