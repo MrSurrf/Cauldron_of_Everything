@@ -106,19 +106,27 @@ async function locationCornerSize() {
   return { width: corner.width, height: corner.height, top: corner.y - bounds.y, left: corner.x - bounds.x }
 }
 async function questDecorationSize() {
+  const bounds = await node('quest').boundingBox()
   const decoration = await node('quest').locator('[data-node-decoration="quest"]').boundingBox()
   assert.ok(decoration && decoration.width > 0 && decoration.height > 0, 'SVG-декор квеста присутствует')
-  return { width: decoration.width, height: decoration.height }
-}
-function uniformFactor(width, height, baseWidth, baseHeight) {
-  return Math.min(width / baseWidth, height / baseHeight)
-}
-function assertScaledGeometry(actual, base, factor, keys, label) {
-  for (const key of keys) {
-    const expected = base[key] * factor
-    assert.ok(Math.abs(actual[key] - expected) < 1,
-      `${label}: ${key} масштабируется равномерно с factor ${factor}; ожидалось ${expected}, получилось ${actual[key]}`)
+  assert.ok(decoration.x < bounds.x && decoration.y < bounds.y, 'Свиток квеста выступает за верхний и левый края рамки')
+  const frame = await node('quest').locator('[data-quest-frame]').getAttribute('d')
+  assert.ok(frame && !/[VZ]/i.test(frame), 'Основная рамка квеста открыта слева: её заменяют свиток и печать')
+  assert.equal(await node('quest').locator('[class*="nodeCardContent"] [data-node-decoration]').count(), 0,
+    'Декор квеста принадлежит рамке, а не текстовому содержимому')
+  const seal = await node('quest').locator('svg image').last().boundingBox()
+  assert.ok(Math.abs(seal.y + seal.height - bounds.y - bounds.height) < 1,
+    'Печать остаётся на нижнем краю квеста при resize')
+  const caption = await node('quest').locator('[class*="nodeCaption"]').boundingBox()
+  assert.ok(caption.x >= decoration.x + decoration.width,
+    'Текст квеста не перекрывает свиток')
+  if (bounds.width / bounds.height >= 2) {
+    assert.ok(Math.abs(decoration.height * 385 / 469 - bounds.height) < 1,
+      'Свиток и печать горизонтального квеста занимают всю левую грань, как на референсе')
+  } else {
+    assert.ok(decoration.width < bounds.width * 0.4, 'При вертикальном resize декор оставляет место тексту')
   }
+  return { width: decoration.width, height: decoration.height }
 }
 function assertFixedGeometry(actual, base, keys, label) {
   for (const key of keys) {
@@ -131,13 +139,9 @@ function assertAspectRatio(geometry, sourceRatio, label) {
   assert.ok(Math.abs(geometry.width - expectedWidth) < 1,
     `${label}: aspect ratio исходного SVG сохраняется; ожидалась ширина ${expectedWidth}, получилась ${geometry.width}`)
 }
-async function maskedSvgSourceRatio(locator) {
+async function svgSourceRatio(locator) {
   return locator.evaluate(async element => {
-    const style = getComputedStyle(element)
-    const value = style.maskImage || style.webkitMaskImage
-    const href = value.match(/url\(["']?(.*?)["']?\)/)?.[1]
-    if (!href) throw new Error('Не найден URL SVG-маски декора')
-    const response = await fetch(href)
+    const response = await fetch(element.href.baseVal)
     const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
     const bounds = source.viewBox.baseVal
     return bounds.width / bounds.height
@@ -176,7 +180,7 @@ try {
     const bounds = source.viewBox.baseVal
     return bounds.width / bounds.height
   })
-  const sourceQuestRatio = await maskedSvgSourceRatio(node('quest').locator('[data-node-decoration="quest"]'))
+  const sourceQuestRatio = await svgSourceRatio(node('quest').locator('[data-node-decoration="quest"]'))
   assertAspectRatio(originalLocationCorner, sourceCornerRatio, 'Уголок локации')
   assertAspectRatio(originalQuestDecoration, sourceQuestRatio, 'Декор квеста')
   const sizes = {
@@ -191,9 +195,12 @@ try {
       if (id === 'note') assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется при resize')
       if (id === 'quest') {
         const decoration = await questDecorationSize()
-        const factor = uniformFactor(width, height, 280, 96)
-        assertScaledGeometry(decoration, originalQuestDecoration, factor, ['width', 'height'], 'Декор квеста при resize')
         assertAspectRatio(decoration, sourceQuestRatio, 'Декор квеста при resize')
+        if (index === 0) {
+          const bounds = await node('quest').boundingBox()
+          await page.screenshot({ path: join(tmpdir(), 'campaign-quest-frame.png'),
+            clip: { x: bounds.x - 32, y: bounds.y - 40, width: bounds.width + 64, height: bounds.height + 65 } })
+        }
       }
       if (id === 'location') {
         const corner = await locationCornerSize()
@@ -218,8 +225,6 @@ try {
     ['width', 'height', 'top', 'left'], 'Уголок локации после reload')
   assertAspectRatio(reloadedLocationCorner, sourceCornerRatio, 'Уголок локации после reload')
   const reloadedQuestDecoration = await questDecorationSize()
-  assertScaledGeometry(reloadedQuestDecoration, originalQuestDecoration, uniformFactor(220, 96, 280, 96),
-    ['width', 'height'], 'Декор квеста после reload в минимальном размере')
   assertAspectRatio(reloadedQuestDecoration, sourceQuestRatio, 'Декор квеста после reload')
 
   // Оформление связи меняется через настоящий Inspector; документ и SVG проверяются независимо.

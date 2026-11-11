@@ -8,13 +8,13 @@ import npcCharacterIconUrl from '../../../shared/ui/icons/assets/npc-character.s
 import playerCharacterIconUrl from '../../../shared/ui/icons/assets/player-character.svg?url&no-inline'
 import factionNodeTopUrl from '../assets/faction-node-top.svg?url&no-inline'
 import npcNodeTopUrl from '../assets/npc-node-top.svg?url&no-inline'
-import questNodeCornerUrl from '../assets/quest-node-corner.svg?url&no-inline'
 import type { NodeEntityType } from '../model/table'
 import { nodeVisual, NOTE_FOLD_SIZE, shapePolygon } from '../model/nodeGeometry'
 import type { NodeShape } from '../model/nodeGeometry'
 import { LocationNodeFrame } from './LocationNodeFrame'
+import { QuestNodeFrame } from './QuestNodeFrame'
 import styles from './CampaignNodes.module.css'
-import { proportionalNodeScale } from './nodeDecorationGeometry'
+import { questNodeGeometry } from './nodeDecorationGeometry'
 
 export type NodeViewProps = {
   title: string
@@ -56,6 +56,7 @@ export function NodeOutline({ shape, location = false }: { shape: NodeShape; loc
   const { width, height } = size
   const fold = Math.min(NOTE_FOLD_SIZE, width / 3, height / 3)
   if (location) return <LocationNodeFrame width={width} height={height} svgRef={svgRef} />
+  if (shape === 'quest') return <QuestNodeFrame width={width} height={height} svgRef={svgRef} />
   return <svg ref={svgRef} className={styles.nodeOutline} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
     {shape === 'circle' ? <circle cx={width / 2} cy={height / 2} r={Math.min(width, height) / 2} vectorEffect="non-scaling-stroke" />
       : <polygon points={shapePolygon(shape, width, height).map(point => point.join(',')).join(' ')} vectorEffect="non-scaling-stroke" />}
@@ -90,16 +91,15 @@ function BadgeIcon({ type }: { type: BadgeType }) {
     aria-hidden="true"
   />
 }
-function AssetDecoration({ type, url, className, style }: {
-  type: 'faction' | 'npc' | 'quest'
+function AssetDecoration({ type, url, className }: {
+  type: 'faction' | 'npc'
   url: string
   className: string
-  style?: CSSProperties
 }) {
   return <span
     className={`${styles.nodeAssetDecoration} ${className}`}
     data-node-decoration={type}
-    style={{ '--node-decoration-url': `url("${url}")`, ...style } as NodeDecorationStyle}
+    style={{ '--node-decoration-url': `url("${url}")` } as NodeDecorationStyle}
     aria-hidden="true"
   />
 }
@@ -163,10 +163,8 @@ export const LocationNode = (props: NodeViewProps) => <><div className={styles.l
     </p>
   </div></>
 export const QuestNode = (props: NodeViewProps) => {
-  const scale = proportionalNodeScale(props.nodeWidth ?? 280, props.nodeHeight ?? 96, 280, 96)
-  return <div className={styles.nodeCardContent}>
-    <AssetDecoration type="quest" url={questNodeCornerUrl} className={styles.questNodeCorner}
-      style={{ width: 49 * scale, height: 88 * scale, marginInlineStart: -8 * scale }} />
+  const { contentInset } = questNodeGeometry(props.nodeWidth ?? 280, props.nodeHeight ?? 96)
+  return <div className={styles.nodeCardContent} style={{ paddingInlineStart: contentInset }}>
     <Caption {...props} /><span className={styles.questArrow} aria-hidden="true">›</span>
   </div>
 }

@@ -32,9 +32,9 @@ describe('присоединение к контуру', () => {
     expect(point.x).toBeLessThan(width)
     expect(point.y).toBeGreaterThan(0)
   })
-  it.each([[220, 96], [600, 100], [240, 420]])('наконечник квеста не растягивается при размере %i × %i', (width, height) => {
+  it.each([[220, 96, 26.88], [600, 100, 28], [240, 420, 30]])('наконечник квеста сохраняет пропорции при размере %i × %i', (width, height, tip) => {
     const polygon = shapePolygon('quest', width, height)
-    expect(width - polygon[1][0]).toBe(18)
+    expect(width - polygon[1][0]).toBeCloseTo(tip)
     expect(polygon[2]).toEqual([width, height / 2])
     expect(polygon[0]).toEqual([7, 0])
     expect(contourPoint({ x: 0, y: 0, width, height, shape: 'quest' }, { x: width * 2, y: height / 2 })).toEqual({ x: width, y: height / 2 })

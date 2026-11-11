@@ -102,10 +102,9 @@
 .spellMarker > span { transform: rotate(-45deg); color: var(--color-text-secondary); font: 400 var(--font-size-sm)/1 var(--font-family-body); }
 .spellMarker[data-consumes-slot='true'] > span { color: var(--selection-marker-fill); text-shadow: var(--selection-marker-glow); }
 
-.mindNode[data-shape='quest'] { min-height: 96px; padding: var(--space-4) 28px var(--space-4) var(--space-3); }
+.mindNode[data-shape='quest'] { min-height: 96px; padding: var(--space-4) 28px var(--space-4) 0; }
 .nodeCardContent { position: relative; display: flex; align-items: center; flex: 1; min-height: 0; gap: var(--space-2); }
 .nodeCardContent > .nodeGlyph { flex: 0 0 32px; width: 32px; height: 40px; }
-.questNodeCorner { position: relative; z-index: 1; flex: 0 0 auto; align-self: center; }
 .nodeCardContent .nodeCaption { flex: 1; }
 .nodeCardContent .nodeSummary { -webkit-line-clamp: 1; }
 .questArrow { flex: 0 0 auto; margin-left: auto; color: var(--node-accent); font: 400 26px/1 var(--font-family-body); }
