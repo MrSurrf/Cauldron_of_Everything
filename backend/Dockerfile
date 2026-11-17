@@ -30,6 +30,6 @@ EXPOSE 8000
 # сбор статики и запуск через gunicorn.
 CMD python manage.py migrate && \
     python manage.py load_survey && \
-    python manage.py import_encyclopedia --replace && \
+    if [ -d /app/backend/Encyclopedia-data/Encyclopedia-data/parsed ]; then python manage.py import_encyclopedia --replace; fi && \
     python manage.py collectstatic --noinput && \
     gunicorn core.wsgi:application -b 0.0.0.0:8000 --access-logfile -
