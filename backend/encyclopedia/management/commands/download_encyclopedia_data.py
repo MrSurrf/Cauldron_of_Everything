@@ -30,13 +30,15 @@ class Command(BaseCommand):
 
         self.stdout.write(f'Скачивание {archive_key} из бакета {bucket} ({endpoint})...')
 
-        s3 = boto3.client(
-            's3',
-            endpoint_url=endpoint,
-            region_name=region,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-        )
+        client_kwargs = {
+            'endpoint_url': endpoint,
+            'aws_access_key_id': access_key,
+            'aws_secret_access_key': secret_key,
+        }
+        if region:
+            client_kwargs['region_name'] = region
+
+        s3 = boto3.client('s3', **client_kwargs)
 
         with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp:
             tmp_path = Path(tmp.name)
