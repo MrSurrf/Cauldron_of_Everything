@@ -11,29 +11,6 @@ import type { ProfileData } from './profileModel'
 import { readProfileCache, writeProfileCache } from './profileCache'
 import styles from './ProfilePage.module.css'
 
-<<<<<<< HEAD
-// Сервер хранит поля ProfilePayload; аватар загружается отдельно и сохраняется как файл.
-// URL портрета сервер возвращает самостоятельно из поля portrait, поэтому в payload
-// мы не передаём его — только сигнал об удалении (null), когда нужно.
-function toPayload(profile: ProfileData): ProfilePayload {
-  return {
-    name: profile.name,
-    tagline: profile.tagline,
-    city: profile.city,
-    title: profile.title,
-    role: profile.role,
-    bio: profile.bio,
-    quote: profile.quote,
-    theme: profile.theme,
-    visibility: profile.visibility,
-    messages: profile.messages,
-    systems: profile.systems,
-    styles: profile.styles,
-    genres: profile.genres,
-    links: profile.links,
-    privacy: profile.privacy,
-  }
-=======
 type Notice = { kind: 'status' | 'error'; text: string } | null
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -46,7 +23,6 @@ function externalHref(value: string): string | null {
   if (/^https?:\/\//i.test(normalized)) return normalized
   if (/^www\./i.test(normalized)) return `https://${normalized}`
   return null
->>>>>>> 1d5e9d9375d9f314b882dafbc2ced8459d0226cf
 }
 
 export default function ProfilePage() {
@@ -137,30 +113,6 @@ export default function ProfilePage() {
     setNotice(null)
   }
 
-<<<<<<< HEAD
-  async function finishEditing(save: boolean) {
-    if (save) {
-      if (!draft.name.trim()) {
-        setNotice('Укажите имя профиля перед сохранением.')
-        setTab('about')
-        return
-      }
-      const next = { ...draft, name: draft.name.trim() }
-      setSaving(true)
-      try {
-        const payload = toPayload(next)
-        let portraitUrl: string | null = next.portrait
-        if (pendingPortraitFile.current) {
-          portraitUrl = await uploadAvatar(pendingPortraitFile.current)
-        } else if (next.portrait === null && saved.portrait !== null) {
-          payload.portrait = null
-        }
-        const savedProfile = { ...next, portrait: portraitUrl }
-        await patchProfile(payload)
-        writeProfileCache(savedProfile)
-        setSaved(savedProfile)
-        setDraft(savedProfile)
-=======
   async function saveProfile() {
     const name = draft.name.trim()
     if (!name) {
@@ -186,7 +138,6 @@ export default function ProfilePage() {
         const portrait = await uploadAvatar(pendingPortraitFile.current)
         if (!isCurrent()) return
         mutationRevisionRef.current += 1
->>>>>>> 1d5e9d9375d9f314b882dafbc2ced8459d0226cf
         pendingPortraitFile.current = null
         next = { ...next, portrait }
         const savedWithUploadedPortrait = { ...saved, portrait }
