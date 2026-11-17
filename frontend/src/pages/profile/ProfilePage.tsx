@@ -11,7 +11,9 @@ import type { ProfileData, ProfileTab } from './profileModel'
 import { bindProfileCacheToAuth, readProfileCache, writeProfileCache } from './profileCache'
 import styles from './ProfilePage.module.css'
 
-// Сервер хранит поля ProfilePayload; аватар загружается отдельно и сохраняется как URL.
+// Сервер хранит поля ProfilePayload; аватар загружается отдельно и сохраняется как файл.
+// URL портрета сервер возвращает самостоятельно из поля portrait, поэтому в payload
+// мы не передаём его — только сигнал об удалении (null), когда нужно.
 function toPayload(profile: ProfileData): ProfilePayload {
   return {
     name: profile.name,
@@ -21,7 +23,6 @@ function toPayload(profile: ProfileData): ProfilePayload {
     role: profile.role,
     bio: profile.bio,
     quote: profile.quote,
-    portrait: profile.portrait,
     theme: profile.theme,
     visibility: profile.visibility,
     messages: profile.messages,
@@ -93,12 +94,15 @@ export default function ProfilePage() {
       const next = { ...draft, name: draft.name.trim() }
       setSaving(true)
       try {
+        const payload = toPayload(next)
         let portraitUrl: string | null = next.portrait
         if (pendingPortraitFile.current) {
           portraitUrl = await uploadAvatar(pendingPortraitFile.current)
+        } else if (next.portrait === null && saved.portrait !== null) {
+          payload.portrait = null
         }
         const savedProfile = { ...next, portrait: portraitUrl }
-        await patchProfile(toPayload(savedProfile))
+        await patchProfile(payload)
         writeProfileCache(savedProfile)
         setSaved(savedProfile)
         setDraft(savedProfile)

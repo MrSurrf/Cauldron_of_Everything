@@ -1,0 +1,89 @@
+.page {
+  --encyclopedia-gutter: clamp(var(--space-4), 5.2vw, 6rem);
+  min-height: var(--app-viewport-height);
+  padding: var(--space-5) var(--encyclopedia-gutter) var(--space-7);
+  background: var(--cursor-background-image, none), radial-gradient(ellipse at 47% 0, color-mix(in srgb, var(--color-surface-accent) 50%, transparent), transparent 65%), var(--color-background);
+  color: var(--color-text-secondary);
+}
+
+.container {
+  max-width: 64rem;
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumbs a {
+  color: var(--color-interactive);
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-heading-primary);
+  font: 400 clamp(2rem, 4vw, 3rem)/1.1 var(--font-family-heading);
+}
+
+.english {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.meta {
+  margin: var(--space-3) 0 var(--space-5);
+  color: var(--color-brand-bright);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.body {
+  line-height: 1.75;
+}
+
+.sources {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--border-width-default) solid var(--color-border-default);
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+}
+
+.sources span {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+}
+
+.status h1 {
+  margin: var(--space-2) 0 0;
+  color: var(--color-heading-primary);
+  font: 400 var(--font-size-2xl)/1.2 var(--font-family-heading);
+}
+
+.retry {
+  margin-top: var(--space-4);
+}

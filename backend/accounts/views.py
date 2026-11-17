@@ -16,11 +16,13 @@ class MyProfileView(APIView):
 
     def get(self, request):
         profile, _ = Profile.objects.get_or_create(user=request.user)
-        return Response(ProfileSerializer(profile).data)
+        return Response(ProfileSerializer(profile, context={"request": request}).data)
 
     def patch(self, request):
         profile, _ = Profile.objects.get_or_create(user=request.user)
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        serializer = ProfileSerializer(
+            profile, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

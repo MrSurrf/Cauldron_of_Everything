@@ -1,7 +1,7 @@
 from django.db.models import Count, Q
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
-from core.permissions import IsSiteMember
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -39,7 +39,7 @@ class EntityListView(generics.ListAPIView):
     """
 
     serializer_class = EntityListSerializer
-    permission_classes = [IsSiteMember]
+    permission_classes = [AllowAny]
     pagination_class = EntityPagination
 
     def get_queryset(self):
@@ -79,14 +79,14 @@ class EntityDetailView(generics.RetrieveAPIView):
     """GET /api/encyclopedia/<id>/ — карточка сущности со связями."""
 
     serializer_class = EntityDetailSerializer
-    permission_classes = [IsSiteMember]
+    permission_classes = [AllowAny]
     queryset = Entity.objects.prefetch_related("links__to_entity")
 
 
 class EntityTypesView(APIView):
     """GET /api/encyclopedia/types/ — количество сущностей по типам."""
 
-    permission_classes = [IsSiteMember]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         counts = dict(

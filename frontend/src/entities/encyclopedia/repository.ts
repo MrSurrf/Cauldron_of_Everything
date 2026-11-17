@@ -6,6 +6,7 @@ export type EncyclopediaEntry = {
   name_en: string
   entity_type: string
   slug: string
+  sources?: unknown
   content_text?: string
   content_html?: string
   summary?: Record<string, unknown>

@@ -186,6 +186,7 @@ Cauldron_of_Everything/
 | POST | `/api/submissions/` | JWT | Сохранить результат целиком от фронтенда |
 | GET | `/api/me/profile/` | JWT | Профиль и настройки текущего аккаунта (`{"data": {...}, "updated_at"}`) |
 | PATCH | `/api/me/profile/` | JWT | Частичное обновление профиля: поля из `data` сливаются с сохранёнными |
+| POST | `/api/me/profile/avatar/` | JWT | Загрузить/заменить аватар профиля (multipart, поле `portrait`, до 5 МБ) |
 | GET | `/api/encyclopedia/` | нет | Список сущностей энциклопедии: `?type=spell`, `?q=...`, пагинация |
 | GET | `/api/encyclopedia/<id>/` | нет | Карточка сущности: `content_html`, `data`, связи |
 | GET | `/api/encyclopedia/types/` | нет | Количество сущностей по типам |
@@ -201,8 +202,9 @@ Cauldron_of_Everything/
 | `Entity` | Сущность энциклопедии | `entity_type` (spell/creature/item/class/race/feat/background/sidekick), `name` (НЕ уникально), `name_en`, `slug` (уникальный), `sources` (JSON), `content_html`, `content_text`, `data` (JSON: специфичные поля типа + tables/sections/tooltips) |
 | `EntityLink` | Связь между сущностями по нашим ID | FK `from_entity`, FK `to_entity`, `text`; unique на тройку полей |
 
+- API энциклопедии (`/api/encyclopedia/`, `/api/encyclopedia/<id>/`, `/api/encyclopedia/types/`) публичное: доступно без авторизации, в том числе гостям.
 - Специфичные поля типа (у существ — `abilities`, `challenge_rating`...; у заклинаний — `level`, `school`...) хранятся в `Entity.data`, а не в отдельных таблицах.
-- Внутренние ссылки в `content_html` переписаны на роут фронтенда `/encyclopedia/<entity_type>/<slug>/` с атрибутом `data-entity-id` (наш ID). Ссылки на статьи вне датасета заменены простым текстом. Технические поля источника (`source_id`, `source_key`, `source_url`, `raw_file`, `data-source-href`, класс `tooltipstered`, URL dnd.su) при импорте удалены.
+- Внутренние ссылки в `content_html` и HTML внутри `Entity.data` переписаны на роут фронтенда `/encyclopedia/<entity_type>/<slug>/` с атрибутом `data-entity-id` (наш ID). Ссылки на статьи вне датасета заменены простым текстом. Технические поля источника (`source_id`, `source_key`, `source_url`, `raw_file`, `data-source-href`, класс `tooltipstered`, внешние URL) при импорте удалены.
 
 Импорт датасета: `python manage.py import_encyclopedia [путь_к_parsed] [--replace]`
 
@@ -218,7 +220,7 @@ Cauldron_of_Everything/
 
 | Модель | Назначение | Ключевые поля |
 |---|---|---|
-| `Profile` | Профиль и настройки аккаунта | OneToOne `user` (related_name `profile`), `data` (JSON), `updated_at` |
+| `Profile` | Профиль и настройки аккаунта | OneToOne `user` (related_name `profile`), `data` (JSON), `portrait` (`ImageField`, `accounts/portraits/`), `updated_at` |
 
 - Все пользовательские данные (имя, био, приватность, настройки инструментов) хранятся в `Profile.data` как JSON — по тому же принципу, что `SurveySubmission.answers` и `Entity.data`.
 - Структуру `data` валидирует `accounts/serializers.py`: известные строковые поля с лимитами длины, массивы строк (`systems`, `styles`, `genres`), `links` (список `{label, value}`), `privacy` (булевы флаги по известным ключам), `settings` (свободный namespace настроек инструментов). Неизвестные ключи верхнего уровня отклоняются с 400.
@@ -322,7 +324,7 @@ Cauldron_of_Everything/
 - Страница `/profile` (`frontend/src/pages/profile/ProfilePage.tsx`) — экран профиля и настроек аккаунта: имя, био, тема, приватность и т.д.
 - Данные хранятся на бэкенде (приложение `accounts`); фронтенд обращается через `frontend/src/shared/api/account.ts` (`GET/PATCH /api/me/profile/`, поверх `authFetch`).
 - При открытии страница подтягивает профиль с сервера; `localStorage` (`profileCache.ts`) — только кэш для мгновенного отображения до ответа сервера и очищается при выходе из аккаунта.
-- Аватар пока не загружается на сервер: выбранное фото живёт как локальный object URL и при перезагрузке теряется.
+- Аватар загружается на сервер через `POST /api/me/profile/avatar/` и хранится в поле `Profile.portrait` (`backend/media/accounts/portraits/`). `GET /api/me/profile/` всегда возвращает актуальный URL из файла, поэтому аватар виден с любого устройства. Локальный `object URL` используется только для мгновенного превью при выборе файла.
 
 ### 5.4. Стили и ресурсы
 

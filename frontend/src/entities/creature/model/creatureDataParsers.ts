@@ -80,7 +80,7 @@ export function parseSenses(text: string): ParsedSenses {
   let passivePerception: number | undefined
 
   for (const rawPart of text.split(',')) {
-    // «?» — артефакт выгрузки тултипов dnd.su, смысла не несёт.
+    // «?» — артефакт выгрузки тултипов из сырого датасета, смысла не несёт.
     const part = rawPart.replace(/\?/g, '').replace(/\s+/g, ' ').trim()
     if (!part) continue
 

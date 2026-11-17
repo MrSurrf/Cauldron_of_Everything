@@ -10,8 +10,7 @@ from .views import _hash_code
 @override_settings(AUTH_ALLOWED_EMAILS=["allowed@example.com"])
 class SiteAccessTests(APITestCase):
     paths = [
-        "/api/auth/session/", "/api/encyclopedia/", "/api/encyclopedia/types/",
-        "/api/encyclopedia/1/", "/api/submissions/", "/api/questions/", "/api/answers/",
+        "/api/auth/session/", "/api/submissions/", "/api/questions/", "/api/answers/",
     ]
 
     def authenticate(self, email):
@@ -33,8 +32,6 @@ class SiteAccessTests(APITestCase):
     def test_allowed_member_can_read(self):
         self.authenticate("allowed@example.com")
         for path in self.paths:
-            if path == "/api/encyclopedia/1/":
-                continue
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 200)
 

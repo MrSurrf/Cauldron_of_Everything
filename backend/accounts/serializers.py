@@ -131,13 +131,28 @@ class ProfileSerializer(serializers.Serializer):
     def validate_data(self, value):
         return validate_profile_data(value)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Источник правды для аватара — поле portrait (ImageField), а не data['portrait'].
+        # Синхронизируем URL, чтобы фронтенд всегда получал актуальную картинку,
+        # в том числе после входа с другого устройства.
+        if instance.portrait:
+            request = self.context.get("request")
+            url = instance.portrait.url
+            portrait_url = request.build_absolute_uri(url) if request else url
+            data["data"] = {**data["data"], "portrait": portrait_url}
+        return data
+
     def update(self, instance, validated_data):
         # PATCH: новые поля накладываются поверх сохранённых, остальные не трогаем.
-        data = validated_data["data"]
-        if "portrait" in data and not data["portrait"]:
-            if instance.portrait:
-                instance.portrait.delete(save=False)
-            instance.portrait = None
+        data = dict(validated_data["data"])
+        if "portrait" in data:
+            if not data["portrait"]:
+                if instance.portrait:
+                    instance.portrait.delete(save=False)
+                instance.portrait = None
+            # Не-null URL не сохраняем в data: источник правды — файл.
+            data.pop("portrait", None)
         instance.data = {**instance.data, **data}
         instance.save(update_fields=["data", "portrait", "updated_at"])
         return instance

@@ -2,7 +2,8 @@
 
 Три прохода:
 1. Создание сущностей со своими ID (технические поля источника отбрасываются).
-2. Очистка content_html: перелинковка на наши ID, удаление data-* и чужих URL.
+2. Очистка content_html и HTML внутри data (sections, params): перелинковка на наши ID,
+   удаление data-* и чужих URL.
 3. Построение связей EntityLink через временное сопоставление source_key → наш ID.
 
 Импорт одноразовый: source_key в БД не сохраняется, поэтому повторный запуск
@@ -91,6 +92,7 @@ class Command(BaseCommand):
             with open(path, encoding="utf-8") as f:
                 raw = json.load(f)
 
+            self._deduplicate_tables(raw)
             slug = self._make_slug(raw, used_slugs)
             data = {
                 key: value
@@ -130,26 +132,31 @@ class Command(BaseCommand):
         return records
 
     def _pass2_rewrite_html(self, records):
-        """Чистит content_html и перелинковывает его на наши ID."""
+        """Чистит content_html и HTML внутри data, перелинковывая на наши ID."""
         unresolved = 0
         batch = []
         total = len(records)
 
         for index, record in enumerate(records, 1):
-            entity = Entity.objects.only("id", "content_html").get(id=record["id"])
+            entity = Entity.objects.only("id", "content_html", "data").get(id=record["id"])
             cleaned, missed = self._clean_html(entity.content_html)
             unresolved += missed
             entity.content_html = cleaned
+
+            cleaned_data, missed_data = self._clean_data_html(entity.data)
+            unresolved += missed_data
+            entity.data = cleaned_data
+
             batch.append(entity)
 
             if len(batch) >= BATCH_SIZE:
-                Entity.objects.bulk_update(batch, ["content_html"])
+                Entity.objects.bulk_update(batch, ["content_html", "data"])
                 batch = []
             if index % 500 == 0:
                 self.stdout.write(f"  HTML обработан: {index}/{total}")
 
         if batch:
-            Entity.objects.bulk_update(batch, ["content_html"])
+            Entity.objects.bulk_update(batch, ["content_html", "data"])
         self.stdout.write("HTML очищен и перелинкован")
         return unresolved
 
@@ -216,12 +223,57 @@ class Command(BaseCommand):
 
         return str(soup), unresolved
 
+    def _clean_data_html(self, value):
+        """Рекурсивно чистит HTML-строки внутри data (sections, params и т.п.).
+
+        Возвращает (очищенное значение, число нерешённых ссылок).
+        """
+        if isinstance(value, str):
+            if "<a" in value or "data-source-href" in value or "data-entity-key" in value:
+                return self._clean_html(value)
+            return value, 0
+
+        if isinstance(value, list):
+            cleaned = []
+            unresolved = 0
+            for item in value:
+                c, u = self._clean_data_html(item)
+                cleaned.append(c)
+                unresolved += u
+            return cleaned, unresolved
+
+        if isinstance(value, dict):
+            cleaned = {}
+            unresolved = 0
+            for key, item in value.items():
+                c, u = self._clean_data_html(item)
+                cleaned[key] = c
+                unresolved += u
+            return cleaned, unresolved
+
+        return value, 0
+
     def _resolve_href(self, href):
         """Извлекает source_key из href и возвращает наш ID или None."""
         match = HREF_RE.match(href.strip())
         if not match:
             return None
         return self._source_to_id.get(f"{match.group(1).lower()}:{match.group(2)}")
+
+    @staticmethod
+    def _deduplicate_tables(raw):
+        """Убирает data['tables'], если таблица уже есть внутри sections.html.
+
+        Источник дублирует таблицы: sections[].html содержит <table>,
+        а data['tables'] хранит ту же таблицу отдельно. Фронтенд рендерит и то,
+        и другое, поэтому оставляем только встроенную в sections версию.
+        """
+        sections = raw.get("sections") or []
+        sections_html = " ".join(str(section.get("html", "")) for section in sections)
+        content_html = raw.get("content_html") or ""
+        tables = raw.get("tables") or []
+        if tables and ("<table" in content_html or "<table" in sections_html):
+            raw["tables"] = []
 
     @staticmethod
     def _make_slug(raw, used_slugs):

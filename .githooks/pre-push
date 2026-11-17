@@ -45,6 +45,7 @@ if [ "package.json" -nt "node_modules/.package-lock.json" ]; then
   echo "1. Выполни в папке frontend: npm install" >&2
   echo "2. Если package-lock.json изменился — добавь его в коммит" >&2
   echo "3. Повтори git push" >&2
+  echo "4. Радуйся" >&2
   echo "==============================================" >&2
   exit 1
 fi

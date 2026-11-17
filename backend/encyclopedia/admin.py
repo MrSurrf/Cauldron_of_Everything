@@ -17,7 +17,7 @@ class EntityAdmin(admin.ModelAdmin):
     list_display = ["id", "name", "name_en", "entity_type", "slug"]
     list_filter = ["entity_type"]
     search_fields = ["name", "name_en", "slug"]
-    readonly_fields = ["content_html", "content_text", "data", "sources", "created_at"]
+    # readonly_fields = ["content_html", "content_text", "data", "sources", "created_at"]
     inlines = [EntityLinkInline]
 
 

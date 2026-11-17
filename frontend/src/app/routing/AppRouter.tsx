@@ -53,6 +53,9 @@ const ClassesPage = lazy(() => import('../../pages/encyclopedia/ClassesPage'))
 const BackgroundsPage = lazy(() => import('../../pages/encyclopedia/BackgroundsPage'))
 const EncyclopediaSectionPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaSectionPage'))
 const EncyclopediaEntryPage = lazy(() => import('../../pages/encyclopedia/EncyclopediaEntryPage'))
+const EncyclopediaEntityBySlugPage = lazy(
+  () => import('../../pages/encyclopedia/EncyclopediaEntityBySlugPage'),
+)
 const ItemEntityPage = lazy(() => import('../../pages/encyclopedia/ItemEntityPage'))
 
 function RouteFallback() {
@@ -146,6 +149,10 @@ function RoutedApp() {
               <Route
                 path="/encyclopedia/creature/:slug"
                 element={<BestiaryEntityPage />}
+              />
+              <Route
+                path="/encyclopedia/:type/:slug"
+                element={<EncyclopediaEntityBySlugPage />}
               />
               <Route
                 path="*"
