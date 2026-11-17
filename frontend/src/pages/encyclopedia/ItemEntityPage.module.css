@@ -56,6 +56,11 @@
   outline: 0;
 }
 
+:root[data-theme='light'] .status button:hover,
+:root[data-theme='light'] .status button:focus-visible {
+  color: var(--color-button-text);
+}
+
 @media (max-width: 40rem) {
   .page {
     padding-inline: var(--space-3);

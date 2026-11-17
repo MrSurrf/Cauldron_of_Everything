@@ -1,0 +1,132 @@
+.field {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.preview {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 8rem;
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.preview[data-kind='cover'] {
+  aspect-ratio: 16 / 7;
+}
+
+.preview[data-kind='avatar'] {
+  width: min(100%, 12rem);
+  aspect-ratio: 1;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  padding: var(--space-4);
+  place-items: center;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.actions {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.preview:hover .actions,
+.preview:focus-within .actions,
+.preview:not(:has(.image)) .actions {
+  opacity: 1;
+}
+
+.action {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: var(--border-width-default) solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-panel);
+}
+
+.action:hover:not(:disabled) {
+  border-color: var(--color-border-accent);
+  color: var(--color-interactive-hover);
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.action:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
+.remove {
+  color: var(--color-status-danger);
+}
+
+.input {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.hint {
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xs);
+}
+
+.error {
+  color: var(--color-status-danger);
+  font-size: var(--font-size-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions {
+    transition: none;
+  }
+}
+
+@media (hover: none) {
+  .actions {
+    opacity: 1;
+  }
+}
+

@@ -5,6 +5,7 @@ import { Button, Combobox, ListCard, Panel, SegmentedControl, TextInput } from '
 import { ArticleCard } from './ArticleCard'
 import { articleCategories, articleFixtures } from './articleFixtures'
 import type { ArticleCategory } from './articleFixtures'
+import articlesBackground from '../../../assets/backgrounds/articles.png'
 import styles from './ArticlesPage.module.css'
 
 type CategoryFilter = ArticleCategory | 'all'
@@ -127,6 +128,7 @@ export default function ArticlesPage() {
   return (
     <main className={styles.page} data-cursor-light-background="">
       <div className={styles.hero}>
+        <img className={styles.heroImage} src={articlesBackground} width={1916} height={821} alt="" fetchPriority="high" />
         <div className={`${styles.container} ${styles.heroContent}`}>
           <header className={styles.intro}>
             <h1>Статьи</h1>

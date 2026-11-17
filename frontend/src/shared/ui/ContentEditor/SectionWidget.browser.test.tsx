@@ -96,6 +96,44 @@ describe('Раздел с вложенным редактором', () => {
     expect(saved()).toContain('color="green"')
   })
 
+  it('задаёт начальное раскрытие и аудиторию в настройках раздела', async () => {
+    await mount(sectionToSource({
+      ...emptySection,
+      defaultOpen: true,
+      title: 'Секреты фракции',
+      visibility: 'players',
+    }))
+
+    expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    expect(section().getAttribute('data-section-visibility')).toBe('players')
+
+    await click(section().querySelector('[aria-label="Настройки раздела"]')!)
+    const visibility = document.querySelector<HTMLButtonElement>(
+      'button[role="combobox"]',
+    )!
+    const defaultOpen = document.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    )!
+
+    expect(visibility.textContent).toContain('Игроки и мастер')
+    expect(defaultOpen.checked).toBe(true)
+
+    await click(visibility)
+    await click(Array.from(document.querySelectorAll('[role="option"]'))
+      .find(option => option.textContent?.includes('Публично'))!)
+    await click(defaultOpen.closest('[data-checkbox-root]')!)
+    await click(Array.from(document.querySelectorAll('[role="dialog"] button'))
+      .find(button => button.textContent === 'Готово')!)
+
+    const block = parseContentSource(saved())[0]
+    expect(block.kind).toBe('collapsible')
+    if (block.kind !== 'collapsible') throw new Error('Нет раздела')
+    expect(sectionFromBlock(block)).toMatchObject({
+      defaultOpen: false,
+      visibility: 'public',
+    })
+  })
+
   it('вставляет ресурс и предмет без возможности добавить вложенную вкладку', async () => {
     await mount(sectionToSource({ ...emptySection, title: 'Внешний' }), true)
     await click(toggle())

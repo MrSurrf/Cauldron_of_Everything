@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyCharacterSheet } from '../../character-sheet'
 import { parseContentSource } from '../../../shared/ui/ContentEditor'
 import { canPlaceInside, containerOf, moveInside } from './nodeContainment'
-import { changeDiagram, createCanvasObject, createTable, duplicatePlacement, parseTable, placeCanvasObject, removeInstances, resolveDiagram, serializeTable } from './table'
+import { applyDiagramNodeChanges, changeDiagram, createCanvasObject, createTable, duplicatePlacement, parseTable, placeCanvasObject, removeInstances, resolveDiagram, serializeTable } from './table'
 import { TableHistory } from './tableHistory'
 
 function fixture() {
   let table = createTable()
   const character = createCanvasObject('playerCharacter', { x: 0, y: 0 })
-  character.entity.statBlock = { kind: 'playerCharacter', document: createEmptyCharacterSheet() }
-  character.entity.statBlock.document.equipmentContentText = 'Рюкзак и верёвка'
+  character.entity.campaignCharacter = { document: createEmptyCharacterSheet() }
+  character.entity.campaignCharacter.document.equipmentContentText = 'Рюкзак и верёвка'
   const item = createCanvasObject('item', { x: 300, y: 0 })
   const location = createCanvasObject('location', { x: 0, y: 300 })
   for (const [object, name] of [[character, 'Элора'], [item, 'Щит'], [location, 'Замок']] as const) {
@@ -17,14 +17,44 @@ function fixture() {
   }
   const put = (current: typeof table, target?: string) => changeDiagram(current, current.activeId, diagram => moveInside(diagram, item.node.id, target))
   const equipment = (current: typeof table) => {
-    const block = current.entities.find(entity => entity.id === character.entity.id)!.statBlock!
-    if (block.kind !== 'playerCharacter') throw new Error('Нет чарлиста')
-    return block.document.equipmentContentText
+    const campaignCharacter = current.entities.find(entity => entity.id === character.entity.id)!.campaignCharacter
+    if (!campaignCharacter) throw new Error('Нет чарлиста')
+    return campaignCharacter.document.equipmentContentText
   }
   return { table, character, item, location, put, equipment }
 }
 
 describe('перенос со схемы в контейнеры', () => {
+  it('не меняет документ при повторном помещении в тот же контейнер и сохраняет данные при движении внутри него', () => {
+    const { table, character, item, put } = fixture()
+    expect(changeDiagram(table, table.activeId, diagram => moveInside(diagram, item.node.id))).toBe(table)
+    const contained = put(table, character.node.id)
+    const before = resolveDiagram(contained, contained.diagrams[0])
+    expect(moveInside(before, item.node.id, character.node.id, { ...before.nodes[1].position })).toBe(before)
+    expect(put(contained, character.node.id)).toBe(contained)
+    const moved = changeDiagram(contained, contained.activeId, diagram => moveInside(diagram, item.node.id, character.node.id, { x: 70, y: 80 }))
+    expect(moved.entities).toBe(contained.entities)
+    expect(moved.diagrams[0].nodes[1].data).toBe(contained.diagrams[0].nodes[1].data)
+  })
+  it('удаляет контейнер через React Flow вместе с извлечением снаряжения и связей', () => {
+    const { table, character, item, put, equipment } = fixture()
+    const contained = put(table, character.node.id)
+    const linked = changeDiagram(contained, contained.activeId, diagram => ({ ...diagram,
+      edges: [{ id: 'equipment', source: character.node.id, target: item.node.id }],
+    }))
+    const history = new TableHistory()
+    const removed = applyDiagramNodeChanges(linked, linked.activeId, [
+      { type: 'remove', id: character.node.id },
+      { type: 'select', id: item.node.id, selected: true },
+    ])
+    history.record(linked, removed)
+    expect(removed.diagrams[0].nodes.find(node => node.id === item.node.id)?.data.containerId).toBeUndefined()
+    expect(removed.diagrams[0].nodes.find(node => node.id === item.node.id)?.selected).toBe(true)
+    expect(removed.diagrams[0].edges).toHaveLength(0)
+    expect(equipment(removed)).not.toContain(':::item[Щит]')
+    expect(equipment(history.undo(removed))).toContain(':::item[Щит]')
+    expect(parseTable(serializeTable(removed)).diagrams[0].nodes).toHaveLength(2)
+  })
   it('принимает предмет в локацию и чарлист, запрещает неподходящие типы', () => {
     const { table, character, item, location, put } = fixture()
     const diagram = resolveDiagram(table, table.diagrams[0])
@@ -50,9 +80,9 @@ describe('перенос со схемы в контейнеры', () => {
     const next = put(table, character.node.id)
     history.record(table, next)
     const changed = structuredClone(next)
-    const block = changed.entities[0].statBlock!
-    if (block.kind !== 'playerCharacter') throw new Error('Нет чарлиста')
-    block.document.equipmentContentText += '\nМоя новая запись'
+    const campaignCharacter = changed.entities[0].campaignCharacter
+    if (!campaignCharacter) throw new Error('Нет чарлиста')
+    campaignCharacter.document.equipmentContentText += '\nМоя новая запись'
     const undone = history.undo(changed)
     expect(equipment(undone)).not.toContain(':::item[Щит]')
     expect(equipment(undone)).toContain('Моя новая запись')
@@ -64,9 +94,9 @@ describe('перенос со схемы в контейнеры', () => {
   it('извлечение и повторное вложение сохраняют количество и настройку предмета', () => {
     const { table, character, put, equipment } = fixture()
     const next = put(table, character.node.id)
-    const block = next.entities[0].statBlock!
-    if (block.kind !== 'playerCharacter') throw new Error('Нет чарлиста')
-    block.document.equipmentContentText = equipment(next).replace('quantity="1"', 'quantity="4"').replace('attuned="false"', 'attuned="true"')
+    const campaignCharacter = next.entities[0].campaignCharacter
+    if (!campaignCharacter) throw new Error('Нет чарлиста')
+    campaignCharacter.document.equipmentContentText = equipment(next).replace('quantity="1"', 'quantity="4"').replace('attuned="false"', 'attuned="true"')
     const released = parseTable(serializeTable(put(next)))
     const back = put(released, character.node.id)
     expect(equipment(back)).toContain('quantity="4"')
@@ -107,9 +137,9 @@ describe('перенос со схемы в контейнеры', () => {
     const history = new TableHistory()
     const next = put(table, character.node.id)
     const edited = structuredClone(next)
-    const block = edited.entities[0].statBlock!
-    if (block.kind !== 'playerCharacter') throw new Error('Нет чарлиста')
-    block.document.equipmentContentText = equipment(edited).replace('quantity="1"', 'quantity="7"')
+    const campaignCharacter = edited.entities[0].campaignCharacter
+    if (!campaignCharacter) throw new Error('Нет чарлиста')
+    campaignCharacter.document.equipmentContentText = equipment(edited).replace('quantity="1"', 'quantity="7"')
     history.record(next, edited)
     expect(history.undo(edited)).toBe(edited)
     const removed = changeDiagram(edited, table.activeId, diagram => removeInstances(diagram, new Set([item.node.id])))

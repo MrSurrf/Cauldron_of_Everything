@@ -98,6 +98,25 @@
   line-height: 1;
 }
 
+.spellIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--color-brand-bright);
+  filter: drop-shadow(0 0 var(--space-2) color-mix(in srgb, currentColor 24%, transparent));
+}
+
+.previewIcon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: var(--space-3);
+  place-items: center;
+  border: var(--border-width-default) solid var(--color-border-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-accent);
+  color: var(--color-brand-bright);
+}
+
 .preview h3 {
   margin: 0;
   color: var(--color-heading-primary);

@@ -79,6 +79,7 @@
 .scene :is(
   [data-character-sheet-layout='body'] > section,
   [data-character-sheet-column] > div,
+  [data-content-layout='group'] > div > div,
   [data-spellcasting-summary] > section,
   [data-spell-level-grid] > section
 ) {
@@ -88,6 +89,7 @@
 .scene[data-encyclopedia-drag-active='true'] :is(
   [data-character-sheet-layout='body'] > section,
   [data-character-sheet-column] > div,
+  [data-content-layout='group'] > div > div,
   [data-spellcasting-summary] > section,
   [data-spell-level-grid] > section
 ):not([data-encyclopedia-drop-available='true']):not(:has([data-encyclopedia-drop-available='true'])) {
@@ -104,6 +106,7 @@
 @media (prefers-reduced-motion: reduce) {
   .source, .target, .target::after,
   .scene :is([data-character-sheet-layout='body'] > section, [data-character-sheet-column] > div,
+    [data-content-layout='group'] > div > div,
     [data-spellcasting-summary] > section, [data-spell-level-grid] > section) { transition: none; }
   .source[data-encyclopedia-dragging='true'], .preview.preview { transform: none; }
   .received.received { animation: none; box-shadow: inset 0 0 1rem color-mix(in srgb, var(--selection-marker-fill) 28%, transparent); }

@@ -75,10 +75,12 @@ function sanitizeRichHtml(html: string) {
           const escapedHref = href
             .replaceAll('&', '&amp;')
             .replaceAll('"', '&quot;')
+          const entityId = tag.match(/\bdata-entity-id\s*=\s*["']?(\d+)(?=["'\s>])/i)?.[1]
+          const entityAttribute = entityId ? ` data-entity-id="${entityId}"` : ''
 
           return /^https?:/i.test(href)
-            ? `<a href="${escapedHref}" target="_blank" rel="noreferrer">`
-            : `<a href="${escapedHref}">`
+            ? `<a href="${escapedHref}"${entityAttribute} target="_blank" rel="noreferrer">`
+            : `<a href="${escapedHref}"${entityAttribute}>`
         }
 
         return tag.startsWith('</')

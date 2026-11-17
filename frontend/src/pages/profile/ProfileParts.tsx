@@ -1,8 +1,9 @@
 import { useId } from 'react'
 import type { ReactNode } from 'react'
 
-import { Button, IconFrame, Panel, PlaceholderIcon } from '../../shared/ui'
+import { IconFrame, Panel, PlaceholderIcon } from '../../shared/ui'
 import type { ProfileData } from './profileModel'
+import { profileStats } from './profileModel'
 import styles from './ProfilePage.module.css'
 
 export function ProfileSection({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
@@ -18,57 +19,130 @@ export function ProfileSection({ title, children, action }: { title: string; chi
   )
 }
 
-export function ProfileAvatar({ profile, small = false }: { profile: ProfileData; small?: boolean }) {
+export function ProfileAvatar({ profile }: { profile: ProfileData }) {
+  const profileName = profile.name.trim()
   return (
-    <div className={small ? styles.smallAvatar : styles.avatar}>
+    <div className={styles.avatar}>
       {profile.portrait
-        ? <img src={profile.portrait} alt={`Аватар ${profile.name}`} />
+        ? <img src={profile.portrait} alt={profileName ? `Аватар ${profileName}` : 'Аватар профиля'} />
         : <span className={styles.avatarPlaceholder} aria-label="Аватар не выбран"><PlaceholderIcon /></span>}
     </div>
   )
 }
 
-export function ProfileStats({ profile }: { profile: ProfileData }) {
-  const stats = [
-    ...(profile.privacy.articles ? [['12', 'Статей']] : []),
-    ...(profile.privacy.characters ? [['28', 'Чарлистов']] : []),
-    ['6', 'Проведённых игр'],
-    ...(profile.privacy.followers ? [['142', 'Подписчика']] : []),
-  ]
-  return <dl className={styles.stats}>{stats.map(([value, label]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-}
-
 export function ProfileFacts({ profile }: { profile: ProfileData }) {
+  const city = profile.city.trim()
+  const role = profile.role.trim()
+  if (!(profile.privacy.city && city) && !role && !profile.privacy.online) return null
+
   return <div className={styles.facts}>
-    {profile.privacy.city && <span><PlaceholderIcon />{profile.city}</span>}
-    <span><PlaceholderIcon />В игре с 2020</span>
-    <span><PlaceholderIcon />{profile.role}</span>
+    {profile.privacy.city && city && <span><PlaceholderIcon />{city}</span>}
+    {role && <span><PlaceholderIcon />{role}</span>}
     {profile.privacy.online && <span><i className={styles.onlineDot} />Онлайн</span>}
   </div>
 }
 
-export function ProfilePreview({ profile, onPreview }: { profile: ProfileData; onPreview?: () => void }) {
-  return <ProfileSection title="Предпросмотр профиля">
-    <div className={styles.previewCover} aria-hidden="true" />
-    {profile.visibility === 'none'
-      ? <p className={styles.muted}>Профиль виден только вам.</p>
-      : <>
-        <div className={styles.previewIdentity}><ProfileAvatar profile={profile} small /><div><h3>{profile.name}</h3><p>{profile.title}</p></div></div>
-        <p className={styles.muted}>{profile.tagline}</p>
-        <ProfileFacts profile={profile} />
-        <ProfileStats profile={profile} />
-        {profile.quote && <blockquote className={styles.quote}>{profile.quote}</blockquote>}
-      </>}
-    {onPreview && <Button fullWidth size="sm" icon={null} variant="secondary" onClick={onPreview}>Посмотреть профиль</Button>}
-  </ProfileSection>
+export function ProfileStats({ profile }: { profile: ProfileData }) {
+  const visibleStats = profileStats.filter(stat => !('privacy' in stat) || profile.privacy[stat.privacy])
+
+  if (!visibleStats.length) return null
+
+  return <dl className={styles.stats} aria-label="Статистика профиля">
+    {visibleStats.map(stat => <div key={stat.id}>
+      <dt>{stat.label}</dt>
+      <dd aria-label={`${stat.label}: данные ещё не подключены`}>—</dd>
+    </div>)}
+  </dl>
 }
 
-export function EmptyBadges({ count = 5 }: { count?: number }) {
-  return <div className={styles.badgeSlots} aria-label="Места для значков">{Array.from({ length: count }, (_, i) => (
-    <div key={i} className={styles.badgeSlot} aria-label={`Пустое место ${i + 1}`}><IconFrame size="3rem"><PlaceholderIcon /></IconFrame></div>
-  ))}</div>
+export function ProfileAchievements({ profile }: { profile: ProfileData }) {
+  const achievements = [
+    {
+      id: 'introduction',
+      title: 'Знакомство состоялось',
+      description: 'Указать имя и рассказать о себе.',
+      earned: Boolean(profile.name.trim() && profile.bio.trim()),
+    },
+    {
+      id: 'portrait',
+      title: 'Лицо героя',
+      description: 'Добавить аватар профиля.',
+      earned: Boolean(profile.portrait),
+    },
+    {
+      id: 'role',
+      title: 'Место за столом',
+      description: 'Выбрать роль в игре.',
+      earned: Boolean(profile.role),
+    },
+    {
+      id: 'systems',
+      title: 'Игровой кругозор',
+      description: 'Добавить три любимые системы.',
+      earned: profile.systems.length >= 3,
+    },
+    {
+      id: 'contacts',
+      title: 'Всегда на связи',
+      description: 'Добавить контакт или ссылку.',
+      earned: profile.links.some(link => Boolean(link.label.trim() && link.value.trim())),
+    },
+  ]
+  const earnedCount = achievements.filter(achievement => achievement.earned).length
+
+  return <div className={styles.achievements}>
+    <div className={styles.achievementsHeading}>
+      <span className={styles.muted}>{earnedCount} из {achievements.length} получено</span>
+    </div>
+    <div className={styles.achievementList} role="list" aria-label="Достижения профиля">
+      {achievements.map(achievement => <article className={styles.achievementCard} data-earned={achievement.earned} role="listitem" key={achievement.id}>
+        <IconFrame size="3.25rem"><PlaceholderIcon /></IconFrame>
+        <div>
+          <h3>{achievement.title}</h3>
+          <p>{achievement.description}</p>
+          <span>{achievement.earned ? 'Получено' : 'Не получено'}</span>
+        </div>
+      </article>)}
+    </div>
+  </div>
+}
+
+export function ProfileMemberships() {
+  return <div className={styles.membershipList}>
+    <div className={styles.membership}>
+      <IconFrame size="2.5rem"><PlaceholderIcon /></IconFrame>
+      <div>
+        <h3>Кампании</h3>
+        <p className={styles.muted}>Участие появится после подключения кампаний.</p>
+      </div>
+    </div>
+    <div className={styles.membership}>
+      <IconFrame size="2.5rem"><PlaceholderIcon /></IconFrame>
+      <div>
+        <h3>Клубы</h3>
+        <p className={styles.muted}>Клубы пока не подключены.</p>
+      </div>
+    </div>
+  </div>
+}
+
+export function RecentActivity({ updatedAt }: { updatedAt: string }) {
+  const date = new Date(updatedAt)
+  if (Number.isNaN(date.getTime())) return null
+
+  return <div className={styles.activityList}>
+    <article className={styles.activityItem}>
+      <IconFrame size="2.25rem"><PlaceholderIcon /></IconFrame>
+      <div>
+        <h3>Профиль обновлён</h3>
+        <span className={styles.muted}>{new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long', timeStyle: 'short' }).format(date)}</span>
+      </div>
+    </article>
+  </div>
 }
 
 export function TagList({ values }: { values: string[] }) {
-  return <div className={styles.tags}>{values.length ? values.map(value => <span className={styles.tag} key={value}>{value}</span>) : <p className={styles.muted}>Пока не указано</p>}</div>
+  const visibleValues = values.map(value => value.trim()).filter(Boolean)
+  if (!visibleValues.length) return null
+  return <div className={styles.tags}>{visibleValues.map(value => <span className={styles.tag} key={value}>{value}</span>)}</div>
 }

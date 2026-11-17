@@ -37,14 +37,14 @@ export const polygons: Record<Exclude<NodeShape, 'circle'>, [number, number][]> 
   shield: [[0, 0], [1, 0], [1, 0.7], [0.5, 1], [0, 0.7]],
   note: [[0, 0], [0.87, 0], [1, 0.2], [1, 1], [0, 1]],
 }
-/** Срезы карточек заданы в пикселях: resize не растягивает сгиб бумаги и наконечник квеста. */
+/** Сгиб бумаги фиксирован; наконечник квеста следует высоте и ограничен шириной ноды. */
 export function shapePolygon(shape: Exclude<NodeShape, 'circle'>, width: number, height: number): [number, number][] {
   if (shape === 'note') {
     const fold = Math.min(NOTE_FOLD_SIZE, width / 3, height / 3)
     return [[0, 0], [width - fold, 0], [width, fold], [width, height], [0, height]]
   }
   if (shape === 'quest') {
-    const tip = Math.min(18, width / 8, height / 3)
+    const tip = Math.min(width / 8, height * 0.28)
     const cut = Math.min(7, height / 6)
     return [[cut, 0], [width - tip, 0], [width, height / 2], [width - tip, height], [cut, height], [0, height - cut], [0, cut]]
   }

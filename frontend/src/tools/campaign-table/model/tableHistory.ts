@@ -7,9 +7,9 @@ type Change = { before: Graph; after: Graph }
 const graph = (table: CampaignTable, diagram: StoredDiagram): Graph => ({
   nodes: diagram.nodes.map(({ id, type, data, position, width, height }) => {
     const owner = data.containerId ? diagram.nodes.find(node => node.id === data.containerId) : undefined
-    const block = owner ? table.entities.find(entity => entity.id === owner.data.entityId)?.statBlock : undefined
+    const character = owner ? table.entities.find(entity => entity.id === owner.data.entityId)?.campaignCharacter : undefined
     const key = encodeURIComponent(JSON.stringify([diagram.id, id]))
-    const source = block?.kind === 'playerCharacter' ? block.document.equipmentContentText : undefined
+    const source = character?.document.equipmentContentText
     const widget = source ? parseContentSource(source).find(block => block.kind === 'item' && block.attributes['campaign-placement'] === key) : undefined
     return { id, type, data: { ...data, ...(widget && source ? { equipmentSource: source.slice(widget.sourceRange.start, widget.sourceRange.end) } : {}) }, position: { ...position }, width, height }
   }),
@@ -35,6 +35,7 @@ export class TableHistory {
     for (const diagram of after.diagrams) {
       const previous = before.diagrams.find(item => item.id === diagram.id)
       if (!previous) continue
+      if (previous.nodes === diagram.nodes && previous.edges === diagram.edges) continue
       const change = { before: graph(before, previous), after: graph(after, diagram) }
       if (signature(change.before) === signature(change.after)) continue
       this.past.set(diagram.id, [...(this.past.get(diagram.id) ?? []), change].slice(-100))

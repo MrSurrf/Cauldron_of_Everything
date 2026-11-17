@@ -60,4 +60,16 @@ describe('toItemEntity', () => {
     expect(item.facts).toContainEqual({ key: 'custom_effect', label: 'Custom effect', value: 'Светится в темноте' })
     expect(item.sections[0].html).toContain('<p>Первый абзац.</p>')
   })
+
+  it('сохраняет полную классификацию с подтипом в карточке предмета', () => {
+    const item = toItemEntity({
+      id: 8,
+      entity_type: 'item',
+      name: 'Клинок',
+      slug: 'blade',
+      data: { classification: 'Оружие (длинный меч), редкое' },
+    })
+
+    expect(item.classification).toBe('Оружие (длинный меч), редкое')
+  })
 })

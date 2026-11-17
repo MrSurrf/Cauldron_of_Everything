@@ -44,6 +44,9 @@ export const Reveal: Story = {
     const nested = canvas.getByRole('region', { name: 'Вложенная панель' })
     const interactive = canvas.getByRole('region', { name: 'Кликабельная карточка' })
     const background = canvasElement.querySelector<HTMLElement>('[data-cursor-light-background]')!
+    const light = panel.querySelector<HTMLElement>('[data-cursor-reveal-layer]')!
+    const nestedLight = nested.querySelector<HTMLElement>('[data-cursor-reveal-layer]')!
+    const interactiveLight = interactive.querySelector<HTMLElement>('[data-cursor-reveal-layer]')!
     const sheet = canvas.getByRole('region', { name: 'Секция чарлиста' })
     const move = (x: number, y: number, pointerType = 'mouse') => {
       window.dispatchEvent(new PointerEvent('pointermove', {
@@ -54,19 +57,22 @@ export const Reveal: Story = {
     move(rect.left + 20, rect.top + 1)
     await waitFor(() => {
       expect(background.style.getPropertyValue('--cursor-light-active')).toBe('1')
-      expect(panel.style.getPropertyValue('--cursor-reveal-x')).toBe('20px')
-      expect(panel.style.getPropertyValue('--cursor-reveal-y')).toBe('1px')
+      expect(light.style.getPropertyValue('--cursor-reveal-x')).toBe('20px')
+      expect(light.style.getPropertyValue('--cursor-reveal-y')).toBe('1px')
     })
     expect(canvasElement.querySelector('.cursor-light')).toBeNull()
     expect(getComputedStyle(background).backgroundImage).toContain('radial-gradient')
     expect(background.style.getPropertyValue('--cursor-light-x')).toBe(`${rect.left + 20 - background.getBoundingClientRect().left}px`)
-    expect(nested.style.getPropertyValue('--cursor-reveal-x')).not.toBe('20px')
+    expect(nestedLight.style.getPropertyValue('--cursor-reveal-x')).not.toBe('20px')
+    expect(getComputedStyle(panel).getPropertyValue('--cursor-light-active')).toBe('0')
+    expect(getComputedStyle(panel).getPropertyValue('--cursor-background-image')).toBe('none')
+    expect(getComputedStyle(light.parentElement!).getPropertyValue('--cursor-reveal-active')).toBe('0')
     expect(getComputedStyle(sheet).borderImageSource).toContain('radial-gradient')
 
     // Прокрутка/изменение геометрии пересчитывает свет даже без движения мыши.
     panel.style.top = '10px'
     document.dispatchEvent(new Event('scroll'))
-    await waitFor(() => expect(panel.style.getPropertyValue('--cursor-reveal-y')).toBe('-9px'))
+    await waitFor(() => expect(light.style.getPropertyValue('--cursor-reveal-y')).toBe('-9px'))
     panel.style.removeProperty('top')
 
     // Новые панели (например, после смены маршрута) подключаются автоматически.
@@ -75,7 +81,7 @@ export const Reveal: Story = {
     canvasElement.append(added)
     try {
       move(12, 12)
-      await waitFor(() => expect(added.style.getPropertyValue('--cursor-reveal-x')).toBe('2px'))
+      await waitFor(() => expect(added.querySelector<HTMLElement>('[data-cursor-reveal-layer]')!.style.getPropertyValue('--cursor-reveal-x')).toBe('2px'))
     } finally {
       added.remove()
     }
@@ -83,11 +89,22 @@ export const Reveal: Story = {
     const interactiveRect = interactive.getBoundingClientRect()
     move(interactiveRect.left + 2, interactiveRect.top + 2)
     await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-x')).toBe(`${interactiveRect.left + 2 - background.getBoundingClientRect().left}px`))
-    expect(interactive.style.getPropertyValue('--cursor-reveal-active')).toBe('')
+    expect(interactiveLight.style.getPropertyValue('--cursor-reveal-active')).toBe('')
+
+    background.setAttribute('data-cursor-light-suspended', '')
+    await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-active')).toBe(''))
+    move(rect.left + 2, rect.top + 2)
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
+    expect(light.style.getPropertyValue('--cursor-reveal-active')).toBe('')
+    background.removeAttribute('data-cursor-light-suspended')
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    move(rect.left + 2, rect.top + 2)
+    await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-active')).toBe('1'))
 
     move(12, 12, 'touch')
     expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
-    expect(panel.style.getPropertyValue('--cursor-reveal-active')).toBe('')
+    expect(light.style.getPropertyValue('--cursor-reveal-active')).toBe('')
     move(rect.left + 1, rect.top + 1)
     await waitFor(() => expect(background.style.getPropertyValue('--cursor-light-active')).toBe('1'))
     window.dispatchEvent(new Event('blur'))
@@ -98,6 +115,6 @@ export const Reveal: Story = {
     await expect(button).toHaveFocus()
     document.documentElement.dispatchEvent(new Event('pointerleave'))
     expect(background.style.getPropertyValue('--cursor-light-active')).toBe('')
-    expect(panel.style.getPropertyValue('--cursor-reveal-active')).toBe('')
+    expect(light.style.getPropertyValue('--cursor-reveal-active')).toBe('')
   },
 }

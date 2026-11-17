@@ -1,6 +1,7 @@
 import { TextInput } from '../../../shared/ui'
 import type { ReactNode } from 'react'
 import { CollapsibleSection } from './CollapsibleSection'
+import type { CollapsibleSectionProps } from './CollapsibleSection'
 import { HeartIcon } from './icons'
 import styles from './stats.module.css'
 
@@ -16,6 +17,7 @@ export type HitPointsBlockProps = {
   compact?: boolean
   current: HitPointsValue
   defaultOpen?: boolean
+  frame?: CollapsibleSectionProps['frame']
   maximum: HitPointsValue
   onChange?: (patch: HitPointsPatch) => void
   onOpenChange?: (open: boolean) => void
@@ -43,6 +45,7 @@ export function HitPointsBlock({
   compact = false,
   current,
   defaultOpen = true,
+  frame = 'default',
   maximum,
   onChange,
   onOpenChange,
@@ -75,6 +78,7 @@ export function HitPointsBlock({
       className={styles.hitPointsRoot}
       data-compact={compact || undefined}
       defaultOpen={defaultOpen}
+      frame={frame}
       onOpenChange={onOpenChange}
       open={open}
       title={title}

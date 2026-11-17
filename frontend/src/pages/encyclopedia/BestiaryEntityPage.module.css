@@ -31,7 +31,7 @@
 .notFound p,
 .status p {
   margin: 0;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-size: var(--font-size-xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -47,7 +47,7 @@
 }
 
 .notFound a {
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
 }
 
 .status span {
@@ -70,4 +70,9 @@
 .retry:focus-visible {
   background: var(--color-action-primary);
   outline: 0;
+}
+
+:root[data-theme='light'] .retry:hover,
+:root[data-theme='light'] .retry:focus-visible {
+  color: var(--color-button-text);
 }

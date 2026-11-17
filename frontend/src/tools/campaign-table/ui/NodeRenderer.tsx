@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Handle, NodeResizer, Position, useViewport } from '@xyflow/react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { Handle, NodeResizer, Position, useStore } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, DragEvent as ReactDragEvent } from 'react'
 import { entityLabel } from '../model/library'
+import { nodeImageKind } from '../model/nodeImage'
 import type { TableNode } from '../model/table'
 import { canResizeNode, center, contourBox, contourPoint, EXPANDED_CREATURE_WIDTH, nodeMinimumSize, nodeVisual } from '../model/nodeGeometry'
-import { containerOf } from '../model/nodeContainment'
-import { Combobox, EditIcon, TrashIcon, Tooltip } from '../../../shared/ui'
+import { Combobox, EditIcon, TrashIcon, Tooltip, useCampaignWikiImage } from '../../../shared/ui'
 import { NodeCreatureCard } from './NodeCreatureCard'
 import { NodeOutline, NodeView } from './NodeViews'
-import { INSTANCE_DRAG_TYPE, useTableActions } from './tableContext'
+import { INSTANCE_DRAG_TYPE, useNodeActions } from './tableContext'
+import type { NodeMember } from './nodeMetadata'
 import styles from './CampaignNodes.module.css'
 import { useCreatureMorph } from './useCreatureMorph'
+import { useItemClassification } from './useItemClassification'
+import { useSpellTraits } from './useSpellSchool'
 
 function plainText(value: string) {
   if (!value) return ''
@@ -19,13 +22,22 @@ function plainText(value: string) {
   return typeof DOMParser === 'undefined' ? separated.trim() : new DOMParser().parseFromString(separated, 'text/html').body.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-export function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
-  const actions = useTableActions()
-  const { zoom } = useViewport()
+const emptyMembers: readonly NodeMember[] = []
+const hasFilePayload = (dataTransfer: DataTransfer) => Array.from(dataTransfer.types).includes('Files')
+
+export const NodeRenderer = memo(function NodeRenderer({ id, data, width, height, selected, dragging }: NodeProps<TableNode>) {
+  const actions = useNodeActions()
+  const classification = useItemClassification(data, actions.readOnly)
+  const spell = useSpellTraits(data, actions.readOnly)
+  const cover = useCampaignWikiImage(data.wiki.media.coverAssetId)
+  const avatar = useCampaignWikiImage(data.wiki.media.avatarAssetId)
+  const zoom = useStore(state => state.transform[2])
   const draft = actions.draft?.id === id ? actions.draft : undefined
   const draftFinished = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [imageDropActive, setImageDropActive] = useState(false)
+  const [imageUploadPending, setImageUploadPending] = useState(false)
   const creatureExpanded = Boolean(data.display?.creatureExpanded)
   const { nodeRef, contentRef } = useCreatureMorph(data.entityType === 'creature' && !draft, creatureExpanded)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -34,7 +46,21 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
   const arrivalKey = data.display?.arrivalKey
   const visual = nodeVisual(data.entityType)
   const minimum = nodeMinimumSize(data.entityType)
+  const renderedWidth = width ?? visual.width
+  const renderedHeight = height ?? minimum.height
   const summary = useMemo(() => data.facts || plainText(data.description), [data.description, data.facts])
+  const imageKind = nodeImageKind(data.entityType)
+  const characterPortrait = data.entityType === 'playerCharacter' ? data.campaignCharacter?.document.identity.portraitUrl : undefined
+  const imageSrc = data.entityType === 'playerCharacter' || data.entityType === 'npc'
+    ? avatar.src ?? characterPortrait ?? cover.src
+    : cover.src
+  const acceptImageDrag = (event: ReactDragEvent<HTMLElement>) => {
+    if (actions.readOnly || !imageKind || imageUploadPending || !hasFilePayload(event.dataTransfer)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'copy'
+    setImageDropActive(true)
+  }
   useEffect(() => {
     const node = nodeRef.current
     if (!node || draft || arrivalKey === undefined) return
@@ -67,7 +93,7 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
   }, [menuOpen, membersOpen])
   if (draft) return <article className={`${styles.mindNode} ${styles.draftNode}`} aria-label={`Создать: ${entityLabel(draft.type)}`}>
     <span>{entityLabel(draft.type)}</span>
-    <input autoFocus className="nodrag" aria-label="Название нового объекта" placeholder="Название"
+    <input autoFocus className="nodrag" aria-label="Название нового объекта" placeholder="Название" defaultValue={draft.initialName ?? ''}
       onPointerDown={event => event.stopPropagation()} onKeyDown={event => {
         event.stopPropagation()
         if (event.key === 'Enter') { event.preventDefault(); if (event.currentTarget.value.trim()) { draftFinished.current = true; draft.commit(event.currentTarget.value) } }
@@ -75,7 +101,7 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
       }} onBlur={event => { if (draftFinished.current) return; draftFinished.current = true; if (event.currentTarget.value.trim()) draft.commit(event.currentTarget.value); else draft.cancel() }} />
   </article>
 
-  const members = actions.diagram.nodes.filter(node => containerOf(node) === id)
+  const members = actions.membersByContainer.get(id) ?? emptyMembers
   const box = contourBox(data.entityType, { x: 0, y: 0 }, width ?? visual.width, height ?? minimum.height, creatureExpanded)
   const origin = center(box)
   const localEntity = !data.reference
@@ -84,14 +110,33 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
     data-creature-expanded={data.entityType === 'creature' ? creatureExpanded : undefined}
     data-selected={selected} data-dragging={dragging} data-connection-source={connectionSource === id}
     data-drop-target={actions.dropTarget === id || undefined}
+    data-image-drop-active={imageDropActive || undefined} data-image-upload-pending={imageUploadPending || undefined}
     data-connecting={Boolean(connectionSource && connectionSource !== id)} data-arrival-key={arrivalKey}
-    aria-label={data.title} onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
+    aria-label={data.title} aria-busy={imageUploadPending || undefined}
+    onDragEnter={acceptImageDrag} onDragOver={acceptImageDrag}
+    onDragLeave={event => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setImageDropActive(false)
+    }}
+    onDrop={event => {
+      if (actions.readOnly || !imageKind || imageUploadPending || !hasFilePayload(event.dataTransfer)) return
+      event.preventDefault()
+      event.stopPropagation()
+      setImageDropActive(false)
+      const file = event.dataTransfer.files[0]
+      if (!file) return
+      setImageUploadPending(true)
+      void actions.uploadImage(id, file).finally(() => setImageUploadPending(false))
+    }}
+    onContextMenu={event => { event.preventDefault(); event.stopPropagation(); if (!connectionSource) setMenuOpen(true) }}>
     {canResizeNode(data.entityType) && <NodeResizer isVisible={selected && !actions.readOnly && !connectionSource}
       minWidth={minimum.width} minHeight={minimum.height} handleClassName={styles.nodeResizeHandle} lineClassName={styles.nodeResizeLine}
       onResizeStart={actions.beginGesture} onResizeEnd={actions.endGesture} />}
     {/* Технические якоря нужны React Flow для регистрации ребра, не для его геометрии или взаимодействия. */}
     <Handle id="in" type="target" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
-    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} />}
+    {(!visual.badge || creatureExpanded) && <NodeOutline shape={creatureExpanded ? 'rectangle' : visual.shape} location={data.entityType === 'location'} />}
+    {(imageDropActive || imageUploadPending) && <span className={styles.nodeImageDropHint} role="status">
+      {imageUploadPending ? 'Обрабатываем изображение…' : imageKind === 'avatar' ? 'Заменить портрет' : 'Заменить обложку'}
+    </span>}
     {!connectionSource && <div className={styles.nodeTopline}>
       {members.length > 0 && <div ref={membersRef} className={`${styles.nodeMembers} nodrag nowheel`} onPointerDown={event => event.stopPropagation()}>
         <button type="button" className={styles.nodeMembersTrigger} aria-label={`Содержимое: ${members.length}`} aria-expanded={membersOpen}
@@ -101,9 +146,9 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
             event.stopPropagation(); event.dataTransfer.setData(INSTANCE_DRAG_TYPE, member.id); event.dataTransfer.effectAllowed = 'move'
             actions.beginInstanceDrag(member.id)
           }}>
-            <button type="button" onClick={event => { event.stopPropagation(); actions.open(member.id) }}>{member.data.title}</button>
-            {!actions.readOnly && <><button type="button" title="Редактировать экземпляр" aria-label={`Редактировать: ${member.data.title}`} onClick={event => { event.stopPropagation(); actions.edit(member.id) }}>✎</button>
-              <button type="button" title="Вернуть на холст" aria-label={`Извлечь: ${member.data.title}`} onClick={event => { event.stopPropagation(); actions.release(member.id) }}>↗</button></>}
+            <button type="button" onClick={event => { event.stopPropagation(); actions.open(member.id) }}>{member.title}</button>
+            {!actions.readOnly && <><button type="button" title="Редактировать экземпляр" aria-label={`Редактировать: ${member.title}`} onClick={event => { event.stopPropagation(); actions.edit(member.id) }}>✎</button>
+              <button type="button" title="Вернуть на холст" aria-label={`Извлечь: ${member.title}`} onClick={event => { event.stopPropagation(); actions.release(member.id) }}>↗</button></>}
           </div>)}
         </div>}
       </div>}
@@ -131,7 +176,7 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.startConnection(id) }}>Связать с…</button>
           {!actions.readOnly && actions.diagrams.length > 1 && <div className={styles.nodePlaceIn}>На другую схему
             <Combobox className="nodrag" aria-label="Разместить Entity на схеме" placeholder="Выберите схему" value={null}
-              options={actions.diagrams.filter(item => item.id !== actions.diagram.id).map(item => ({ value: item.id, label: item.name }))}
+              options={actions.diagrams.filter(item => item.id !== actions.diagramId).map(item => ({ value: item.id, label: item.name }))}
               onClick={event => event.stopPropagation()} onValueChange={value => { if (value !== null) { actions.placeOnDiagram(id, value); setMenuOpen(false) } }} />
           </div>}
           <button type="button" role="menuitem" disabled={actions.readOnly} onClick={event => { event.stopPropagation(); setMenuOpen(false); actions.remove(id) }}>Удалить со схемы</button>
@@ -140,9 +185,12 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
     </div>}
     {data.entityType === 'creature' ? <div className={styles.nodeCreatureViewport}>
       <div ref={contentRef} className={styles.nodeCreaturePresentation} style={{ width: creatureExpanded ? EXPANDED_CREATURE_WIDTH : visual.width }}>
-        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
+        {creatureExpanded ? <NodeCreatureCard data={data} /> : <NodeView type={data.entityType} title={data.title} summary={summary} imageSrc={imageSrc}
+          nodeWidth={renderedWidth} nodeHeight={renderedHeight} />}
       </div>
-    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} />}
+    </div> : <NodeView type={data.entityType} title={data.title} summary={summary} classification={classification}
+      school={spell.school} level={spell.level} ritual={spell.ritual} concentration={spell.concentration} imageSrc={imageSrc}
+      nodeWidth={renderedWidth} nodeHeight={renderedHeight} />}
     {!actions.readOnly && !connectionSource && ([['top', 'сверху'], ['right', 'справа'], ['bottom', 'снизу'], ['left', 'слева']] as const).map(([side, label]) => {
       const point = contourPoint(box, { x: origin.x + (side === 'left' ? -1000 : side === 'right' ? 1000 : 0),
         y: origin.y + (side === 'top' ? -1000 : side === 'bottom' ? 1000 : 0) })
@@ -158,4 +206,4 @@ export function NodeRenderer({ id, data, width, height, selected, dragging }: No
     })}
     <Handle id="out" type="source" position={Position.Top} isConnectable={false} className={styles.internalAnchor} />
   </article>
-}
+})

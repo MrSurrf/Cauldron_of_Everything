@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { fetchEncyclopedia } from '../../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../../entities/encyclopedia'
+import { ItemKindIcon } from '../../../../entities/item'
+import { SpellSchoolIcon } from '../../../../entities/spell'
 import { Button, ListCard, ScrollArea, Select, TextInput } from '../../../../shared/ui'
 import catalogStyles from '../../../../shared/ui/CatalogSidebar/CatalogSidebar.module.css'
 import { RichContent } from '../../../../shared/ui/RichContent'
@@ -55,7 +57,7 @@ function entryTags(entry: CharacterEncyclopediaEntry): string[] {
       .filter(Boolean)
   }
   if (entry.entityType !== 'item') return [entry.nameEn].filter(Boolean)
-  return [text(summary.type ?? summary.item_type), text(summary.rarity), text(summary.cost ?? summary.price)]
+  return [text(summary.classification ?? summary.item_type ?? summary.type), text(summary.rarity), text(summary.cost ?? summary.price)]
     .filter(Boolean)
 }
 
@@ -176,7 +178,12 @@ export function CharacterEncyclopediaPanel({
               writeCharacterEncyclopediaDrag(event.dataTransfer, entry)
               beginDrag(event, entry)
             }}>
-            <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)} />
+            <ListCard className={catalogStyles.card} name={entry.name} tags={entryTags(entry)}
+              icon={entry.entityType === 'item' ? <ItemKindIcon className={styles.itemIcon}
+                rarity={text(entry.summary.rarity)}
+                classification={text(entry.summary.classification ?? entry.summary.item_type ?? entry.summary.type)} />
+                : entry.entityType === 'spell' ? <SpellSchoolIcon className={styles.itemIcon} school={text(entry.summary.school)} />
+                  : undefined} />
           </button>
           <Button size="sm" variant="secondary" decoration="bare" className={catalogStyles.iconAction} aria-label={`Добавить: ${entry.name}`}
             title="Добавить на лист" onClick={() => onAdd(entry)}>+</Button>

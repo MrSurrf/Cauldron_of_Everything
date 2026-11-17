@@ -68,7 +68,7 @@
 .schedule h2, .confirmDelete h2 { margin: 0; color: var(--color-heading-primary); font: 400 var(--font-size-xl)/1.2 var(--font-family-heading); }
 .schedule p, .confirmDelete p { margin: 0; font-size: var(--font-size-sm); line-height: 1.5; }
 .scheduleFields { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-3); }
-.scheduleFields input { color-scheme: dark; }
+.scheduleFields input { color-scheme: inherit; }
 .localNotice { padding: var(--space-3); border: var(--border-width-default) solid var(--color-content-border); border-radius: var(--radius-sm); color: var(--color-text-secondary); background: var(--color-surface-muted); }
 .muted { color: var(--color-text-subtle); }
 .dialogActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2); }

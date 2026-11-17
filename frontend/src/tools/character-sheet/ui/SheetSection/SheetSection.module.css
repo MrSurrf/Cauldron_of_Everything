@@ -1,11 +1,7 @@
 .section {
   --cursor-reveal-border-color: var(--section-border);
   --section-cut: var(--space-2);
-  --section-border: color-mix(
-      in srgb,
-      var(--color-content-border) 78%,
-      var(--color-border-accent)
-    );
+  --section-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;
@@ -15,7 +11,7 @@
   background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-surface-default) 94%, var(--color-surface-accent)),
-      color-mix(in srgb, var(--color-surface-muted) 96%, var(--palette-black))
+      color-mix(in srgb, var(--color-surface-muted) 96%, var(--color-background))
     );
   clip-path:
     polygon(
@@ -29,6 +25,25 @@
       0 var(--section-cut)
     );
   color: var(--color-text-primary);
+}
+
+.section[data-frame='none'] {
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
+/* Общий контур группы сохраняет строки сетки листа без внутренних рамок. */
+.section[data-content-layout='group'],
+.section[data-content-layout='group'] > .content {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: subgrid;
+}
+
+.section[data-content-layout='group'] > .content {
+  grid-row: 1 / -1;
+  padding: 0;
 }
 
 .header,
@@ -78,7 +93,7 @@
 .title {
   min-width: 0;
   margin: 0;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(
     --sheet-section-title-size,

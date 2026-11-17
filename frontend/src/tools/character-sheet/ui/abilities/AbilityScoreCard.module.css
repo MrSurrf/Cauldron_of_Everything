@@ -1,11 +1,7 @@
 .card {
   --cursor-reveal-border-color: var(--ability-border);
   --ability-cut: var(--space-2);
-  --ability-border: color-mix(
-      in srgb,
-      var(--color-content-border) 72%,
-      var(--color-border-accent)
-    );
+  --ability-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;
@@ -62,7 +58,7 @@
 .label {
   overflow: hidden;
   max-width: 100%;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(--sheet-label-size, calc(var(--font-size-xs) * 0.9));
   letter-spacing: 0.02em;

@@ -3,6 +3,8 @@ import { fetchEncyclopedia } from '../../../entities/encyclopedia'
 import type { EncyclopediaEntry } from '../../../entities/encyclopedia'
 import { campaignRequest, ownedReference } from './campaignApi'
 import type { OwnedMaterial } from './campaignApi'
+import { entryItemClassification } from './itemClassification'
+import { entrySpellTraits } from './spellSchool'
 
 export const LIBRARY_SECTIONS = [
   ['creature', 'Бестиарий'], ['class', 'Классы'], ['race', 'Расы'],
@@ -28,10 +30,19 @@ export type LibraryReference = EntityReference & {
   name: string
   slug: string
   facts: string[]
+  classification?: string
+  rarity?: string
+  school?: string
+  level?: number | null
+  ritual?: boolean
+  concentration?: boolean
 }
 
 export function entryReference(entry: EncyclopediaEntry): LibraryReference {
   const data = entry.summary ?? entry.data ?? {}
+  const rarity = [entry.data?.rarity, entry.summary?.rarity]
+    .find((value): value is string => typeof value === 'string' && Boolean(value.trim()))?.trim()
+  const spell = entry.entity_type === 'spell' ? entrySpellTraits(entry) : undefined
   const facts = ['challenge_rating', 'level', 'school', 'rarity', 'creature_type', 'size', 'hit_die', 'prerequisite']
     .flatMap(key => typeof data[key] === 'string' || typeof data[key] === 'number'
       ? [`${key === 'challenge_rating' ? 'ПО ' : key === 'level' ? 'Уровень ' : ''}${data[key]}`] : [])
@@ -40,7 +51,10 @@ export function entryReference(entry: EncyclopediaEntry): LibraryReference {
     if (typeof cost === 'string' || typeof cost === 'number') facts.push(`Стоимость ${cost}`)
   }
   return { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type as EntityType,
-    slug: entry.slug, name: entry.name, facts }
+    slug: entry.slug, name: entry.name, facts,
+    ...(entry.entity_type === 'item' ? { classification: entryItemClassification(entry), rarity } : {}),
+    ...(spell ? { ...(spell.school ? { school: spell.school } : {}), level: spell.level ?? null,
+      ritual: spell.ritual === true, concentration: spell.concentration === true } : {}) }
 }
 
 export async function searchLibrary(section: LibrarySection, query: string, page: number, signal: AbortSignal) {

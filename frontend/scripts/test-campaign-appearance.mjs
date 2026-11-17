@@ -97,6 +97,56 @@ async function foldSize() {
   assert.ok(Math.abs(fold.width - fold.height) < 0.5, `Загиб должен быть квадратным: ${JSON.stringify(fold)}`)
   return fold.width
 }
+async function locationCornerSize() {
+  const bounds = await node('location').boundingBox()
+  const corner = await node('location').locator('svg image').boundingBox()
+  assert.ok(corner && corner.width > 0 && corner.height > 0, 'Уголок локации присутствует')
+  assert.ok(corner.y < bounds.y && corner.y + corner.height > bounds.y,
+    'Башня выступает над карточкой, а её основание продолжается внутри рамки')
+  return { width: corner.width, height: corner.height, top: corner.y - bounds.y, left: corner.x - bounds.x }
+}
+async function questDecorationSize() {
+  const bounds = await node('quest').boundingBox()
+  const decoration = await node('quest').locator('[data-node-decoration="quest"]').boundingBox()
+  assert.ok(decoration && decoration.width > 0 && decoration.height > 0, 'SVG-декор квеста присутствует')
+  assert.ok(decoration.x < bounds.x && decoration.y < bounds.y, 'Свиток квеста выступает за верхний и левый края рамки')
+  const frame = await node('quest').locator('[data-quest-frame]').getAttribute('d')
+  assert.ok(frame && !/[VZ]/i.test(frame), 'Основная рамка квеста открыта слева: её заменяют свиток и печать')
+  assert.equal(await node('quest').locator('[class*="nodeCardContent"] [data-node-decoration]').count(), 0,
+    'Декор квеста принадлежит рамке, а не текстовому содержимому')
+  const seal = await node('quest').locator('svg image').last().boundingBox()
+  assert.ok(Math.abs(seal.y + seal.height - bounds.y - bounds.height) < 1,
+    'Печать остаётся на нижнем краю квеста при resize')
+  const caption = await node('quest').locator('[class*="nodeCaption"]').boundingBox()
+  assert.ok(caption.x >= decoration.x + decoration.width,
+    'Текст квеста не перекрывает свиток')
+  if (bounds.width / bounds.height >= 2) {
+    assert.ok(Math.abs(decoration.height * 385 / 469 - bounds.height) < 1,
+      'Свиток и печать горизонтального квеста занимают всю левую грань, как на референсе')
+  } else {
+    assert.ok(decoration.width < bounds.width * 0.4, 'При вертикальном resize декор оставляет место тексту')
+  }
+  return { width: decoration.width, height: decoration.height }
+}
+function assertFixedGeometry(actual, base, keys, label) {
+  for (const key of keys) {
+    assert.ok(Math.abs(actual[key] - base[key]) < 0.5,
+      `${label}: ${key} сохраняет фиксированный размер; ожидалось ${base[key]}, получилось ${actual[key]}`)
+  }
+}
+function assertAspectRatio(geometry, sourceRatio, label) {
+  const expectedWidth = geometry.height * sourceRatio
+  assert.ok(Math.abs(geometry.width - expectedWidth) < 1,
+    `${label}: aspect ratio исходного SVG сохраняется; ожидалась ширина ${expectedWidth}, получилась ${geometry.width}`)
+}
+async function svgSourceRatio(locator) {
+  return locator.evaluate(async element => {
+    const response = await fetch(element.href.baseVal)
+    const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
+    const bounds = source.viewBox.baseVal
+    return bounds.width / bounds.height
+  })
+}
 async function noMotion(locator) {
   const moving = await locator.evaluate(element => element.getAnimations({ subtree: true })
     .filter(animation => animation.playState === 'running' && (Number(animation.effect?.getTiming().duration) > 1 || animation.effect?.getTiming().iterations === Infinity))
@@ -122,6 +172,17 @@ try {
   await page.getByRole('button', { name: 'Свернуть библиотеку', exact: true }).click()
 
   const originalFold = await foldSize()
+  const originalLocationCorner = await locationCornerSize()
+  const originalQuestDecoration = await questDecorationSize()
+  const sourceCornerRatio = await node('location').locator('svg image').evaluate(async image => {
+    const response = await fetch(image.href.baseVal)
+    const source = new DOMParser().parseFromString(await response.text(), 'image/svg+xml').documentElement
+    const bounds = source.viewBox.baseVal
+    return bounds.width / bounds.height
+  })
+  const sourceQuestRatio = await svgSourceRatio(node('quest').locator('[data-node-decoration="quest"]'))
+  assertAspectRatio(originalLocationCorner, sourceCornerRatio, 'Уголок локации')
+  assertAspectRatio(originalQuestDecoration, sourceQuestRatio, 'Декор квеста')
   const sizes = {
     note: [[520, 130], [220, 360], [190, 128]],
     quest: [[520, 110], [220, 360], [220, 96]],
@@ -132,6 +193,20 @@ try {
       await resize(id, width, height, index === checks.length - 1)
       await contentFits(id)
       if (id === 'note') assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется при resize')
+      if (id === 'quest') {
+        const decoration = await questDecorationSize()
+        assertAspectRatio(decoration, sourceQuestRatio, 'Декор квеста при resize')
+        if (index === 0) {
+          const bounds = await node('quest').boundingBox()
+          await page.screenshot({ path: join(tmpdir(), 'campaign-quest-frame.png'),
+            clip: { x: bounds.x - 32, y: bounds.y - 40, width: bounds.width + 64, height: bounds.height + 65 } })
+        }
+      }
+      if (id === 'location') {
+        const corner = await locationCornerSize()
+        assertFixedGeometry(corner, originalLocationCorner, ['width', 'height', 'top', 'left'], 'Уголок локации при resize')
+        assertAspectRatio(corner, sourceCornerRatio, 'Уголок локации при resize')
+      }
     }
   }
   await closeInspector()
@@ -145,6 +220,12 @@ try {
   await node('note').waitFor()
   for (const id of Object.keys(sizes)) await contentFits(id)
   assert.ok(Math.abs(await foldSize() - originalFold) < 0.5, 'Размер загиба сохраняется после reload')
+  const reloadedLocationCorner = await locationCornerSize()
+  assertFixedGeometry(reloadedLocationCorner, originalLocationCorner,
+    ['width', 'height', 'top', 'left'], 'Уголок локации после reload')
+  assertAspectRatio(reloadedLocationCorner, sourceCornerRatio, 'Уголок локации после reload')
+  const reloadedQuestDecoration = await questDecorationSize()
+  assertAspectRatio(reloadedQuestDecoration, sourceQuestRatio, 'Декор квеста после reload')
 
   // Оформление связи меняется через настоящий Inspector; документ и SVG проверяются независимо.
   await edge().click()

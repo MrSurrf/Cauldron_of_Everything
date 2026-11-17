@@ -4,6 +4,10 @@
   height: 100%;
 }
 
+.itemIcon {
+  font-size: 1.75rem;
+}
+
 .eyebrow {
   color: var(--color-brand-bright);
   font-size: var(--font-size-2xs);

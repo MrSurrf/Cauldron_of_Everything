@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Button, ListCard, Panel, PlaceholderIcon } from '../../shared/ui'
 import { ArticleCard } from '../articles/ArticleCard'
 import { articleFixtures } from '../articles/articleFixtures'
+import mainPageBackground from '../../../assets/backgrounds/Main_page.png'
 import styles from './HomePage.module.css'
 
 const startingPoints = [
@@ -44,6 +45,7 @@ export default function HomePage() {
 
   return <main className={styles.page} data-cursor-light-background="">
     <section className={styles.hero} aria-labelledby="home-title">
+      <img className={styles.heroImage} src={mainPageBackground} width={1916} height={821} alt="" fetchPriority="high" />
       <div className={styles.heroContent}>
         <div className={styles.heroIntro}>
           <p className={styles.eyebrow}>Cauldron of Everything</p>
@@ -55,9 +57,6 @@ export default function HomePage() {
             <Button size="md" variant="secondary" icon={<PlaceholderIcon />} disabled title="Поиск игр скоро появится">Найти игру</Button>
           </div>
         </div>
-        <Panel className={styles.heroNote} padding="normal">
-          <p>Знания.<br />Инструменты.<br />Люди.<br /><span>Всё для твоих приключений.</span></p>
-        </Panel>
       </div>
     </section>
 

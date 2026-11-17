@@ -9,6 +9,9 @@ export type EncyclopediaVisit = {
   category: string
   visitedAt: number
   visitCount?: number
+  itemClassification?: string
+  itemRarity?: string
+  spellSchool?: string
 }
 
 // ID используется только для разделения локального кеша, не для авторизации.
@@ -47,7 +50,19 @@ export function parseVisits(raw: string | null, now = Date.now()): EncyclopediaV
       if (seen.has(entry.path)) return false
       seen.add(entry.path)
       return true
-    }).slice(0, LIMIT).map(entry => ({ ...entry, visitCount: typeof entry.visitCount === 'number' && Number.isSafeInteger(entry.visitCount) && entry.visitCount > 0 ? Math.min(entry.visitCount, 1_000_000) : 1 }))
+    }).slice(0, LIMIT).map(({ itemClassification, itemRarity, spellSchool, ...entry }) => ({
+      ...entry,
+      ...(typeof itemClassification === 'string' && itemClassification.trim()
+        ? { itemClassification: itemClassification.trim() }
+        : {}),
+      ...(typeof itemRarity === 'string' && itemRarity.trim()
+        ? { itemRarity: itemRarity.trim() }
+        : {}),
+      ...(typeof spellSchool === 'string' && spellSchool.trim()
+        ? { spellSchool: spellSchool.trim() }
+        : {}),
+      visitCount: typeof entry.visitCount === 'number' && Number.isSafeInteger(entry.visitCount) && entry.visitCount > 0 ? Math.min(entry.visitCount, 1_000_000) : 1,
+    }))
   } catch { return [] }
 }
 

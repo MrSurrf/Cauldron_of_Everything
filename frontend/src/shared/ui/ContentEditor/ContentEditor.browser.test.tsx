@@ -185,6 +185,67 @@ afterEach(async () => {
 })
 
 describe('ContentEditor browser behavior', () => {
+  it('передаёт внутреннюю ссылку приложению без навигации из предпросмотра', async () => {
+    const onLinkActivate = vi.fn()
+    const preview = await mountEditor(
+      '[Открыть локацию](/campaign/entities/location-1)',
+      {
+        autoFocus: false,
+        onLinkActivate,
+        readOnly: true,
+        renderPreview: true,
+      },
+    )
+    const link = preview.querySelector<HTMLAnchorElement>('a')!
+
+    await act(async () => link.click())
+
+    expect(onLinkActivate).toHaveBeenCalledTimes(1)
+    expect(onLinkActivate.mock.calls[0][0]).toBe(
+      '/campaign/entities/location-1',
+    )
+    expect(onLinkActivate.mock.calls[0][1].defaultPrevented).toBe(true)
+  })
+
+  it('скрывает разделы вне аудитории просмотра и сохраняет наследуемые', async () => {
+    const preview = await mountEditor([
+      ':::collapsible[Для мастера]{visibility=master}',
+      'Секрет',
+      ':::',
+      '',
+      ':::collapsible[Для игроков]{visibility=players}',
+      'Зацепка',
+      ':::',
+      '',
+      ':::collapsible[Публичный]{visibility=public}',
+      'Слух',
+      ':::',
+      '',
+      ':::collapsible[Наследуемый]',
+      'Общее',
+      ':::',
+    ].join('\n'), {
+      autoFocus: false,
+      readOnly: true,
+      renderPreview: true,
+      viewerAudience: 'players',
+    })
+
+    const sections = Array.from(
+      preview.querySelectorAll<HTMLElement>('[data-section-widget]'),
+    )
+
+    expect(sections.map(section =>
+      section.querySelector<HTMLInputElement>(
+        '[aria-label="Название раздела"]',
+      )?.value,
+    )).toEqual([
+      'Для игроков',
+      'Публичный',
+      'Наследуемый',
+    ])
+  })
+
   it('сохраняет одну рамку, масштаб и форматирование при переходах между просмотром и вводом', async () => {
     const preview = await mountEditor('Выделяемый текст', { renderPreview: true, autoFocus: false })
     const frame = preview.closest<HTMLElement>('[data-content-editor-frame]')!

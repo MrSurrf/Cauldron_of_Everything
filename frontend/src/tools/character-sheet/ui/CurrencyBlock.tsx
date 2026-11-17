@@ -4,7 +4,7 @@ import {
   type FormulaFieldValue,
 } from './fields'
 import { SheetSection } from './SheetSection'
-import styles from './stats.module.css'
+import styles from './CurrencyBlock.module.css'
 
 export type CurrencyField = {
   id: string
@@ -15,6 +15,7 @@ export type CurrencyField = {
 
 export type CurrencyBlockProps = {
   fields: readonly CurrencyField[]
+  frame?: 'default' | 'none'
   onFieldChange: (
     id: string,
     value: FormulaFieldValue,
@@ -23,13 +24,12 @@ export type CurrencyBlockProps = {
 
 export function CurrencyBlock({
   fields,
+  frame = 'default',
   onFieldChange,
 }: CurrencyBlockProps) {
-  return (
-    <SheetSection
-      className={styles.currencyBlock}
-      title="Деньги"
-    >
+  const row = (
+    <div className={styles.currencyRow} data-currency-row>
+      <h2 className={styles.title}>Деньги</h2>
       <div className={styles.currencyGrid}>
         {fields.map((field) => {
           const displayedValue =
@@ -60,6 +60,12 @@ export function CurrencyBlock({
           )
         })}
       </div>
+    </div>
+  )
+
+  return frame === 'none' ? row : (
+    <SheetSection aria-label="Деньги" className={styles.currencyBlock}>
+      {row}
     </SheetSection>
   )
 }

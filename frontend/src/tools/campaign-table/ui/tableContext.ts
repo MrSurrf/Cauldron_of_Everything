@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { PointerEvent } from 'react'
 import type { Diagram, NodeEntityType } from '../model/table'
+import type { ContainerMembers } from './nodeMetadata'
 
 export type TableActions = {
   diagram: Diagram
@@ -15,7 +16,8 @@ export type TableActions = {
   beginInstanceDrag: (id: string) => void
   placeInside: (id: string, targetId?: string) => void
   placeOnDiagram: (id: string, diagramId: string) => void
-  draft?: { id: string; type: NodeEntityType; commit: (name: string) => void; cancel: () => void }
+  uploadImage: (id: string, file: File) => Promise<void>
+  draft?: { id: string; type: NodeEntityType; initialName?: string; commit: (name: string) => void; cancel: () => void }
   open: (id: string) => void
   edit: (id: string) => void
   remove: (id: string) => void
@@ -27,6 +29,19 @@ export type TableActions = {
 export const TableContext = createContext<TableActions | null>(null)
 export function useTableActions() {
   const actions = useContext(TableContext)
+  if (!actions) throw new Error('Узел должен находиться внутри пространства кампании')
+  return actions
+}
+export type NodeActions = Pick<TableActions,
+  'readOnly' | 'beginGesture' | 'endGesture' | 'diagrams' | 'connectionSource' | 'startConnection'
+  | 'beginConnection' | 'dropTarget' | 'beginInstanceDrag' | 'placeOnDiagram' | 'draft'
+  | 'open' | 'edit' | 'remove' | 'release' | 'toggleCreature' | 'uploadImage'> & {
+  diagramId: string
+  membersByContainer: ContainerMembers
+}
+export const NodeActionsContext = createContext<NodeActions | null>(null)
+export function useNodeActions() {
+  const actions = useContext(NodeActionsContext)
   if (!actions) throw new Error('Узел должен находиться внутри пространства кампании')
   return actions
 }

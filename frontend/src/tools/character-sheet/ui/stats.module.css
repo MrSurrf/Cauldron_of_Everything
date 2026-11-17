@@ -1,10 +1,6 @@
 .derivedStat {
   --stat-cut: var(--space-2);
-  --stat-border: color-mix(
-      in srgb,
-      var(--color-content-border) 70%,
-      var(--color-border-accent)
-    );
+  --stat-border: var(--sheet-frame, var(--color-content-border));
 
   position: relative;
   isolation: isolate;
@@ -58,7 +54,7 @@
 
 .label {
   overflow: hidden;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   font-size: var(--sheet-label-size, var(--font-size-xs));
   letter-spacing: 0.06em;
@@ -105,7 +101,7 @@
 }
 
 .compactFrame {
-  --input-border: color-mix(in srgb, var(--color-content-border) 74%, var(--color-border-accent));
+  --input-border: var(--sheet-inner-frame, var(--color-content-border));
   --input-inner-border: transparent;
   --input-surface-start:
     color-mix(in srgb, var(--color-surface-default) 88%, transparent);
@@ -242,7 +238,7 @@
   width: var(--icon-size-md);
   height: var(--icon-size-md);
   place-items: center;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   filter:
     drop-shadow(
       0 0 var(--space-1)
@@ -362,7 +358,7 @@
   background: linear-gradient(
       105deg,
       var(--color-temporary-hit-points) 4%,
-      var(--palette-purple-300) 54%,
+      var(--color-brand-bright) 54%,
       var(--color-border-accent) 100%
     );
   filter:
@@ -520,47 +516,6 @@
 .hitDiceRoot:not([data-compact='true']) .diceRow:last-child {
   padding-bottom: 0;
   border-bottom: 0;
-}
-
-.currencyBlock {
-  --sheet-section-padding: var(--border-width-default);
-}
-
-.currencyGrid {
-  --sheet-control-height: var(--icon-size-sm);
-  --sheet-value-size: var(
-    --sheet-ordinary-value-size,
-    var(--sheet-body-size, var(--font-size-sm))
-  );
-
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  gap: var(--border-width-default);
-}
-
-.currencyField {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0;
-}
-
-.currencyLabel {
-  color: var(--color-text-secondary);
-  font-size: var(--sheet-secondary-size, var(--font-size-xs));
-  line-height: 1;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.currencyField :global(input) {
-  min-height: var(--icon-size-sm);
-  padding-inline: var(--border-width-default);
-  line-height: 1;
 }
 
 @container (max-width: 19rem) {

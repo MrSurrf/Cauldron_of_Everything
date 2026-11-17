@@ -17,6 +17,7 @@ import {
   ChevronIcon,
 } from './icons'
 import { AnimatedDisclosure } from './AnimatedDisclosure'
+import type { SheetSectionProps } from './SheetSection'
 import styles from './sections.module.css'
 import sectionStyles from './SheetSection/SheetSection.module.css'
 import { useControllableBoolean } from './useControllableBoolean'
@@ -32,6 +33,7 @@ export type CollapsibleSectionProps = Omit<
   contentLayout?: 'default' | 'editor'
   defaultOpen?: boolean
   editableTitle?: boolean
+  frame?: SheetSectionProps['frame']
   headingLevel?: 2 | 3 | 4 | 5 | 6
   moveDownDisabled?: boolean
   moveUpDisabled?: boolean
@@ -53,6 +55,7 @@ export function CollapsibleSection({
   contentLayout = 'default',
   defaultOpen = true,
   editableTitle = false,
+  frame = 'default',
   headingLevel = 3,
   moveDownDisabled = false,
   moveUpDisabled = false,
@@ -92,8 +95,9 @@ export function CollapsibleSection({
       data-collapsible={collapsible}
       data-actions-placement={actionsPlacement}
       data-content-layout={contentLayout}
+      data-frame={frame}
       data-open={contentVisible}
-      data-cursor-reveal="border"
+      data-cursor-reveal={frame === 'none' ? undefined : 'border'}
     >
       <header className={styles.header}>
         {collapsible && (

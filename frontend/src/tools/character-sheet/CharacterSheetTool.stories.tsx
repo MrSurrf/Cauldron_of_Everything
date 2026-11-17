@@ -16,6 +16,7 @@ import {
   createMockCharacterSheet,
 } from './model'
 import { CharacterSheetTool } from './CharacterSheetTool'
+import { createTestImageFile } from '../../shared/testing/imageFile'
 
 const meta = {
   component: CharacterSheetTool,
@@ -146,18 +147,17 @@ export const PortraitWorkflow: Story = {
     onPortraitRemove: fn(),
   },
   play: async ({ args, canvas }) => {
-    const file = new File(
-      ['portrait'],
-      'brendon.png',
-      { type: 'image/png' },
-    )
+    const file = await createTestImageFile('brendon.png')
 
     await userEvent.upload(
       canvas.getByLabelText('Выбрать изображение персонажа'),
       file,
     )
+    const dialog = await screen.findByRole('dialog')
+    await expect(await within(dialog).findByRole('group', { name: /Рамка кадрирования/ })).toBeVisible()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Применить' }))
     await expect(args.onPortraitFileSelect).toHaveBeenCalledWith(
-      file,
+      expect.objectContaining({ name: expect.stringMatching(/^brendon-cropped\.(webp|png)$/) }),
       'character-brendon',
     )
 

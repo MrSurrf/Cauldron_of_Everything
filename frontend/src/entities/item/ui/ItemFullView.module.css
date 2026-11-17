@@ -57,11 +57,18 @@
 }
 
 .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   margin: 0 0 var(--space-3);
   color: var(--color-brand-bright);
   font-size: var(--font-size-xs);
   letter-spacing: 0.13em;
   text-transform: uppercase;
+}
+
+.kindIcon {
+  font-size: 2rem;
 }
 
 .titleLine {

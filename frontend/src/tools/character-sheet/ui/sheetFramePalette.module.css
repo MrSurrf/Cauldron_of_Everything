@@ -1,0 +1,11 @@
+.palette {
+  /* Цвета внешнего и внутреннего контуров общего Panel. */
+  --sheet-frame: var(--color-content-border);
+  --sheet-inner-frame: color-mix(
+    in srgb,
+    var(--sheet-frame) 40%,
+    var(--color-surface-default)
+  );
+  --content-editor-border: var(--sheet-inner-frame);
+  --content-editor-inner-border: var(--sheet-inner-frame);
+}

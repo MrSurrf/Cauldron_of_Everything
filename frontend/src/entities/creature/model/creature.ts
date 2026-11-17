@@ -71,19 +71,24 @@ export type CreatureSection = {
   title: string
   html: string
   introduction?: string
+  /** Разметка вступления — основной источник; introduction хранит текстовую копию. */
+  introductionHtml?: string
   entries?: readonly CreatureFeature[]
 }
 
-/** Структурированные особенности для развёрнутого статблока; HTML остаётся запасным представлением. */
+/** Особенности со структурированными показателями и полным текстом правил. */
 export type CreatureFeature = {
   id: string
   name: string
   description: string
+  /** Основной источник импортированного правила; показатели вычисляются при его изменении. */
+  descriptionHtml?: string
   subtitle?: string
   usage?: string
   attackBonus?: number
   save?: { ability: CreatureAbilityKey; dc: number }
-  damage?: readonly { formula: string; type: DamageType; average?: number; note?: string }[]
+  /** Для фиксированного урона задано average, формулы броска нет. */
+  damage?: readonly { formula?: string; type: DamageType; average?: number; note?: string }[]
   range?: string
   target?: string
   effect?: string

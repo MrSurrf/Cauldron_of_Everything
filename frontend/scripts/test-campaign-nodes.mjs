@@ -34,6 +34,7 @@ await page.route('**/api/**', route => {
   return route.fulfill({ json: path === '/api/auth/session/' ? { authenticated: true } : { count: 0, results: [] } })
 })
 const node = type => page.locator(`.react-flow__node[data-id="${type}"]`)
+const wikiPanel = page.getByRole('complementary', { name: 'Wiki-карточка объекта' })
 async function saved() { return page.evaluate(key => JSON.parse(localStorage.getItem(key)), key) }
 async function menu(type) { await node(type).getByRole('heading').click({ button: 'right' }) }
 async function scheme(name) {
@@ -82,31 +83,79 @@ try {
   assert.ok((await node('note').boundingBox()).height < 210)
   assert.equal(await node('location').locator('img').evaluate(image => image.complete && image.naturalWidth > 0), true)
   assert.equal(await node('spell').getByLabel('Уровень заклинания: 3').textContent(), '3')
-  assert.equal(await node('faction').locator('svg path').count(), 0)
+  for (const type of ['faction', 'npc', 'quest']) {
+    assert.equal(await node(type).locator('[data-node-decoration]').count(), 1)
+  }
+  const npcDecoration = await node('npc').evaluate(element => {
+    const badge = element.querySelector('[class*="nodeBadge"]')?.getBoundingClientRect()
+    const decoration = element.querySelector('[data-node-decoration="npc"]')?.getBoundingClientRect()
+    if (!badge || !decoration) return null
+    return {
+      width: decoration.width / badge.width,
+      height: decoration.height / badge.height,
+      center: ((decoration.left + decoration.right) / 2 - (badge.left + badge.right) / 2) / badge.width,
+      aspectRatio: decoration.width / decoration.height,
+      seams: [
+        { side: 'left', x: 0, y: 51.5824 },
+        { side: 'right', x: 146.03, y: 51.3378 },
+      ].map(point => {
+        const x = decoration.left + decoration.width * point.x / 147
+        const y = decoration.top + decoration.height * point.y / 67
+        const centerX = badge.left + badge.width / 2
+        const centerY = badge.top + badge.height / 2
+        const radius = Math.min(badge.width, badge.height) / 2
+        const circleY = centerY - Math.sqrt(radius ** 2 - (x - centerX) ** 2)
+        return { side: point.side, overlap: (y - circleY) / badge.height }
+      }),
+    }
+  })
+  assert.ok(npcDecoration, 'SVG-маска NPC и круг портрета присутствуют')
+  assert.ok(Math.abs(npcDecoration.width - 0.6) < 0.01, `Ширина маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.height - 0.2735) < 0.01, `Высота маски NPC соответствует референсу: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.center) < 0.005, `Маска NPC отцентрирована над портретом: ${JSON.stringify(npcDecoration)}`)
+  assert.ok(Math.abs(npcDecoration.aspectRatio - 147 / 67) < 0.02, `SVG-маска NPC не искажена: ${JSON.stringify(npcDecoration)}`)
+  for (const seam of npcDecoration.seams) {
+    assert.ok(seam.overlap >= 0.004 && seam.overlap <= 0.02,
+      `Стык ${seam.side} SVG NPC должен перекрывать рамку без зазора: ${JSON.stringify(npcDecoration.seams)}`)
+  }
+  assert.ok(Math.abs(npcDecoration.seams[0].overlap - npcDecoration.seams[1].overlap) < 0.005,
+    `Стыки SVG NPC должны быть визуально симметричны: ${JSON.stringify(npcDecoration.seams)}`)
+  assert.equal(await node('playerCharacter').locator('[class*="characterBrackets"]').count(), 1)
+  assert.equal(await node('playerCharacter').locator('[class*="characterDiamond"]').count(), 1)
   assert.equal(await node('npc').getByText('NPC', { exact: true }).count(), 0)
   for (const type of ['playerCharacter', 'npc', 'creature', 'spell', 'item', 'faction']) {
     await node(type).getByRole('heading').click()
     assert.equal(await node(type).locator('.react-flow__resize-control').count(), 0)
     assert.equal(await node(type).evaluate(element => getComputedStyle(element).outlineStyle), 'none')
-    const header = page.locator('aside[aria-label="Инспектор объекта"] > header, aside[aria-label="Карточка и редактор"] > header')
-    assert.ok((await header.boundingBox()).height <= 36)
+    const wiki = ['playerCharacter', 'npc', 'faction'].includes(type)
+    const panel = wiki ? wikiPanel : page.getByRole('complementary', { name: 'Карточка и редактор' })
+    const header = wiki ? panel.getByRole('navigation', { name: 'Навигация карточки' }) : panel.locator(':scope > header')
+    if (wiki) assert.equal((await header.boundingBox()).height, 45)
+    else assert.ok((await header.boundingBox()).height <= 36)
     assert.ok(!/Inspector|Карточка|Редактор экземпляра/.test(await header.innerText()))
-    assert.equal(await header.getByRole('button').getAttribute('data-size'), null)
-    const inspectorClose = page.getByRole('button', { name: 'Закрыть Inspector' })
-    await (await inspectorClose.count() ? inspectorClose : page.getByRole('button', { name: 'Закрыть карточку' })).click()
+    assert.equal(await header.getByRole('button', { name: 'Закрыть карточку' }).getAttribute('data-size'), null)
+    await panel.getByRole('button', { name: 'Закрыть карточку' }).click()
   }
   await node('quest').getByRole('heading').click()
-  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await wikiPanel.getByRole('button', { name: 'Закрыть карточку' }).click()
   await node('quest').getByRole('heading').click()
   const resizeHandle = node('quest').locator('.react-flow__resize-control.bottom.right.handle')
   const hitbox = await resizeHandle.boundingBox()
   assert.ok(hitbox.width >= 24 && hitbox.height >= 24, JSON.stringify({ hitbox, style: await resizeHandle.getAttribute('style') }))
   assert.equal(await node('quest').locator('.react-flow__resize-control.line').first().evaluate(el => getComputedStyle(el).borderTopWidth), '0px')
-  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await wikiPanel.getByRole('button', { name: 'Закрыть карточку' }).click()
   await node('faction').getByRole('heading').dblclick()
-  await page.getByRole('region', { name: 'Редактор Entity' }).waitFor()
-  await page.getByRole('tab', { name: 'Основная схема', exact: true }).click()
-  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await wikiPanel.getByRole('heading', { name: 'Златокрылые', exact: true }).waitFor()
+  assert.equal(await wikiPanel.getAttribute('data-wiki-mode'), 'view')
+  await wikiPanel.getByRole('button', { name: 'Закрыть карточку' }).click()
+  await node('playerCharacter').getByRole('heading').click()
+  await wikiPanel.getByRole('button', { name: 'Открыть полный лист' }).click()
+  const characterWorkspace = page.getByRole('region', { name: 'Кампанийный лист персонажа' })
+  await characterWorkspace.waitFor()
+  assert.equal(await page.getByRole('region', { name: 'Схема кампании', includeHidden: true }).getAttribute('inert'), '')
+  await characterWorkspace.getByRole('button', { name: 'Основная схема', exact: true }).click()
+  await characterWorkspace.waitFor({ state: 'detached' })
+  await wikiPanel.getByRole('button', { name: 'Закрыть карточку' }).click()
   await page.mouse.move(1550, 970)
   await page.waitForFunction(() => document.querySelector('[data-cursor-light-background]')?.style.getPropertyValue('--cursor-light-active') === '1')
   assert.equal(await node('location').getByRole('button', { name: /^Соединить справа:/ }).evaluate(el => getComputedStyle(el).opacity), '0')
@@ -134,11 +183,13 @@ try {
   assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, npcPosition)
   // В поле текста работают собственные команды редактора, не история графа.
   await node('npc').getByRole('heading').click()
-  await page.getByRole('textbox', { name: 'Название Entity' }).fill('Новое имя NPC')
+  await wikiPanel.getByRole('button', { name: 'Редактировать страницу' }).click()
+  await wikiPanel.getByRole('textbox', { name: 'Название страницы' }).fill('Новое имя NPC')
   await page.keyboard.press('Control+z')
   assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, npcPosition)
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await wikiPanel.waitFor({ state: 'detached' })
+  assert.equal((await saved()).entities.find(entity => entity.id === 'entity-npc').name, 'Боромир')
   await page.keyboard.press('Meta+z')
   assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'npc').position, { x: 450, y: 50 })
   await page.keyboard.press('Meta+Shift+z')
@@ -190,9 +241,10 @@ try {
   assert.equal(state.diagrams[1].nodes[0].data.entityId, 'entity-location')
   await scheme('Вторая схема')
   await page.getByRole('heading', { name: 'Чёрный Предел', exact: true }).click()
-  await page.getByRole('textbox', { name: 'Название Entity' }).fill('Белый Предел')
-  await page.getByRole('textbox', { name: 'Название Entity' }).press('Enter')
-  await page.getByRole('button', { name: 'Закрыть Inspector' }).click()
+  await wikiPanel.getByRole('button', { name: 'Редактировать страницу' }).click()
+  await wikiPanel.getByRole('textbox', { name: 'Название страницы' }).fill('Белый Предел')
+  await wikiPanel.getByRole('textbox', { name: 'Название страницы' }).press('Enter')
+  await wikiPanel.getByRole('button', { name: 'Закрыть карточку' }).click()
   await scheme('Основная схема')
   await node('location').getByRole('heading', { name: 'Белый Предел' }).waitFor()
   assert.deepEqual((await saved()).diagrams[0].nodes.find(item => item.id === 'location').position, { x: 70, y: 320 })

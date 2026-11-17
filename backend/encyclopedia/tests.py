@@ -123,3 +123,22 @@ class CreatureListApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["results"][0]["slug"], "mountain-eagle-2")
+
+
+class SpellListApiTests(TestCase):
+    def test_list_normalizes_school_alias_for_existing_data(self):
+        spell = Entity.objects.create(
+            entity_type=Entity.Type.SPELL,
+            name="Огненный луч",
+            slug="fire-ray",
+            content_html="",
+            content_text="",
+            data={"level": 1, "school": "Эвокация"},
+        )
+
+        response = self.client.get("/api/encyclopedia/?type=spell")
+
+        self.assertEqual(response.status_code, 200)
+        item = response.json()["results"][0]
+        self.assertEqual(item["id"], spell.id)
+        self.assertEqual(item["summary"]["school"], "Воплощение")

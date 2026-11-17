@@ -10,6 +10,7 @@ import {
   type FormulaFieldValue,
 } from '../fields'
 import { SheetSection } from '../SheetSection'
+import type { SheetSectionProps } from '../SheetSection'
 import styles from './CheckLists.module.css'
 
 export type SkillListItem = {
@@ -24,6 +25,7 @@ export type SkillListItem = {
 
 export type SkillsListProps = {
   fill?: boolean
+  frame?: SheetSectionProps['frame']
   items: readonly SkillListItem[]
   onItemChange: (
     id: string,
@@ -68,6 +70,7 @@ function getNextRank(
 
 export function SkillsList({
   fill = false,
+  frame = 'default',
   items,
   onItemChange,
 }: SkillsListProps) {
@@ -125,6 +128,7 @@ export function SkillsList({
     <SheetSection
       className={styles.checkSection}
       data-fill={fill || undefined}
+      frame={frame}
       title="Навыки"
     >
       {fill ? (

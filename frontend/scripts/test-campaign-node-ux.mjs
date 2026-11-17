@@ -31,7 +31,7 @@ await page.route(url => url.pathname.startsWith('/api/'), route => {
 const node = id => page.locator(`.react-flow__node[data-id="${id}"]`)
 const port = id => node(id).locator('[data-side="right"]')
 const saved = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), key)
-const equipment = table => table.entities.find(entity => entity.id === 'entity-playerCharacter').statBlock.document.equipmentContentText
+const equipment = table => table.entities.find(entity => entity.id === 'entity-playerCharacter').campaignCharacter.document.equipmentContentText
 const center = rect => ({ x: rect.x + rect.width / 2, y: rect.y + Math.min(60, rect.height / 2) })
 async function reset(table = initial) {
   await page.evaluate(({ key, table }) => localStorage.setItem(key, JSON.stringify(table)), { key, table })
@@ -140,13 +140,14 @@ try {
   await page.mouse.up(); await waitInside('item', 'location')
   await page.keyboard.press('Control+z'); await waitInside('item', null)
 
-  // Перенос в настоящее поле снаряжения открытого чарлиста.
+  // Перенос в область снаряжения wiki-карточки персонажа.
   await node('playerCharacter').getByRole('heading').click()
-  const equipmentSlot = page.locator('[data-campaign-panel="inspector"] [data-character-sheet-slot="equipment"]')
+  const equipmentSlot = page.locator('[data-campaign-panel="wiki"] [data-campaign-character-drop="item"]')
   await equipmentSlot.scrollIntoViewIfNeeded()
   const slot = await equipmentSlot.boundingBox()
   await startNodeDrag('item', { x: slot.x + slot.width / 2, y: slot.y + slot.height / 2 })
-  assert.equal(await page.locator('[data-campaign-panel="inspector"]').getAttribute('data-inventory-drop-target'), 'true')
+  assert.equal(await node('playerCharacter').locator('article').getAttribute('data-drop-target'), 'true')
+  await page.getByRole('status').filter({ hasText: 'Поместить внутрь: Элора · Снаряжение' }).waitFor()
   await page.mouse.up(); await waitInside('item', 'playerCharacter')
   assert.ok(equipment(await saved()).includes(':::item[Щит]'))
   // Нативный DnD библиотеки использует тот же контракт, а ошибка API не теряет предметы.

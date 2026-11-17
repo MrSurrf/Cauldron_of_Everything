@@ -3,7 +3,12 @@ import { $getNodeByKey, SKIP_DOM_SELECTION_TAG, SKIP_SELECTION_FOCUS_TAG, type N
 import { SectionWidget } from './SectionWidget'
 import { ItemWidget } from './ItemWidget'
 import { itemFromBlock, itemToSource } from './itemContent'
-import { sectionFromBlock, sectionToSource } from './sectionContent'
+import {
+  isSectionVisibleTo,
+  resolveSectionVisibility,
+  sectionFromBlock,
+  sectionToSource,
+} from './sectionContent'
 import { parseContentSource } from './contentCodec'
 import { useContentWidgetContext } from './ContentWidgetContext'
 import { ContentWidgetSelection } from './ContentWidgetSelection'
@@ -17,6 +22,20 @@ export function ContentSectionNode({ nodeKey, source }: { nodeKey: NodeKey; sour
   const { remove } = useContentWidgetSelection(nodeKey)
   const block = parseContentSource(source)[0]
   if (!block || (block.kind !== 'collapsible' && block.kind !== 'item')) return null
+  const section = block.kind === 'collapsible'
+    ? sectionFromBlock(block)
+    : null
+
+  if (
+    section &&
+    !isSectionVisibleTo(
+      section.visibility,
+      context.viewerAudience ?? 'master',
+      context.inheritedVisibility ?? 'public',
+    )
+  ) {
+    return null
+  }
   function save(title: string, nextSource: string, onUpdate?: () => void) {
     if (context.disabled || context.readOnly) return
     editor.update(() => {
@@ -39,10 +58,17 @@ export function ContentSectionNode({ nodeKey, source }: { nodeKey: NodeKey; sour
   >
     {block.kind === 'item' ? <ItemWidget {...context} value={itemFromBlock(block)} onRemove={remove}
       onChange={next => save(next.title, itemToSource(next, block.attributes))} /> :
-      <SectionWidget {...context} value={sectionFromBlock(block)} onRemove={remove}
+      <SectionWidget
+        {...context}
+        inheritedVisibility={resolveSectionVisibility(
+          section!.visibility,
+          context.inheritedVisibility ?? 'public',
+        )}
+        value={section!}
+        onRemove={remove}
         onChange={next => save(next.title, sectionToSource(next, block.attributes))}
         onStructuredResourceChange={context.onStructuredResourceChange ? (resourceSource, current, body, resource) => {
-          const next = { ...sectionFromBlock(block), body }
+          const next = { ...section!, body }
           save(next.title, sectionToSource(next, block.attributes), () => {
             context.onStructuredResourceChange?.(resourceSource, current, editor.getEditorState().read($exportContentSource), resource)
           })

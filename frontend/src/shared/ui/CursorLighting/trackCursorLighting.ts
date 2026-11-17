@@ -1,5 +1,6 @@
 const surfaceSelector = '[data-cursor-reveal]'
 const backgroundSelector = 'main, [data-cursor-light-background]'
+const suspensionSelector = '[data-cursor-light-suspended]'
 const interactiveSelector = [
   'a[href]', 'button', 'input', 'select', 'textarea', 'label', 'summary',
   '[contenteditable="true"]', '[role="button"]', '[role="link"]',
@@ -11,76 +12,106 @@ function isInteractiveSurface(surface: HTMLElement) {
   return surface.closest(interactiveSelector) !== null
 }
 
-/** Общий цикл обновления: сначала измерения видимых панелей, затем запись стилей. */
+function writeProperty(target: HTMLElement, name: string, value: string) {
+  if (target.style.getPropertyValue(name) !== value) target.style.setProperty(name, value)
+}
+
+function clearProperties(target: HTMLElement, prefix: 'light' | 'reveal') {
+  for (const suffix of ['x', 'y', 'active']) {
+    const name = `--cursor-${prefix}-${suffix}`
+    if (target.style.getPropertyValue(name)) target.style.removeProperty(name)
+  }
+}
+
+function distanceToRect(x: number, y: number, rect: DOMRect) {
+  return Math.hypot(Math.max(rect.left - x, 0, x - rect.right), Math.max(rect.top - y, 0, y - rect.bottom))
+}
+
+/** Координаты изолированы CSS @property; сначала читаем геометрию, затем меняем только свет. */
 export function trackCursorLighting() {
+  // Без регистрации свойств координаты снова наследовались бы всем содержимым страницы.
+  if (!('registerProperty' in CSS)) return () => {}
   const media = window.matchMedia(
     '(any-hover: hover) and (any-pointer: fine) and (prefers-reduced-motion: no-preference) and (forced-colors: none)',
   )
-  const radius = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cursor-reveal-radius')) || 180
+  const rootStyle = getComputedStyle(document.documentElement)
+  const radius = parseFloat(rootStyle.getPropertyValue('--cursor-reveal-radius')) || 180
+  const backgroundRadius = (parseFloat(rootStyle.getPropertyValue('--cursor-light-size')) || 760) / 2
   const backgrounds = new Set<HTMLElement>()
-  const surfaces = new Set<HTMLElement>()
+  const surfaces = new Map<HTMLElement, HTMLElement>()
   const visible = new Set<HTMLElement>()
-  const lit = new Set<HTMLElement>()
+  const litBackgrounds = new Set<HTMLElement>()
+  const litSurfaces = new Set<HTMLElement>()
   let pointer: { x: number; y: number } | null = null
   let frame = 0
+  let needsRefresh = false
+  let suspended = Boolean(document.querySelector(suspensionSelector))
 
   function resetBackground(background: HTMLElement) {
-    background.style.removeProperty('--cursor-light-x')
-    background.style.removeProperty('--cursor-light-y')
-    background.style.removeProperty('--cursor-light-active')
+    clearProperties(background, 'light')
+    litBackgrounds.delete(background)
   }
 
   function resetSurface(surface: HTMLElement) {
-    surface.style.removeProperty('--cursor-reveal-x')
-    surface.style.removeProperty('--cursor-reveal-y')
-    surface.style.removeProperty('--cursor-reveal-active')
-    lit.delete(surface)
+    const target = surfaces.get(surface)
+    if (target) clearProperties(target, 'reveal')
+    litSurfaces.delete(surface)
   }
 
   function render() {
     frame = 0
-    if (!pointer || !media.matches) return
+    if (!pointer || !media.matches || suspended) return
+    if (needsRefresh) {
+      needsRefresh = false
+      refreshSurfaces()
+    }
     const { x, y } = pointer
-    const measurements = [...visible].map(surface => ({ surface, rect: surface.getBoundingClientRect() }))
+    const measurements = [...visible].filter(surface => surfaces.has(surface) && !isInteractiveSurface(surface))
+      .map(surface => ({ surface, rect: surface.getBoundingClientRect() }))
     const backgroundMeasurements = [...backgrounds].map(background => ({
       background,
       rect: background.getBoundingClientRect(),
       borderLeft: background.clientLeft,
       borderTop: background.clientTop,
     }))
-    const nextLit = new Set<HTMLElement>()
+    const nextBackgrounds = new Set<HTMLElement>()
+    const nextSurfaces = new Set<HTMLElement>()
 
     for (const { background, rect, borderLeft, borderTop } of backgroundMeasurements) {
-      background.style.setProperty('--cursor-light-x', `${x - rect.left - borderLeft}px`)
-      background.style.setProperty('--cursor-light-y', `${y - rect.top - borderTop}px`)
-      background.style.setProperty('--cursor-light-active', '1')
+      if (!rect.width || !rect.height || distanceToRect(x, y, rect) > backgroundRadius) continue
+      writeProperty(background, '--cursor-light-x', `${x - rect.left - borderLeft}px`)
+      writeProperty(background, '--cursor-light-y', `${y - rect.top - borderTop}px`)
+      writeProperty(background, '--cursor-light-active', '1')
+      nextBackgrounds.add(background)
     }
     for (const { surface, rect } of measurements) {
-      if (isInteractiveSurface(surface)) continue
-      const dx = Math.max(rect.left - x, 0, x - rect.right)
-      const dy = Math.max(rect.top - y, 0, y - rect.bottom)
-      if (!rect.width || !rect.height || Math.hypot(dx, dy) > radius) continue
-      surface.style.setProperty('--cursor-reveal-x', `${x - rect.left}px`)
-      surface.style.setProperty('--cursor-reveal-y', `${y - rect.top}px`)
-      surface.style.setProperty('--cursor-reveal-active', '1')
-      nextLit.add(surface)
+      if (!rect.width || !rect.height || distanceToRect(x, y, rect) > radius) continue
+      const target = surfaces.get(surface)!
+      writeProperty(target, '--cursor-reveal-x', `${x - rect.left}px`)
+      writeProperty(target, '--cursor-reveal-y', `${y - rect.top}px`)
+      writeProperty(target, '--cursor-reveal-active', '1')
+      nextSurfaces.add(surface)
     }
-    for (const surface of lit) {
-      if (!nextLit.has(surface)) resetSurface(surface)
-    }
-    for (const surface of nextLit) lit.add(surface)
+    for (const background of litBackgrounds) if (!nextBackgrounds.has(background)) resetBackground(background)
+    for (const surface of litSurfaces) if (!nextSurfaces.has(surface)) resetSurface(surface)
+    for (const background of nextBackgrounds) litBackgrounds.add(background)
+    for (const surface of nextSurfaces) litSurfaces.add(surface)
   }
 
   function schedule() {
-    if (pointer && media.matches && !frame) frame = requestAnimationFrame(render)
+    if (pointer && media.matches && !suspended && !frame) frame = requestAnimationFrame(render)
+  }
+
+  function clearLights() {
+    cancelAnimationFrame(frame)
+    frame = 0
+    for (const background of litBackgrounds) resetBackground(background)
+    for (const surface of litSurfaces) resetSurface(surface)
   }
 
   function hide() {
     pointer = null
-    cancelAnimationFrame(frame)
-    frame = 0
-    for (const background of backgrounds) resetBackground(background)
-    for (const surface of lit) resetSurface(surface)
+    clearLights()
   }
 
   function move(event: PointerEvent) {
@@ -95,21 +126,17 @@ export function trackCursorLighting() {
   const intersection = new IntersectionObserver(entries => {
     for (const entry of entries) {
       const surface = entry.target as HTMLElement
+      if (!surfaces.has(surface)) continue
       if (entry.isIntersecting) visible.add(surface)
-      else {
-        visible.delete(surface)
-        resetSurface(surface)
-      }
+      else { visible.delete(surface); resetSurface(surface) }
     }
     schedule()
   }, { rootMargin: `${radius}px` })
   const resize = new ResizeObserver(schedule)
 
-  // Новые маршруты и раскрытые карточки подключаются автоматически.
-  // Изменения style намеренно не наблюдаем: они записываются самим эффектом.
   function refreshSurfaces() {
     for (const background of backgrounds) {
-      if (!background.isConnected) {
+      if (!background.isConnected || !background.matches(backgroundSelector)) {
         resize.unobserve(background)
         backgrounds.delete(background)
         resetBackground(background)
@@ -120,26 +147,37 @@ export function trackCursorLighting() {
       backgrounds.add(background)
       resize.observe(background)
     }
-    for (const surface of surfaces) {
-      if (!surface.isConnected || isInteractiveSurface(surface)) {
+    for (const surface of surfaces.keys()) {
+      if (!surface.isConnected || !surface.matches(surfaceSelector) || isInteractiveSurface(surface)) {
         intersection.unobserve(surface)
         resize.unobserve(surface)
-        surfaces.delete(surface)
         visible.delete(surface)
         resetSurface(surface)
+        surfaces.delete(surface)
       }
     }
     for (const surface of document.querySelectorAll<HTMLElement>(surfaceSelector)) {
-      if (surfaces.has(surface) || isInteractiveSurface(surface)) continue
-      surfaces.add(surface)
-      intersection.observe(surface)
-      resize.observe(surface)
+      if (isInteractiveSurface(surface)) continue
+      const layer = surface.querySelector<HTMLElement>('[data-cursor-reveal-layer]')
+      const target = layer?.closest(surfaceSelector) === surface ? layer : surface
+      if (surfaces.get(surface) === target) continue
+      if (surfaces.has(surface)) resetSurface(surface)
+      else { intersection.observe(surface); resize.observe(surface) }
+      surfaces.set(surface, target)
     }
-    schedule()
   }
 
-  const mutations = new MutationObserver(refreshSurfaces)
-  mutations.observe(document.body, { childList: true, subtree: true })
+  // Изменения DOM объединяются в один кадр; запись style не запускает новый обход.
+  const mutations = new MutationObserver(records => {
+    if (records.some(record => record.type === 'childList')) needsRefresh = true
+    const nextSuspended = Boolean(document.querySelector(suspensionSelector))
+    if (nextSuspended !== suspended) {
+      suspended = nextSuspended
+      if (suspended) clearLights()
+    }
+    schedule()
+  })
+  mutations.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-cursor-light-suspended'] })
   refreshSurfaces()
   window.addEventListener('pointermove', move, { passive: true })
   document.documentElement.addEventListener('pointerleave', hide)

@@ -67,6 +67,7 @@ export function ProficienciesEditor() {
   return (
     <SheetSection
       contentLayout="editor"
+      frame="none"
       title="Языки и владения"
     >
       <ContentEditor

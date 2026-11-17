@@ -269,6 +269,7 @@ function withParsedEntries(section: CreatureSection): CreatureSection {
     ...section,
     entries: parsed.entries,
     introduction: parsed.introduction ?? section.introduction,
+    introductionHtml: parsed.introductionHtml ?? section.introductionHtml,
   }
 }
 

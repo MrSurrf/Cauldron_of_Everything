@@ -34,7 +34,7 @@ export function CharacterEquipmentSection({
   return (
     <SheetSection className={[dragStyles.target, feedback.available && dragStyles.available,
       feedback.active && dragStyles.active, feedback.received && dragStyles.received].filter(Boolean).join(' ')}
-      contentLayout="editor" title="Снаряжение"
+      contentLayout="editor" frame="none" title="Снаряжение"
       data-encyclopedia-drop-zone="item"
       data-encyclopedia-drop-available={feedback.available || undefined}
       data-item-drop-target={feedback.active}

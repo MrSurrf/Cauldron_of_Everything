@@ -13,7 +13,7 @@
 .visionIcon {
   width: 1.25rem;
   height: 1.25rem;
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
 }
 
 .comboboxInput,

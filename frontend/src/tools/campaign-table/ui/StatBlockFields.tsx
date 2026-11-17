@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { parseCreatureFeatureDetails } from '../../../entities/creature'
 import { Button, Checkbox, IconButton, Select, TextInput } from '../../../shared/ui'
 import { ContentEditor } from '../../../shared/ui/ContentEditor'
 import { RichContent } from '../../../shared/ui/RichContent'
@@ -19,6 +20,14 @@ const labels: Record<string, string> = {
   description_html: 'Описание', higher_levels: 'На более высоких уровнях', higher_levels_html: 'На более высоких уровнях', materials: 'Материальные компоненты',
 }
 const statFieldLabel = (key: string) => labels[key] ?? key.replace(/_/g, ' ')
+const derivedFeatureFields = new Set(['attackBonus', 'save', 'damage', 'range', 'target'])
+
+function richTextMirror(html: string): string {
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  document.body.querySelectorAll('br').forEach(node => node.replaceWith(' '))
+  document.body.querySelectorAll('p, li, td, th, div, blockquote').forEach(node => node.append(' '))
+  return (document.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
 const templates: Record<string, unknown> = {
   sections: { id: '', type: 'traits', title: 'Особенности', html: '' },
   entries: { id: '', name: 'Новое умение', description: '' },
@@ -37,10 +46,12 @@ const optionLabels: Record<string, string> = {
   darkvision: 'Тёмное зрение', blindsight: 'Слепое зрение', truesight: 'Истинное зрение', tremorsense: 'Чувство вибрации', normal_vision: 'Обычное зрение',
 }
 
-export function StatHtmlField({ label, value, readOnly, onChange }: { label: string; value: string; readOnly?: boolean; onChange: (value: string) => void }) {
+export function StatHtmlField({ label, value, readOnly, hint, onChange }: { label: string; value: string; readOnly?: boolean; hint?: string; onChange: (value: string) => void }) {
+  const hintId = useId()
   return <div className={styles.statField}><span>{label}</span>
     <RichContent html={value} className={`${styles.statHtmlEditor} ${panelStyles.htmlField}`} contentEditable={!readOnly} suppressContentEditableWarning
       role={readOnly ? undefined : 'textbox'} aria-label={label} aria-multiline={!readOnly || undefined}
+      aria-describedby={hint ? hintId : undefined}
       onClick={event => { if (!readOnly && (event.target as HTMLElement).closest('a')) event.preventDefault() }}
       onPaste={event => {
         if (readOnly) return
@@ -52,6 +63,7 @@ export function StatHtmlField({ label, value, readOnly, onChange }: { label: str
         const text = document.createTextNode(event.clipboardData.getData('text/plain'))
         range.insertNode(text); range.setStartAfter(text); range.collapse(true); selection.removeAllRanges(); selection.addRange(range)
       }} onBlur={event => { if (!readOnly && event.currentTarget.innerHTML !== value) onChange(event.currentTarget.innerHTML.replace(/<div(?:\s[^>]*)?>/gi, '<p>').replace(/<\/div>/gi, '</p>')) }} />
+    {hint && <p id={hintId} className={styles.hint}>{hint}</p>}
   </div>
 }
 
@@ -74,22 +86,39 @@ export function StatBlockField({ field, value, path = '', readOnly = false, onCh
   </fieldset>
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>
+    const hasRichDescription = typeof record.descriptionHtml === 'string'
+    const hasDerivedMechanics = hasRichDescription && Array.from(derivedFeatureFields).some(key => {
+      const item = record[key]
+      return Array.isArray(item) ? item.length > 0 : typeof item === 'number' || Boolean(item)
+    })
     const defaults = field === 'save' ? { ability: 'strength', dc: null }
       : field === 'armorClass' ? { details: [] }
       : /Умения и действия/.test(path) && /^\d+$/.test(field) ? { subtitle: '', usage: '', attackBonus: null, save: { ability: 'strength', dc: null }, damage: [], range: '', target: '', effect: '', conditions: [], rolls: [] } : {}
-    return <fieldset className={`${styles.statGroup} ${panelStyles.group}`}><legend>{label}</legend>{Object.entries({ ...defaults, ...record }).filter(([key]) => !['id', 'slug', 'entityType'].includes(key)).map(([key, item]) =>
-      <StatBlockField key={key} field={key} value={item} path={accessible} readOnly={readOnly} onChange={next => {
+    return <fieldset className={`${styles.statGroup} ${panelStyles.group}`}><legend>{label}</legend>{Object.entries({ ...defaults, ...record }).filter(([key]) => !['id', 'slug', 'entityType', 'descriptionHtml', 'introductionHtml'].includes(key)
+      && !(hasRichDescription && derivedFeatureFields.has(key))
+      && !(key === 'html' && Array.isArray(record.entries))).map(([key, item]) => {
+      const richKey = key === 'description' ? 'descriptionHtml' : key === 'introduction' ? 'introductionHtml' : undefined
+      if (richKey && typeof record[richKey] === 'string') return <StatHtmlField key={key}
+        label={`${accessible}: ${statFieldLabel(key)}`} value={record[richKey]} readOnly={readOnly}
+        hint={!readOnly && key === 'description' && hasDerivedMechanics ? 'Урон и параметры атаки изменяются в этом тексте.' : undefined}
+        onChange={html => {
+          const text = richTextMirror(html)
+          onChange({ ...record, ...(key === 'description' ? parseCreatureFeatureDetails(text) : {}), [key]: text, [richKey]: html })
+        }} />
+      return <StatBlockField key={key} field={key} value={item} path={accessible} readOnly={readOnly} onChange={next => {
         const changed = { ...record, [key]: next }
-        if (key === 'html') { delete changed.entries; delete changed.introduction }
+        if (key === 'description') delete changed.descriptionHtml
+        if (key === 'introduction') delete changed.introductionHtml
+        if (key === 'html') { delete changed.entries; delete changed.introduction; delete changed.introductionHtml }
         onChange(changed)
-      }} />)}
+      }} />})}
       {!readOnly && field === 'skills' && <div className={styles.statArrayRow}>
         <TextInput rootClassName={panelStyles.fieldControl} aria-label="Название навыка" value={newField} onChange={event => setNewField(event.target.value)} />
         <Button size="sm" variant="secondary" decoration="bare" className={panelStyles.action} disabled={!newField.trim() || newField.trim() in record} onClick={() => { onChange({ ...record, [newField.trim()]: '' }); setNewField('') }}>Добавить навык</Button>
       </div>}
     </fieldset>
   }
-  if (field === 'html' || field.endsWith('_html') || (field === 'description' && /Умения и действия/.test(path))) return <StatHtmlField label={accessible} value={String(value ?? '')} readOnly={readOnly} onChange={onChange} />
+  if (field === 'html' || field.endsWith('_html')) return <StatHtmlField label={accessible} value={String(value ?? '')} readOnly={readOnly} onChange={onChange} />
   if (typeof value === 'boolean') return <Checkbox label={label} aria-label={accessible} checked={value} disabled={readOnly} onCheckedChange={onChange} />
   if (field === 'description' || field === 'introduction' || (typeof value === 'string' && value.includes('\n'))) return <div className={styles.statField}><span>{label}</span>
     <ContentEditor rootClassName={panelStyles.contentEditor} accessibleLabel={accessible} value={String(value ?? '')} readOnly={readOnly} onValueChange={onChange} rows={3} renderPreview />

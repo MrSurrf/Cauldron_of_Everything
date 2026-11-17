@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, serializeTable, updateCanvasEntity } from './table'
+import { createEmptyCharacterSheet } from '../../character-sheet'
+import { applyDiagramNodeChanges, changeDiagram, createCanvasObject, createDiagram, createInstance, createTable, duplicatePlacement, moveToLocation, NODE_ENTITY_TYPES, parseTable, placeCanvasObject, placeExistingEntity, removeInstances, resolveDiagram, resolveNode, serializeTable, updateCanvasEntity } from './table'
 import type { LibraryReference } from './library'
 import { canPlaceReference, PLACEMENT_LIBRARY_SECTIONS } from './library'
 
@@ -13,6 +14,88 @@ function fixture() {
   return { table, a, b, creature }
 }
 describe('нормализованный документ кампании', () => {
+  it('повторно использует проекции и данные нод при изменении только геометрии', () => {
+    const { table, creature } = fixture()
+    const second = createDiagram('Неактивная схема')
+    const original = { ...table, diagrams: [...table.diagrams, second] }
+    const before = resolveDiagram(original, original.diagrams[0])
+    const snapshot = structuredClone(original)
+    expect(resolveDiagram(original, original.diagrams[0])).toBe(before)
+    expect(resolveNode(original.diagrams[0].nodes[2], original.entities[2])).toBe(before.nodes[2])
+
+    const moved = applyDiagramNodeChanges(original, original.activeId, [
+      { type: 'position', id: creature.node.id, position: { x: 110, y: 220 }, dragging: true },
+      { type: 'dimensions', id: creature.node.id, dimensions: { width: 280, height: 180 }, setAttributes: true },
+      { type: 'select', id: creature.node.id, selected: true },
+    ])
+    const after = resolveDiagram(moved, moved.diagrams[0])
+    expect(moved.entities).toBe(original.entities)
+    expect(moved.diagrams[1]).toBe(second)
+    expect(moved.diagrams[0].edges).toBe(original.diagrams[0].edges)
+    expect(moved.diagrams[0].nodes[0]).toBe(original.diagrams[0].nodes[0])
+    expect(after.nodes[0]).toBe(before.nodes[0])
+    expect(after.nodes[1]).toBe(before.nodes[1])
+    expect(after.nodes[2]).not.toBe(before.nodes[2])
+    expect(after.nodes[2].data).toBe(before.nodes[2].data)
+    expect(after.nodes[2]).toMatchObject({ position: { x: 110, y: 220 }, width: 280, height: 180, selected: true, dragging: true })
+    expect(original).toEqual(snapshot)
+  })
+  it('сохраняет ссылки Entity и размещений в общем редакторе геометрии', () => {
+    const { table, creature } = fixture()
+    const before = resolveDiagram(table, table.diagrams[0])
+    const moved = changeDiagram(table, table.activeId, diagram => ({ ...diagram,
+      nodes: diagram.nodes.map(node => node.id === creature.node.id ? { ...node, position: { x: 250, y: 420 } } : node),
+    }))
+    expect(moved.entities).toBe(table.entities)
+    expect(moved.diagrams[0].nodes[0]).toBe(table.diagrams[0].nodes[0])
+    expect(moved.diagrams[0].nodes[2].data).toBe(table.diagrams[0].nodes[2].data)
+    expect(resolveDiagram(moved, moved.diagrams[0]).nodes[2].data).toBe(before.nodes[2].data)
+    expect(changeDiagram(moved, moved.activeId, diagram => ({ ...diagram, nodes: [...diagram.nodes] }))).toBe(moved)
+  })
+  it('обновляет общую Entity на всех схемах, сохраняя проекции остальных объектов', () => {
+    const { table, creature } = fixture()
+    const second = createDiagram('Другая схема')
+    const shared = placeExistingEntity({ ...table, diagrams: [...table.diagrams, second] }, second.id, creature.entity.id, { x: -90, y: 40 })
+    const before = resolveDiagram(shared, shared.diagrams[0])
+    const otherBefore = resolveDiagram(shared, shared.diagrams[1])
+    const renamed = changeDiagram(shared, shared.activeId, diagram => ({ ...diagram,
+      nodes: diagram.nodes.map(node => node.id === creature.node.id ? { ...node, data: { ...node.data, title: 'Хранитель' } } : node),
+    }))
+    const after = resolveDiagram(renamed, renamed.diagrams[0])
+    const otherAfter = resolveDiagram(renamed, renamed.diagrams[1])
+    expect(renamed.diagrams).toBe(shared.diagrams)
+    expect(renamed.entities[0]).toBe(shared.entities[0])
+    expect(after.nodes[0]).toBe(before.nodes[0])
+    expect(after.nodes[2].data.title).toBe('Хранитель')
+    expect(otherAfter.nodes[0].data.title).toBe('Хранитель')
+    expect(otherAfter.nodes[0]).not.toBe(otherBefore.nodes[0])
+    expect(before.nodes[2].data.title).toBe('Призрак')
+    expect(otherBefore.nodes[0].data.title).toBe('Призрак')
+  })
+  it('не создаёт документ на пустых и повторных изменениях React Flow', () => {
+    const { table, creature } = fixture()
+    expect(applyDiagramNodeChanges(table, table.activeId, [])).toBe(table)
+    expect(applyDiagramNodeChanges(table, table.activeId, [{ type: 'position', id: creature.node.id, position: { ...creature.node.position } }])).toBe(table)
+    const changes = [{ type: 'select' as const, id: creature.node.id, selected: true },
+      { type: 'dimensions' as const, id: creature.node.id, dimensions: { width: 280, height: 180 }, setAttributes: true }]
+    const measured = applyDiagramNodeChanges(table, table.activeId, changes)
+    expect(applyDiagramNodeChanges(measured, measured.activeId, changes)).toBe(measured)
+    expect(applyDiagramNodeChanges(table, 'missing', changes)).toBe(table)
+  })
+  it('создаёт широкую wiki-панель и синхронизирует имя страницы с кампанийным листом', () => {
+    const table = createTable()
+    expect(table.layout.inspectorWidth).toBe(520)
+    const object = createCanvasObject('playerCharacter', { x: 0, y: 0 })
+    object.entity.name = 'Элора'
+    object.entity.campaignCharacter = { document: createEmptyCharacterSheet({ id: object.entity.id }) }
+    const placed = placeCanvasObject(table, table.activeId, object, object.entity.name)
+    const renamed = updateCanvasEntity(placed, object.entity.id, { name: 'Элора из Серых земель' })
+    expect(renamed.entities[0].campaignCharacter?.document.identity.name).toBe('Элора из Серых земель')
+    const document = structuredClone(renamed.entities[0].campaignCharacter!.document)
+    document.identity.name = 'Элора Вторая'
+    const fromSheet = updateCanvasEntity(renamed, object.entity.id, { campaignCharacter: { document } })
+    expect(fromSheet.entities[0].name).toBe('Элора Вторая')
+  })
   it('сохраняет оформление связей и исключает временные состояния анимации', () => {
     const { table, a, b } = fixture()
     table.diagrams[0].edges = [{ id: 'styled', source: a.node.id, target: b.node.id,
@@ -126,7 +209,7 @@ describe('нормализованный документ кампании', () 
     const old = { version: 1, activeId: 'd', diagrams: [{ id: 'd', name: 'Старая схема', viewport: { x: 12, y: 14, zoom: 0.7 }, edges: [],
       nodes: [{ id: 'n', type: 'creature', position: { x: 20, y: -40 }, data: { creature: { id: '42', name: 'Призрак', slug: 'ghost' } } }] }] }
     const migrated = parseTable(JSON.stringify(old))
-    expect(migrated.version).toBe(3)
+    expect(migrated.version).toBe(4)
     expect(migrated.entities[0].reference?.entityId).toBe('42')
     expect(migrated.diagrams[0].nodes[0].position).toEqual({ x: 20, y: -40 })
     expect(migrated.diagrams[0].viewport.zoom).toBe(0.7)
@@ -151,12 +234,65 @@ describe('нормализованный документ кампании', () 
     expect(migrated.diagrams[0].edges[0].label).toBe('Охраняет')
     expect(parseTable(serializeTable(migrated))).toEqual(migrated)
   })
+  it('мигрирует v3 wiki и кампанийный лист без потери данных, сохраняя остальные статблоки', () => {
+    const characterDocument = createEmptyCharacterSheet({ id: 'old-character' })
+    characterDocument.identity.name = 'Элора'
+    characterDocument.equipmentContentText = ':::item[Щит]{quantity="2"}'
+    characterDocument.resources.push({
+      id: 'mana', label: 'Мана', current: { mode: 'manual', manualValue: 3, formulaOverride: null },
+      maximum: { mode: 'manual', manualValue: 5, formulaOverride: null }, recovery: 'long',
+    })
+    const creatureStatBlock = { kind: 'creature' as const,
+      entity: { id: 'beast', slug: 'beast', entityType: 'creature' as const, name: 'Зверь', sections: [] } }
+    const old = {
+      ...createTable(),
+      version: 3,
+      entities: [
+        { id: 'hero', slug: 'hero', entityType: 'playerCharacter', name: 'Элора', description: 'Описание', facts: 'Следопыт', state: '',
+          reference: { source: 'character', entityId: 'source-hero', entityType: 'character', name: 'Элора', slug: 'elora', facts: [] },
+          statBlock: { kind: 'playerCharacter', document: characterDocument } },
+        { id: 'beast', slug: 'beast', entityType: 'creature', name: 'Зверь', description: '', facts: '', state: '', statBlock: creatureStatBlock },
+      ],
+      diagrams: [{ ...createTable().diagrams[0], id: 'd', nodes: [], edges: [] }],
+      activeId: 'd',
+    }
+    const migrated = parseTable(JSON.stringify(old))
+    const hero = migrated.entities[0]
+
+    expect(migrated.version).toBe(4)
+    expect(hero.statBlock).toBeUndefined()
+    expect(hero.campaignCharacter).toEqual({ sourceCharacterId: 'source-hero', document: characterDocument })
+    expect(hero.wiki).toEqual({ aliases: [], status: '', tags: [], world: '', customProperties: [], sections: [], media: {} })
+    expect(migrated.entities[1].statBlock).toEqual(creatureStatBlock)
+    expect(parseTable(serializeTable(migrated))).toEqual(migrated)
+  })
+  it('проверяет границу между wiki, кампанийным листом и статблоком', () => {
+    const { table } = fixture()
+    const invalidWiki = structuredClone(table)
+    invalidWiki.entities[0].wiki.sections.push({
+      id: 'private', title: 'Тайна', content: 'Текст', visibility: 'master', collapsedByDefault: false,
+    })
+    invalidWiki.entities[0].wiki.sections.push({
+      id: 'private', title: 'Дубль', content: '', visibility: 'players', collapsedByDefault: true,
+    })
+    expect(() => parseTable(JSON.stringify(invalidWiki))).toThrow()
+
+    const foreignCharacter = structuredClone(table)
+    Object.assign(foreignCharacter.entities[0], {
+      campaignCharacter: { document: createEmptyCharacterSheet({ id: foreignCharacter.entities[0].id }) },
+    })
+    expect(() => parseTable(JSON.stringify(foreignCharacter))).toThrow()
+
+    const oldPlayerBlockInV4 = structuredClone(table) as unknown as { entities: Array<Record<string, unknown>> }
+    oldPlayerBlockInV4.entities[0].statBlock = { kind: 'playerCharacter', document: createEmptyCharacterSheet() }
+    expect(() => parseTable(JSON.stringify(oldPlayerBlockInV4))).toThrow()
+  })
   it('отклоняет повреждённые ссылки, содержательные данные в ноде и неизвестные версии', () => {
     const { table } = fixture()
     const broken = structuredClone(table)
     broken.diagrams[0].nodes[0].data.entityId = 'missing'
     expect(() => parseTable(JSON.stringify(broken))).toThrow()
-    expect(() => parseTable(JSON.stringify({ ...table, version: 4 }))).toThrow()
+    expect(() => parseTable(JSON.stringify({ ...table, version: 5 }))).toThrow()
     Object.assign(table.diagrams[0].nodes[0].data, { title: 'Недопустимая копия' })
     expect(() => parseTable(JSON.stringify(table))).toThrow()
     const invalidEdge = createTable(); invalidEdge.diagrams[0].edges = [{ id: 'x', source: 'missing', target: 'missing-too' }]

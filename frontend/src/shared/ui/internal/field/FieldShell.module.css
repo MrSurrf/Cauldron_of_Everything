@@ -9,6 +9,10 @@
     var(--field-font-family, var(--font-family-body));
 }
 
+:global(:where(:root[data-theme='light'])) .field {
+  --field-label-background: var(--color-surface-muted);
+}
+
 .controlShell {
   position: relative;
 
@@ -74,7 +78,7 @@
   filter:
     drop-shadow(
       0 0 0.12rem
-      var(--palette-white)
+      var(--color-text-primary)
     )
     drop-shadow(
       0 0 0.62rem

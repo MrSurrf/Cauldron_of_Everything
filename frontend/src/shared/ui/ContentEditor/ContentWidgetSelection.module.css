@@ -48,7 +48,7 @@
 
 .dragHandle:active { cursor: grabbing; }
 .dragHandle:hover,
-.dragHandle:focus-visible { color: var(--palette-purple-300); opacity: 1; }
+.dragHandle:focus-visible { color: var(--color-interactive); opacity: 1; }
 .dragHandle:focus-visible { box-shadow: var(--focus-ring); }
 
 .dragHandle > span {

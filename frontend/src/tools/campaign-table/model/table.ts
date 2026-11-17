@@ -1,4 +1,5 @@
-import type { Edge, Node, Viewport, XYPosition } from '@xyflow/react'
+import { applyNodeChanges } from '@xyflow/react'
+import type { Edge, Node, NodeChange, Viewport, XYPosition } from '@xyflow/react'
 import type { BaseEntity, EntityType } from '../../../entities/base'
 import type { LibraryReference, LibrarySection } from './library'
 import { placementLibrarySection } from './library'
@@ -8,6 +9,10 @@ import type { InstanceStatBlock } from './instanceStatBlock'
 import { persistedEdgeAppearance, validEdgeAppearance } from './edgeAppearance'
 import type { EdgeAppearance, EdgeMotion } from './edgeAppearance'
 import { canPlaceInside, containerOf, moveInside, syncContainedEquipment } from './nodeContainment'
+import { createWikiDefaults, validWiki } from './wiki'
+import type { EntityWiki } from './wiki'
+import { validCampaignCharacter } from './campaignCharacter'
+import type { CampaignCharacter } from './campaignCharacter'
 
 export const NODE_ENTITY_TYPES = ['playerCharacter', 'npc', 'creature', 'location', 'quest', 'faction', 'item', 'spell', 'note'] as const
 export type NodeEntityType = typeof NODE_ENTITY_TYPES[number]
@@ -17,22 +22,26 @@ export type CanvasEntity = BaseEntity & {
   description: string
   facts: string
   state: string
+  wiki: EntityWiki
   reference?: LibraryReference
   statBlock?: InstanceStatBlock
+  campaignCharacter?: CampaignCharacter
 }
 export type PlacementData = { entityId: string; locationId?: string; containerId?: string; equipmentSource?: string }
 export type EntityNode = Node<PlacementData, 'entity' | 'location' | 'note'>
 export type TableEdge = Edge<{ description?: string } & EdgeAppearance & EdgeMotion> & { label?: string }
 export type StoredDiagram = { id: string; name: string; nodes: EntityNode[]; edges: TableEdge[]; viewport: Viewport }
 export type CampaignTable = {
-  version: 3; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
+  version: 4; activeId: string; diagrams: StoredDiagram[]; entities: CanvasEntity[]
   layout: { libraryWidth: number; inspectorWidth: number; section: LibrarySection; query: string }
 }
 // Только проекция для прежних редакторов и React Flow, никогда не хранится в документе.
 export type InstanceData = PlacementData & {
   entityType: EntityType; reference?: LibraryReference
   title: string; description: string; facts: string; state: string
+  wiki: EntityWiki
   statBlock?: InstanceStatBlock
+  campaignCharacter?: CampaignCharacter
   /** Временное отображение React Flow; в документ Entity/размещения не записывается. */
   display?: { creatureExpanded?: boolean; arrivalKey?: number }
 }
@@ -49,15 +58,15 @@ export function createDiagram(name = 'Основная схема'): StoredDiagr
 }
 export function createTable(): CampaignTable {
   const diagram = createDiagram()
-  return { version: 3, activeId: diagram.id, diagrams: [diagram], entities: [],
-    layout: { libraryWidth: 336, inspectorWidth: 380, section: 'creature', query: '' } }
+  return { version: 4, activeId: diagram.id, diagrams: [diagram], entities: [],
+    layout: { libraryWidth: 336, inspectorWidth: 520, section: 'creature', query: '' } }
 }
 export function createPlacement(entity: CanvasEntity, position: XYPosition): EntityNode {
   return { id: crypto.randomUUID(), type: placementType(entity.entityType), position, data: { entityId: entity.id } }
 }
 export function createCanvasObject(type: NodeEntityType, position: XYPosition) {
   const id = crypto.randomUUID()
-  const entity: CanvasEntity = { id, slug: id, entityType: type, name: '', description: '', facts: '', state: '' }
+  const entity: CanvasEntity = { id, slug: id, entityType: type, name: '', description: '', facts: '', state: '', wiki: createWikiDefaults() }
   return { entity, node: createPlacement(entity, position) }
 }
 export function createInstance(reference: LibraryReference, position: XYPosition) {
@@ -77,7 +86,7 @@ export function placeCanvasObject(table: CampaignTable, diagramId: string, objec
     const targetId = containerOf(node)
     const target = diagram.nodes.find(item => item.id === targetId)
     if (targetId && (!target || !canPlaceInside(node, target)
-      || (target.data.entityType === 'playerCharacter' && target.data.statBlock?.kind !== 'playerCharacter'))) {
+      || (target.data.entityType === 'playerCharacter' && !target.data.campaignCharacter))) {
       node = { ...node, data: { ...node.data, locationId: undefined, containerId: undefined } }
     }
     return { ...diagram, nodes: [...diagram.nodes, node] }
@@ -89,23 +98,86 @@ export function placeExistingEntity(table: CampaignTable, diagramId: string, ent
   return { ...table, diagrams: table.diagrams.map(diagram => diagram.id === diagramId
     ? { ...diagram, nodes: [...diagram.nodes, createPlacement(entity, position)] } : diagram) }
 }
-export function updateCanvasEntity(table: CampaignTable, id: string, changes: Partial<Pick<CanvasEntity, 'name' | 'description' | 'facts' | 'state'>>): CampaignTable {
+export function updateCanvasEntity(table: CampaignTable, id: string, changes: Partial<Pick<CanvasEntity,
+  'name' | 'description' | 'facts' | 'state' | 'wiki' | 'statBlock' | 'campaignCharacter'>>): CampaignTable {
   if (changes.name !== undefined && !changes.name.trim()) return table
-  return { ...table, entities: table.entities.map(entity => entity.id === id
-    ? { ...entity, ...changes, name: changes.name?.trim() ?? entity.name } : entity) }
+  return { ...table, entities: table.entities.map(entity => {
+    if (entity.id !== id) return entity
+    let name = changes.name?.trim() ?? entity.name
+    let campaignCharacter = changes.campaignCharacter ?? entity.campaignCharacter
+    if (changes.name !== undefined && campaignCharacter) {
+      campaignCharacter = { ...campaignCharacter, document: { ...campaignCharacter.document,
+        identity: { ...campaignCharacter.document.identity, name } } }
+    } else if (changes.campaignCharacter?.document.identity.name.trim()) {
+      name = changes.campaignCharacter.document.identity.name.trim()
+    }
+    return { ...entity, ...changes, name, campaignCharacter }
+  }) }
 }
+// Кэши привязаны к неизменяемым объектам документа и освобождаются вместе с ними.
+const entityIndexes = new WeakMap<CanvasEntity[], ReadonlyMap<string, CanvasEntity>>()
+const resolvedNodes = new WeakMap<EntityNode, WeakMap<CanvasEntity, TableNode>>()
+const resolvedData = new WeakMap<PlacementData, WeakMap<CanvasEntity, InstanceData>>()
+const resolvedDiagrams = new WeakMap<StoredDiagram, WeakMap<CanvasEntity[], Diagram>>()
+
+function entityIndex(entities: CanvasEntity[]): ReadonlyMap<string, CanvasEntity> {
+  let index = entityIndexes.get(entities)
+  if (!index) {
+    index = new Map(entities.map(entity => [entity.id, entity]))
+    entityIndexes.set(entities, index)
+  }
+  return index
+}
+
 export function resolveNode(node: EntityNode, entity: CanvasEntity): TableNode {
-  return { ...node, data: { ...node.data, entityType: entity.entityType, title: entity.name,
-    description: entity.description, facts: entity.facts, state: entity.state, reference: entity.reference, statBlock: entity.statBlock } }
+  let nodes = resolvedNodes.get(node)
+  const cached = nodes?.get(entity)
+  if (cached) return cached
+  let dataByEntity = resolvedData.get(node.data)
+  let data = dataByEntity?.get(entity)
+  if (!data) {
+    data = { ...node.data, entityType: entity.entityType, title: entity.name,
+      description: entity.description, facts: entity.facts, state: entity.state, wiki: entity.wiki,
+      reference: entity.reference, statBlock: entity.statBlock, campaignCharacter: entity.campaignCharacter }
+    if (!dataByEntity) resolvedData.set(node.data, dataByEntity = new WeakMap())
+    dataByEntity.set(entity, data)
+  }
+  const result = { ...node, data }
+  if (!nodes) resolvedNodes.set(node, nodes = new WeakMap())
+  nodes.set(entity, result)
+  return result
 }
 export function resolveDiagram(table: CampaignTable, diagram: StoredDiagram): Diagram {
-  const entities = new Map(table.entities.map(entity => [entity.id, entity]))
-  return { ...diagram, nodes: diagram.nodes.map(node => resolveNode(node, entities.get(node.data.entityId)!)) }
+  let diagrams = resolvedDiagrams.get(diagram)
+  const cached = diagrams?.get(table.entities)
+  if (cached) return cached
+  const entities = entityIndex(table.entities)
+  const result = { ...diagram, nodes: diagram.nodes.map(node => resolveNode(node, entities.get(node.data.entityId)!)) }
+  if (!diagrams) resolvedDiagrams.set(diagram, diagrams = new WeakMap())
+  diagrams.set(table.entities, result)
+  return result
 }
-function placement(node: TableNode): EntityNode {
-  return { ...node, data: { entityId: node.data.entityId, ...(node.data.locationId ? { locationId: node.data.locationId } : {}),
-    ...(node.data.containerId ? { containerId: node.data.containerId } : {}),
-    ...(node.data.equipmentSource ? { equipmentSource: node.data.equipmentSource } : {}) } }
+function sameGeometry(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false
+  const left = a as Record<string, unknown>, right = b as Record<string, unknown>
+  const keys = Object.keys(left)
+  return keys.length === Object.keys(right).length && keys.every(key => left[key] === right[key])
+}
+function sameNodeProperties(a: EntityNode, b: EntityNode): boolean {
+  const keys = Object.keys(a).filter(key => key !== 'data') as Array<keyof EntityNode>
+  return keys.length === Object.keys(b).filter(key => key !== 'data').length
+    && keys.every(key => key === 'position' || key === 'measured' ? sameGeometry(a[key], b[key]) : a[key] === b[key])
+}
+function placement(node: TableNode, previous?: EntityNode): EntityNode {
+  const data = previous && node.data.entityId === previous.data.entityId
+    && node.data.locationId === previous.data.locationId && node.data.containerId === previous.data.containerId
+    && node.data.equipmentSource === previous.data.equipmentSource ? previous.data
+    : { entityId: node.data.entityId, ...(node.data.locationId ? { locationId: node.data.locationId } : {}),
+      ...(node.data.containerId ? { containerId: node.data.containerId } : {}),
+      ...(node.data.equipmentSource ? { equipmentSource: node.data.equipmentSource } : {}) }
+  if (previous && data === previous.data && sameNodeProperties(node, previous)) return previous
+  return { ...node, data }
 }
 // Граница между существующими UI-редакторами и нормализованным документом.
 // Геометрия остаётся у размещения; изменения содержимого попадают в Entity.
@@ -114,20 +186,73 @@ export function changeDiagram(table: CampaignTable, id: string, update: (diagram
   if (!stored) return table
   const before = resolveDiagram(table, stored)
   let after = update(before)
-  const previousNodes = new Map(before.nodes.map(node => [node.id, node.data]))
-  const entities = new Map(table.entities.map(entity => [entity.id, entity]))
+  if (after === before) return table
+  if (after.nodes === before.nodes) {
+    if (after.edges === stored.edges && after.viewport === stored.viewport && after.name === stored.name && after.id === stored.id) return table
+    return { ...table, diagrams: table.diagrams.map(diagram => diagram === stored ? { ...after, nodes: stored.nodes } : diagram) }
+  }
+  const previousNodes = new Map(before.nodes.map(node => [node.id, node]))
+  const index = entityIndex(table.entities)
+  let entities: Map<string, CanvasEntity> | undefined
+  let containmentChanged = false
   for (const node of after.nodes) {
-    const previous = previousNodes.get(node.id)
+    const previous = previousNodes.get(node.id)?.data
     const data = node.data
-    const entity = entities.get(data.entityId)
+    if (previous === data) continue
+    if (previous?.containerId !== data.containerId) containmentChanged = true
+    const entity = (entities ?? index).get(data.entityId)
     if (!entity) throw new Error('Размещение ссылается на отсутствующую Entity')
-    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts || previous.state !== data.state || previous.statBlock !== data.statBlock)) {
-      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description, facts: data.facts, state: data.state, statBlock: data.statBlock })
+    if (previous && (previous.title !== data.title || previous.description !== data.description || previous.facts !== data.facts
+      || previous.state !== data.state || previous.wiki !== data.wiki || previous.statBlock !== data.statBlock
+      || previous.campaignCharacter !== data.campaignCharacter)) {
+      entities ??= new Map(index)
+      entities.set(entity.id, { ...entity, name: data.title.trim() || entity.name, description: data.description,
+        facts: data.facts, state: data.state, wiki: data.wiki, statBlock: data.statBlock,
+        campaignCharacter: data.campaignCharacter })
     }
   }
-  after = syncContainedEquipment(before, after, entities)
-  return { ...table, entities: [...entities.values()], diagrams: table.diagrams.map(diagram => diagram.id === id
-    ? { ...after, nodes: after.nodes.map(placement) } : diagram) }
+  if (!containmentChanged) {
+    const remaining = new Set(after.nodes.map(node => node.id))
+    containmentChanged = before.nodes.some(node => node.data.containerId && !remaining.has(node.id))
+  }
+  if (containmentChanged) {
+    entities ??= new Map(index)
+    after = syncContainedEquipment(before, after, entities)
+  }
+  const originals = new Map(stored.nodes.map(node => [node.id, node]))
+  let nodes = after.nodes.map(node => {
+    const original = originals.get(node.id)
+    return original && node === previousNodes.get(node.id) ? original : placement(node, original)
+  })
+  if (nodes.length === stored.nodes.length && nodes.every((node, i) => node === stored.nodes[i])) nodes = stored.nodes
+  const diagram = nodes === stored.nodes && after.edges === stored.edges && after.viewport === stored.viewport
+    && after.name === stored.name && after.id === stored.id ? stored : { ...after, nodes }
+  const nextEntities = entities && [...entities.values()]
+  const entityChanged = nextEntities?.some((entity, i) => entity !== table.entities[i])
+  if (diagram === stored && !entityChanged) return table
+  return { ...table, entities: entityChanged ? nextEntities! : table.entities,
+    diagrams: diagram === stored ? table.diagrams : table.diagrams.map(item => item === stored ? diagram : item) }
+}
+
+/** Частые события React Flow меняют только размещения, не затрагивая содержимое Entity. */
+export function applyDiagramNodeChanges(table: CampaignTable, id: string, changes: NodeChange<EntityNode>[]): CampaignTable {
+  if (!changes.length) return table
+  const stored = table.diagrams.find(diagram => diagram.id === id)
+  if (!stored) return table
+  if (changes.some(change => change.type === 'add' || change.type === 'replace' || change.type === 'remove')) {
+    const entities = entityIndex(table.entities)
+    const removed = new Set(changes.filter(change => change.type === 'remove').map(change => change.id))
+    const projectedChanges: NodeChange<TableNode>[] = changes.filter(change => change.type !== 'remove').map(change => change.type === 'add' || change.type === 'replace'
+      ? { ...change, item: resolveNode(change.item, entities.get(change.item.data.entityId)!) } : change)
+    return changeDiagram(table, id, diagram => {
+      const next = removed.size ? removeInstances(diagram, removed) : diagram
+      return projectedChanges.length ? { ...next, nodes: applyNodeChanges(projectedChanges, next.nodes) } : next
+    })
+  }
+  const updated = applyNodeChanges(changes, stored.nodes)
+  const nodes = updated.map((node, i) => node === stored.nodes[i] || sameNodeProperties(node, stored.nodes[i]) ? stored.nodes[i] : node)
+  if (nodes.every((node, i) => node === stored.nodes[i])) return table
+  return { ...table, diagrams: table.diagrams.map(diagram => diagram === stored ? { ...diagram, nodes } : diagram) }
 }
 export function duplicatePlacement(table: CampaignTable, diagramId: string, nodeId: string, placementId: string = crypto.randomUUID()): CampaignTable {
   const diagram = table.diagrams.find(item => item.id === diagramId)
@@ -141,7 +266,7 @@ export function duplicatePlacement(table: CampaignTable, diagramId: string, node
     position: { x: node.position.x + 40, y: node.position.y + 40 }, data: { ...node.data, entityId: id } }
   const entityCopy = { ...structuredClone(entity), id, slug: id }
   if (entityCopy.statBlock?.kind === 'creature') entityCopy.statBlock.entity.id = id
-  if (entityCopy.statBlock?.kind === 'playerCharacter') entityCopy.statBlock.document.id = id
+  if (entityCopy.campaignCharacter) entityCopy.campaignCharacter.document.id = id
   const extended = { ...table, entities: id === entity.id ? table.entities : [...table.entities, entityCopy] }
   return changeDiagram(extended, diagramId, current => ({ ...current, nodes: [...current.nodes, resolveNode(copy, entityCopy)] }))
 }
@@ -178,11 +303,18 @@ export function validReference(ref: unknown): ref is LibraryReference {
   return record(ref) && text(ref.entityId) && Boolean(ref.entityId) && text(ref.name) && text(ref.slug)
     && ['encyclopedia', 'character', 'campaign'].includes(String(ref.source))
     && [...entityTypes, 'character'].includes(ref.entityType as EntityType) && Array.isArray(ref.facts) && ref.facts.every(text)
+    && (ref.classification === undefined || text(ref.classification))
+    && (ref.rarity === undefined || text(ref.rarity))
+    && (ref.school === undefined || text(ref.school))
+    && (ref.level === undefined || ref.level === null || (finite(ref.level) && Number.isSafeInteger(ref.level) && ref.level >= 0))
+    && (ref.ritual === undefined || typeof ref.ritual === 'boolean')
+    && (ref.concentration === undefined || typeof ref.concentration === 'boolean')
 }
 
-function migrateLegacy(raw: string): CampaignTable {
+function migrateLegacy(raw: string) {
   const old = parseLegacyTable(raw)
-  const entities = new Map<string, CanvasEntity>((old.entities ?? []).map(entity => [entity.id, { ...entity, facts: '', state: '' }]))
+  type V3Entity = BaseEntity & { description: string; facts: string; state: string; reference?: LibraryReference }
+  const entities = new Map<string, V3Entity>((old.entities ?? []).map(entity => [entity.id, { ...entity, facts: '', state: '' }]))
   const diagrams = old.diagrams.map(diagram => ({ ...diagram, nodes: diagram.nodes.map(node => {
     let id = node.data.localEntityId
     if (!id) {
@@ -199,17 +331,48 @@ function migrateLegacy(raw: string): CampaignTable {
   }), edges: diagram.edges.map(({ id, source, target, label, data }) => ({ id, source, target, label, data })) }))
   return { ...old, version: 3, entities: [...entities.values()], diagrams }
 }
+
+/** v3 хранил лист игрока в statBlock; v4 отделяет кампанийный лист от статблоков энциклопедии. */
+function migrateV3(value: Record<string, unknown>) {
+  const entities = Array.isArray(value.entities) ? value.entities.map(candidate => {
+    if (!record(candidate)) return candidate
+    const entity = { ...candidate }
+    const statBlock = entity.statBlock
+    delete entity.wiki
+    delete entity.campaignCharacter
+    delete entity.statBlock
+    if (candidate.entityType === 'playerCharacter' && record(statBlock) && statBlock.kind === 'playerCharacter') {
+      const reference = record(candidate.reference) ? candidate.reference : undefined
+      return {
+        ...entity,
+        wiki: createWikiDefaults(),
+        campaignCharacter: {
+          ...(reference?.source === 'character' && text(reference.entityId) && reference.entityId
+            ? { sourceCharacterId: reference.entityId } : {}),
+          document: statBlock.document,
+        },
+      }
+    }
+    return { ...entity, wiki: createWikiDefaults(), ...(statBlock === undefined ? {} : { statBlock }) }
+  }) : value.entities
+  return { ...value, version: 4, entities }
+}
+
 export function parseTable(raw: string): CampaignTable {
   const value: unknown = JSON.parse(raw)
   const invalid = (): never => { throw new Error('Сохранённые схемы имеют неподдерживаемый или повреждённый формат.') }
-  if (record(value) && (value.version === 1 || value.version === 2)) return parseTable(serializeTable(migrateLegacy(raw)))
-  if (!record(value) || value.version !== 3 || !Array.isArray(value.entities) || !Array.isArray(value.diagrams) || !value.diagrams.length) return invalid()
+  if (record(value) && (value.version === 1 || value.version === 2)) return parseTable(JSON.stringify(migrateLegacy(raw)))
+  if (record(value) && value.version === 3) return parseTable(JSON.stringify(migrateV3(value)))
+  if (!record(value) || value.version !== 4 || !Array.isArray(value.entities) || !Array.isArray(value.diagrams) || !value.diagrams.length) return invalid()
   const entities = new Map<string, CanvasEntity>()
   for (const entity of value.entities) {
     if (!record(entity) || !text(entity.id) || !entity.id || entities.has(entity.id) || !entityTypes.includes(entity.entityType as EntityType)
       || !text(entity.slug) || !text(entity.name) || !entity.name.trim() || !text(entity.description) || !text(entity.facts) || !text(entity.state)
+      || !validWiki(entity.wiki)
       || (entity.reference !== undefined && !validReference(entity.reference))
-      || (entity.statBlock !== undefined && !validStatBlock(entity.statBlock, String(entity.entityType)))) return invalid()
+      || (entity.statBlock !== undefined && !validStatBlock(entity.statBlock, String(entity.entityType)))
+      || (entity.campaignCharacter !== undefined
+        && (entity.entityType !== 'playerCharacter' || !validCampaignCharacter(entity.campaignCharacter)))) return invalid()
     entities.set(entity.id, entity as CanvasEntity)
   }
   const diagramIds = new Set<string>()
@@ -236,7 +399,7 @@ export function parseTable(raw: string): CampaignTable {
       if (node.data.containerId) {
         const target = nodes.get(node.data.containerId)
         if (!target || !canPlaceInside(resolveNode(node, entities.get(node.data.entityId)!), resolveNode(target, entities.get(target.data.entityId)!))
-          || entities.get(target.data.entityId)?.statBlock?.kind !== 'playerCharacter') return invalid()
+          || !entities.get(target.data.entityId)?.campaignCharacter) return invalid()
       }
     }
     const edgeIds = new Set<string>()

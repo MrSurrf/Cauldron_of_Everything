@@ -2,6 +2,8 @@
 .preview[data-over-canvas='true'] { border-color: var(--color-brand); }
 .kind { color: var(--color-brand); font-size: var(--font-size-2xs); }
 .preview strong { font-weight: 500; overflow-wrap: anywhere; }
+.name { display: flex; align-items: center; gap: var(--space-2); }
+.name > [data-icon] { flex: 0 0 28px; width: 28px; height: 28px; color: var(--color-brand); }
 .hint { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
 @keyframes appear { from { opacity: 0; scale: 0.97; } to { opacity: 1; scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .preview { animation: none; } }

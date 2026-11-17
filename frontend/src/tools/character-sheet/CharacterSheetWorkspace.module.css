@@ -1,6 +1,7 @@
 .workspace {
   --sheet-slide-duration: 620ms;
   --sheet-slide-easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --library-dock-width: 8rem;
   position: relative;
   display: flex;
   width: 100%;
@@ -11,6 +12,20 @@
   overflow-y: hidden;
   color: var(--color-text-primary);
   background: transparent;
+}
+
+.workspace[data-library-open='true'] { --library-dock-width: 24rem; }
+
+.layoutViewport {
+  display: flex;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: calc(var(--book-min-width, 0px) + var(--library-dock-width));
+  height: 100%;
+  min-height: 0;
+  /* Скрытые окна выезда не расширяют scrollport. При zoom прокручивается
+     реальная ширина разворота и дока, а не пустая область за ними. */
+  overflow: clip;
 }
 
 .sheetSpace {
@@ -192,13 +207,12 @@
 .libraryDock {
   position: relative;
   z-index: 4;
-  flex: 0 0 8rem;
-  width: 8rem;
+  flex: 0 0 var(--library-dock-width);
+  width: var(--library-dock-width);
   height: 100%;
   min-width: 0;
   pointer-events: none;
 }
-.libraryDock[data-open='true'] { flex-basis: 24rem; width: 24rem; }
 
 .libraryReveal {
   position: absolute;

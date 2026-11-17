@@ -27,6 +27,8 @@ export default function ItemEntityPage() {
             path: `/encyclopedia/item/${encodeURIComponent(slug)}`,
             title: entity.name,
             category: 'Магические предметы',
+            itemClassification: entity.classification,
+            itemRarity: entity.rarity,
           })
         }
         setState(entity ? { status: 'ready', slug, entity } : { status: 'not-found', slug })

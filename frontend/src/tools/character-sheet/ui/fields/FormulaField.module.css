@@ -96,7 +96,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--font-family-heading);
   font-size: var(--sheet-body-size, var(--font-size-sm));
 }
@@ -213,7 +213,7 @@
 }
 
 .field[data-presentation='stat'] .label {
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   letter-spacing: 0.055em;
   text-align: center;
@@ -285,7 +285,7 @@
 }
 
 .field[data-presentation='shield'] .label {
-  color: var(--palette-purple-300);
+  color: var(--color-brand-bright);
   font-family: var(--sheet-heading-font, var(--font-family-heading));
   letter-spacing: 0.04em;
   text-transform: uppercase;

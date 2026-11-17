@@ -9,11 +9,7 @@
 
 .frame[data-framed='true'] {
   --numeric-cut: var(--space-1);
-  --numeric-border: color-mix(
-    in srgb,
-    var(--color-content-border) 74%,
-    var(--color-border-accent)
-  );
+  --numeric-border: var(--sheet-inner-frame, var(--color-content-border));
 
   padding: var(--border-width-default);
   background: var(--numeric-border);

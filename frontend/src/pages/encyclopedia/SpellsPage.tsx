@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { recordVisit } from '../../entities/encyclopedia'
+import { SpellSchoolIcon } from '../../entities/spell'
 import { Button, Checkbox, ListCard, Panel, Popover, TextInput } from '../../shared/ui'
 import { fetchEncyclopedia } from './encyclopediaApi'
 import { catalogFirstLetter, catalogNameStartsWith } from './catalogAlphabet'
@@ -146,6 +147,7 @@ export default function SpellsPage() {
     const hasConcentration = spell.concentration === 'Да'
     const hasRitual = spell.ritual === 'Да'
     const hasMarkers = hasConcentration || hasRitual
+    const levelLabel = spell.level === '0' ? 'Заговор' : spell.level ? `Уровень ${spell.level}` : 'Уровень не указан'
 
     return <button
       className={base.creatureButton}
@@ -160,8 +162,8 @@ export default function SpellsPage() {
         <ListCard
           className={`${base.catalogCard} ${styles.spellCard}`}
           name={spell.name}
-          metric={spell.level || '—'}
-          metricLabel={`Уровень заклинания: ${spell.level || 'не указан'}`}
+          tags={[levelLabel, spell.school].filter(Boolean)}
+          icon={<SpellSchoolIcon school={spell.school} className={styles.spellIcon} />}
         />
         {hasMarkers && <span className={styles.spellMarkers} aria-label="Особые свойства заклинания">
           {hasConcentration && <span title="Концентрация" aria-label="Концентрация">К</span>}
@@ -266,6 +268,7 @@ export default function SpellsPage() {
           ? 'Избранных заклинаний пока нет.'
           : 'Выберите заклинание в списке, чтобы открыть его карточку.'}</p>}
         {selected && <div className={styles.preview}>
+          <span className={styles.previewIcon} aria-hidden="true"><SpellSchoolIcon school={selected.school} className={styles.spellIcon} /></span>
           <h3>{selected.name}</h3>
           {selected.nameEn && <p className={styles.nameEn}>{selected.nameEn}</p>}
           <dl>

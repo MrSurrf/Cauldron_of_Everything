@@ -36,6 +36,12 @@ export function DevHomeMenu() {
           <MenuButton icon={null} onClick={() => navigate('/dev/login-preview')}>
             Страница входа
           </MenuButton>
+          <MenuButton icon={null} onClick={() => navigate('/404')}>
+            Страница ошибки 404
+          </MenuButton>
+          <MenuButton icon={null} onClick={() => navigate('/503')}>
+            Страница ошибки 503
+          </MenuButton>
           <MenuButton icon={null} onClick={() => setGuideOpen(true)}>
             Guide — знакомство с Виззом и Сукки
           </MenuButton>

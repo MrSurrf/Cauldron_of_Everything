@@ -8,6 +8,7 @@ import {
   type FormulaFieldValue,
 } from '../fields'
 import { SheetSection } from '../SheetSection'
+import type { SheetSectionProps } from '../SheetSection'
 import styles from './CheckLists.module.css'
 
 export type SavingThrowListItem = {
@@ -21,6 +22,7 @@ export type SavingThrowListItem = {
 
 export type SavingThrowsListProps = {
   fill?: boolean
+  frame?: SheetSectionProps['frame']
   items: readonly SavingThrowListItem[]
   onItemChange: (
     id: string,
@@ -33,6 +35,7 @@ export type SavingThrowsListProps = {
 
 export function SavingThrowsList({
   fill = false,
+  frame = 'default',
   items,
   onItemChange,
 }: SavingThrowsListProps) {
@@ -104,6 +107,7 @@ export function SavingThrowsList({
     <SheetSection
       className={styles.checkSection}
       data-fill={fill || undefined}
+      frame={frame}
       title="Спасброски"
     >
       {fill ? (

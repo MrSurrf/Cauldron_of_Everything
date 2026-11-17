@@ -1,15 +1,6 @@
 .root {
-  --sheet-frame: color-mix(
-      in srgb,
-      var(--color-content-border) 72%,
-      var(--palette-purple-300)
-    );
-  --sheet-frame-muted:
-    color-mix(
-      in srgb,
-      var(--color-content-border) 84%,
-      transparent
-    );
+  composes: palette from './ui/sheetFramePalette.module.css';
+
   --sheet-secondary-size: 0.625rem;
   --sheet-compact-text-size:
     var(--sheet-body-size, var(--font-size-sm));
@@ -113,7 +104,7 @@
 
 .root button[data-icon-only='true'][data-size]:not([data-content-editor-scale] button):focus-visible {
   border-color: var(--color-border-accent);
-  outline: var(--border-width-default) solid var(--palette-white);
+  outline: var(--border-width-default) solid var(--color-text-primary);
   outline-offset: var(--border-width-default);
   filter: none;
 }
@@ -203,6 +194,12 @@
     );
 }
 
+.statCard:is([data-stat='proficiency'], [data-stat='initiative'], [data-stat='speed']) {
+  border: 0;
+  background: transparent;
+  clip-path: none;
+}
+
 .armorClassStat {
   display: grid;
   min-width: 0;
@@ -228,7 +225,7 @@
 
   width: var(--space-1);
   aspect-ratio: 1;
-  background: var(--palette-purple-300);
+  background: var(--color-brand-bright);
   opacity: 0.7;
   transform: translateY(-50%) rotate(45deg);
 
@@ -273,9 +270,9 @@
   z-index: -2;
   background: linear-gradient(
       145deg,
-      var(--palette-purple-300),
+      var(--color-brand-bright),
       var(--color-border-accent) 48%,
-      var(--palette-purple-700)
+      var(--color-brand-deep)
     );
 }
 
@@ -537,6 +534,8 @@
 .centerLowerGrid,
 .notesLowerGrid,
 .abilityRail,
+.checksGroup,
+.combatGroup,
 .savesSlot,
 .skillsSlot,
 .proficienciesSlot,
@@ -547,6 +546,7 @@
 .equipmentSlot,
 .currencySlot,
 .carryingSlot,
+.wealthSlot,
 .personalitySections,
 .featuresSlot {
   min-width: 0;
@@ -559,46 +559,13 @@
 }
 
 .vitalsPanel {
-  --vitals-divider: var(--sheet-frame);
+  composes: section from './ui/SheetSection/SheetSection.module.css';
 
-  position: relative;
-  isolation: isolate;
+  --vitals-divider: var(--section-border);
+
   display: grid;
   height: var(--sheet-quick-row-height);
   grid-template-columns: 11.5rem minmax(0, 1fr);
-  overflow: hidden;
-  border: var(--border-width-default) solid var(--sheet-frame);
-  background: linear-gradient(
-      180deg,
-      color-mix(
-        in srgb,
-        var(--color-surface-default) 94%,
-        var(--color-surface-accent)
-      ),
-      color-mix(
-        in srgb,
-        var(--color-surface-muted) 96%,
-        var(--palette-black)
-      )
-    );
-  box-shadow:
-    inset 0 0 var(--space-5)
-    color-mix(in srgb, var(--color-background) 48%, transparent);
-  clip-path:
-    polygon(
-      var(--space-2) 0,
-      calc(100% - var(--space-2)) 0,
-      100% var(--space-2),
-      100% calc(100% - var(--space-2)),
-      calc(100% - var(--space-2)) 100%,
-      var(--space-2) 100%,
-      0 calc(100% - var(--space-2)),
-      0 var(--space-2)
-    );
-}
-
-.vitalsPanel::before {
-  display: none;
 }
 
 .deathSavesSlot {
@@ -625,8 +592,7 @@
 .hitDiceSlot > *,
 .deathSavesSlot > *,
 .attacksSlot > *,
-.equipmentSlot > *,
-.currencySlot > * {
+.equipmentSlot > * {
   display: grid;
   width: 100%;
   height: auto;
@@ -643,17 +609,6 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 
-.vitalsPanel > * > * {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  clip-path: none;
-}
-
-.vitalsPanel > * > *::before {
-  display: none;
-}
-
 .hitPointsSlot > * {
   height: 100%;
   grid-template-rows: auto minmax(0, 1fr);
@@ -663,13 +618,11 @@
 .savesSlot > * > :last-child,
 .skillsSlot > * > :last-child,
 .hitDiceSlot > * > :last-child,
-.deathSavesSlot > * > :last-child,
-.currencySlot > * > :last-child {
+.deathSavesSlot > * > :last-child {
   min-height: 0;
 }
 
-.hitPointsSlot > * > :last-child,
-.currencySlot > * > :last-child {
+.hitPointsSlot > * > :last-child {
   display: grid;
   overflow: hidden;
 }
@@ -690,13 +643,13 @@
   height: 100%;
   grid-area: left-lower;
   grid-template-areas:
-    'abilities saves'
-    'abilities saves'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
-    'abilities skills'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
+    'abilities checks'
     'vision vision'
     'proficiencies proficiencies';
   grid-template-columns:
@@ -761,13 +714,18 @@
   padding: var(--sheet-compact-stat-padding);
 }
 
+.checksGroup {
+  grid-area: checks;
+  align-self: stretch;
+}
+
 .savesSlot {
-  grid-area: saves;
+  grid-row: 1 / span 2;
   align-self: stretch;
 }
 
 .skillsSlot {
-  grid-area: skills;
+  grid-row: 3 / -1;
   align-self: stretch;
 }
 
@@ -787,7 +745,6 @@
     auto
     var(--sheet-attacks-section-height)
     minmax(0, 1fr)
-    auto
     auto;
   align-self: stretch;
   align-content: start;
@@ -800,8 +757,22 @@
   align-self: stretch;
 }
 
+.combatGroup {
+  grid-row: 2 / span 2;
+  align-self: stretch;
+}
+
 .equipmentSlot {
   max-height: 25rem;
+}
+
+.wealthPanel {
+  --sheet-section-padding: var(--sheet-layout-gap);
+}
+
+.wealthPanel > div {
+  display: grid;
+  gap: var(--sheet-layout-gap);
 }
 
 .notesLowerGrid {

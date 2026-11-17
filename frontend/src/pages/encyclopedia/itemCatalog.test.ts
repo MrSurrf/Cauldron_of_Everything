@@ -43,4 +43,39 @@ describe('toCatalogItem', () => {
     expect(item.rarity).toBe('Редкость не указана')
     expect(item.attunement).toBe('Не указано')
   })
+
+  it.each([
+    ['Волшебная палочка, редкая', 'Волшебная палочка'],
+    ['Доспех (щит), необычный', 'Доспех'],
+    ['Свиток (заклинание), редкий', 'Свиток'],
+    ['Зелье, обычное', 'Зелье'],
+    ['Кольцо, очень редкое', 'Кольцо'],
+    ['Чудесный предмет, легендарный', 'Маг. безделушка'],
+    ['Волшебная безделушка', 'Маг. безделушка'],
+    ['Посох, редкий (требуется настройка)', 'Посох'],
+    ['Жезл, необычный', 'Жезл'],
+    ['Оружие (длинный меч), редкое', 'Оружие'],
+    ['Wondrous item (tattoo), rare', 'Маг. безделушка'],
+    ['Реликвия (кольцо)', 'Реликвия (кольцо)'],
+  ])('нормализует классификацию %s для фильтров', (classification, itemType) => {
+    const item = toCatalogItem({
+      id: 14,
+      entity_type: 'item',
+      name: 'Предмет',
+      slug: 'item',
+      summary: { classification },
+    })
+    expect(item.itemType).toBe(itemType)
+  })
+
+  it.each(['item_type', 'type', 'category'])('читает классификацию из поля %s', (key) => {
+    const item = toCatalogItem({
+      id: 15,
+      entity_type: 'item',
+      name: 'Клинок',
+      slug: 'blade',
+      summary: { [key]: 'Оружие (кинжал)' },
+    })
+    expect(item.itemType).toBe('Оружие')
+  })
 })

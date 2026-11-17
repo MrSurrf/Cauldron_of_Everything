@@ -19,9 +19,9 @@ const unchanged = structuredClone(originals)
 page.on('pageerror', error => errors.push(error.message))
 await page.addInitScript(() => localStorage.setItem('surveyAuth.access', 'test-token'))
 await page.route('**/api/**', async route => {
-  methods.push(route.request().method())
   const url = new URL(route.request().url())
-  if (!url.pathname.startsWith('/api/')) { methods.pop(); return route.continue() }
+  if (!url.pathname.startsWith('/api/')) return route.continue()
+  methods.push(route.request().method())
   if (url.pathname === '/api/auth/session/') return route.fulfill({ json: { authenticated: true } })
   if (offline && url.pathname !== '/api/encyclopedia/') return route.fulfill({ status: 503, json: {} })
   if (url.pathname === '/api/encyclopedia/') {
@@ -38,7 +38,7 @@ const node = id => page.locator(`.react-flow__node[data-id="${id}"]`)
 const close = async () => { const button = page.getByRole('button', { name: 'Закрыть карточку', exact: true }); if (await button.count()) await button.click() }
 async function edit(id) { await close(); await node(id).hover(); await node(id).getByRole('button', { name: /^Редактировать:/ }).click() }
 try {
-  await page.goto(`${process.env.TABLE_TEST_URL || 'http://127.0.0.1:5174'}/my-table`)
+  await page.goto(`${process.env.TABLE_TEST_URL || 'http://127.0.0.1:5173'}/my-table`)
   characterDocument = await page.evaluate(async () => {
     const { createEmptyCharacterSheet } = await import('/src/tools/character-sheet/index.ts')
     const document = createEmptyCharacterSheet(); document.identity.name = 'Герой'; return document
@@ -47,7 +47,8 @@ try {
     reference: { source: 'encyclopedia', entityId: String(entry.id), entityType: entry.entity_type, name: entry.name, slug: entry.slug, facts: [] } }))
   entities.push({ id: 'hero', slug: 'hero', entityType: 'playerCharacter', name: 'Герой', description: '', facts: '', state: '',
     reference: { source: 'character', entityId: 'hero', entityType: 'character', name: 'Герой', slug: 'hero', facts: [] } })
-  const document = { version: 3, activeId: 'd', entities, layout: { libraryWidth: 336, inspectorWidth: 700, section: 'creature', query: '' }, diagrams: [{ id: 'd', name: 'Схема', viewport: { x: 0, y: 0, zoom: 1 }, edges: [],
+  for (const entity of entities) entity.wiki = { aliases: [], status: '', tags: [], world: '', customProperties: [], sections: [], media: {} }
+  const document = { version: 4, activeId: 'd', entities, layout: { libraryWidth: 336, inspectorWidth: 700, section: 'creature', query: '' }, diagrams: [{ id: 'd', name: 'Схема', viewport: { x: 0, y: 0, zoom: 1 }, edges: [],
     nodes: entities.map((entity, i) => ({ id: entity.id, type: 'entity', data: { entityId: entity.id }, position: { x: 40 + i % 2 * 280, y: 40 + Math.floor(i / 2) * 270 } })) }] }
   await page.evaluate(({ key, document }) => localStorage.setItem(key, JSON.stringify(document)), { key: storageKey, document })
   await page.reload()
@@ -89,6 +90,14 @@ try {
   await close()
 
   await edit('hero')
+  await page.getByRole('button', { name: 'Открыть полный лист', exact: true }).waitFor()
+  assert.equal(await page.locator('[aria-label="Лист персонажа"][tabindex]').count(), 0, 'Wiki показывает досье; полный лист открывается отдельно')
+  const resizeGrip = page.getByRole('separator', { name: 'Ширина wiki-карточки', exact: true })
+  for (let step = 0; step < 5; step += 1) await resizeGrip.press('ArrowLeft')
+  assert.equal((await saved()).layout.inspectorWidth, 760, 'Проверяем полностью расширенную wiki-панель')
+  await page.getByRole('button', { name: 'Открыть полный лист', exact: true }).click()
+  const characterWorkspace = page.getByRole('region', { name: 'Кампанийный лист персонажа', exact: true })
+  await characterWorkspace.waitFor()
   assert.equal(await page.getByRole('heading', { name: 'Лист персонажа', exact: true }).count(), 0)
   assert.equal(await page.getByRole('button', { name: 'Открыть настройки листа', exact: true }).count(), 0)
   const sheetViewport = page.locator('[aria-label="Лист персонажа"][tabindex]')
@@ -97,14 +106,14 @@ try {
     const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
     return viewport.scrollWidth <= viewport.clientWidth + 1
   })
-  const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('aside').getBoundingClientRect().bottom }))
+  const geometry = await sheetViewport.evaluate(viewport => ({ client: viewport.clientWidth, content: viewport.scrollWidth, bottom: viewport.getBoundingClientRect().bottom, panelBottom: viewport.closest('[data-campaign-character-workspace]').getBoundingClientRect().bottom }))
   assert.ok(geometry.content <= geometry.client + 1, 'Весь лист должен помещаться по ширине панели')
   assert.ok(geometry.bottom <= geometry.panelBottom, 'Прокрутка листа должна быть доступна внутри панели')
   assert.equal(await page.getByRole('slider', { name: 'Горизонтальная прокрутка: Лист персонажа', exact: true }).count(), 0)
   const sheetPage = page.locator('[data-character-sheet-page]')
   const originalWidth = await sheetPage.evaluate(element => element.offsetWidth)
   assert.equal(originalWidth, 964, 'Исходная раскладка листа не должна меняться')
-  assert.ok((await sheetPage.boundingBox()).width < originalWidth, 'Лист уменьшается целиком, а не обрезается')
+  assert.ok((await sheetPage.boundingBox()).width <= originalWidth, 'Лист не растягивается сверх исходного размера')
   for (const slot of ['hit-points', 'death-saves']) {
     const section = sheetPage.locator(`[data-character-sheet-slot="${slot}"]`)
     const heading = section.getByRole('heading')
@@ -117,14 +126,19 @@ try {
       assert.ok(rect.y >= bounds.y && rect.y + rect.height <= bounds.y + bounds.height + 1, `${slot}: поле не должно обрезаться`)
     }
   }
-  // Изменение ширины Inspector пересчитывает масштаб без перестановки колонок.
-  const resizeGrip = page.getByRole('separator', { name: 'Ширина карточки', exact: true })
-  for (let step = 0; step < 5; step += 1) await resizeGrip.press('ArrowLeft')
+  // Полный лист теперь живёт в workspace: изменение его ширины масштабирует все колонки целиком.
+  await page.setViewportSize({ width: 1000, height: 1100 })
+  await page.waitForFunction(() => {
+    const sheet = document.querySelector('[data-character-sheet-page]')
+    return sheet.getBoundingClientRect().width < sheet.offsetWidth - 1
+  })
+  assert.equal(await sheetPage.evaluate(element => element.offsetWidth), originalWidth, 'Сужение workspace не перестраивает исходную раскладку')
   await page.waitForFunction(() => {
     const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
     return viewport.scrollWidth <= viewport.clientWidth + 1
   })
-  assert.equal((await saved()).layout.inspectorWidth, 800, 'Проверяем полностью расширенную панель')
+  assert.ok((await sheetPage.boundingBox()).width < originalWidth, 'В узком workspace лист уменьшается целиком, а не обрезается')
+  await page.setViewportSize({ width: 1700, height: 1100 })
   await page.getByRole('textbox', { name: 'Имя персонажа', exact: true }).fill('Локальный герой')
   await page.getByRole('textbox', { name: 'Класс', exact: true }).fill('Воин')
   await page.getByRole('textbox', { name: 'Текущие', exact: true }).fill('23')
@@ -132,11 +146,8 @@ try {
   await page.mouse.move(40, 110)
   if (process.env.TABLE_TEST_SCREENSHOT) await page.screenshot({ path: process.env.TABLE_TEST_SCREENSHOT })
   assert.equal(characterDocument.identity.name, 'Герой')
-  await page.getByRole('button', { name: 'Просмотр', exact: true }).click()
-  await page.waitForFunction(() => {
-    const viewport = document.querySelector('[aria-label="Лист персонажа"][tabindex]')
-    return viewport.scrollWidth <= viewport.clientWidth + 1
-  })
+  await characterWorkspace.getByRole('navigation', { name: 'Рабочие вкладки', exact: true }).getByRole('button', { name: 'Схема', exact: true }).click()
+  await page.locator('[data-campaign-character-wiki]').getByText('Воин', { exact: true }).waitFor()
   await close()
 
   // Запрещённые разделы скрыты; меню использует общий компонент, не native select.
@@ -163,9 +174,10 @@ try {
   const beforeReload = await saved()
   assert.equal(beforeReload.entities[1].statBlock.entry.data.level, 5)
   assert.equal(beforeReload.entities[2].statBlock.entry.data.rarity, 'Легендарный')
-  assert.equal(beforeReload.entities[3].statBlock.document.identity.name, 'Локальный герой')
-  assert.equal(beforeReload.entities[3].statBlock.document.hitPoints.current.manualValue, 23)
-  assert.equal(beforeReload.entities[3].statBlock.document.deathSaves.successes, 2)
+  assert.equal(beforeReload.entities[3].campaignCharacter.document.identity.name, 'Локальный герой')
+  assert.equal(beforeReload.entities[3].campaignCharacter.document.hitPoints.current.manualValue, 23)
+  assert.equal(beforeReload.entities[3].campaignCharacter.document.deathSaves.successes, 2)
+  assert.equal(beforeReload.entities[3].statBlock, undefined, 'Кампанийный лист хранится отдельно от статблоков')
   assert.ok(beforeReload.diagrams[0].nodes.every(node => Object.keys(node.data).every(key => ['entityId', 'locationId'].includes(key))))
   offline = true
   await page.reload()
@@ -182,7 +194,7 @@ try {
   console.error(await page.locator('[aria-label="Лист персонажа"][tabindex]').evaluateAll(viewports => viewports.map(viewport => ({
     left: viewport.scrollLeft, width: viewport.scrollWidth, client: viewport.clientWidth,
     max: document.querySelector('input[aria-label="Горизонтальная прокрутка: Лист персонажа"]')?.max,
-  }))))
-  await page.screenshot({ path: join(tmpdir(), 'campaign-instance-editors-failure.png'), fullPage: true })
+  }))).catch(() => []))
+  await page.screenshot({ path: join(tmpdir(), 'campaign-instance-editors-failure.png'), fullPage: true }).catch(() => {})
   console.error(errors); throw error
 } finally { await browser.close() }

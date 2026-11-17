@@ -92,7 +92,7 @@
   transform: translateY(-44%) rotate(-8deg);
 }
 
-.heroMark svg {
+.heroMark > span {
   width: 100%;
   height: 100%;
 }

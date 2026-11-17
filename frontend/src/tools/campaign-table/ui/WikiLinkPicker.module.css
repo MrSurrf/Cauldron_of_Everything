@@ -1,0 +1,19 @@
+.popover { max-width: calc(100vw - 2 * var(--space-4)); width: min(38rem, calc(100vw - 2 * var(--space-4))); }
+.picker { display: grid; gap: var(--space-3); min-width: 0; padding: var(--space-2); }
+.picker header { align-items: start; display: flex; gap: var(--space-3); justify-content: space-between; }
+.picker h2 { font: 500 var(--font-size-xl)/var(--line-height-tight) var(--font-family-heading); margin: 0; }
+.picker header p { color: var(--color-text-subtle); font-size: var(--font-size-xs); margin: var(--space-1) 0 0; }
+.sources { border-bottom: 1px solid var(--color-content-border); display: flex; gap: var(--space-1); }
+.sources button { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--color-text-subtle); cursor: pointer; padding: var(--space-2) var(--space-3); }
+.sources button[aria-selected='true'] { border-color: var(--color-brand); color: var(--color-text-primary); }
+.filters { align-items: start; display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1fr) 10rem; }
+.results { height: min(25rem, 48dvh); min-height: 9rem; }
+.list { align-content: start; display: grid; gap: var(--space-1); }
+.list > button { background: transparent; border: 0; border-radius: var(--radius-sm); color: var(--color-text-primary); cursor: pointer; display: grid; gap: 2px; padding: var(--space-2) var(--space-3); text-align: left; }
+.list > button:hover, .list > button:focus-visible { background: var(--color-surface-accent); outline: none; }
+.list small, .list p { color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.list p { margin: 0; padding: var(--space-4); text-align: center; }
+
+@media (max-width: 34rem) {
+  .filters { grid-template-columns: 1fr; }
+}

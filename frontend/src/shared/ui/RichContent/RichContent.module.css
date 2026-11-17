@@ -39,7 +39,7 @@
   color: color-mix(
     in srgb,
     var(--color-text-primary) 82%,
-    var(--palette-purple-300)
+    var(--color-interactive)
   );
 }
 
@@ -103,11 +103,11 @@
 }
 
 .content a {
-  color: var(--rich-content-link, var(--palette-purple-300));
+  color: var(--rich-content-link, var(--color-interactive));
 }
 
 .content a:hover {
-  color: var(--rich-content-link-hover, var(--palette-purple-300));
+  color: var(--rich-content-link-hover, var(--color-interactive));
 }
 
 .content a:focus-visible {

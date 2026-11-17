@@ -2,7 +2,13 @@ import { createContext, useContext } from 'react'
 import type { ContentEditorProps } from './ContentEditor.types'
 
 export type ContentWidgetContextValue = Pick<ContentEditorProps,
-  'disabled' | 'readOnly' | 'evaluateResourceMaximum' | 'onStructuredResourceChange'
+  | 'disabled'
+  | 'evaluateResourceMaximum'
+  | 'inheritedVisibility'
+  | 'onLinkActivate'
+  | 'onStructuredResourceChange'
+  | 'readOnly'
+  | 'viewerAudience'
 > & {
   dndEditorId?: string
   editorId?: string

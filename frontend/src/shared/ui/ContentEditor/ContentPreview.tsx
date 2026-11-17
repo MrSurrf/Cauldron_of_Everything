@@ -12,7 +12,12 @@ import { getDiceTypeFromExpression } from '../icons/dice'
 import { ContentPreviewWidgetDrag } from './ContentWidgetDragDrop'
 import { ResourceWidget } from './ResourceWidget'
 import { SectionWidget } from './SectionWidget'
-import { sectionFromBlock, sectionToSource } from './sectionContent'
+import {
+  isSectionVisibleTo,
+  resolveSectionVisibility,
+  sectionFromBlock,
+  sectionToSource,
+} from './sectionContent'
 import { ItemWidget } from './ItemWidget'
 import { itemFromBlock, itemToSource } from './itemContent'
 import { resourceFromBlock, resourceToSource, type ResourceBlock } from './resourceContent'
@@ -35,12 +40,15 @@ import styles from './ContentPreview.module.css'
 
 type ContentPreviewProps = Pick<ContentEditorProps,
   | 'disabled'
+  | 'inheritedVisibility'
+  | 'onLinkActivate'
   | 'readOnly'
   | 'onStructuredResourceChange'
   | 'onValueChange'
   | 'placeholder'
   | 'value'
   | 'evaluateResourceMaximum'
+  | 'viewerAudience'
 > & {
   dndEditorId?: string
   editorId?: string
@@ -56,11 +64,14 @@ export function ContentPreview({
   dndEditorId,
   editorId,
   evaluateResourceMaximum,
+  inheritedVisibility = 'public',
+  onLinkActivate,
   readOnly = false,
   onStructuredResourceChange,
   onValueChange,
   placeholder,
   value,
+  viewerAudience = 'master',
 }: ContentPreviewProps) {
   const blocks = useMemo(
     () => parseContentSource(value),
@@ -164,6 +175,9 @@ export function ContentPreview({
 
       if (node.kind === 'link') {
         const target = safeContentLinkTarget(node.target)
+        const internalTarget = target && (
+          target.startsWith('/') || target.startsWith('#')
+        )
 
         return (
           target ? (
@@ -181,7 +195,14 @@ export function ContentPreview({
                   ? '_blank'
                   : undefined
               }
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation()
+
+                if (internalTarget && onLinkActivate) {
+                  event.preventDefault()
+                  onLinkActivate(target, event)
+                }
+              }}
             >
               {renderInlineNodes(node.children, `${key}-link`)}
             </a>
@@ -321,6 +342,21 @@ export function ContentPreview({
       }
 
       if (block.kind === 'collapsible') {
+        const section = sectionFromBlock(block)
+
+        if (!isSectionVisibleTo(
+          section.visibility,
+          viewerAudience,
+          inheritedVisibility,
+        )) {
+          return null
+        }
+
+        const sectionVisibility = resolveSectionVisibility(
+          section.visibility,
+          inheritedVisibility,
+        )
+
         return (
           <ContentPreviewWidgetDrag
             key={blockKey}
@@ -334,11 +370,13 @@ export function ContentPreview({
             }}
           >
             <SectionWidget editorId={editorId} disabled={disabled} readOnly={readOnly}
-              evaluateResourceMaximum={evaluateResourceMaximum} value={sectionFromBlock(block)}
+              evaluateResourceMaximum={evaluateResourceMaximum} value={section}
+              inheritedVisibility={sectionVisibility} onLinkActivate={onLinkActivate}
+              viewerAudience={viewerAudience}
               onChange={next => { if (!disabled && !readOnly) onValueChange(replaceBlock(block, sectionToSource(next, block.attributes))) }}
               onRemove={() => removeBlock(block)}
               onStructuredResourceChange={onStructuredResourceChange ? (source, current, body, resource) => {
-                const next = { ...sectionFromBlock(block), body }
+                const next = { ...section, body }
                 onStructuredResourceChange(source, current, replaceBlock(block, sectionToSource(next, block.attributes)), resource)
               } : undefined} />
           </ContentPreviewWidgetDrag>

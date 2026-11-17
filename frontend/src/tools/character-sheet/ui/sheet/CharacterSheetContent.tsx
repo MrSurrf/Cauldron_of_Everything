@@ -1,4 +1,5 @@
 import styles from '../../CharacterSheetTool.module.css'
+import { SheetSection } from '../SheetSection'
 import { CharacterIdentitySection } from './CharacterIdentitySection'
 import {
   CharacterSavingThrowsSection,
@@ -129,6 +130,7 @@ export function CharacterSheetContent({
                   <div
                     className={styles.vitalsPanel}
                     data-character-sheet-vitals={true}
+                    data-cursor-reveal="border"
                   >
                     <div
                       className={styles.hitPointsSlot}
@@ -160,13 +162,19 @@ export function CharacterSheetContent({
                     />
                   </div>
 
-                  <div className={styles.savesSlot}>
-                    <CharacterSavingThrowsSection sheet={sheet} />
-                  </div>
+                  <SheetSection
+                    aria-label="Спасброски и навыки"
+                    className={styles.checksGroup}
+                    contentLayout="group"
+                  >
+                    <div className={styles.savesSlot}>
+                      <CharacterSavingThrowsSection sheet={sheet} />
+                    </div>
 
-                  <div className={styles.skillsSlot}>
-                    <CharacterSkillsSection sheet={sheet} />
-                  </div>
+                    <div className={styles.skillsSlot}>
+                      <CharacterSkillsSection sheet={sheet} />
+                    </div>
+                  </SheetSection>
 
                   <div className={styles.proficienciesSlot}>
                     <ProficienciesEditor />
@@ -188,29 +196,43 @@ export function CharacterSheetContent({
                     <CharacterHitDiceSection sheet={sheet} />
                   </div>
 
-                  <div
-                    className={styles.attacksSlot}
-                    data-character-sheet-slot="attacks"
+                  <SheetSection
+                    aria-label="Атаки, заклинания и снаряжение"
+                    className={styles.combatGroup}
+                    contentLayout="group"
+                    frame="none"
                   >
-                    <CharacterAttacksSection sheet={sheet} />
-                  </div>
+                    <div
+                      className={styles.attacksSlot}
+                      data-character-sheet-slot="attacks"
+                    >
+                      <CharacterAttacksSection sheet={sheet} />
+                    </div>
+
+                    <div
+                      className={styles.equipmentSlot}
+                      data-character-sheet-slot="equipment"
+                    >
+                      <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
+                    </div>
+                  </SheetSection>
 
                   <div
-                    className={styles.equipmentSlot}
-                    data-character-sheet-slot="equipment"
+                    className={styles.wealthSlot}
+                    data-character-sheet-slot="wealth"
                   >
-                    <CharacterEquipmentSection sheet={sheet} onEncyclopediaItemDrop={onEncyclopediaItemDrop} />
-                  </div>
+                    <SheetSection aria-label="Деньги и вес" className={styles.wealthPanel}>
+                      <div
+                        className={styles.currencySlot}
+                        data-character-sheet-slot="currency"
+                      >
+                        <CharacterCurrencySection sheet={sheet} />
+                      </div>
 
-                  <div
-                    className={styles.currencySlot}
-                    data-character-sheet-slot="currency"
-                  >
-                    <CharacterCurrencySection sheet={sheet} />
-                  </div>
-
-                  <div className={styles.carryingSlot}>
-                    <CharacterCarryingSection sheet={sheet} />
+                      <div className={styles.carryingSlot} data-character-sheet-slot="carrying">
+                        <CharacterCarryingSection sheet={sheet} />
+                      </div>
+                    </SheetSection>
                   </div>
                 </div>
 

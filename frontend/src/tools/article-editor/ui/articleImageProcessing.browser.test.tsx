@@ -146,7 +146,7 @@ describe('Неразрушительная обработка фотографи
     }
   })
 
-  it('называет повёрнутый широкий crop вертикальным и вписывает портрет целиком в предпросмотр', async () => {
+  it('вписывает повёрнутый портрет целиком и не фиксирует пропорции по сохранённому crop', async () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     const { image } = await fixture()
     // Исходное кадрирование 16:9 повёрнуто на 90°: нормализованные координаты тоже повёрнуты.
@@ -162,7 +162,7 @@ describe('Неразрушительная обработка фотографи
     }
     try {
       await render()
-      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('9:16 — вертикальный кадр')
+      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('Свободные пропорции')
       const preview = host.querySelector<HTMLElement>('[data-article-image-selected]')!
       const photo = preview.querySelector<HTMLImageElement>('img')!
       await photo.decode()
@@ -173,10 +173,10 @@ describe('Неразрушительная обработка фотографи
 
       image.edits.crop = { x: 0.1, y: 0.1, width: 0.2, height: 0.3 }
       await render()
-      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('Произвольный кадр')
+      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('Свободные пропорции')
       image.edits.crop = { x: 0, y: 0, width: 1, height: 1 }
       await render()
-      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('Оригинал')
+      expect(host.querySelector('[aria-label="Пропорции кадра"]')!.textContent).toContain('Свободные пропорции')
     } finally {
       await act(async () => root.unmount())
       host.remove()

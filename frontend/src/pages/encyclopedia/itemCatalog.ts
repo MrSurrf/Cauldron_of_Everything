@@ -1,3 +1,4 @@
+import { getItemKind, ITEM_KIND_LABELS } from '../../entities/item'
 import { fetchEncyclopedia } from './encyclopediaApi'
 
 type JsonRecord = Record<string, unknown>
@@ -58,12 +59,14 @@ function attunementLabel(value: unknown): string {
 export function toCatalogItem(item: ItemSummary): CatalogItem {
   const data = record(item.summary)
   const sources = values(item.sources)
+  const classification = text(data.classification ?? data.item_type ?? data.type ?? data.category)
+  const kind = getItemKind(classification)
   return {
     id: item.id,
     slug: item.slug,
     name: item.name,
     nameEn: item.name_en ?? '',
-    itemType: text(data.classification ?? data.item_type ?? data.type) || 'Тип не указан',
+    itemType: kind ? ITEM_KIND_LABELS[kind] : classification || 'Тип не указан',
     rarity: text(data.rarity) || 'Редкость не указана',
     attunement: attunementLabel(data.requires_attunement ?? data.attunement),
     sources,

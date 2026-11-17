@@ -12,6 +12,7 @@ import {
 
 import { SiteHeader } from '../layouts/SiteHeader'
 import AuthPage from '../../pages/auth/AuthPage'
+import ErrorPage from '../../pages/error/ErrorPage'
 import { AccessGate } from './AccessGate'
 import styles from './AppRouter.module.css'
 
@@ -57,6 +58,7 @@ const EncyclopediaEntityBySlugPage = lazy(
   () => import('../../pages/encyclopedia/EncyclopediaEntityBySlugPage'),
 )
 const ItemEntityPage = lazy(() => import('../../pages/encyclopedia/ItemEntityPage'))
+const ClassEntityPage = lazy(() => import('../../pages/encyclopedia/ClassEntityPage'))
 
 function RouteFallback() {
   return (
@@ -67,16 +69,6 @@ function RouteFallback() {
     >
       Загрузка…
     </div>
-  )
-}
-
-function NotFoundPage() {
-  return (
-    <main className={styles.notFound}>
-      <p>404</p>
-      <h1>Страница не найдена</h1>
-      <a href="/">На главную</a>
-    </main>
   )
 }
 
@@ -112,6 +104,8 @@ function RoutedApp() {
                 element={<HomePage />}
               />
               <Route path="/dev" element={<DevHomePage />} />
+              <Route path="/404" element={<ErrorPage code={404} />} />
+              <Route path="/503" element={<ErrorPage code={503} />} />
               <Route
                 path="/survey"
                 element={<SurveyRoutePage />}
@@ -125,6 +119,7 @@ function RoutedApp() {
               <Route path="/articles/create" element={<ArticleEditorPage />} />
               <Route path="/encyclopedia/entry/:id" element={<EncyclopediaEntryPage />} />
               <Route path="/encyclopedia/item/:slug" element={<ItemEntityPage />} />
+              <Route path="/encyclopedia/class/:slug" element={<ClassEntityPage />} />
               <Route path="/encyclopedia/spells" element={<SpellsPage />} />
               <Route path="/encyclopedia/items" element={<ItemsPage />} />
               <Route path="/encyclopedia/classes" element={<ClassesPage />} />
@@ -156,7 +151,7 @@ function RoutedApp() {
               />
               <Route
                 path="*"
-                element={<NotFoundPage />}
+                element={<ErrorPage code={404} />}
               />
             </Routes>
           </Suspense>

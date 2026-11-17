@@ -342,3 +342,61 @@
     animation: none;
   }
 }
+
+:root[data-theme='light'] .start-page {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .start-page__scene {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-background) 94%, transparent),
+      color-mix(in srgb, var(--color-background) 94%, transparent)
+    ),
+    url('/tools/survey/start/background.png') center / cover no-repeat;
+}
+
+/* На светлой бумаге иллюстрации выглядят как мягкий графитовый рисунок. */
+:root[data-theme='light'] .start-page__head,
+:root[data-theme='light'] .start-page__hand {
+  mix-blend-mode: multiply;
+  filter: invert(1) hue-rotate(180deg) saturate(0.35);
+}
+
+:root[data-theme='light'] .start-page__label {
+  text-shadow: none;
+}
+
+:root[data-theme='light'] .start-page__input-frame {
+  background: var(--color-border-accent);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .start-page__input,
+:root[data-theme='light'] .start-page__input:focus {
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+  box-shadow: none;
+}
+
+:root[data-theme='light'] .start-page__input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='light'] .start-page__input-frame:focus-within {
+  background: var(--color-action-primary);
+  box-shadow: var(--focus-ring);
+}
+
+:root[data-theme='light'] .start-page__submit {
+  border-color: var(--color-border-accent);
+  background: var(--color-button-background);
+  color: var(--color-button-text);
+  box-shadow: var(--shadow-panel);
+}
+
+:root[data-theme='light'] .start-page__submit:hover:not(:disabled) {
+  border-color: var(--color-action-primary);
+  box-shadow: var(--focus-ring);
+}

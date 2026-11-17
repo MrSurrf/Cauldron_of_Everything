@@ -34,7 +34,7 @@
 }
 
 .invalidLink {
-  color: var(--palette-purple-300);
+  color: var(--color-interactive);
   text-decoration: underline;
   text-decoration-thickness: var(--border-width-default);
   text-underline-offset: 0.18em;

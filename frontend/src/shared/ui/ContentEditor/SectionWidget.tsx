@@ -1,12 +1,19 @@
 import { useId, useState, type CSSProperties } from 'react'
 import { Button } from '../Button'
+import { Checkbox } from '../Checkbox'
 import { IconButton } from '../IconButton'
 import { EditIcon, TrashIcon } from '../icons'
 import { Popover } from '../Popover'
+import { Select } from '../Select'
 import { TextInput } from '../TextInput'
 import { ContentEditor } from './ContentEditor'
 import type { ContentWidgetContextValue } from './ContentWidgetContext'
-import { sectionColors, type ContentSectionValue } from './sectionContent'
+import {
+  sectionColors,
+  sectionVisibilityOptions,
+  type ContentSectionValue,
+} from './sectionContent'
+import type { ContentSectionVisibility } from './ContentEditor.types'
 import styles from './SectionWidget.module.css'
 
 export type SectionWidgetProps = ContentWidgetContextValue & {
@@ -15,8 +22,20 @@ export type SectionWidgetProps = ContentWidgetContextValue & {
   onRemove: () => void
 }
 
-export function SectionWidget({ value, onChange, onRemove, disabled, readOnly, editorId, evaluateResourceMaximum, onStructuredResourceChange }: SectionWidgetProps) {
-  const [expanded, setExpanded] = useState(false)
+export function SectionWidget({
+  value,
+  onChange,
+  onRemove,
+  disabled,
+  readOnly,
+  editorId,
+  evaluateResourceMaximum,
+  inheritedVisibility,
+  onLinkActivate,
+  onStructuredResourceChange,
+  viewerAudience,
+}: SectionWidgetProps) {
+  const [expanded, setExpanded] = useState(() => value.defaultOpen)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const bodyId = useId()
   const locked = disabled || readOnly
@@ -27,8 +46,19 @@ export function SectionWidget({ value, onChange, onRemove, disabled, readOnly, e
     if (!locked) onChange({ ...value, ...patch })
   }
 
+  function updateVisibility(nextVisibility: string) {
+    if (sectionVisibilityOptions.some(
+      option => option.value === nextVisibility,
+    )) {
+      update({
+        visibility: nextVisibility as ContentSectionVisibility,
+      })
+    }
+  }
+
   return (
     <section className={styles.widget} style={style} data-section-widget data-expanded={expanded || undefined}
+      data-section-visibility={value.visibility}
       onClick={event => event.stopPropagation()} onMouseDown={event => event.stopPropagation()}>
       <header className={styles.header}>
         <button type="button" className={styles.toggle} aria-label={`${expanded ? 'Свернуть' : 'Развернуть'} раздел «${title}»`}
@@ -43,6 +73,20 @@ export function SectionWidget({ value, onChange, onRemove, disabled, readOnly, e
           <Popover aria-label={`Настройки раздела «${title}»`} className={styles.settings} open={settingsOpen} onOpenChange={setSettingsOpen}
             content={<div className={styles.settingsContent} data-content-editor-owner={editorId}>
               <TextInput aria-label="Тег раздела" placeholder="Тег" value={value.tag} onChange={event => update({ tag: event.currentTarget.value })} />
+              <Select
+                label="Видимость раздела"
+                options={sectionVisibilityOptions}
+                value={value.visibility}
+                onValueChange={updateVisibility}
+              />
+              <Checkbox
+                checked={value.defaultOpen}
+                label="Раскрывать по умолчанию"
+                onCheckedChange={(checked) => {
+                  update({ defaultOpen: checked })
+                  setExpanded(checked)
+                }}
+              />
               <div className={styles.colors} role="group" aria-label="Цвет раздела">
                 {sectionColors.map(option => <button key={option.id} type="button" className={styles.swatch}
                   style={{ '--swatch-color': option.value } as CSSProperties} aria-label={option.label} aria-pressed={value.color === option.id}
@@ -64,7 +108,8 @@ export function SectionWidget({ value, onChange, onRemove, disabled, readOnly, e
         <ContentEditor accessibleLabel={`Содержимое раздела «${title}»`} value={value.body} onValueChange={body => update({ body })}
           allowSections={false} autoGrow disabled={disabled} readOnly={readOnly} renderPreview showStructureActions showTextScaleControls={false}
           rows={3} placeholder="Текст и виджеты…" evaluateResourceMaximum={evaluateResourceMaximum}
-          onStructuredResourceChange={onStructuredResourceChange} />
+          inheritedVisibility={inheritedVisibility} onLinkActivate={onLinkActivate}
+          onStructuredResourceChange={onStructuredResourceChange} viewerAudience={viewerAudience} />
       </div>}
     </section>
   )

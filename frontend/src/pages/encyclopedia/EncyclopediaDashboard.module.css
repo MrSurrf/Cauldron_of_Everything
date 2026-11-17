@@ -29,6 +29,7 @@
   --list-card-padding-end: var(--space-5);
 }
 .sidebarCard [aria-hidden='true'] { width: 1.5rem; height: 1.5rem; }
+.itemIcon { width: 1.5rem; height: 1.5rem; }
 .rowArrow { position: absolute; top: 50%; right: var(--space-2); width: 0.35rem; height: 0.35rem; border-top: var(--border-width-default) solid var(--color-interactive); border-right: var(--border-width-default) solid var(--color-interactive); transform: translateY(-50%) rotate(45deg); pointer-events: none; }
 .rank { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: var(--radius-sm); background: var(--color-surface-accent); color: var(--color-brand-bright); font-family: var(--font-family-heading); }
 .empty { color: var(--color-text-subtle); font-size: var(--font-size-xs); line-height: var(--line-height-normal); }
