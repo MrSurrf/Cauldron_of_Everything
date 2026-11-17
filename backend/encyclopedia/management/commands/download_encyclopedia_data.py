@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         endpoint = os.getenv('S3_ENDPOINT', 'https://s3.cloud.ru')
-        region = os.getenv('S3_REGION_NAME', 'ru.AZ-2')
+        region = os.getenv('S3_REGION_NAME', 'ru-central-1')
         bucket = os.getenv('S3_BUCKET_NAME', 'bucket-1d1db9')
         access_key = os.getenv('S3_ACCESS_KEY_ID')
         secret_key = os.getenv('S3_SECRET_ACCESS_KEY')
