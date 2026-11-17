@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -34,6 +35,7 @@ class Command(BaseCommand):
             'endpoint_url': endpoint,
             'aws_access_key_id': access_key,
             'aws_secret_access_key': secret_key,
+            'config': Config(signature_version='s3v4'),
         }
         if region:
             client_kwargs['region_name'] = region
