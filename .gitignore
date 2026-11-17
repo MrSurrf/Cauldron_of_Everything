@@ -35,6 +35,7 @@ db.sqlite3
 
 # Сырой датасет энциклопедии (не храним в git, ~1.2 ГБ)
 backend/Encyclopedia-data/
+backend/encyclopedia-data.tar.gz
 
 # Загруженные картинки анкеты (кроме примера)
 media/
