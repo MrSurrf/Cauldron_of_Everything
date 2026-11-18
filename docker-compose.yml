@@ -27,7 +27,7 @@ services:
       - ./config:/app/config:ro
       - media:/app/backend/media
       - static:/app/backend/static
-      - /opt/cauldron/encyclopedia-data:/app/backend/Encyclopedia-data
+      - encyclopedia-data:/app/backend/Encyclopedia-data
     ports:
       - "8000:8000"
     depends_on:
@@ -48,3 +48,4 @@ volumes:
   pgdata:
   media:
   static:
+  encyclopedia-data:
