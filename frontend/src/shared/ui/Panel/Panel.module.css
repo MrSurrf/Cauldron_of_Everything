@@ -26,21 +26,12 @@
       var(--panel-inner-frame-inset) +
       var(--border-width-default)
     );
+  --panel-inner-corner-cut:
+    max(0px, calc(var(--panel-corner-cut) - var(--panel-frame-clearance)));
+  /* Отступ до дуги по диагонали для прямоугольного содержимого. */
+  --panel-content-corner-padding: calc(var(--panel-inner-corner-cut) * 0.71);
   --panel-content-block-start-clearance:
     var(--panel-frame-clearance);
-
-  --corner-cut: var(--panel-corner-cut);
-  --panel-frame-clip:
-    polygon(
-      var(--corner-cut) 0,
-      calc(100% - var(--corner-cut)) 0,
-      100% var(--corner-cut),
-      100% calc(100% - var(--corner-cut)),
-      calc(100% - var(--corner-cut)) 100%,
-      var(--corner-cut) 100%,
-      0 calc(100% - var(--corner-cut)),
-      0 var(--corner-cut)
-    );
 
   position: relative;
   isolation: isolate;
@@ -57,7 +48,8 @@
 }
 
 .panel[data-padding='none'] {
-  --panel-content-padding: 0;
+  --panel-content-padding: 0px;
+  --panel-content-corner-padding: 0px;
 }
 
 .panel[data-padding='compact'] {
@@ -80,13 +72,31 @@
       var(--motion-easing-standard);
 }
 
+.frame,
+.frame::before,
+.innerFrame,
+.innerFrame::before,
+.content {
+  clip-path:
+    polygon(
+      var(--corner-cut) 0,
+      calc(100% - var(--corner-cut)) 0,
+      100% var(--corner-cut),
+      100% calc(100% - var(--corner-cut)),
+      calc(100% - var(--corner-cut)) 100%,
+      var(--corner-cut) 100%,
+      0 calc(100% - var(--corner-cut)),
+      0 var(--corner-cut)
+    );
+}
+
 .frame {
+  --corner-cut: var(--panel-corner-cut);
   position: absolute;
   z-index: 0;
   inset: 0;
 
   background: var(--panel-border-material);
-  clip-path: var(--panel-frame-clip);
   filter:
     drop-shadow(
       0 var(--space-2) var(--space-5)
@@ -117,7 +127,6 @@
   inset: var(--border-width-default);
 
   background: var(--panel-surface-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .edgeLight {
@@ -146,27 +155,17 @@
 
   background: var(--panel-inner-border);
   background-image: var(--panel-inner-border-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .innerFrame::before {
   content: '';
 
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--panel-inner-frame-inset) -
-        var(--border-width-default)
-      )
-    );
+  --corner-cut: var(--panel-inner-corner-cut);
 
   position: absolute;
   inset: var(--border-width-default);
 
   background: var(--panel-surface-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .dragIndicator {
@@ -230,28 +229,26 @@
 }
 
 .content {
+  --corner-cut: var(--panel-inner-corner-cut);
+  --content-padding:
+    max(
+      calc(var(--panel-content-padding) - var(--panel-frame-clearance)),
+      var(--panel-content-corner-padding)
+    );
+
   position: relative;
   z-index: 1;
 
   min-width: 0;
   min-height: 0;
+  margin: var(--panel-frame-clearance);
   padding:
     max(
-      var(--panel-content-padding),
-      var(--panel-content-block-start-clearance)
+      var(--content-padding),
+      calc(var(--panel-content-block-start-clearance) - var(--panel-frame-clearance))
     )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    );
+    var(--content-padding)
+    var(--content-padding);
 }
 
 @media (hover: hover) {
@@ -302,10 +299,14 @@
       close
     )
 ) {
-  .panel {
+  .frame,
+  .frame::before,
+  .innerFrame,
+  .innerFrame::before,
+  .content {
     --corner-control:
       calc(var(--corner-cut) * 0.5523);
-    --panel-frame-clip:
+    clip-path:
       shape(
         from var(--corner-cut) 0,
         hline to calc(100% - var(--corner-cut)),
@@ -368,6 +369,10 @@
 
   .frame {
     display: none;
+  }
+
+  .content {
+    clip-path: none;
   }
 
   .dragIndicator {
