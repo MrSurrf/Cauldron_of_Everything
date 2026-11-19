@@ -26,12 +26,23 @@
       var(--panel-inner-frame-inset) +
       var(--border-width-default)
     );
-  --panel-inner-corner-cut:
-    max(0px, calc(var(--panel-corner-cut) - var(--panel-frame-clearance)));
   /* Отступ до дуги по диагонали для прямоугольного содержимого. */
-  --panel-content-corner-padding: calc(var(--panel-inner-corner-cut) * 0.71);
+  --panel-content-corner-padding: calc(var(--panel-corner-cut) * 0.71);
   --panel-content-block-start-clearance:
     var(--panel-frame-clearance);
+  /* У обводок одинаковый срез в собственных координатах. Зазор задают их отступы. */
+  --corner-cut: var(--panel-corner-cut);
+  --panel-frame-clip:
+    polygon(
+      var(--corner-cut) 0,
+      calc(100% - var(--corner-cut)) 0,
+      100% var(--corner-cut),
+      100% calc(100% - var(--corner-cut)),
+      calc(100% - var(--corner-cut)) 100%,
+      var(--corner-cut) 100%,
+      0 calc(100% - var(--corner-cut)),
+      0 var(--corner-cut)
+    );
 
   position: relative;
   isolation: isolate;
@@ -77,21 +88,10 @@
 .innerFrame,
 .innerFrame::before,
 .content {
-  clip-path:
-    polygon(
-      var(--corner-cut) 0,
-      calc(100% - var(--corner-cut)) 0,
-      100% var(--corner-cut),
-      100% calc(100% - var(--corner-cut)),
-      calc(100% - var(--corner-cut)) 100%,
-      var(--corner-cut) 100%,
-      0 calc(100% - var(--corner-cut)),
-      0 var(--corner-cut)
-    );
+  clip-path: var(--panel-frame-clip);
 }
 
 .frame {
-  --corner-cut: var(--panel-corner-cut);
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -113,15 +113,6 @@
 .frame::before {
   content: '';
 
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--border-width-default)
-      )
-    );
-
   position: absolute;
   z-index: 1;
   inset: var(--border-width-default);
@@ -140,15 +131,6 @@
 }
 
 .innerFrame {
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--panel-inner-frame-inset)
-      )
-    );
-
   position: absolute;
   z-index: 2;
   inset: var(--panel-inner-frame-inset);
@@ -159,8 +141,6 @@
 
 .innerFrame::before {
   content: '';
-
-  --corner-cut: var(--panel-inner-corner-cut);
 
   position: absolute;
   inset: var(--border-width-default);
@@ -229,7 +209,6 @@
 }
 
 .content {
-  --corner-cut: var(--panel-inner-corner-cut);
   --content-padding:
     max(
       calc(var(--panel-content-padding) - var(--panel-frame-clearance)),
@@ -299,14 +278,10 @@
       close
     )
 ) {
-  .frame,
-  .frame::before,
-  .innerFrame,
-  .innerFrame::before,
-  .content {
+  .panel {
     --corner-control:
       calc(var(--corner-cut) * 0.5523);
-    clip-path:
+    --panel-frame-clip:
       shape(
         from var(--corner-cut) 0,
         hline to calc(100% - var(--corner-cut)),
