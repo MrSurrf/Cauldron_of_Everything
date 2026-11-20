@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getBestiaryCreature, loadBestiary } from './bestiaryApi'
+import { getBestiaryCreature, loadBestiary, readCachedBestiary } from './bestiaryApi'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -50,6 +50,30 @@ describe('загрузка бестиария', () => {
     expect(selected.entity.armorClass?.value).toBe(15)
     expect(fetchMock.mock.calls[1][0]).toContain('/api/encyclopedia/7/')
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('кэширует полный каталог, но не поисковые выдачи', async () => {
+    const storage = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => { storage.delete(key) },
+    })
+    const fetchMock = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes('q=')
+        ? { count: 1, results: [{ id: 2, entity_type: 'creature', name: 'Болотник', slug: 'bolotnik', summary: { size: 'Большой' } }] }
+        : { count: 1, results: [{ id: 1, entity_type: 'creature', name: 'Альмираж', slug: 'almiraj', summary: { size: 'Маленький' } }] },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await loadBestiary(new AbortController().signal)
+    expect(readCachedBestiary()?.map(({ name }) => name)).toEqual(['Альмираж'])
+
+    // Поиск не перезаписывает сохранённый полный каталог.
+    const found = await loadBestiary(new AbortController().signal, 'болот')
+    expect(found.map(({ name }) => name)).toEqual(['Болотник'])
+    expect(readCachedBestiary()?.map(({ name }) => name)).toEqual(['Альмираж'])
   })
 
   it('собирает несколько страниц каталога без detail-запросов', async () => {

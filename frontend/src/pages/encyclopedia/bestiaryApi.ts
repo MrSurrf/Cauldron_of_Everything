@@ -1,5 +1,9 @@
 import type { CreatureEntity } from '../../entities/creature'
 import { authFetch } from '../../shared/api/auth'
+import {
+  dedupeResourceRequest,
+  readResourceCache,
+} from '../../shared/api/resourceCache'
 import type { CatalogCreature } from './bestiaryCatalog'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
@@ -142,6 +146,28 @@ export async function loadBestiary(
 ): Promise<CatalogCreature[]> {
   const params = new URLSearchParams({ type: 'creature', page_size: String(PAGE_SIZE) })
   if (query.trim()) params.set('q', query.trim())
+  // Поисковые выдачи (?q=) не кэшируем: их слишком много, полный каталог —
+  // один на всех, его дедуплицируем в пределах полёта и сохраняем.
+  if (query.trim()) {
+    return fetchBestiaryPages(params, signal)
+  }
+  return dedupeResourceRequest(BESTIARY_CACHE_KEY, () =>
+    fetchBestiaryPages(params, signal),
+  )
+}
+
+// Сохранённый полный каталог для мгновенного показа при повторном входе.
+export function readCachedBestiary(): CatalogCreature[] | null {
+  const cached = readResourceCache<CatalogCreature[]>(BESTIARY_CACHE_KEY)
+  return Array.isArray(cached) && cached.length > 0 ? cached : null
+}
+
+const BESTIARY_CACHE_KEY = 'encyclopedia.bestiary'
+
+async function fetchBestiaryPages(
+  params: URLSearchParams,
+  signal: AbortSignal,
+): Promise<CatalogCreature[]> {
   const first = await getJson<ListResponse>(`/api/encyclopedia/?${params}`, signal)
   const pageCount = Math.ceil(first.count / PAGE_SIZE)
   const pages = await Promise.all(Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) =>

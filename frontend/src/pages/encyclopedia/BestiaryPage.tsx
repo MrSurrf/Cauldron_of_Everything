@@ -8,7 +8,7 @@ import {
 } from '../../entities/creature'
 import { Button, Checkbox, Panel, Popover, TextInput } from '../../shared/ui'
 import type { CatalogCreature } from './bestiaryCatalog'
-import { getBestiaryCreature, loadBestiary } from './bestiaryApi'
+import { getBestiaryCreature, loadBestiary, readCachedBestiary } from './bestiaryApi'
 import { catalogFirstLetter, catalogNameStartsWith } from './catalogAlphabet'
 import { tarrasqueCatalogEntry } from './mockBestiary'
 import {
@@ -22,6 +22,12 @@ import styles from './BestiaryPage.module.css'
 
 const LETTERS = [...'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЭЮЯ']
 const PAGE_SIZE = 120
+
+// Сохранённый каталог для мгновенного показа; свежие данные подтянет эффект.
+function readInitialCatalog(): CatalogCreature[] | null {
+  const cached = readCachedBestiary()
+  return cached ? [...cached, tarrasqueCatalogEntry] : null
+}
 
 function groupByFirstLetter(creatures: readonly CatalogCreature[]) {
   const groups = new Map<string, CatalogCreature[]>()
@@ -94,11 +100,15 @@ export default function BestiaryPage() {
   }))
   const [searchDraft, setSearchDraft] = useState(() => searchParams.get('search') ?? '')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [catalog, setCatalog] = useState<CatalogCreature[]>([tarrasqueCatalogEntry])
+  const [catalog, setCatalog] = useState<CatalogCreature[]>(
+    () => readInitialCatalog() ?? [tarrasqueCatalogEntry],
+  )
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<CatalogCreature | null>(null)
   const [showFavorites, setShowFavorites] = useState(false)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    () => (readInitialCatalog() ? 'ready' : 'loading'),
+  )
   const [searchResult, setSearchResult] = useState<{ query: string; creatures: CatalogCreature[] } | null>(null)
   const [searchError, setSearchError] = useState<{ query: string; message: string } | null>(null)
   const [error, setError] = useState('')
@@ -127,16 +137,16 @@ export default function BestiaryPage() {
   const visible = results.slice(0, visibleCount)
 
   useEffect(() => {
-    const controller = new AbortController()
-    loadBestiary(controller.signal).then((creatures) => {
+    // Запрос сознательно не обрываем при размонтировании: каталог пишется
+    // в кэш, и возврат "назад" из карточки существа покажет его мгновенно.
+    loadBestiary(new AbortController().signal).then((creatures) => {
       setCatalog([...creatures, tarrasqueCatalogEntry])
       setStatus('ready')
     }).catch((cause: unknown) => {
-      if (controller.signal.aborted) return
       setError(cause instanceof Error ? cause.message : 'Не удалось загрузить бестиарий')
-      setStatus('error')
+      // При показанном из кэша каталоге сбой фонового обновления не роняет страницу.
+      setStatus((current) => (current === 'loading' ? 'error' : current))
     })
-    return () => controller.abort()
   }, [attempt])
 
   useEffect(() => {
