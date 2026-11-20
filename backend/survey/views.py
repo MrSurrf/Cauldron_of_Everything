@@ -5,7 +5,11 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.db.models import Count, Max
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_control
+from django.views.decorators.http import condition
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -13,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from core.permissions import IsSiteMember, email_is_allowed
 
-from .models import Answer, EmailAuthCode, Question, SurveySubmission
+from .models import Answer, Choice, EmailAuthCode, Question, SurveySubmission
 from .serializers import (
     AnswerSerializer,
     QuestionSerializer,
@@ -178,8 +182,30 @@ class SessionView(APIView):
         return Response({"authenticated": True})
 
 
+def questions_etag(request, *args, **kwargs):
+    """ETag списка вопросов: активные вопросы и их варианты."""
+    questions = Question.objects.filter(is_active=True).aggregate(
+        total=Count("id"), last=Max("updated_at")
+    )
+    choices = Choice.objects.filter(question__is_active=True).aggregate(
+        total=Count("id"), last=Max("updated_at")
+    )
+    stamps = [value for value in (questions["last"], choices["last"]) if value is not None]
+    if not stamps:
+        return None
+    return hashlib.md5(
+        f"questions:{questions['total']}:{choices['total']}:{max(stamps).timestamp()}".encode()
+    ).hexdigest()
+
+
+@method_decorator(cache_control(no_cache=True), name="get")
+@method_decorator(condition(etag_func=questions_etag), name="get")
 class QuestionListView(generics.ListAPIView):
-    """GET /api/questions/ — список активных вопросов с вариантами ответов."""
+    """GET /api/questions/ — список активных вопросов с вариантами ответов.
+
+    Отдаёт ETag + Cache-Control: no-cache: повторный заход валидируется
+    коротким запросом (304 без тела), пока анкета не изменилась.
+    """
 
     serializer_class = QuestionSerializer
     queryset = Question.objects.filter(is_active=True).prefetch_related("choices")

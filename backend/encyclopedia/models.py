@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Entity(models.Model):
@@ -29,6 +30,9 @@ class Entity(models.Model):
     # Специфичные поля типа + tables/sections/tooltips/interactive_blocks.
     data = models.JSONField("Данные типа", default=dict)
     created_at = models.DateTimeField("Создана", auto_now_add=True)
+    # Метка изменения для HTTP-кэширования (ETag/304). default нужен
+    # миграции на существующие строки; при save подставляется auto_now.
+    updated_at = models.DateTimeField("Обновлена", auto_now=True)
 
     class Meta:
         ordering = ["entity_type", "name", "id"]

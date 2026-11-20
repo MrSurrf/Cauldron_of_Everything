@@ -1,13 +1,15 @@
+import os
 import shutil
 import tempfile
 
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from core.urls import media_serve
 from .models import Profile
 
 
@@ -166,6 +168,46 @@ class ProfileAvatarTests(APITestCase):
         self.assertIsNone(response.data["data"].get("portrait"))
         self.assertFalse(Profile.objects.get(user=user).portrait)
         self.assertFalse(default_storage.exists(old_path))
+
+    def test_upload_same_filename_twice_gives_different_urls(self):
+        """Имя файла на диске уникально на каждую загрузку: URL меняется,
+        чтобы браузер не показывал старую картинку из кэша."""
+        self._temp_media()
+        self.authenticate("avatar@example.com")
+
+        first = self.client.post(
+            self.avatar_url, {"portrait": self._image_file("same.png")}, format="multipart"
+        )
+        second = self.client.post(
+            self.avatar_url, {"portrait": self._image_file("same.png")}, format="multipart"
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertNotEqual(first.data["portrait"], second.data["portrait"])
+
+    def test_media_serve_cache_headers(self):
+        """Аватары кэшируются навсегда (уникальные URL), прочие медиа — сутки."""
+        tmpdir = self._temp_media()
+
+        portrait_rel = os.path.join("accounts", "portraits", "user_1", "abc.png")
+        survey_rel = os.path.join("survey", "start.png")
+        for rel in (portrait_rel, survey_rel):
+            os.makedirs(os.path.dirname(os.path.join(tmpdir, rel)), exist_ok=True)
+            with open(os.path.join(tmpdir, rel), "wb") as handle:
+                handle.write(b"\x89PNG\r\n\x1a\n")
+
+        request = RequestFactory().get("/media/ignored")
+
+        portrait = media_serve(request, portrait_rel.replace(os.sep, "/"), document_root=tmpdir)
+        self.assertEqual(portrait.status_code, 200)
+        self.assertEqual(
+            portrait["Cache-Control"], "private, max-age=31536000, immutable"
+        )
+
+        survey = media_serve(request, survey_rel.replace(os.sep, "/"), document_root=tmpdir)
+        self.assertEqual(survey.status_code, 200)
+        self.assertEqual(survey["Cache-Control"], "private, max-age=86400")
 
     def test_upload_avatar_rejects_non_image(self):
         self._temp_media()

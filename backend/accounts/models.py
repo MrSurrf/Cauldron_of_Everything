@@ -1,5 +1,15 @@
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
+
+
+def portrait_upload_path(instance, filename):
+    """Уникальное имя на каждую загрузку: URL меняется вместе с файлом,
+    поэтому браузер не показывает старую картинку из кэша."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    name = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+    return f"accounts/portraits/user_{instance.user_id}/{name}"
 
 
 class Profile(models.Model):
@@ -18,7 +28,7 @@ class Profile(models.Model):
     )
     data = models.JSONField(default=dict)
     portrait = models.ImageField(
-        upload_to="accounts/portraits/",
+        upload_to=portrait_upload_path,
         blank=True,
         null=True,
         verbose_name="аватар",

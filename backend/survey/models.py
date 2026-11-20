@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Question(models.Model):
@@ -11,6 +12,9 @@ class Question(models.Model):
     )
     order = models.PositiveIntegerField("Порядок", default=0)
     is_active = models.BooleanField("Активен", default=True)
+    # Метка изменения для HTTP-кэширования (ETag/304). default нужен
+    # миграции на существующие строки; при save подставляется auto_now.
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -35,6 +39,8 @@ class Choice(models.Model):
         "Картинка", upload_to="survey/", blank=True, null=True
     )
     order = models.PositiveIntegerField("Порядок", default=0)
+    # Метка изменения для HTTP-кэширования (ETag/304).
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
     class Meta:
         ordering = ["order", "id"]

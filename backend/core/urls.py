@@ -1,11 +1,26 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as static_serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from survey.views import RegisterView, RequestCodeView, SessionView, VerifyCodeView
+
+
+def media_serve(request, path, document_root):
+    """Раздача media/ в dev с явными заголовками кэша.
+
+    Имена файлов аватаров уникальны на каждую загрузку, поэтому их можно
+    кэшировать навсегда. Прочие медиа (картинки анкеты) живут под постоянными
+    URL — их перепроверяем раз в сутки. private: кэширует только браузер.
+    """
+    response = static_serve(request, path, document_root=document_root)
+    if path.startswith("accounts/portraits/"):
+        response.headers["Cache-Control"] = "private, max-age=31536000, immutable"
+    else:
+        response.headers["Cache-Control"] = "private, max-age=86400"
+    return response
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -33,4 +48,11 @@ urlpatterns = [
 
 # В dev-режиме раздаём картинки из media/
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += [
+        re_path(
+            r"^media/(?P<path>.*)$",
+            media_serve,
+            {"document_root": settings.MEDIA_ROOT},
+            name="media-serve",
+        ),
+    ]

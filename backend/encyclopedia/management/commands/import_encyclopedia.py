@@ -18,6 +18,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 from django.utils.text import slugify
 
 from encyclopedia.models import Entity, EntityLink
@@ -149,17 +150,19 @@ class Command(BaseCommand):
             cleaned_data, missed_data = self._clean_data_html(entity.data)
             unresolved += missed_data
             entity.data = cleaned_data
+            # bulk_update не обновляет auto_now — ставим метку явно.
+            entity.updated_at = timezone.now()
 
             batch.append(entity)
 
             if len(batch) >= BATCH_SIZE:
-                Entity.objects.bulk_update(batch, ["content_html", "data"])
+                Entity.objects.bulk_update(batch, ["content_html", "data", "updated_at"])
                 batch = []
             if index % 500 == 0:
                 self.stdout.write(f"  HTML обработан: {index}/{total}")
 
         if batch:
-            Entity.objects.bulk_update(batch, ["content_html", "data"])
+            Entity.objects.bulk_update(batch, ["content_html", "data", "updated_at"])
         self.stdout.write("HTML очищен и перелинкован")
         return unresolved
 
