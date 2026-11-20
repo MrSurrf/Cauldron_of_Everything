@@ -3,6 +3,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from survey.models import Choice, Question
 
@@ -45,7 +46,9 @@ class Command(BaseCommand):
         report = f"Итого: создано — {total_created}, обновлено — {total_updated}"
         if options["replace"]:
             deactivated = Question.objects.exclude(text__in=seen_texts).update(
-                is_active=False
+                # update() не обновляет auto_now — ставим метку явно.
+                is_active=False,
+                updated_at=timezone.now(),
             )
             report += f", деактивировано — {deactivated}"
         self.stdout.write(self.style.SUCCESS(report))
@@ -121,7 +124,7 @@ class Command(BaseCommand):
                 )
                 if choice.order != c_order:
                     choice.order = c_order
-                    choice.save(update_fields=["order"])
+                    choice.save(update_fields=["order", "updated_at"])
                 self._set_image(choice, c_data.get("image"))
 
         return created_q, updated_q
@@ -131,4 +134,4 @@ class Command(BaseCommand):
         """Проставляет путь к картинке, если он задан в JSON и изменился."""
         if image is not None and str(obj.image) != image:
             obj.image = image
-            obj.save(update_fields=["image"])
+            obj.save(update_fields=["image", "updated_at"])

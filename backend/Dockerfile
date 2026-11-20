@@ -26,8 +26,10 @@ RUN mkdir -p media static
 
 EXPOSE 8000
 
-# Сбор статики, миграции, загрузка анкеты и запуск через gunicorn
-CMD python manage.py collectstatic --noinput && \
-    python manage.py migrate && \
+# Миграции, загрузка анкеты, импорт энциклопедии (если данные есть в volume),
+# сбор статики и запуск через gunicorn.
+CMD python manage.py migrate && \
     python manage.py load_survey && \
-    gunicorn core.wsgi:application -b 0.0.0.0:8000
+    if [ -d /app/backend/Encyclopedia-data/Encyclopedia-data/parsed ]; then python manage.py import_encyclopedia --replace; fi && \
+    python manage.py collectstatic --noinput && \
+    gunicorn core.wsgi:application -b 0.0.0.0:8000 --access-logfile -

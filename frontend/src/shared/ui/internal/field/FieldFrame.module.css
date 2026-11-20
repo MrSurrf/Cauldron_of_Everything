@@ -1,21 +1,11 @@
-.root {
-  --input-border: var(--palette-gray-700);
-  --input-inner-border:
-    color-mix(
-      in srgb,
-      var(--input-border) 40%,
-      var(--input-surface-start)
-    );
-  --input-text: var(--palette-gray-300);
-  --input-surface-start: var(--palette-gray-900);
-  --input-surface-end: var(--palette-black);
-  --input-corner-cut: var(--radius-md);
-  --input-inner-frame-inset: 0.375rem;
-  --text-field-extra-block-end: 0px;
-  --text-field-extra-block-start: 0px;
-  --text-field-extra-inline-end: 0px;
-
-  --corner-cut: var(--input-corner-cut);
+.root,
+.root::before,
+.innerFrame,
+.innerFrame::before,
+.multilineContentGuard::before,
+.multilineContentGuardInner,
+.multilineContentGuardInner::before {
+  /* Пересчитываем форму на каждом слое, не наследуем уже вычисленный срез внешней рамки. */
   --input-frame-clip:
     polygon(
       var(--corner-cut) 0,
@@ -27,7 +17,26 @@
       0 calc(100% - var(--corner-cut)),
       0 var(--corner-cut)
     );
+}
 
+.root {
+  --input-border: var(--color-border-default);
+  --input-inner-border:
+    color-mix(
+      in srgb,
+      var(--input-border) 40%,
+      var(--input-surface-start)
+    );
+  --input-text: var(--color-text-secondary);
+  --input-surface-start: var(--color-surface-default);
+  --input-surface-end: var(--color-background);
+  --input-corner-cut: var(--radius-md);
+  --input-inner-frame-inset: 0.375rem;
+  --text-field-extra-block-end: 0px;
+  --text-field-extra-block-start: 0px;
+  --text-field-extra-inline-end: 0px;
+
+  --corner-cut: var(--input-corner-cut);
   position: relative;
   isolation: isolate;
 
@@ -50,7 +59,7 @@
       0 0 0.35rem
       color-mix(
         in srgb,
-        var(--palette-black) 46%,
+        var(--color-shadow) 46%,
         transparent
       )
     );
@@ -88,6 +97,8 @@
 }
 
 .innerFrame {
+  /* Фильтры могут оставить только внешнюю рамку, не меняя остальные поля. */
+  display: var(--input-inner-frame-display, block);
   --corner-cut:
     calc(
       var(--input-corner-cut) -
@@ -102,6 +113,17 @@
   clip-path: var(--input-frame-clip);
 
   pointer-events: none;
+}
+
+/* Все TextInput type="search", включая шапку сайта, имеют одну внешнюю рамку. */
+.root.search .innerFrame {
+  display: none;
+}
+
+.root.search .control::-webkit-search-cancel-button,
+.root.search .control::-webkit-search-decoration {
+  appearance: none;
+  display: none;
 }
 
 .innerFrame::before {
@@ -151,8 +173,10 @@
   color: var(--input-text);
   caret-color: var(--input-text);
 
-  font-family: var(--font-family-body);
-  font-size: var(--font-size-md);
+  font-family:
+    var(--field-font-family, var(--font-family-body));
+  font-size:
+    var(--field-font-size, var(--font-size-md));
   font-weight: 400;
   line-height: var(--line-height-normal);
 
@@ -300,6 +324,12 @@
   height: 0;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .multiline {
+    scroll-behavior: smooth;
+  }
+}
+
 .control::placeholder {
   color:
     color-mix(
@@ -398,7 +428,8 @@
   pointer-events: none;
 }
 
-.icon svg {
+.icon svg,
+.icon [data-shared-icon='true'] {
   display: block;
 
   width: 100%;
@@ -409,11 +440,11 @@
   filter:
     drop-shadow(
       0 0 0.12rem
-      var(--palette-white)
+      var(--color-text-primary)
     )
     drop-shadow(
       0 0 0.62rem
-      var(--palette-purple-500)
+      var(--color-action-primary)
     );
 }
 
@@ -435,7 +466,7 @@
   filter:
     drop-shadow(
       0 0 0.12rem
-      var(--palette-white)
+      var(--color-text-primary)
     )
     drop-shadow(
       0 0 0.62rem
@@ -444,7 +475,7 @@
 }
 
 .root[data-disabled='true'] {
-  --input-border: var(--palette-gray-700);
+  --input-border: var(--color-border-default);
 
   opacity: var(--disabled-opacity);
   filter: none;
@@ -456,7 +487,22 @@
 
 .control::selection {
   background: var(--palette-purple-700);
-  color: var(--palette-white);
+  color: var(--color-button-text);
+}
+
+:global(:where(:root[data-theme='light'])) .root {
+  --input-text: var(--color-text-primary);
+  --input-surface-start: var(--color-surface-muted);
+  --input-surface-end: var(--color-surface-muted);
+  filter: none;
+}
+
+:global(:where(:root[data-theme='light'])) .icon {
+  mix-blend-mode: normal;
+}
+
+:global(:where(:root[data-theme='light'])) .control::selection {
+  background: var(--color-action-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,7 +5,7 @@
 
   width: 100%;
   min-width: 320px;
-  min-height: 100svh;
+  min-height: var(--app-viewport-height);
 
   padding:
     clamp(
@@ -18,6 +18,7 @@
   place-items: center;
 
   background:
+    var(--cursor-background-image, none),
     #05040d
     url('/tools/survey/illustrations/common/background.png')
     center / cover
@@ -71,9 +72,7 @@
     );
 
   font-family:
-    'GothicRusWeb',
-    Georgia,
-    serif;
+    var(--font-family-heading);
 
   font-size:
     clamp(
@@ -90,6 +89,25 @@
     rgba(0, 0, 0, 0.72),
     0 0 36px
     rgba(127, 71, 179, 0.22);
+}
+
+:root[data-theme='light'] .survey-final-page {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-background) 94%, transparent),
+      color-mix(in srgb, var(--color-background) 94%, transparent)
+    ),
+    url('/tools/survey/illustrations/common/background.png') center / cover no-repeat;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='light'] .survey-final-page__overlay {
+  background: none;
+}
+
+:root[data-theme='light'] .survey-final-page__title {
+  color: var(--color-heading-primary);
+  text-shadow: none;
 }
 
 @media (max-width: 520px) {

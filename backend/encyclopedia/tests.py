@@ -1,0 +1,246 @@
+from django.test import TestCase
+
+from .models import Entity
+
+
+class CreatureListApiTests(TestCase):
+    def setUp(self):
+        self.creature = Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Горный орёл",
+            slug="mountain-eagle",
+            sources=["Бестиарий"],
+            content_html="<p>Тяжёлая карточка</p>",
+            content_text="Опытный исследователь высоких гор",
+            data={
+                "challenge_rating": "1/4",
+                "size": "Маленький",
+                "creature_type": "Зверь",
+                "alignment": "без мировоззрения",
+                "languages": ["Общий"],
+                "environments": ["Горы"],
+                "movement": {"fly": "60 фт."},
+                "named_npc": False,
+                "is_homebrew": False,
+                "armor_class": 15,
+                "hit_points": 18,
+            },
+        )
+
+    def test_list_contains_only_catalog_fields(self):
+        response = self.client.get("/api/encyclopedia/?type=creature&page_size=1000")
+
+        self.assertEqual(response.status_code, 200)
+        item = response.json()["results"][0]
+        self.assertEqual(item["id"], self.creature.id)
+        self.assertEqual(item["summary"], {
+            "challenge_rating": "1/4",
+            "size": "Маленький",
+            "creature_type": "Зверь",
+            "alignment": "без мировоззрения",
+            "languages": ["Общий"],
+            "environments": ["Горы"],
+            "movement": {"fly": "60 фт."},
+            "named_npc": False,
+            "is_homebrew": False,
+        })
+        self.assertNotIn("data", item)
+        self.assertNotIn("content_text", item)
+        self.assertNotIn("content_html", item)
+        self.assertNotIn("armor_class", item["summary"])
+        self.assertNotIn("hit_points", item["summary"])
+
+    def test_creature_page_size_exceeds_old_limit(self):
+        Entity.objects.bulk_create([
+            Entity(
+                entity_type=Entity.Type.CREATURE,
+                name=f"Существо {number}",
+                slug=f"creature-{number}",
+                content_html="",
+                content_text="",
+                data={},
+            )
+            for number in range(101)
+        ])
+
+        response = self.client.get("/api/encyclopedia/?type=creature")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 102)
+        self.assertEqual(len(response.json()["results"]), 102)
+
+    def test_searches_each_word_in_name_or_content_text(self):
+        response = self.client.get(
+            "/api/encyclopedia/",
+            {"type": "creature", "q": "Горный исследователь"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["id"], self.creature.id)
+
+    def test_name_prefix_only_matches_start_of_name(self):
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Аббат",
+            slug="abbot",
+            content_html="",
+            content_text="Горный орёл",
+        )
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="«Горный страж»",
+            slug="mountain-guardian",
+            content_html="",
+            content_text="",
+        )
+        response = self.client.get(
+            "/api/encyclopedia/", {"type": "creature", "name_prefix": "го"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertIn(self.creature.id, [item["id"] for item in response.json()["results"]])
+
+        response = self.client.get(
+            "/api/encyclopedia/", {"type": "creature", "q": "Горный орёл"}
+        )
+        self.assertEqual(response.json()["count"], 2)
+
+    def test_slug_lookup_is_exact_even_for_similar_names(self):
+        Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Горный орёл",
+            slug="mountain-eagle-2",
+            content_html="",
+            content_text="",
+        )
+
+        response = self.client.get(
+            "/api/encyclopedia/",
+            {"type": "creature", "slug": "mountain-eagle-2"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"][0]["slug"], "mountain-eagle-2")
+
+
+class SpellListApiTests(TestCase):
+    def test_list_normalizes_school_alias_for_existing_data(self):
+        spell = Entity.objects.create(
+            entity_type=Entity.Type.SPELL,
+            name="Огненный луч",
+            slug="fire-ray",
+            content_html="",
+            content_text="",
+            data={"level": 1, "school": "Эвокация"},
+        )
+
+        response = self.client.get("/api/encyclopedia/?type=spell")
+
+        self.assertEqual(response.status_code, 200)
+        item = response.json()["results"][0]
+        self.assertEqual(item["id"], spell.id)
+        self.assertEqual(item["summary"]["school"], "Воплощение")
+
+
+class EncyclopediaCacheTests(TestCase):
+    """ETag/304 для публичных эндпоинтов: повторный заход не качает тело ответа."""
+
+    def setUp(self):
+        self.creature = Entity.objects.create(
+            entity_type=Entity.Type.CREATURE,
+            name="Горный орёл",
+            slug="mountain-eagle",
+            content_html="<p>Карточка</p>",
+            content_text="",
+            data={},
+        )
+
+    def test_catalog_etag_304_and_invalidation_on_change(self):
+        first = self.client.get("/api/encyclopedia/?type=creature")
+        self.assertEqual(first.status_code, 200)
+        etag = first["ETag"]
+        self.assertTrue(etag)
+        self.assertEqual(first["Cache-Control"], "no-cache")
+
+        second = self.client.get(
+            "/api/encyclopedia/?type=creature", HTTP_IF_NONE_MATCH=etag
+        )
+        self.assertEqual(second.status_code, 304)
+        self.assertEqual(second.content, b"")
+
+        # Другой набор фильтров — другой ETag (query string входит в хэш).
+        Entity.objects.create(
+            entity_type=Entity.Type.SPELL,
+            name="Огненный луч",
+            slug="fire-ray",
+            content_html="",
+            content_text="",
+            data={},
+        )
+        other = self.client.get("/api/encyclopedia/?type=spell")
+        self.assertNotEqual(other["ETag"], etag)
+
+        # Изменение сущности меняет ETag старого набора.
+        self.creature.name = "Изменённый орёл"
+        self.creature.save()
+        third = self.client.get(
+            "/api/encyclopedia/?type=creature", HTTP_IF_NONE_MATCH=etag
+        )
+        self.assertEqual(third.status_code, 200)
+
+    def test_detail_etag_304_and_invalidation_on_change(self):
+        first = self.client.get(f"/api/encyclopedia/{self.creature.id}/")
+        self.assertEqual(first.status_code, 200)
+        etag = first["ETag"]
+        self.assertTrue(etag)
+
+        second = self.client.get(
+            f"/api/encyclopedia/{self.creature.id}/", HTTP_IF_NONE_MATCH=etag
+        )
+        self.assertEqual(second.status_code, 304)
+
+        # Изменение ДРУГОЙ сущности не должно инвалидировать карточку.
+        other = Entity.objects.create(
+            entity_type=Entity.Type.SPELL,
+            name="Огненный луч",
+            slug="fire-ray",
+            content_html="",
+            content_text="",
+            data={},
+        )
+        other.content_html = "<p>Новая редакция</p>"
+        other.save()
+        third = self.client.get(
+            f"/api/encyclopedia/{self.creature.id}/", HTTP_IF_NONE_MATCH=etag
+        )
+        self.assertEqual(third.status_code, 304)
+
+        # Изменение самой сущности — должна.
+        self.creature.content_html = "<p>Новая редакция</p>"
+        self.creature.save()
+        fourth = self.client.get(
+            f"/api/encyclopedia/{self.creature.id}/", HTTP_IF_NONE_MATCH=etag
+        )
+        self.assertEqual(fourth.status_code, 200)
+
+    def test_types_etag_304_and_invalidation_on_create(self):
+        first = self.client.get("/api/encyclopedia/types/")
+        self.assertEqual(first.status_code, 200)
+        etag = first["ETag"]
+        self.assertTrue(etag)
+
+        second = self.client.get("/api/encyclopedia/types/", HTTP_IF_NONE_MATCH=etag)
+        self.assertEqual(second.status_code, 304)
+
+        Entity.objects.create(
+            entity_type=Entity.Type.SPELL,
+            name="Огненный луч",
+            slug="fire-ray",
+            content_html="",
+            content_text="",
+            data={},
+        )
+        third = self.client.get("/api/encyclopedia/types/", HTTP_IF_NONE_MATCH=etag)
+        self.assertEqual(third.status_code, 200)

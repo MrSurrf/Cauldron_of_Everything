@@ -1,4 +1,10 @@
 import type { SurveyResult } from './surveys/surveyTypes'
+import { authFetch } from './auth'
+import {
+  clearResourceCache,
+  dedupeResourceRequest,
+  readResourceCache,
+} from '../../shared/api/resourceCache'
 
 // Адрес бэкенда. В продакшене задаётся через VITE_API_BASE_URL
 // при сборке (например, в Dokploy). Для локальной разработки — localhost:8000.
@@ -13,10 +19,22 @@ export type Submission = {
   created_at: string
 }
 
+const SUBMISSIONS_CACHE_KEY = 'survey.submissions'
+
+// Сохранённый список результатов для мгновенного показа страницы мастера.
+export function readCachedSubmissions(): Submission[] | null {
+  const cached = readResourceCache<Submission[]>(SUBMISSIONS_CACHE_KEY)
+  return Array.isArray(cached) ? cached : null
+}
+
+export function clearSubmissionsCache(): void {
+  clearResourceCache(SUBMISSIONS_CACHE_KEY)
+}
+
 export async function sendSurveyResult(
   result: SurveyResult,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/submissions/`, {
+  const response = await authFetch(`${API_BASE_URL}/api/submissions/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -32,10 +50,20 @@ export async function sendSurveyResult(
       `Не удалось сохранить результат: HTTP ${response.status}`,
     )
   }
+
+  // Новый результат должен попасть в список при следующей загрузке.
+  clearSubmissionsCache()
 }
 
 export async function fetchSubmissions(): Promise<Submission[]> {
-  const response = await fetch(`${API_BASE_URL}/api/submissions/`)
+  return dedupeResourceRequest(
+    SUBMISSIONS_CACHE_KEY,
+    fetchSubmissionsFromServer,
+  )
+}
+
+async function fetchSubmissionsFromServer(): Promise<Submission[]> {
+  const response = await authFetch(`${API_BASE_URL}/api/submissions/`)
 
   if (!response.ok) {
     throw new Error(

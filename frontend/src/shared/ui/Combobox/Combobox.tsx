@@ -33,6 +33,7 @@ import type {
 type QueryState = {
   query: string
   selectionValue: string | null
+  previousSelectionValue?: string | null
 }
 
 type PopupStyle = CSSProperties & {
@@ -119,6 +120,7 @@ export const Combobox = forwardRef<
     'aria-errormessage': errorMessage,
     'aria-invalid': ariaInvalid,
     'aria-label': ariaLabel,
+    allowCustomValue = false,
     autoComplete = 'off',
     className,
     defaultOpen = false,
@@ -197,15 +199,17 @@ export const Combobox = forwardRef<
   )
   const validQueryState =
     isOpen &&
-    queryState?.selectionValue === selectedValue
+    (queryState?.selectionValue === selectedValue ||
+      (controlledValue &&
+        queryState?.previousSelectionValue === selectedValue))
       ? queryState
       : null
   const inputValue =
     validQueryState?.query ??
     selectedOption?.label ??
-    ''
+    (allowCustomValue ? selectedValue ?? '' : '')
   const hasUncommittedQuery =
-    selectedValue === null &&
+    !allowCustomValue &&
     validQueryState !== null &&
     validQueryState.query.length > 0
   const filterQuery =
@@ -223,7 +227,7 @@ export const Combobox = forwardRef<
     ) ?? null
   const activeOption =
     explicitActiveOption ??
-    (isOpen
+    (isOpen && !allowCustomValue
       ? findEdgeOption(
           filteredOptions,
           'first',
@@ -370,6 +374,32 @@ export const Combobox = forwardRef<
     event: ChangeEvent<HTMLInputElement>,
   ) {
     const nextQuery = event.currentTarget.value
+
+    if (allowCustomValue) {
+      const nextValue = nextQuery.length > 0
+        ? nextQuery
+        : null
+
+      if (!controlledValue) {
+        setInternalValue(nextValue)
+      }
+
+      onValueChange?.(
+        nextValue,
+        options.find((option) =>
+          option.value === nextValue,
+        ) ?? null,
+      )
+      setQueryState({
+        query: nextQuery,
+        selectionValue: nextValue,
+      })
+      onQueryChange?.(nextQuery)
+      setActiveValue(null)
+      setOpen(true)
+      return
+    }
+
     const clearsSelection =
       selectedValue !== null
 
@@ -382,6 +412,8 @@ export const Combobox = forwardRef<
       selectionValue: clearsSelection
         ? null
         : selectedValue,
+      // Родитель может сохранять прежний выбор до подтверждения нового варианта.
+      previousSelectionValue: selectedValue,
     })
     onQueryChange?.(nextQuery)
 
@@ -509,6 +541,8 @@ export const Combobox = forwardRef<
 
         if (activeOption) {
           commitOption(activeOption)
+        } else if (allowCustomValue) {
+          setOpen(false)
         } else {
           inputRef.current?.reportValidity()
         }
@@ -552,6 +586,7 @@ export const Combobox = forwardRef<
         : '',
     )
   }, [
+    allowCustomValue,
     hasUncommittedQuery,
     invalidSelectionMessage,
   ])

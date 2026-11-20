@@ -81,3 +81,19 @@ class SurveySubmissionSerializer(serializers.ModelSerializer):
             )
         return value
 
+
+
+class RequestCodeSerializer(serializers.Serializer):
+    """Запрос одноразового кода входа на email."""
+
+    email = serializers.EmailField()
+
+
+class VerifyCodeSerializer(serializers.Serializer):
+    """Проверка одноразового кода входа."""
+
+    email = serializers.EmailField()
+    code = serializers.RegexField(
+        regex=r"^\d{6}$",
+        error_messages={"invalid": "Код должен состоять из 6 цифр."},
+    )

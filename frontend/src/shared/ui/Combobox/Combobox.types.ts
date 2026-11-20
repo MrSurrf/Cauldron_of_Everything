@@ -25,6 +25,7 @@ export type ComboboxProps = Omit<
   | 'size'
   | 'value'
 > & {
+  allowCustomValue?: boolean
   defaultOpen?: boolean
   defaultValue?: string | null
   emptyText?: ReactNode

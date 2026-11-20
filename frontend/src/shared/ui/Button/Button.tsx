@@ -9,6 +9,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     {
       children,
       className,
+      decoration = 'ornate',
       fullWidth = false,
       icon,
       size = 'hero',
@@ -36,24 +37,31 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...buttonProps}
         ref={ref}
         className={buttonClassName}
+        data-decoration={decoration}
         data-size={size}
         data-variant={variant}
         type={type}
       >
-        <span
-          className={styles.innerFrame}
-          aria-hidden={true}
-        />
+        {decoration === 'ornate' && (
+          <>
+            <span
+              className={styles.innerFrame}
+              data-button-inner-frame={true}
+              aria-hidden={true}
+            />
 
-        <span
-          className={styles.cornerShapes}
-          aria-hidden={true}
-        >
-          <span className={styles.cornerShape} />
-          <span className={styles.cornerShape} />
-          <span className={styles.cornerShape} />
-          <span className={styles.cornerShape} />
-        </span>
+            <span
+              className={styles.cornerShapes}
+              data-button-corner-shapes={true}
+              aria-hidden={true}
+            >
+              <span className={styles.cornerShape} />
+              <span className={styles.cornerShape} />
+              <span className={styles.cornerShape} />
+              <span className={styles.cornerShape} />
+            </span>
+          </>
+        )}
 
         <span className={styles.content}>
           <span className={styles.label}>

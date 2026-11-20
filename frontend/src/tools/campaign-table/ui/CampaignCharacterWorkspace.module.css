@@ -1,0 +1,10 @@
+.workspace { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--color-content-border); border-radius: var(--radius-sm); background: var(--color-surface-default); }
+.tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: 40px; padding-inline: var(--space-4); border-bottom: 1px solid var(--color-content-border); }
+.tabs button { min-width: 0; padding: var(--space-3) 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--color-text-secondary); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabs button[aria-current='page'] { border-color: var(--color-brand); color: var(--color-text-primary); }
+.tabs span { margin-left: auto; color: var(--color-text-subtle); font-size: var(--font-size-xs); }
+.body { flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.body > * { min-width: 0; min-height: 0; }
+@media (max-width: 760px) {
+  .tabs span { display: none; }
+}

@@ -265,3 +265,9 @@ curl -X POST https://api.cauldronofeverything.ru/api/submissions/ \
 - `PROJECT_GUIDE.md` — архитектура, добавление новых моделей/API, подготовка
   бэкенда к масштабированию.
 - `AGENTS.md` — соглашения по коду и структуре.
+
+
+## заметки
+  после локальной правки базы 
+    Когда нужно обновить данные после очередной чистки:
+      `python /sync_encyclopedia_data.py --host root@147.45.219.254`

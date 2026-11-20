@@ -1,0 +1,219 @@
+.tableRoot {
+  min-width: 0;
+}
+
+.tableRoot[data-fill='true'] {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.tableRoot[data-fill='true'] > :last-child {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tableRoot[data-fill='true'] .tableScroll,
+.tableRoot[data-fill='true'] .tableViewport {
+  height: 100%;
+}
+
+.tableScroll {
+  height: auto;
+  min-height: 0;
+}
+
+.tableViewport {
+  height: auto;
+  min-height: 0;
+}
+
+.tableContent {
+  width: 100% !important;
+  min-height: 0;
+}
+
+.table {
+  width: 100%;
+  min-width: 27rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--color-text-primary);
+  font-family: var(--sheet-body-font, var(--font-family-body));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  line-height: var(--sheet-single-line-height, var(--line-height-tight));
+}
+
+.table th {
+  height: var(--sheet-row-height, var(--control-height-sm));
+  padding: var(--sheet-tight-gap, var(--space-1))
+    var(--sheet-layout-gap, var(--space-2));
+  border-right: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 56%, transparent);
+  border-bottom: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-border-accent) 34%, var(--color-content-border));
+  background:
+    color-mix(in srgb, var(--color-surface-accent) 28%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--sheet-label-size, var(--font-size-xs));
+  font-weight: 400;
+  letter-spacing: 0.055em;
+  line-height: 1.15;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.table th:last-child {
+  border-right: 0;
+}
+
+.table td {
+  min-width: 0;
+  padding: 0.125rem var(--sheet-tight-gap, var(--space-1));
+  border-top: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 58%, transparent);
+  border-right: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-content-border) 44%, transparent);
+  vertical-align: middle;
+}
+
+.table td:last-child {
+  border-right: 0;
+}
+
+/* Название формульного поля уже есть в шапке колонки. Доступная подпись
+   сохраняется, а дублирующая визуальная строка не увеличивает каждую атаку. */
+.table td [data-mode] > span:first-child {
+  position: absolute;
+  width: var(--border-width-default);
+  height: var(--border-width-default);
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.table td [data-mode] {
+  gap: 0;
+}
+
+.table tbody tr {
+  transition:
+    background-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.table tbody tr:hover,
+.table tbody tr:focus-within {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-surface-accent) 38%, transparent),
+      transparent 84%
+    );
+}
+
+.table tbody td:first-child {
+  position: relative;
+  padding-left: var(--space-3);
+}
+
+.table tbody td:first-child::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: var(--space-1);
+  width: var(--space-1);
+  height: var(--space-1);
+  border: var(--border-width-default) solid
+    color-mix(in srgb, var(--color-border-accent) 72%, var(--color-content-border));
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.nameColumn {
+  width: 24%;
+}
+
+.bonusColumn {
+  width: 13%;
+}
+
+.damageColumn {
+  width: 19%;
+}
+
+.typeColumn {
+  width: 15%;
+}
+
+.notesColumn {
+  width: 19%;
+}
+
+.actionsColumn {
+  width: calc(
+    var(--sheet-icon-control-size, 1.125rem) +
+      var(--sheet-tight-gap, var(--space-1))
+  );
+}
+
+.compactFrame {
+  --input-border: transparent;
+  --input-inner-border: transparent;
+  --input-surface-start: transparent;
+  --input-surface-end: transparent;
+  --input-corner-cut: var(--space-1);
+  --input-inner-frame-inset: 2px;
+
+  min-height: var(--sheet-row-height, var(--control-height-sm));
+  background: transparent;
+  filter: none;
+}
+
+.compactControl {
+  min-height: var(--sheet-row-height, var(--control-height-sm));
+  padding-inline: var(--sheet-layout-gap, var(--space-2));
+  font-size: var(--sheet-body-size, var(--font-size-sm));
+  line-height: 1.15;
+}
+
+.tableRoot :global(button[data-size='sm']) {
+  --icon-button-size: var(--sheet-row-height, var(--control-height-sm));
+  --icon-button-glyph-size: var(--icon-size-sm);
+}
+
+.linkedBadge {
+  display: block;
+  margin-top: var(--sheet-tight-gap, var(--space-1));
+  overflow: hidden;
+  color: var(--color-text-disabled);
+  font-size: var(--sheet-secondary-size, var(--font-size-xs));
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border-width-default) dashed
+    color-mix(in srgb, var(--color-content-border) 76%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+@media (forced-colors: active) {
+  .table th,
+  .table td {
+    border-color: CanvasText;
+  }
+
+  .table tbody td:first-child::before {
+    display: none;
+  }
+}

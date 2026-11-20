@@ -27,6 +27,13 @@ environ.Env.read_env(PROJECT_ROOT / '.env')
 # В Docker образе перезаписывается через env, чтобы config/ лежал вне backend/.
 SURVEY_CONFIG_DIR = Path(env('SURVEY_CONFIG_DIR', default=str(PROJECT_ROOT / 'config')))
 
+# Папка с JSON-датасетом энциклопедии (import_encyclopedia берёт его отсюда).
+# Сырые данные в git не хранятся, это локальный источник для импорта.
+ENCYCLOPEDIA_DATA_DIR = Path(env(
+    'ENCYCLOPEDIA_DATA_DIR',
+    default=str(BASE_DIR / 'Encyclopedia-data' / 'Encyclopedia-data' / 'parsed'),
+))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -60,6 +67,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     # local
     'survey',
+    'encyclopedia',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -153,7 +162,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'core.permissions.IsSiteMember',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -177,6 +186,14 @@ CORS_ALLOWED_ORIGINS = env.list(
     ],
 )
 
+# Белый список email для входа и доступа к API сайта (через запятую).
+# Пустой список снимает ограничение по email, но API всё равно требует авторизацию.
+AUTH_ALLOWED_EMAILS = [
+    email.strip().lower()
+    for email in env.list('AUTH_ALLOWED_EMAILS', default=[])
+    if email.strip()
+]
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Cauldron of Everything API',
     'DESCRIPTION': 'API анкетирования: авторизация, вопросы, сохранение ответов',
@@ -188,9 +205,13 @@ SPECTACULAR_SETTINGS = {
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default=None)
 TELEGRAM_CHAT_ID = env('TELEGRAM_CHAT_ID', default=None)
 
-# Email-уведомления о новых прохождениях анкеты.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email-уведомления о новых прохождениях анкеты и коды входа.
+# Если EMAIL_HOST не задан (локальная разработка) — письма печатаются в консоль бэкенда.
 EMAIL_HOST = env('EMAIL_HOST', default='')
+if EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')

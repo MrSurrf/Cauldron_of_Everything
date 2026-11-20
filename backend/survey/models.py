@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Question(models.Model):
@@ -11,6 +12,9 @@ class Question(models.Model):
     )
     order = models.PositiveIntegerField("Порядок", default=0)
     is_active = models.BooleanField("Активен", default=True)
+    # Метка изменения для HTTP-кэширования (ETag/304). default нужен
+    # миграции на существующие строки; при save подставляется auto_now.
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -35,6 +39,8 @@ class Choice(models.Model):
         "Картинка", upload_to="survey/", blank=True, null=True
     )
     order = models.PositiveIntegerField("Порядок", default=0)
+    # Метка изменения для HTTP-кэширования (ETag/304).
+    updated_at = models.DateTimeField("Обновлён", auto_now=True)
 
     class Meta:
         ordering = ["order", "id"]
@@ -81,6 +87,24 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.question} → {self.choice}"
+
+
+class EmailAuthCode(models.Model):
+    """Одноразовый код входа по email (хранится только хэш кода)."""
+
+    email = models.EmailField("Email", db_index=True)
+    code_hash = models.CharField("Хэш кода", max_length=64)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    attempts = models.PositiveSmallIntegerField("Попытки ввода", default=0)
+    is_used = models.BooleanField("Использован", default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Код входа по email"
+        verbose_name_plural = "Коды входа по email"
+
+    def __str__(self):
+        return f"{self.email} ({self.created_at:%d.%m.%Y %H:%M})"
 
 
 class SurveySubmission(models.Model):
