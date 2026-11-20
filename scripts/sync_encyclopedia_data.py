@@ -89,7 +89,7 @@ def main() -> int:
             f"mkdir -p /tmp/encyclopedia-data-sync && "
             f"tar -xzf {remote_archive} -C /tmp/encyclopedia-data-sync && "
             f"docker run --rm -v {volume}:/data -v /tmp/encyclopedia-data-sync:/source alpine "
-            f"sh -c 'rm -rf /data/Encyclopedia-data && cp -r /source/Encyclopedia-data /data/' && "
+            f"sh -c 'find /data -mindepth 1 -delete && cp -r /source/Encyclopedia-data/. /data/' && "
             f"rm -rf /tmp/encyclopedia-data-sync {remote_archive}",
         ])
 

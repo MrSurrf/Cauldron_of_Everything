@@ -14,7 +14,7 @@ import { ScrollBar } from '../../../shared/ui/ScrollBar'
 import {
   resultCategories,
 } from '../results/mockSurveyResults'
-import { fetchSubmissions, type Submission } from '../api'
+import { fetchSubmissions, readCachedSubmissions, type Submission } from '../api'
 
 import './GmResultsPage.css'
 
@@ -136,6 +136,21 @@ function mapSubmissionToPlayerResult(
   }
 }
 
+// Сохранённый список для мгновенного показа при входе в закрытый раздел.
+function readInitialResults(): PlayerResult[] | null {
+  if (sessionStorage.getItem('gm-demo-authorized') !== 'true') {
+    return null
+  }
+
+  const cached = readCachedSubmissions()
+
+  if (!cached || cached.length === 0) {
+    return null
+  }
+
+  return cached.map(mapSubmissionToPlayerResult)
+}
+
 function GmResultsPage() {
   const [isAuthorized, setIsAuthorized] =
     useState(
@@ -152,16 +167,20 @@ function GmResultsPage() {
     useState('')
 
   const [loadState, setLoadState] =
-    useState<LoadState>(() =>
-      sessionStorage.getItem(
-        'gm-demo-authorized',
-      ) === 'true'
-        ? { status: 'loading' }
-        : { status: 'unauthorized' },
-    )
+    useState<LoadState>(() => {
+      const initial = readInitialResults()
+
+      if (!isAuthorized) {
+        return { status: 'unauthorized' }
+      }
+
+      return initial
+        ? { status: 'success', data: initial }
+        : { status: 'loading' }
+    })
 
   const [selectedPlayerId, setSelectedPlayerId] =
-    useState('')
+    useState(() => readInitialResults()?.[0]?.id ?? '')
 
   const resultsListId = useId()
   const resultsListRef =
@@ -199,7 +218,7 @@ function GmResultsPage() {
     )
 
   useEffect(() => {
-    if (loadState.status !== 'loading') {
+    if (!isAuthorized) {
       return
     }
 
@@ -213,26 +232,38 @@ function GmResultsPage() {
 
         const mapped = data.map(mapSubmissionToPlayerResult)
         setLoadState({ status: 'success', data: mapped })
-        setSelectedPlayerId(mapped[0]?.id ?? '')
+        // Не сбрасываем выбор мастера, если выбранный игрок ещё в списке.
+        setSelectedPlayerId((current) =>
+          mapped.some((player) => player.id === current)
+            ? current
+            : (mapped[0]?.id ?? ''),
+        )
       })
       .catch((error) => {
         if (cancelled) {
           return
         }
 
-        setLoadState({
-          status: 'error',
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Не удалось загрузить результаты',
+        setLoadState((current) => {
+          // При сохранённом списке показываем его даже при сбое сети.
+          if (current.status === 'success') {
+            return current
+          }
+
+          return {
+            status: 'error',
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Не удалось загрузить результаты',
+          }
         })
       })
 
     return () => {
       cancelled = true
     }
-  }, [loadState.status])
+  }, [isAuthorized])
 
   const submissions = useMemo(
     () =>
@@ -343,8 +374,19 @@ function GmResultsPage() {
     )
 
     setLoginError('')
+
+    // При входе сразу показываем сохранённый список, свежие данные
+    // подтянет эффект по смене isAuthorized.
+    const initial = readInitialResults()
+
+    if (initial) {
+      setLoadState({ status: 'success', data: initial })
+      setSelectedPlayerId(initial[0]?.id ?? '')
+    } else {
+      setLoadState({ status: 'loading' })
+    }
+
     setIsAuthorized(true)
-    setLoadState({ status: 'loading' })
   }
 
   function handleLogout() {
