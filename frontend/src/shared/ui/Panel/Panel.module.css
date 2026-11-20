@@ -26,9 +26,11 @@
       var(--panel-inner-frame-inset) +
       var(--border-width-default)
     );
+  /* Отступ до дуги по диагонали для прямоугольного содержимого. */
+  --panel-content-corner-padding: calc(var(--panel-corner-cut) * 0.71);
   --panel-content-block-start-clearance:
     var(--panel-frame-clearance);
-
+  /* У обводок одинаковый срез в собственных координатах. Зазор задают их отступы. */
   --corner-cut: var(--panel-corner-cut);
   --panel-frame-clip:
     polygon(
@@ -57,7 +59,8 @@
 }
 
 .panel[data-padding='none'] {
-  --panel-content-padding: 0;
+  --panel-content-padding: 0px;
+  --panel-content-corner-padding: 0px;
 }
 
 .panel[data-padding='compact'] {
@@ -80,13 +83,20 @@
       var(--motion-easing-standard);
 }
 
+.frame,
+.frame::before,
+.innerFrame,
+.innerFrame::before,
+.content {
+  clip-path: var(--panel-frame-clip);
+}
+
 .frame {
   position: absolute;
   z-index: 0;
   inset: 0;
 
   background: var(--panel-border-material);
-  clip-path: var(--panel-frame-clip);
   filter:
     drop-shadow(
       0 var(--space-2) var(--space-5)
@@ -103,21 +113,11 @@
 .frame::before {
   content: '';
 
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--border-width-default)
-      )
-    );
-
   position: absolute;
   z-index: 1;
   inset: var(--border-width-default);
 
   background: var(--panel-surface-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .edgeLight {
@@ -131,42 +131,21 @@
 }
 
 .innerFrame {
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--panel-inner-frame-inset)
-      )
-    );
-
   position: absolute;
   z-index: 2;
   inset: var(--panel-inner-frame-inset);
 
   background: var(--panel-inner-border);
   background-image: var(--panel-inner-border-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .innerFrame::before {
   content: '';
 
-  --corner-cut:
-    max(
-      0px,
-      calc(
-        var(--panel-corner-cut) -
-        var(--panel-inner-frame-inset) -
-        var(--border-width-default)
-      )
-    );
-
   position: absolute;
   inset: var(--border-width-default);
 
   background: var(--panel-surface-material);
-  clip-path: var(--panel-frame-clip);
 }
 
 .dragIndicator {
@@ -230,28 +209,25 @@
 }
 
 .content {
+  --content-padding:
+    max(
+      calc(var(--panel-content-padding) - var(--panel-frame-clearance)),
+      var(--panel-content-corner-padding)
+    );
+
   position: relative;
   z-index: 1;
 
   min-width: 0;
   min-height: 0;
+  margin: var(--panel-frame-clearance);
   padding:
     max(
-      var(--panel-content-padding),
-      var(--panel-content-block-start-clearance)
+      var(--content-padding),
+      calc(var(--panel-content-block-start-clearance) - var(--panel-frame-clearance))
     )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    )
-    max(
-      var(--panel-content-padding),
-      var(--panel-frame-clearance)
-    );
+    var(--content-padding)
+    var(--content-padding);
 }
 
 @media (hover: hover) {
@@ -368,6 +344,10 @@
 
   .frame {
     display: none;
+  }
+
+  .content {
+    clip-path: none;
   }
 
   .dragIndicator {
